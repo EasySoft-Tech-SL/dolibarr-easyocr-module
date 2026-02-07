@@ -1,0 +1,204 @@
+
+.header{
+    
+    display: inline-flex;
+    align-items: center;
+}
+
+
+.titre{
+
+    width: 100%;
+}
+
+
+.btnTitlePlus{
+
+    float: inline-end;
+}
+
+.content{
+
+    width: 100%;
+    padding: 5px;
+}
+
+
+hr{
+
+    margin-top: 20px;
+    margin-bottom: 20px;
+}
+
+
+.return{
+
+    float: inline-end;
+}
+
+
+
+.btn{
+    font-family: arial,tahoma,verdana,helvetica !important;
+    background: rgb(150, 110, 162, 0.95) !important;
+    color: white !important;
+    border-radius: 3px !important;
+    border-collapse: collapse !important;
+    border: none !important;
+    font-weight: bold !important;
+}
+
+
+.btn-danger{
+
+    background: rgba(223, 72, 26, 0.95) !important;
+}
+
+
+table.nobordernopadding tr td {
+    border: 0 !important;
+    padding: 10px !important;
+}
+
+
+.label-form{
+
+    width: 150px !important;
+}
+
+.wd-100{
+
+    width: 100% !important;
+}
+
+.gallery{
+
+    display: inline-block;
+
+    margin: 10px;
+}
+
+
+@media only screen and (max-width : 900px) {
+   
+    .wd-100{
+
+        width: 100px !important;
+    }
+}
+
+
+
+table {
+    border-collapse: collapse;
+    width: 100%;
+    margin-bottom:15px !important;
+}
+th, td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+}
+th {
+    background-color: #f2f2f2;
+}
+
+.btn{
+    padding: 10px 20px;
+    background-color:  rgb(150, 110, 162, 0.95);
+    border: 1px solid #ddd;
+    font-weight: bold;
+    color: white;
+    cursor:pointer;
+}
+
+
+.pg{
+    background: rgb(38,60,92);
+    padding: 10px;
+    font-weight: bold;
+    color: white !important;
+    cursor:pointer;
+}
+
+.active{
+
+    background: rgb(35,135,140) !important;
+}
+
+table .records:hover {
+    
+    background-color: rgb(35,135,140) !important;
+    cursor:pointer;
+    color:white;
+}
+
+.d-none{
+
+    display:none;
+}
+
+
+.input{
+    
+    vertical-align: middle !important;
+    margin: 5px 10px 5px 0 !important;
+    padding: 10px !important;
+    background-color: #fff !important;
+    border: 1px solid #ddd !important;
+
+}
+
+
+#limit-options{
+
+    float:right;
+}
+
+.form-inline {
+    
+    display: flex;
+    flex-flow: row wrap;
+    align-items: center;
+}
+
+.form-inline label {
+    margin: 5px 10px 5px 0;
+}
+
+
+.form-inline input {
+    
+    vertical-align: middle;
+    margin: 5px 10px 5px 0;
+    padding: 10px;
+    background-color: #fff;
+    border: 1px solid #ddd;
+}
+
+
+.form-inline button {
+    padding: 10px 20px;
+    background-color: rgb(150, 110, 162, 0.95);
+    border: 1px solid #ddd;
+    font-weight: bold;
+    color: white;
+    cursor:pointer;
+}
+
+.form-inline button:hover {
+    background-color: rgb(149 95 165 / 95%);
+}
+
+
+@media (max-width: 800px) {
+
+    .form-inline input {
+    margin: 10px 0;
+    }
+
+    .form-inline {
+    flex-direction: column;
+    align-items: stretch;
+    }
+}

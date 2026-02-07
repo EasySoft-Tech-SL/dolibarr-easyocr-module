@@ -1,0 +1,156 @@
+name: Notify Telegram
+
+on:
+  workflow_run:
+    workflows: ["Build Module Release"]
+    types:
+      - completed
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Download artifact
+        if: github.event.workflow_run.conclusion == 'success'
+        uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ github.event.workflow_run.id }}
+          pattern: module_easyocr-*
+          path: ./artifacts
+      
+      - name: Extract module version
+        id: version
+        run: |
+          VERSION=$(grep -oP "\\\$this->version\s*=\s*['\"]([0-9]+\.[0-9]+\.[0-9]+)['\"]" core/modules/modEasyocr.class.php | grep -oP "[0-9]+\.[0-9]+\.[0-9]+")
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Module version detected: $VERSION"
+      
+      - name: Get artifact info
+        if: github.event.workflow_run.conclusion == 'success'
+        id: artifact
+        run: |
+          # Buscar el archivo ZIP en artifacts
+          ARCHIVE_PATH=$(find ./artifacts -name "module_easyocr-*.zip" -type f | head -n 1)
+          
+          if [ -z "$ARCHIVE_PATH" ]; then
+            echo "Error: No se encontró el archivo ZIP"
+            exit 1
+          fi
+          
+          ARCHIVE_NAME=$(basename "$ARCHIVE_PATH")
+          ARCHIVE_SIZE=$(du -h "$ARCHIVE_PATH" | cut -f1)
+          
+          echo "archive_name=$ARCHIVE_NAME" >> $GITHUB_OUTPUT
+          echo "archive_path=$ARCHIVE_PATH" >> $GITHUB_OUTPUT
+          echo "archive_size=$ARCHIVE_SIZE" >> $GITHUB_OUTPUT
+          
+          echo "📦 Archivo encontrado: $ARCHIVE_NAME ($ARCHIVE_SIZE)"
+      
+      - name: Extract changelog
+        if: github.event.workflow_run.conclusion == 'success'
+        id: changelog
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          
+          echo "🔍 Extrayendo changelog para versión $VERSION..."
+          
+          # Extraer el changelog de la versión específica (todo entre ## [VERSION] y el siguiente ##)
+          CHANGELOG=$(sed -n "/## \[$VERSION\]/,/^## \[/p" ChangeLog.md | sed '1d;$d' | grep -v '^$' | head -n 15)
+          
+          # Limpiar formato markdown para Telegram y escapar comillas
+          CHANGELOG=$(echo "$CHANGELOG" | sed 's/^### /• /g' | sed 's/^- /  · /g' | sed 's/"/\\"/g')
+          
+          # Debug: mostrar lo que se extrajo
+          echo "📋 Contenido extraído:"
+          echo "$CHANGELOG"
+          
+          # Si está vacío, usar un mensaje por defecto
+          if [ -z "$CHANGELOG" ]; then
+            echo "⚠️ No se encontró changelog para la versión $VERSION"
+            CHANGELOG="No hay información de cambios disponible."
+          fi
+          
+          # Guardar en output usando heredoc para preservar formato
+          {
+            echo "changelog<<CHANGELOG_EOF"
+            echo "$CHANGELOG"
+            echo "CHANGELOG_EOF"
+          } >> $GITHUB_OUTPUT
+      
+      - name: Send success notification to Telegram
+        if: github.event.workflow_run.conclusion == 'success'
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          ARCHIVE_NAME="${{ steps.artifact.outputs.archive_name }}"
+          ARCHIVE_SIZE="${{ steps.artifact.outputs.archive_size }}"
+          COMMIT_SHA="${{ github.event.workflow_run.head_sha }}"
+          COMMIT_SHORT=$(echo $COMMIT_SHA | cut -c1-7)
+          BRANCH="${{ github.event.workflow_run.head_branch }}"
+          REPO_URL="https://github.com/${{ github.repository }}"
+          RELEASE_URL="$REPO_URL/releases/tag/v$VERSION"
+          BUILD_LOG_URL="$REPO_URL/actions/runs/${{ github.event.workflow_run.id }}"
+          
+          # Leer el changelog
+          CHANGELOG=$(cat <<'CHANGELOG_EOF'
+          ${{ steps.changelog.outputs.changelog }}
+          CHANGELOG_EOF
+          )
+          
+          # Construir el mensaje con changelog y crear archivo JSON
+          cat > payload.json <<EOF
+          {
+            "chat_id": "${{ secrets.TELEGRAM_CHAT_ID }}",
+            "message_thread_id": "${{ secrets.TELEGRAM_THREAD_ID }}",
+            "parse_mode": "HTML",
+            "disable_web_page_preview": true,
+            "text": "🏗️ <b>BUILD EXITOSO</b> #EasyOCR_Module\n\n<b>📦 Versión:</b> v$VERSION\n<b>📁 Archivo:</b> $ARCHIVE_NAME\n<b>💾 Tamaño:</b> $ARCHIVE_SIZE\n<b>🌿 Branch:</b> $BRANCH\n<b>📝 Commit:</b> <code>$COMMIT_SHORT</code>\n\n<b>📋 Cambios en esta versión:</b>\n<pre>$CHANGELOG</pre>\n\n<b>🔗 Enlaces:</b>\n• <a href=\"$RELEASE_URL\">Ver Release</a>\n• <a href=\"$BUILD_LOG_URL\">Ver logs del build</a>\n• <a href=\"$REPO_URL\">Repositorio</a>\n\n<i>Compilado automáticamente por GitHub Actions</i>\n\n🏢 <b>EasySoft Tech S.L.</b>"
+          }
+          EOF
+          
+          curl -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
+            -H "Content-Type: application/json" \
+            -d @payload.json
+      
+      - name: Upload file to Telegram
+        if: github.event.workflow_run.conclusion == 'success'
+        run: |
+          ARCHIVE_PATH="${{ steps.artifact.outputs.archive_path }}"
+          
+          curl -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendDocument" \
+            -F "chat_id=${{ secrets.TELEGRAM_CHAT_ID }}" \
+            -F "message_thread_id=${{ secrets.TELEGRAM_THREAD_ID }}" \
+            -F "document=@$ARCHIVE_PATH" \
+            -F "caption=📦 #EasyOCR_Module v${{ steps.version.outputs.version }}"
+      
+      - name: Send failure notification to Telegram
+        if: github.event.workflow_run.conclusion == 'failure'
+        run: |
+          COMMIT_SHA="${{ github.event.workflow_run.head_sha }}"
+          COMMIT_SHORT=$(echo $COMMIT_SHA | cut -c1-7)
+          BRANCH="${{ github.event.workflow_run.head_branch }}"
+          REPO_URL="https://github.com/${{ github.repository }}"
+          RUN_URL="$REPO_URL/actions/runs/${{ github.event.workflow_run.id }}"
+          
+          # Crear archivo JSON para el mensaje
+          cat > payload.json <<EOF
+          {
+            "chat_id": "${{ secrets.TELEGRAM_CHAT_ID }}",
+            "message_thread_id": "${{ secrets.TELEGRAM_THREAD_ID }}",
+            "parse_mode": "HTML",
+            "disable_web_page_preview": true,
+            "text": "🚨 <b>BUILD FALLIDO</b> #EasyOCR_Module\n\n<b>🌿 Branch:</b> $BRANCH\n<b>📝 Commit:</b> <code>$COMMIT_SHORT</code>\n\n<b>⚠️ Error:</b>\nEl proceso de compilación ha fallado.\n\n<b>🔗 Enlaces:</b>\n• <a href=\"$RUN_URL\">Ver logs del error</a>\n• <a href=\"$REPO_URL\">Repositorio</a>\n\n<i>Por favor, revisa los logs para más detalles.</i>\n\n🏢 <b>EasySoft Tech S.L.</b>"
+          }
+          EOF
+          
+          curl -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
+            -H "Content-Type: application/json" \
+            -d @payload.json

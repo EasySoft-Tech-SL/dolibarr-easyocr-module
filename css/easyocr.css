@@ -1,0 +1,769 @@
+/* ============================================
+   EasyOcr v2.1 - Estilos principales
+   Layout: 2 paneles (visor + sidebar)
+   Copyright (C) 2024-2026 EasySoft Tech S.L.
+   ============================================ */
+
+/* Reset y base */
+.eo-app {
+  display: flex;
+  height: calc(100vh - 80px);
+  gap: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 13px;
+  color: #333;
+  overflow: hidden;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  background: #f8f9fa;
+}
+
+/* ---- Panel Izquierdo: Visor PDF ---- */
+.eo-viewer {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background: #e9ecef;
+  position: relative;
+}
+
+.eo-viewer-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: #fff;
+  border-bottom: 1px solid #ddd;
+  flex-shrink: 0;
+  z-index: 5;
+}
+
+.eo-upload-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  background: #2d6a4f;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: background 0.2s;
+}
+.eo-upload-btn:hover { background: #1b4332; }
+
+.eo-filename {
+  color: #888;
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+}
+
+/* Zoom controls */
+.eo-zoom-controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+}
+.eo-zoom-btn {
+  width: 28px;
+  height: 28px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background: #fff;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #555;
+  transition: background 0.15s, border-color 0.15s;
+}
+.eo-zoom-btn:hover { background: #e9ecef; border-color: #bbb; }
+.eo-zoom-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #666;
+  min-width: 38px;
+  text-align: center;
+}
+
+/* Page indicator */
+.eo-page-indicator {
+  font-size: 11px;
+  color: #888;
+  background: #f0f0f0;
+  padding: 3px 10px;
+  border-radius: 10px;
+  white-space: nowrap;
+}
+
+.eo-canvas-area {
+  flex: 1;
+  overflow: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+}
+
+.eo-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #aaa;
+  gap: 12px;
+}
+.eo-empty-state p {
+  font-size: 14px;
+  margin: 0;
+}
+.eo-empty-hint {
+  font-size: 12px !important;
+  color: #ccc;
+  font-style: italic;
+}
+
+/* Drag & drop overlay */
+.eo-drop-overlay {
+  display: none;
+  position: absolute;
+  inset: 8px;
+  z-index: 10;
+  border: 3px dashed #2d6a4f;
+  border-radius: 12px;
+  background: rgba(45, 106, 79, 0.08);
+  color: #2d6a4f;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-size: 16px;
+  font-weight: 600;
+  pointer-events: none;
+}
+.eo-canvas-area.eo-drag-over .eo-drop-overlay {
+  display: flex;
+}
+
+/* Metadatos PDF */
+.eo-metadata-content {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+.eo-meta-row {
+  display: flex;
+  gap: 6px;
+  padding: 3px 0;
+  font-size: 11px;
+  border-bottom: 1px solid #f0f0f0;
+}
+.eo-meta-row:last-child { border-bottom: none; }
+.eo-meta-label {
+  color: #888;
+  white-space: nowrap;
+  min-width: 90px;
+  font-weight: 600;
+}
+.eo-meta-value {
+  color: #333;
+  word-break: break-all;
+}
+.eo-meta-empty {
+  color: #bbb;
+  font-size: 12px;
+  font-style: italic;
+}
+.eo-collapsible {
+  cursor: pointer;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.eo-collapse-icon {
+  transition: transform 0.2s;
+}
+.eo-collapsible.eo-collapsed .eo-collapse-icon {
+  transform: rotate(-90deg);
+}
+.eo-hidden {
+  display: none !important;
+}
+
+#canvas-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+#canvas-container canvas {
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+  cursor: crosshair;
+  max-width: 100%;
+}
+
+/* ---- Panel Derecho: Sidebar ---- */
+.eo-sidebar {
+  width: 340px;
+  min-width: 340px;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border-left: 1px solid #ddd;
+  overflow: hidden;
+}
+
+.eo-section {
+  padding: 14px 16px;
+  border-bottom: 1px solid #eee;
+  flex-shrink: 0;
+}
+
+.eo-section-grow {
+  flex: 1 1 0;
+  min-height: 200px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.eo-section-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #444;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.eo-hint {
+  font-size: 11px;
+  color: #999;
+  margin: 0 0 10px 0;
+  line-height: 1.4;
+}
+
+/* Shortcut hint badge in section titles */
+.eo-shortcut-hint {
+  font-size: 9px;
+  font-weight: 600;
+  color: #999;
+  background: #f0f0f0;
+  padding: 1px 6px;
+  border-radius: 3px;
+  text-transform: none;
+  letter-spacing: 0;
+  margin-left: auto;
+}
+
+/* ---- Etiquetas/Tags ---- */
+.eo-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.eo-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 12px;
+  border-radius: 4px;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: all 0.15s;
+  user-select: none;
+  opacity: 0.75;
+}
+.eo-tag:hover {
+  opacity: 1;
+  transform: translateY(-1px);
+}
+.eo-tag.active {
+  opacity: 1;
+  border-color: #333;
+  box-shadow: 0 0 0 2px rgba(0,0,0,0.15);
+  transform: scale(1.05);
+}
+.eo-tag.used {
+  opacity: 0.4;
+  cursor: default;
+  pointer-events: none;
+  text-decoration: line-through;
+}
+
+/* Tag keyboard shortcut number */
+.eo-tag-key {
+  width: 16px;
+  height: 16px;
+  border-radius: 3px;
+  background: rgba(255,255,255,0.3);
+  font-size: 10px;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* ---- Plantillas ---- */
+.eo-template-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+/* ---- Selecciones / Datos extraídos ---- */
+.eo-selections-list {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  min-height: 120px;
+}
+
+.eo-empty-selections {
+  color: #bbb;
+  font-size: 12px;
+  text-align: center;
+  padding: 20px 10px;
+}
+
+.eo-sel-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.eo-sel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.eo-sel-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.eo-sel-color {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.eo-sel-page {
+  font-size: 10px;
+  color: #aaa;
+  background: #f5f5f5;
+  padding: 1px 6px;
+  border-radius: 3px;
+}
+
+.eo-sel-delete {
+  background: none;
+  border: none;
+  color: #ccc;
+  cursor: pointer;
+  font-size: 16px;
+  padding: 0 4px;
+  line-height: 1;
+  transition: color 0.15s;
+}
+.eo-sel-delete:hover { color: #e74c3c; }
+
+.eo-sel-input {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 12px;
+  font-family: inherit;
+  resize: none;
+  min-height: 28px;
+  transition: border-color 0.15s;
+  box-sizing: border-box;
+}
+.eo-sel-input:focus {
+  border-color: #4a90d9;
+  outline: none;
+}
+
+/* ---- Readiness check panel ---- */
+.eo-readiness-panel {
+  padding: 10px 0 0 0;
+  border-top: 1px solid #f0f0f0;
+  margin-top: 8px;
+}
+.eo-readiness-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: #666;
+  padding: 2px 0;
+}
+.eo-readiness-summary {
+  margin-top: 4px;
+  padding-top: 6px;
+  border-top: 1px solid #f0f0f0;
+  font-weight: 600;
+}
+.eo-chk {
+  width: 16px;
+  height: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.eo-chk-pending {
+  color: #ccc;
+}
+.eo-chk-ok {
+  color: #2d6a4f;
+  font-weight: 800;
+}
+.eo-readiness {
+  font-size: 12px;
+  color: #999;
+  font-weight: 700;
+}
+.eo-readiness-ok {
+  color: #2d6a4f;
+}
+
+/* ---- Badge ---- */
+.eo-badge {
+  background: #e9ecef;
+  color: #666;
+  font-size: 10px;
+  padding: 1px 7px;
+  border-radius: 10px;
+  font-weight: 700;
+  margin-left: auto;
+}
+
+/* ---- Campo de formulario ---- */
+.eo-field {
+  margin-bottom: 10px;
+}
+.eo-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: #666;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+/* ---- Inputs y Selects ---- */
+.eo-select, .eo-input {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 12px;
+  font-family: inherit;
+  background: #fff;
+  box-sizing: border-box;
+  transition: border-color 0.15s;
+}
+.eo-select:focus, .eo-input:focus {
+  border-color: #4a90d9;
+  outline: none;
+}
+
+/* ---- Botones ---- */
+.eo-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: inherit;
+  white-space: nowrap;
+}
+.eo-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.eo-btn-sm { padding: 5px 10px; font-size: 12px; }
+
+.eo-btn-primary { background: #4a90d9; color: #fff; }
+.eo-btn-primary:hover { background: #357abd; }
+
+.eo-btn-secondary { background: #e9ecef; color: #666; }
+.eo-btn-secondary:hover { background: #dee2e6; }
+
+.eo-btn-success { background: #2d6a4f; color: #fff; }
+.eo-btn-success:hover { background: #1b4332; }
+.eo-btn-success.eo-btn-ready {
+  background: #27ae60;
+  animation: eo-pulse 1.5s ease-in-out 1;
+}
+
+.eo-btn-outline {
+  background: transparent;
+  color: #555;
+  border: 1px solid #ddd;
+}
+.eo-btn-outline:hover { background: #f8f9fa; border-color: #bbb; }
+
+.eo-icon-btn {
+  background: none;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background 0.15s;
+}
+.eo-icon-btn:hover { background: #e9ecef; }
+
+@keyframes eo-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(39, 174, 96, 0.4); }
+  50% { box-shadow: 0 0 0 8px rgba(39, 174, 96, 0); }
+}
+
+/* ---- Acciones (footer sidebar) ---- */
+.eo-actions {
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border-top: 1px solid #eee;
+  background: #fafafa;
+  flex-shrink: 0;
+}
+
+
+/* ---- Confirmation modal ---- */
+.eo-confirm-intro {
+  font-size: 13px;
+  color: #666;
+  margin: 0 0 14px 0;
+}
+.eo-confirm-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.eo-confirm-row {
+  display: flex;
+  gap: 8px;
+  padding: 6px 10px;
+  background: #f8f9fa;
+  border-radius: 4px;
+  font-size: 13px;
+}
+.eo-confirm-label {
+  font-weight: 600;
+  color: #666;
+  min-width: 110px;
+}
+.eo-confirm-value {
+  color: #333;
+  font-weight: 500;
+}
+.eo-confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 18px;
+}
+
+/* ---- Loader ---- */
+.eo-loader-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.4);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 99999;
+}
+.eo-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid rgba(255,255,255,0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: eo-spin 0.7s linear infinite;
+}
+@keyframes eo-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ---- Modal ---- */
+.eo-modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.5);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 99998;
+}
+.eo-modal {
+  background: #fff;
+  border-radius: 8px;
+  width: 440px;
+  max-width: 90vw;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+  overflow: hidden;
+}
+.eo-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 1px solid #eee;
+}
+.eo-modal-header h4 { margin: 0; font-size: 15px; }
+.eo-modal-close {
+  background: none;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+  color: #999;
+  padding: 0;
+  line-height: 1;
+}
+.eo-modal-close:hover { color: #333; }
+.eo-modal-body { padding: 18px; }
+
+/* Modal large (invoice preview) */
+.eo-modal-lg {
+  width: 85vw;
+  max-width: 1100px;
+  height: 80vh;
+  display: flex;
+  flex-direction: column;
+}
+.eo-modal-lg .eo-modal-body-iframe {
+  flex: 1;
+  padding: 0;
+  overflow: hidden;
+}
+.eo-modal-lg .eo-modal-body-iframe iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+.eo-modal-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Help bar (textwithpicto) */
+.eo-help-bar {
+  padding: 8px 16px;
+  border-top: 1px solid #eee;
+  background: #fafafa;
+  flex-shrink: 0;
+  font-size: 12px;
+  color: #888;
+}
+.eo-help-bar code {
+  background: #e9ecef;
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-size: 11px;
+  font-family: 'Courier New', monospace;
+}
+
+/* ---- Notificaciones (toast) — stackable ---- */
+.eo-toast {
+  position: fixed;
+  right: 20px;
+  padding: 10px 18px;
+  border-radius: 6px;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  z-index: 100000;
+  animation: eo-toast-in 0.3s ease;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  transition: bottom 0.3s ease, opacity 0.3s ease;
+}
+.eo-toast.success { background: #2d6a4f; }
+.eo-toast.error { background: #c0392b; }
+.eo-toast.warn { background: #f39c12; }
+.eo-toast-out {
+  opacity: 0;
+  transform: translateY(10px);
+}
+@keyframes eo-toast-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ---- Selección activa en canvas ---- */
+#canvas-container canvas.eo-drawing {
+  cursor: crosshair !important;
+}
+
+/* ---- Responsive ---- */
+@media (max-width: 900px) {
+  .eo-app {
+    flex-direction: column;
+    height: auto;
+  }
+  .eo-viewer {
+    height: 60vh;
+  }
+  .eo-sidebar {
+    width: 100%;
+    min-width: 100%;
+    max-height: 50vh;
+  }
+  .eo-modal-lg {
+    width: 95vw;
+    height: 70vh;
+  }
+}
