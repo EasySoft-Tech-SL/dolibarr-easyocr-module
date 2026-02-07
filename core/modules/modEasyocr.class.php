@@ -159,6 +159,24 @@ class modEasyocr extends DolibarrModules
 		$this->rights = array();
 		$r = 0;
 
+		// Permission to read (view templates and invoices)
+		$this->rights[$r][0] = $this->numero . sprintf("%02d", $r + 1);
+		$this->rights[$r][1] = 'Leer plantillas y facturas procesadas';
+		$this->rights[$r][4] = 'read';
+		$r++;
+
+		// Permission to write (create/edit templates and process invoices)
+		$this->rights[$r][0] = $this->numero . sprintf("%02d", $r + 1);
+		$this->rights[$r][1] = 'Crear y editar plantillas, procesar facturas';
+		$this->rights[$r][4] = 'write';
+		$r++;
+
+		// Permission to delete (remove templates and invoice records)
+		$this->rights[$r][0] = $this->numero . sprintf("%02d", $r + 1);
+		$this->rights[$r][1] = 'Eliminar plantillas y registros de facturas';
+		$this->rights[$r][4] = 'delete';
+		$r++;
+
 		// Main menu entries
 		$this->menu = array();
 		$r = 0;
@@ -173,7 +191,7 @@ class modEasyocr extends DolibarrModules
 			'langs'    => 'easyocr@easyocr',
 			'position' => 1000 + $r,
 			'enabled'  => 'isModEnabled("easyocr")',
-			'perms'    => '1',
+			'perms'    => '$user->rights->easyocr->read',
 			'target'   => '',
 			'user'     => 2,
 		);
@@ -189,7 +207,7 @@ class modEasyocr extends DolibarrModules
 			'langs'    => 'easyocr@easyocr',
 			'position' => 1000 + $r,
 			'enabled'  => 'isModEnabled("easyocr")',
-			'perms'    => '1',
+			'perms'    => '$user->rights->easyocr->write',
 			'target'   => '',
 			'user'     => 2,
 		);
@@ -205,7 +223,7 @@ class modEasyocr extends DolibarrModules
 			'langs'    => 'easyocr@easyocr',
 			'position' => 1000 + $r,
 			'enabled'  => 'isModEnabled("easyocr")',
-			'perms'    => '1',
+			'perms'    => '$user->rights->easyocr->read',
 			'target'   => '',
 			'user'     => 2,
 		);
@@ -221,7 +239,7 @@ class modEasyocr extends DolibarrModules
 			'langs'    => 'easyocr@easyocr',
 			'position' => 1000 + $r,
 			'enabled'  => 'isModEnabled("easyocr")',
-			'perms'    => '1',
+			'perms'    => '$user->rights->easyocr->read',
 			'target'   => '',
 			'user'     => 2,
 		);

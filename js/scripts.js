@@ -24,6 +24,8 @@ const EasyOcr = (function () {
         drawPage: null,
         suppliersData: [],   // Cache de proveedores
         templatesData: [],   // Cache de plantillas
+        banksData: [],       // Cache de cuentas bancarias
+        paymentTypesData: [], // Cache de tipos de pago
         pdfArrayBuffer: null // Para re-render en zoom
     };
 
@@ -834,6 +836,8 @@ const EasyOcr = (function () {
             success: function (data) {
                 state.suppliersData = data.suppliers || [];
                 state.templatesData = data.templates || [];
+                state.banksData = data.banks || [];
+                state.paymentTypesData = data.payment_types || [];
 
                 const supplierSelect = document.getElementById('eo-supplier');
                 const tplSupplierSelect = document.getElementById('eo-template-supplier');
@@ -851,6 +855,34 @@ const EasyOcr = (function () {
                     const suffix = t.supplier_name ? ` (${t.supplier_name})` : '';
                     tplSelect.innerHTML += `<option value="${t.rowid}"${selected} data-fk-soc="${t.fk_soc || ''}">${t.name}${suffix}</option>`;
                 });
+
+                // Poblar selector de cuentas bancarias
+                const bankSelect = document.getElementById('eo-payment-bank');
+                if (bankSelect) {
+                    bankSelect.innerHTML = '<option value="">Selecciona cuenta bancaria</option>';
+                    state.banksData.forEach(b => {
+                        const curr = b.currency_code ? ` (${b.currency_code})` : '';
+                        const num = b.number ? ` - ${b.number}` : '';
+                        bankSelect.innerHTML += `<option value="${b.rowid}">${b.label}${num}${curr}</option>`;
+                    });
+                }
+
+                // Poblar selector de tipos de pago
+                const paymentTypeSelect = document.getElementById('eo-payment-type');
+                if (paymentTypeSelect) {
+                    paymentTypeSelect.innerHTML = '<option value="">Selecciona modo de pago</option>';
+                    // Usar un Set para evitar duplicados por si acaso
+                    const uniquePaymentTypes = new Map();
+                    state.paymentTypesData.forEach(pt => {
+                        if (!uniquePaymentTypes.has(pt.id)) {
+                            uniquePaymentTypes.set(pt.id, pt);
+                        }
+                    });
+                    // Agregar las opciones únicas
+                    uniquePaymentTypes.forEach(pt => {
+                        paymentTypeSelect.innerHTML += `<option value="${pt.id}">${pt.label}</option>`;
+                    });
+                }
 
                 initSelect2();
                 updateReadiness();
@@ -1087,6 +1119,21 @@ const EasyOcr = (function () {
     }
 
     function confirmGenerateInvoice() {
+        // Validar pago si está activado
+        const createPayment = document.getElementById('eo-create-payment').checked;
+        if (createPayment) {
+            const bankId = $('#eo-payment-bank').val();
+            const paymentTypeId = $('#eo-payment-type').val();
+            if (!bankId) {
+                toast('Selecciona una cuenta bancaria para el pago', 'error');
+                return;
+            }
+            if (!paymentTypeId) {
+                toast('Selecciona un modo de pago', 'error');
+                return;
+            }
+        }
+
         hideModal('eo-modal-confirm');
         showLoader();
 
@@ -1098,6 +1145,13 @@ const EasyOcr = (function () {
         formData.append('datef', getSelectionValue('Con fecha de'));
         formData.append('total_ttc', getSelectionValue('Precio total'));
         formData.append('total_ht', getSelectionValue('HT totales'));
+
+        // Datos de pago
+        if (createPayment) {
+            formData.append('create_payment', '1');
+            formData.append('payment_bank_id', $('#eo-payment-bank').val());
+            formData.append('payment_type_id', $('#eo-payment-type').val());
+        }
 
         $.ajax({
             url: "ajax/ajax_easyocr.php",
@@ -1133,6 +1187,12 @@ const EasyOcr = (function () {
         });
     }
 
+    // ---- Toggle opciones de pago ----
+    function togglePaymentOptions() {
+        const checked = document.getElementById('eo-create-payment').checked;
+        document.getElementById('eo-payment-options').style.display = checked ? 'block' : 'none';
+    }
+
     function getSelectionValue(label) {
         for (const page of state.pages) {
             for (const sel of page.selections) {
@@ -1154,6 +1214,14 @@ const EasyOcr = (function () {
             }
             loadPDF(file);
         });
+
+        // Hacer clickeable el empty state
+        const emptyState = document.getElementById('eo-empty-state');
+        if (emptyState) {
+            emptyState.addEventListener('click', function() {
+                document.getElementById('pdfInput').click();
+            });
+        }
 
         // Drag & drop
         const canvasArea = document.getElementById('eo-canvas-area');
@@ -1396,6 +1464,14 @@ const EasyOcr = (function () {
         // Resetear sidebar
         $('#eo-supplier').val('').trigger('change');
         $('#eo-template-select').val('').trigger('change');
+
+        // Resetear opciones de pago
+        const paymentCheckbox = document.getElementById('eo-create-payment');
+        if (paymentCheckbox) {
+            paymentCheckbox.checked = false;
+            document.getElementById('eo-payment-options').style.display = 'none';
+        }
+
         renderTags();
         renderSelections();
         updateTemplateButtons();
@@ -1419,6 +1495,7 @@ const EasyOcr = (function () {
         generateInvoice,
         confirmGenerateInvoice,
         closeInvoicePreview,
+        togglePaymentOptions,
         undo,
         zoomIn,
         zoomOut,

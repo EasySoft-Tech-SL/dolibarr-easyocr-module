@@ -23,6 +23,11 @@ if (!$res) { die("Include of main fails"); }
 require_once DOL_DOCUMENT_ROOT . '/core/class/html.formother.class.php';
 require_once DOL_DOCUMENT_ROOT . '/core/class/html.form.class.php';
 
+// Security check - require write permission to process invoices
+if (!$user->rights->easyocr->write) {
+    accessforbidden();
+}
+
 $form = new Form($db);
 
 $arrayofjs = array(
@@ -65,13 +70,13 @@ llxHeader("", "EasyOcr", '', '', 0, 0, $arrayofjs, $arrayofcss);
     </div>
 
     <div class="eo-canvas-area" id="eo-canvas-area">
-      <div class="eo-empty-state" id="eo-empty-state">
-        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#bbb" stroke-width="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      <div class="eo-empty-state" id="eo-empty-state" title="Haz click o arrastra un PDF aquí">
+        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
         <p>Importa un PDF para comenzar</p>
         <p class="eo-empty-hint">o arrastra y suelta un archivo aquí</p>
       </div>
       <div class="eo-drop-overlay" id="eo-drop-overlay">
-        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
         <span>Suelta el PDF aquí</span>
       </div>
       <div id="canvas-container"></div>
@@ -198,6 +203,29 @@ llxHeader("", "EasyOcr", '', '', 0, 0, $arrayofjs, $arrayofcss);
     <div class="eo-modal-body">
       <p class="eo-confirm-intro">Se creará una factura de proveedor con los siguientes datos:</p>
       <div id="eo-confirm-body"></div>
+
+      <!-- Opción de pago asociado -->
+      <div class="eo-payment-section">
+        <label class="eo-checkbox-label">
+          <input type="checkbox" id="eo-create-payment" onchange="EasyOcr.togglePaymentOptions()">
+          Crear pago asociado a la factura
+        </label>
+        <div id="eo-payment-options" style="display:none">
+          <div class="eo-field">
+            <label class="eo-label">Modo de pago</label>
+            <select id="eo-payment-type" class="eo-select">
+              <option value="">Selecciona modo de pago</option>
+            </select>
+          </div>
+          <div class="eo-field">
+            <label class="eo-label">Cuenta bancaria</label>
+            <select id="eo-payment-bank" class="eo-select">
+              <option value="">Selecciona cuenta bancaria</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
       <div class="eo-confirm-actions">
         <button class="eo-btn eo-btn-outline" onclick="document.getElementById('eo-modal-confirm').style.display='none'">Cancelar</button>
         <button class="eo-btn eo-btn-success" onclick="EasyOcr.confirmGenerateInvoice()">Confirmar y Generar</button>

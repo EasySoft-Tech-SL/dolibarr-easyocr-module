@@ -213,7 +213,8 @@ if ($action == "newInvoice") {
 		multicurrency_code,
 		multicurrency_total_ht,
 		multicurrency_total_tva,
-		multicurrency_total_ttc
+		multicurrency_total_ttc,
+		import_key
 	)
 	VALUES
 	(
@@ -233,7 +234,8 @@ if ($action == "newInvoice") {
 		'EUR',
 		" . $total_ht . ",
 		" . $total_tva . ",
-		" . $total_ttc . "
+		" . $total_ttc . ",
+		'easyocr'
 	)");
 
 		$insert = $db->query("SELECT LAST_INSERT_ID() as id");
@@ -324,17 +326,32 @@ if ($action == "newInvoice") {
 				CURRENT_TIMESTAMP,
 				" . $user->id . "
 			)");
+			}
+		}
 
-				$ecm_file = $db->query("SELECT LAST_INSERT_ID() as id");
-				$ecm_file_new = $db->fetch_object($ecm_file);
+		// Crear pago asociado si se solicitó
+		$create_payment = isset($_POST['create_payment']) ? $_POST['create_payment'] : '0';
+		if ($create_payment == '1' && !empty($_POST['payment_bank_id'])) {
+			require_once DOL_DOCUMENT_ROOT . '/fourn/class/paiementfourn.class.php';
+			require_once DOL_DOCUMENT_ROOT . '/fourn/class/fournisseur.facture.class.php';
 
-				$db->query("INSERT INTO " . MAIN_DB_PREFIX . "easyocr_invoices(
-				fk_file
-			)
-			VALUES
-			(
-				" . $ecm_file_new->id . "
-			)");
+			$payment_bank_id = intval($_POST['payment_bank_id']);
+			$payment_type_id = !empty($_POST['payment_type_id']) ? intval($_POST['payment_type_id']) : 6; // 6 = VIR (transferencia)
+
+			$paiement = new PaiementFourn($db);
+			$paiement->datepaye = dol_mktime(12, 0, 0, date('m', strtotime($datef)), date('d', strtotime($datef)), date('Y', strtotime($datef)));
+			$paiement->amounts = array($newId => $total_ttc);
+			$paiement->multicurrency_amounts = array($newId => $total_ttc);
+			$paiement->multicurrency_code = array($newId => 'EUR');
+			$paiement->multicurrency_tx = array($newId => 1);
+			$paiement->paiementid = $payment_type_id;
+			$paiement->num_payment = $ref_supplier;
+			$paiement->note_private = 'Pago generado automáticamente por EasyOcr';
+			$paiement->fk_account = $payment_bank_id;
+
+			$paiement_id = $paiement->create($user, 1);
+			if ($paiement_id > 0) {
+				$paiement->addPaymentToBank($user, 'payment_supplier', '(SupplierInvoicePayment)', $payment_bank_id, '', '');
 			}
 		}
 
@@ -360,7 +377,37 @@ if ($action == "newInvoice") {
 		$result_templates[] = $get_templates->fetch_assoc();
 	}
 
-	print json_encode(["suppliers" => $result_suppliers, "templates" => $result_templates]);
+	// Obtener cuentas bancarias activas
+	$get_banks = $db->query("SELECT rowid, label, number, currency_code FROM " . MAIN_DB_PREFIX . "bank_account WHERE clos = 0 AND entity = " . $conf->entity . " ORDER BY label");
+	$num_banks = $db->num_rows($get_banks);
+	$result_banks = array();
+
+	for ($i = 0; $i < $num_banks; $i++) {
+		$result_banks[] = $get_banks->fetch_assoc();
+	}
+
+	// Obtener tipos de pago con traducciones correctas de Dolibarr
+	$get_payment_types = $db->query("SELECT id, code, libelle as label FROM " . MAIN_DB_PREFIX . "c_paiement WHERE active = 1 ORDER BY libelle");
+	$num_payment_types = $db->num_rows($get_payment_types);
+	$result_payment_types = array();
+
+	// Procesar y traducir los métodos de pago usando el sistema de Dolibarr (igual que html.form.class.php línea 4212)
+	for ($i = 0; $i < $num_payment_types; $i++) {
+		$row = $get_payment_types->fetch_assoc();
+		// Usar la traducción de Dolibarr: PaymentTypeShort + código (ej: PaymentTypeShortCHQ)
+		$translated_label = $langs->transnoentitiesnoconv("PaymentTypeShort" . $row['code']);
+		// Si la traducción no existe o es igual a la clave, usar el libelle original
+		if ($translated_label === "PaymentTypeShort" . $row['code']) {
+			$translated_label = ($row['label'] != '-' ? $row['label'] : '');
+		}
+		$result_payment_types[] = array(
+			'id' => $row['id'],
+			'code' => $row['code'],
+			'label' => $translated_label
+		);
+	}
+
+	print json_encode(["suppliers" => $result_suppliers, "templates" => $result_templates, "banks" => $result_banks, "payment_types" => $result_payment_types]);
 
 } else if ($action == "getDetailsTemplate") {
 

@@ -1,325 +1,366 @@
 <?php
+/**
+ * EasyOcr - Templates Management
+ * 
+ * @package    EasyOcr
+ * @copyright  2025-2026 EasySoft Tech S.L.
+ * @license    GPL-3.0+
+ */
 
+// Load Dolibarr environment
 $res = 0;
-// Try main.inc.php into web root known defined into CONTEXT_DOCUMENT_ROOT (not always defined)
 if (!$res && !empty($_SERVER["CONTEXT_DOCUMENT_ROOT"])) {
     $res = @include $_SERVER["CONTEXT_DOCUMENT_ROOT"] . "/main.inc.php";
 }
-
-// Try main.inc.php into web root detected using web root calculated from SCRIPT_FILENAME
 $tmp = empty($_SERVER['SCRIPT_FILENAME']) ? '' : $_SERVER['SCRIPT_FILENAME'];
 $tmp2 = realpath(__FILE__);
 $i = strlen($tmp) - 1;
 $j = strlen($tmp2) - 1;
-while ($i > 0 && $j > 0 && isset($tmp[$i]) && isset($tmp2[$j]) && $tmp[$i] == $tmp2[$j]) {$i--;
-    $j--;}
+while ($i > 0 && $j > 0 && isset($tmp[$i]) && isset($tmp2[$j]) && $tmp[$i] == $tmp2[$j]) {
+    $i--;
+    $j--;
+}
 if (!$res && $i > 0 && file_exists(substr($tmp, 0, ($i + 1)) . "/main.inc.php")) {
     $res = @include substr($tmp, 0, ($i + 1)) . "/main.inc.php";
 }
-
 if (!$res && $i > 0 && file_exists(dirname(substr($tmp, 0, ($i + 1))) . "/main.inc.php")) {
     $res = @include dirname(substr($tmp, 0, ($i + 1))) . "/main.inc.php";
 }
-
-// Try main.inc.php using relative path
 if (!$res && file_exists("../main.inc.php")) {
     $res = @include "../main.inc.php";
 }
-
 if (!$res && file_exists("../../main.inc.php")) {
     $res = @include "../../main.inc.php";
 }
-
 if (!$res && file_exists("../../../main.inc.php")) {
     $res = @include "../../../main.inc.php";
 }
-
 if (!$res) {
     die("Include of main fails");
 }
 
+require_once DOL_DOCUMENT_ROOT . '/core/lib/functions.lib.php';
+require_once DOL_DOCUMENT_ROOT . '/core/class/html.form.class.php';
 
-require_once DOL_DOCUMENT_ROOT . '/core/class/html.formother.class.php';
-
-llxHeader("", "EasyOcr");
-
-print '<link rel="stylesheet" type="text/css" href="css/styles.css" />';
-print '<link rel="stylesheet" type="text/css" href="css/panel.css" />';
-
-$page_view = "templates_view.php";
-
-$mainmenu = "easyocr";
-
-$action = $_SERVER['PHP_SELF'] . '?mainmenu='.$mainmenu;
-
-$sql = "";
-
-if (isset($_POST['name']) && $_POST['name']) {
-
-    $sql .= " WHERE name = '" . $_POST['name'] . "'";
+// Security check
+if (!$user->rights->easyocr->read) {
+    accessforbidden();
 }
 
+// Parameters
+$action = GETPOST('action', 'aZ09');
+$massaction = GETPOST('massaction', 'alpha');
+$confirm = GETPOST('confirm', 'alpha');
+$toselect = GETPOST('toselect', 'array');
+$searchName = GETPOST('search_name', 'alpha');
+$searchSupplier = GETPOST('search_supplier', 'int');
+$limit = GETPOST('limit', 'int') ? GETPOST('limit', 'int') : $conf->liste_limit;
+$page = GETPOSTISSET('pageplusone') ? (GETPOST('pageplusone') - 1) : GETPOST("page", 'int');
+if (empty($page) || $page < 0 || GETPOST('button_search', 'alpha') || GETPOST('button_removefilter', 'alpha')) {
+    $page = 0;
+}
+$offset = $limit * $page;
+$pageprev = $page - 1;
+$pagenext = $page + 1;
 
-function selected($value, $option)
-{
+$form = new Form($db);
 
-    if ($value == $option) {
-
-        return 'selected';
-    } else {
-
-        return '';
-    }
+// Clear filters
+if (GETPOSTISSET('button_removefilter') || GETPOSTISSET('button_removefilter_x')) {
+    header('Location: ' . $_SERVER['PHP_SELF']);
+    exit;
 }
 
-
-function active($val, $pag)
-{
-
-    if ($val == $pag) {
-
-        return "active";
-    } else {
-
-        return "";
-    }
+// Actions
+if (GETPOST('cancel', 'alpha')) {
+    $action = '';
 }
 
-
-if (isset($_POST["confirm_action"]) && $_POST["confirm_action"]) {
-
-    if ($_POST["confirm_action"] == "delete") {
-
-        if (isset($_POST["all_options"]) && $_POST["all_options"] && $_POST["all_options"] == "si") {
-
-            
-            $db->query("DELETE FROM " . MAIN_DB_PREFIX . "easyocr_template $sql");
-    
-
-            setEventMessages("Plantillas eliminadas", null);
-
-        } else if (isset($_POST["options"]) && $_POST["options"]) {
-
-            $options = explode(",", $_POST["options"]);
-
-            for ($i = 0; $i < count($options); $i++) {
-
-                $db->query("DELETE FROM " . MAIN_DB_PREFIX . "easyocr_template WHERE rowid=" . $options[$i]);
+// Mass delete
+if ($massaction == 'delete' && $user->rights->easyocr->delete) {
+    if (!empty($toselect)) {
+        $db->begin();
+        $error = 0;
+        foreach ($toselect as $toselectid) {
+            $toselectid = (int) $toselectid;
+            // Delete template details first
+            $sql = "DELETE FROM " . MAIN_DB_PREFIX . "easyocr_template_details WHERE fk_template = " . $toselectid;
+            if (!$db->query($sql)) {
+                $error++;
             }
+            // Delete template
+            $sql = "DELETE FROM " . MAIN_DB_PREFIX . "easyocr_template WHERE rowid = " . $toselectid;
+            if (!$db->query($sql)) {
+                $error++;
+            }
+        }
+        if (!$error) {
+            $db->commit();
+            setEventMessages(count($toselect) > 1 ? "Plantillas eliminadas" : "Plantilla eliminada", null, 'mesgs');
+        } else {
+            $db->rollback();
+            setEventMessages("Error al eliminar plantillas", null, 'errors');
+        }
+        $action = '';
+    }
+}
 
-            if (count($options) > 1) {
+// Delete single template
+if ($action == 'delete' && $confirm == 'yes' && $user->rights->easyocr->delete) {
+    $id = GETPOST('id', 'int');
+    $db->begin();
+    $error = 0;
+    // Delete details
+    $sql = "DELETE FROM " . MAIN_DB_PREFIX . "easyocr_template_details WHERE fk_template = " . ((int) $id);
+    if (!$db->query($sql)) {
+        $error++;
+    }
+    // Delete template
+    $sql = "DELETE FROM " . MAIN_DB_PREFIX . "easyocr_template WHERE rowid = " . ((int) $id);
+    if (!$db->query($sql)) {
+        $error++;
+    }
+    if (!$error) {
+        $db->commit();
+        setEventMessages("Plantilla eliminada", null, 'mesgs');
+        header('Location: ' . $_SERVER['PHP_SELF']);
+        exit;
+    } else {
+        $db->rollback();
+        setEventMessages("Error al eliminar plantilla", null, 'errors');
+    }
+    $action = '';
+}
 
-                setEventMessages("Plantillas eliminadas", null);
+// Update template name (inline edit)
+if ($action == 'update_name' && $user->rights->easyocr->write) {
+    $id = GETPOST('id', 'int');
+    $newName = GETPOST('name', 'alpha');
+    
+    if (!empty($newName)) {
+        // Check duplicate
+        $sql = "SELECT COUNT(*) as num FROM " . MAIN_DB_PREFIX . "easyocr_template WHERE name = '" . $db->escape($newName) . "' AND rowid <> " . ((int) $id);
+        $resql = $db->query($sql);
+        $obj_check = $db->fetch_object($resql);
+        
+        if ($obj_check->num > 0) {
+            setEventMessages("El nombre de plantilla ya existe", null, 'warnings');
+        } else {
+            $sql = "UPDATE " . MAIN_DB_PREFIX . "easyocr_template SET name = '" . $db->escape($newName) . "' WHERE rowid = " . ((int) $id);
+            if ($db->query($sql)) {
+                setEventMessages("Plantilla actualizada", null, 'mesgs');
             } else {
-
-                setEventMessages("Plantilla eliminada", null);
+                setEventMessages("Error al actualizar plantilla", null, 'errors');
             }
         }
     }
-
-    $_POST["page"] = "1";
-
-    $_POST["all_options"] = "";
-
-    $_POST["options"] = "";
-
-    $_POST["confirm_action"] = "";
+    $action = '';
 }
 
+// Build SQL
+$sql = "SELECT t.rowid, t.name, t.fk_soc, t.date_creation, s.nom as supplier_name";
+$sql .= " FROM " . MAIN_DB_PREFIX . "easyocr_template as t";
+$sql .= " LEFT JOIN " . MAIN_DB_PREFIX . "societe as s ON t.fk_soc = s.rowid";
+$sql .= " WHERE 1=1";
 
-$total_facture = $db->query("SELECT count(rowid) as num FROM " . MAIN_DB_PREFIX . "easyocr_template $sql");
-
-$total = $db->fetch_object($total_facture);
-
-if (isset($_POST["limit"]) && $_POST["limit"]) {
-
-    if ($_POST["limit"] != "Todos") {
-
-        $limit = $_POST["limit"];
-    } else {
-
-
-        $limit = $total->num;
-    }
-} else {
-
-    $_POST["limit"] = "10";
-
-    $limit = $_POST["limit"];
+// Filters
+if ($searchName) {
+    $sql .= " AND t.name LIKE '%" . $db->escape($searchName) . "%'";
+}
+if ($searchSupplier > 0) {
+    $sql .= " AND t.fk_soc = " . ((int) $searchSupplier);
 }
 
+// Count
+$sqlcount = preg_replace('/^SELECT[A-Za-z0-9\.,\s\_\*]+FROM/i', 'SELECT COUNT(*) as nb FROM', $sql);
+$resql_count = $db->query($sqlcount);
+$obj_count = $db->fetch_object($resql_count);
+$nbtotalofrecords = $obj_count->nb;
 
-$page = isset($_POST['page']) ? $_POST['page'] : 1;
+// Sorting
+$sql .= " ORDER BY t.rowid DESC";
+$sql .= $db->plimit($limit + 1, $offset);
 
-$offset = ($page - 1) * $limit;
+$resql = $db->query($sql);
+$num = $db->num_rows($resql);
 
+// Page header
+$arrayofjs = array(
+    '/custom/easyocr/js/eo-panel.js'
+);
+$arrayofcss = array(
+    '/custom/easyocr/css/eo-panel.css'
+);
 
+llxHeader('', 'Plantillas - EasyOcr', '', '', 0, 0, $arrayofjs, $arrayofcss);
 
-$list = $db->query("SELECT rowid, name, DATE_FORMAT(date_creation, '%Y-%m-%d') AS formatted_date FROM " . MAIN_DB_PREFIX . "easyocr_template $sql ORDER BY rowid DESC LIMIT $limit OFFSET $offset");
+// Confirm dialog
+if ($action == 'delete') {
+    $formconfirm = $form->formconfirm($_SERVER['PHP_SELF'] . '?id=' . GETPOST('id', 'int'), 'Eliminar Plantilla', '¿Confirmar eliminación de esta plantilla?', 'delete', '', 0, 1);
+    print $formconfirm;
+}
 
-$num = $db->num_rows($list);
+print '<form method="GET" action="' . $_SERVER['PHP_SELF'] . '" name="formfilter" autocomplete="off">';
+print '<input type="hidden" name="token" value="' . newToken() . '">';
 
-
-print '
-
-<div class="titre">
-
-    <div class="header">
-        
-        <img src="' . DOL_URL_ROOT . '/custom/easyocr/img/templates.png" width="40px" height="40px">
-
-        Plantillas  <span class="opacitymedium colorblack paddingleft">(' . $total->num . ')</span>
-            
-    </div>
-
-</div>
-
-
-<div class="container">
-
-    <form id="pagination" class="form-inline" action="' . $action . '" method="POST" style="margin-bottom:20px">
-
-        <input type="hidden" name="token" value="' . newToken() . '">
-
-        <input id="limit" type="hidden" name="limit" value="' . $_POST["limit"] . '">
-
-        <input id="page" type="hidden" name="page" value="">
-
-        <input id="all_options" type="hidden" name="all_options" value="">
-
-        <input id="options" type="hidden" name="options" value="">
-
-        <input id="confirm_action" type="hidden" name="confirm_action" value="">
-
-        <label>Nombre:</label>
-
-        <input id="name" type="text" name="name" value="' . $_POST["name"] . '"/>
-
-        <button type="button" onclick="search()">Buscar</button>
-
-        <button type="button" onclick="clean()">Limpiar</button>
-
-
-    </form>';
-
-
-
-    if ($num > 0) {
-
-        print '
-    
-        <select id="limit-options" class="flat input">
-            <option value="10">10</option>
-            <option value="20">20</option>
-            <option value="50">50</option>
-            <option value="100">100</option>
-            <option value="Todos">Todos</option>
-        </select>
-
-
-
-        <div id="block-actions" class="d-none">
-
-            <select id="actions" class="flat input" name="actions">
-
-                <option value="">-- Seleccione acción --</option>';
-        
-         print '<option value="Eliminar">Eliminar</option>';
-        
-
-        print '</select>
-
-
-            <button id="confirm" class="btn d-none" onclick="confirm_action()">Confirmar</button>
-
-        </div>
-        
-        ';
-
-        print "<table>";
-
-        print "
-            <tr>
-               <th>Nombre</th>
-               <th>Fecha</th>
-               <th><center><input id='all-options' type='checkbox'/></center></th>
-            </tr>
-        ";
-
-
-        for ($i = 0; $i < $num; $i++) {
-
-            $obj = $db->fetch_object($list);
-
-            print "<tr class='records'>";
-            print "  <td onclick='edit(" . $obj->rowid . ")'>" . $obj->name . "</td>";
-            print "  <td onclick='edit(" . $obj->rowid . ")'>" . $obj->formatted_date . "</td>";
-            print "  <td><center><input class='options' type='checkbox' value='" . $obj->rowid . "'/></center></td>";
-            print "</tr>";
-        }
-
-        print "</table>";
-
-        // Generación de enlaces de paginación (mostrando solo algunas páginas)
-        $total_pages = ceil($total->num / $limit);
-        $max_shown_pages = 5; // Máximo número de páginas mostradas
-        $start_page = max(1, $page - floor($max_shown_pages / 2));
-        $end_page = min($total_pages, $start_page + $max_shown_pages - 1);
-
-        if ($start_page > 1) {
-
-            echo "<a onclick='newPage(1)' class='pg " . active(1, $page) . "'>1</a> ... ";
-        }
-        for ($i = $start_page; $i <= $end_page; $i++) {
-            echo "<a onclick='newPage(" . $i . ")' class='pg " . active($i, $page) . "'>$i</a> ";
-        }
-        if ($end_page < $total_pages) {
-            echo "... <a onclick='newPage(" . $total_pages . ")' class='pg " . active($total_pages, $page) . "'>$total_pages</a>";
-        }
-
-    } else {
-
-        print "<center><h2>No se encontraron resultados.</h2></center>";
-    }
-
-
-
+print '<div class="eo-panel-header">';
+print '<div class="eo-panel-title">';
+print '<img src="'.DOL_URL_ROOT.'/custom/easyocr/img/templates.png" class="eo-icon" alt="">';
+print '<h1>Plantillas <span class="opacitymedium">(' . $nbtotalofrecords . ')</span></h1>';
+print '</div>';
 print '</div>';
 
+// Filters
+print '<div class="eo-panel-filters">';
+print '<div class="eo-filter-group">';
+print '<label>Nombre:</label>';
+print '<input type="text" name="search_name" class="flat maxwidth150" value="' . dol_escape_htmltag($searchName) . '" placeholder="Buscar...">';
+print '</div>';
 
-print '<script>';
+print '<div class="eo-filter-group">';
+print '<label>Proveedor:</label>';
+print $form->select_company($searchSupplier, 'search_supplier', 's.fournisseur=1', 'Todos', 0, 0, array(), 0, 'flat maxwidth200');
+print '</div>';
 
-$options = isset($_POST['options']) ? $_POST['options'] : "";
+print '<div class="eo-filter-actions">';
+print '<button type="submit" class="button buttongen" name="button_search"><i class="fa fa-search"></i> Buscar</button>';
+print '<button type="submit" class="button buttongen" name="button_removefilter"><i class="fa fa-remove"></i> Limpiar</button>';
+print '</div>';
+print '</div>';
 
-$all_options = isset($_POST['all_options']) ? $_POST['all_options'] : "no";
+// Mass actions
+if ($massaction == 'preDelete') {
+    print '<div class="eo-mass-confirm">';
+    print '<span><i class="fa fa-warning"></i> ¿Eliminar ' . count($toselect) . ' plantilla(s) seleccionada(s)?</span>';
+    print '<button type="submit" name="massaction" value="delete" class="button butActionDelete">Confirmar</button>';
+    print '<button type="submit" name="cancel" value="1" class="button button-cancel">Cancelar</button>';
+    print '</div>';
+}
 
-print '
+$selectedfields = '';
+$massactionbutton = '';
+if ($user->rights->easyocr->delete) {
+    $massactionbutton = '<button type="submit" class="button butActionDelete" name="massaction" value="preDelete"><i class="fa fa-trash"></i> Eliminar</button>';
+}
 
-    let todosValoresSeleccionados="' . $all_options . '";
+print '<div class="eo-panel-controls">';
+print '<div class="eo-limit-selector">';
+print 'Mostrar: ';
+print '<select name="limit" class="flat" onchange="this.form.submit()">';
+foreach (array(10, 20, 50, 100) as $val) {
+    print '<option value="'.$val.'"'.($limit == $val ? ' selected' : '').'>'.$val.'</option>';
+}
+print '</select>';
+print '</div>';
+print '<div class="eo-mass-actions">';
+print $massactionbutton;
+print '</div>';
+print '</div>';
 
-    let valoresSeleccionadosString = "' . $options . '";
+// Table
+print '<div class="div-table-responsive">';
+print '<table class="tagtable liste listtable">';
+print '<thead>';
+print '<tr class="liste_titre">';
+print '<th class="eo-col-checkbox">';
+$selectAll = '';
+if ($num > 0) {
+    print '<input type="checkbox" id="checkall" class="flat checkforselect">';
+}
+print '</th>';
+print '<th class="liste_titre">Nombre</th>';
+print '<th class="liste_titre">Proveedor</th>';
+print '<th class="liste_titre center">Creación</th>';
+print '<th class="liste_titre center">Acciones</th>';
+print '</tr>';
+print '</thead>';
+print '<tbody>';
 
-    $("#limit-options").val("' . $_POST["limit"] . '");
-
-    function edit(id){
-
-        window.location="'.$page_view.'?mainmenu='.$mainmenu.'&id="+id
+if ($num > 0) {
+    $i = 0;
+    while ($i < min($num, $limit)) {
+        $obj = $db->fetch_object($resql);
+        
+        print '<tr class="oddeven">';
+        
+        // Checkbox
+        print '<td class="eo-col-checkbox">';
+        print '<input type="checkbox" class="flat checkforselect" name="toselect[]" value="' . $obj->rowid . '">';
+        print '</td>';
+        
+        // Name (inline editable)
+        print '<td class="tdoverflowmax200">';
+        print '<span class="eo-editable" data-id="' . $obj->rowid . '" data-field="name">';
+        print dol_escape_htmltag($obj->name);
+        print '</span>';
+        print '</td>';
+        
+        // Supplier
+        print '<td>';
+        if ($obj->fk_soc > 0) {
+            $supplierLink = DOL_URL_ROOT . '/fourn/card.php?socid=' . $obj->fk_soc;
+            print '<a href="' . $supplierLink . '">' . dol_escape_htmltag($obj->supplier_name) . '</a>';
+        } else {
+            print '<span class="opacitymedium">Sin proveedor</span>';
+        }
+        print '</td>';
+        
+        // Date
+        print '<td class="center nowraponall">';
+        print dol_print_date($db->jdate($obj->date_creation), 'day');
+        print '</td>';
+        
+        // Actions
+        print '<td class="center nowraponall">';
+        print '<a href="' . $_SERVER['PHP_SELF'] . '?action=delete&id=' . $obj->rowid . '" class="eo-action-btn" title="Eliminar">';
+        print '<i class="fa fa-trash"></i>';
+        print '</a>';
+        print '</td>';
+        
+        print '</tr>';
+        $i++;
     }
+} else {
+    print '<tr><td colspan="5" class="opacitymedium center">No se encontraron plantillas</td></tr>';
+}
 
-    function clean(){
+print '</tbody>';
+print '</table>';
+print '</div>';
 
-        $("#name").val("");
-        	
-        search();
-    }
-';
+// Pagination
+if ($nbtotalofrecords > $limit) {
+    print '<div class="eo-pagination">';
+    print_fleche_navigation($page, $_SERVER['PHP_SELF'], '&search_name=' . urlencode($searchName) . '&search_supplier=' . $searchSupplier, ($page < ($nbtotalofrecords / $limit)), '');
+    print '</div>';
+}
 
-print '</script>';
+print '</form>';
 
+// Inline edit modal
+print '<div id="eoEditModal" class="eo-modal" style="display:none;">';
+print '<div class="eo-modal-content eo-modal-sm">';
+print '<div class="eo-modal-header">';
+print '<h3>Editar Nombre</h3>';
+print '<span class="eo-modal-close">&times;</span>';
+print '</div>';
+print '<form id="eoEditForm" method="POST" action="' . $_SERVER['PHP_SELF'] . '">';
+print '<input type="hidden" name="token" value="' . newToken() . '">';
+print '<input type="hidden" name="action" value="update_name">';
+print '<input type="hidden" name="id" id="eoEditId" value="">';
+print '<div class="eo-modal-body">';
+print '<label class="fieldrequired">Nombre:</label>';
+print '<input type="text" name="name" id="eoEditName" class="flat minwidth300" required>';
+print '</div>';
+print '<div class="eo-modal-footer">';
+print '<button type="submit" class="button"><i class="fa fa-save"></i> Guardar</button>';
+print '<button type="button" class="button button-cancel eo-modal-close">Cancelar</button>';
+print '</div>';
+print '</form>';
+print '</div>';
+print '</div>';
 
-print '<script src="js/panel.js"></script>';
-
+// JS handled by eo-panel.js
 
 llxFooter();
-
-?>
+$db->close();

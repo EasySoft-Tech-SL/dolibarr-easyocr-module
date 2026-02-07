@@ -1,0 +1,252 @@
+/**
+ * EasyOcr Panel Styles
+ * Estilos mínimos complementarios al tema nativo de Dolibarr.
+ *
+ * @package    EasyOcr
+ * @copyright  2025-2026 EasySoft Tech S.L.
+ * @license    GPL-3.0+
+ */
+
+/* --- Header --- */
+.eo-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #ddd;
+}
+
+.eo-panel-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.eo-panel-title h1 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: #333;
+}
+
+.eo-icon {
+    width: 28px;
+    height: 28px;
+    object-fit: contain;
+}
+
+/* --- Filters --- */
+.eo-panel-filters {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 12px;
+    padding: 10px 0;
+    margin-bottom: 10px;
+}
+
+.eo-filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.eo-filter-group label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #555;
+    margin: 0;
+}
+
+.eo-filter-actions {
+    display: flex;
+    gap: 6px;
+    margin-left: auto;
+    align-items: flex-end;
+}
+
+/* --- Controls --- */
+.eo-panel-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.eo-limit-selector {
+    font-size: 13px;
+    color: #555;
+}
+
+.eo-mass-actions .butActionDelete {
+    background: #bc3030;
+    color: #fff;
+    border: none;
+}
+
+.eo-mass-actions .butActionDelete:hover {
+    background: #a02020;
+}
+
+/* --- Mass confirm bar --- */
+.eo-mass-confirm {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 14px;
+    background: #fff8e1;
+    border: 1px solid #e0c36a;
+    margin-bottom: 10px;
+}
+
+.eo-mass-confirm span {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 600;
+    color: #6d5600;
+    font-size: 13px;
+}
+
+.button-cancel {
+    background: #777 !important;
+    color: #fff !important;
+}
+
+/* --- Table overrides (minimal) --- */
+.eo-col-checkbox {
+    width: 30px;
+    text-align: center;
+}
+
+.eo-editable {
+    cursor: pointer;
+    padding: 2px 4px;
+    display: inline-block;
+}
+
+.eo-editable:hover {
+    text-decoration: underline;
+    color: #0056b3;
+}
+
+.eo-action-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    text-decoration: none;
+    color: #888;
+}
+
+.eo-action-btn:hover {
+    color: #bc3030;
+}
+
+/* --- Pagination wrapper --- */
+.eo-pagination {
+    text-align: center;
+    margin-top: 10px;
+    padding: 8px 0;
+}
+
+/* --- Modal (simple overlay) --- */
+.eo-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.4);
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.eo-modal-content {
+    background: #fff;
+    border: 1px solid #ccc;
+    max-width: 460px;
+    width: 90%;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+}
+
+.eo-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    border-bottom: 1px solid #ddd;
+    background: #f5f5f5;
+}
+
+.eo-modal-header h3 {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 600;
+    color: #333;
+}
+
+.eo-modal-close {
+    font-size: 22px;
+    color: #888;
+    cursor: pointer;
+    line-height: 1;
+}
+
+.eo-modal-close:hover {
+    color: #333;
+}
+
+.eo-modal-body {
+    padding: 16px;
+}
+
+.eo-modal-body label {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 600;
+    font-size: 13px;
+    color: #333;
+}
+
+.eo-modal-body input[type="text"] {
+    width: 100%;
+    padding: 6px 8px;
+    border: 1px solid #bbb;
+    font-size: 13px;
+}
+
+.eo-modal-body input[type="text"]:focus {
+    outline: none;
+    border-color: #666;
+}
+
+.eo-modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    padding: 12px 16px;
+    border-top: 1px solid #ddd;
+    background: #fafafa;
+}
+
+/* --- Responsive --- */
+@media (max-width: 768px) {
+    .eo-panel-filters {
+        flex-direction: column;
+    }
+
+    .eo-filter-actions {
+        margin-left: 0;
+        width: 100%;
+    }
+
+    .eo-panel-controls {
+        flex-direction: column;
+        gap: 8px;
+    }
+}

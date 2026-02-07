@@ -1,162 +1,128 @@
 <?php
-
+/**
+ * EasyOcr - Template Edit Page
+ * 
+ * @package    EasyOcr
+ * @copyright  2025-2026 EasySoft Tech S.L.
+ * @license    GPL-3.0+
+ */
 
 // Load Dolibarr environment
 $res = 0;
-// Try main.inc.php into web root known defined into CONTEXT_DOCUMENT_ROOT (not always defined)
 if (!$res && !empty($_SERVER["CONTEXT_DOCUMENT_ROOT"])) {
-	$res = @include $_SERVER["CONTEXT_DOCUMENT_ROOT"]."/main.inc.php";
+    $res = @include $_SERVER["CONTEXT_DOCUMENT_ROOT"]."/main.inc.php";
 }
-// Try main.inc.php into web root detected using web root calculated from SCRIPT_FILENAME
-$tmp = empty($_SERVER['SCRIPT_FILENAME']) ? '' : $_SERVER['SCRIPT_FILENAME']; $tmp2 = realpath(__FILE__); $i = strlen($tmp) - 1; $j = strlen($tmp2) - 1;
+$tmp = empty($_SERVER['SCRIPT_FILENAME']) ? '' : $_SERVER['SCRIPT_FILENAME']; 
+$tmp2 = realpath(__FILE__); 
+$i = strlen($tmp) - 1; 
+$j = strlen($tmp2) - 1;
 while ($i > 0 && $j > 0 && isset($tmp[$i]) && isset($tmp2[$j]) && $tmp[$i] == $tmp2[$j]) {
-	$i--; $j--;
+    $i--; $j--;
 }
 if (!$res && $i > 0 && file_exists(substr($tmp, 0, ($i + 1))."/main.inc.php")) {
-	$res = @include substr($tmp, 0, ($i + 1))."/main.inc.php";
+    $res = @include substr($tmp, 0, ($i + 1))."/main.inc.php";
 }
 if (!$res && $i > 0 && file_exists(dirname(substr($tmp, 0, ($i + 1)))."/main.inc.php")) {
-	$res = @include dirname(substr($tmp, 0, ($i + 1)))."/main.inc.php";
+    $res = @include dirname(substr($tmp, 0, ($i + 1)))."/main.inc.php";
 }
-// Try main.inc.php using relative path
 if (!$res && file_exists("../main.inc.php")) {
-	$res = @include "../main.inc.php";
+    $res = @include "../main.inc.php";
 }
 if (!$res && file_exists("../../main.inc.php")) {
-	$res = @include "../../main.inc.php";
+    $res = @include "../../main.inc.php";
 }
 if (!$res && file_exists("../../../main.inc.php")) {
-	$res = @include "../../../main.inc.php";
+    $res = @include "../../../main.inc.php";
 }
 if (!$res) {
-	die("Include of main fails");
+    die("Include of main fails");
 }
 
+require_once DOL_DOCUMENT_ROOT . '/core/class/html.form.class.php';
 
-require_once DOL_DOCUMENT_ROOT . '/core/class/html.formother.class.php';
-
-llxHeader("", "EasyOcr");
-
-print '<link rel="stylesheet" type="text/css" href="css/styles.css" />';
-print '<link rel="stylesheet" type="text/css" href="css/panel.css" />';
-
-
-$mainmenu = "easyocr";
-
-$go_back = 'templates.php?mainmenu=' . $mainmenu;
-
-
-if (!isset($_GET["id"])) {
-
-    print '<script>window.location="' . $go_back . '"</script>';
+// Security check
+if (!$user->rights->easyocr->write) {
+    accessforbidden();
 }
 
+$id = GETPOST('id', 'int');
+$action = GETPOST('action', 'alpha');
 
-$action = $_SERVER['PHP_SELF'] . '?mainmenu=' . $mainmenu . '&id=' . $_GET["id"];
+if (!$id) {
+    header('Location: templates.php');
+    exit;
+}
 
+$form = new Form($db);
 
-$submit = "Editar";
-
-
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-
-
-    if (!$_POST['name']) {
-
-        $message = "<p> El campo <b>plantilla</b> es requerido</p>";
-
-        setEventMessages($message, null, "errors");
-
+// Process form
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && GETPOST('save', 'alpha')) {
+    $name = GETPOST('name', 'alpha');
+    
+    if (empty($name)) {
+        setEventMessages("El campo <b>Nombre</b> es requerido", null, "errors");
     } else {
-
-        $donants = $db->query("SELECT * FROM " . MAIN_DB_PREFIX . "easyocr_template WHERE rowid<>" . $_GET["id"] . " AND name='" . $_POST['name'] . "'");
-
-        if ($db->num_rows($donants) > 0) {
-
+        // Check duplicate
+        $sql = "SELECT COUNT(*) as num FROM " . MAIN_DB_PREFIX . "easyocr_template WHERE rowid <> " . ((int) $id) . " AND name = '" . $db->escape($name) . "'";
+        $resql = $db->query($sql);
+        $obj_check = $db->fetch_object($resql);
+        
+        if ($obj_check->num > 0) {
             setEventMessages("La plantilla ya existe", null, "warnings");
         } else {
-
-
-            $db->query("UPDATE " . MAIN_DB_PREFIX . "easyocr_template SET name='" . $_POST['name'] . "' WHERE rowid=" . $_GET["id"]);
-
-            setEventMessages("Plantilla editada", null);
+            $sql = "UPDATE " . MAIN_DB_PREFIX . "easyocr_template SET name = '" . $db->escape($name) . "' WHERE rowid = " . ((int) $id);
+            if ($db->query($sql)) {
+                setEventMessages("Plantilla actualizada correctamente", null, "mesgs");
+                header('Location: templates.php');
+                exit;
+            } else {
+                setEventMessages("Error al actualizar plantilla", null, "errors");
+            }
         }
-    }
-} else {
-
-    $donant = $db->query("SELECT * FROM " . MAIN_DB_PREFIX . "easyocr_template WHERE rowid=" . $_GET["id"]);
-
-    if ($db->num_rows($donant) > 0) {
-
-        $obj = $db->fetch_object($donant);
-
-        $_POST['name'] = $obj->name;
-    } else {
-
-        print '<script>window.location="' . $go_back . '"</script>';
     }
 }
 
+// Load template data
+$sql = "SELECT * FROM " . MAIN_DB_PREFIX . "easyocr_template WHERE rowid = " . ((int) $id);
+$resql = $db->query($sql);
 
+if ($db->num_rows($resql) === 0) {
+    header('Location: templates.php');
+    exit;
+}
 
-print '
+$obj = $db->fetch_object($resql);
+$templateName = $obj->name;
 
-<div class="titre">
+// Page header
+$arrayofcss = array('/custom/easyocr/css/eo-panel.css');
+llxHeader('', 'Editar Plantilla - EasyOcr', '', '', 0, 0, array(), $arrayofcss);
 
-    <div class="header">
-        
-        <img src="' . DOL_URL_ROOT . '/custom/easyocr/img/templates.png" width="40px" height="40px">';
+print '<div class="eo-panel-header">';
+print '<div class="eo-panel-title">';
+print '<img src="'.DOL_URL_ROOT.'/custom/easyocr/img/templates.png" class="eo-icon" alt="">';
+print '<h1>Editar Plantilla</h1>';
+print '</div>';
+print '</div>';
 
+print '<form method="POST" action="' . $_SERVER['PHP_SELF'] . '?id=' . $id . '">';
+print '<input type="hidden" name="token" value="' . newToken() . '">';
+print '<input type="hidden" name="save" value="1">';
 
-print   'Editar Plantilla';
+print '<div style="background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); max-width: 600px; margin: 0 auto;">';
 
+print '<div style="margin-bottom: 25px;">';
+print '<label class="fieldrequired" style="display: block; margin-bottom: 8px; font-weight: 600; color: #333;">Nombre de la Plantilla</label>';
+print '<input type="text" name="name" value="' . dol_escape_htmltag($templateName) . '" class="flat minwidth400" required style="padding: 10px 12px; border: 1px solid #cbd5e0; border-radius: 4px; font-size: 14px; width: 100%;">';
+print '</div>';
 
-print ' </div>
+print '<div style="display: flex; justify-content: flex-end; gap: 10px; padding-top: 20px; border-top: 1px solid #e9ecef;">';
+print '<a href="templates.php" class="button button-cancel" style="padding: 10px 20px; background: #6c757d; color: white; border-radius: 4px; text-decoration: none; font-weight: 600;">Cancelar</a>';
+print '<button type="submit" class="button" style="padding: 10px 20px; background: #966ea2; color: white; border: none; border-radius: 4px; font-weight: 600; cursor: pointer;"><i class="fa fa-save"></i> Guardar</button>';
+print '</div>';
 
-
-</div>
-
-<hr>';
-
-
-print '<div class="container">
-
-
-    <form action="' . $action . '" method="POST">
-
-        <input type="hidden" name="token" value="' . newToken() . '">
-
-        <table width="100%" class="nobordernopadding">
-            <tr>
-                <td class="nowrap">
-                    <label class="titlefieldcreate fieldrequired">Nombre</label>
-                </td>
-                <td class="nowrap">
-                    <input type="text" name="name" value="' . $_POST['name'] . '">
-                </td>
-            </tr>
-        </table>
-
-        <hr>
-
-        <div class="center">';
-
-
-
-print      '<button type="submit" class="button btn">' . $submit . '</button>';
-
-print      '<a href="' . $go_back . '"><button type="button" class="button btn">Anular</button></a>
-
-        </div>
-        
-    
-    </form>
-
-</div>
-
-';
+print '</div>';
+print '</form>';
 
 llxFooter();
-
-?>
+$db->close();
