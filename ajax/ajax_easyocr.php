@@ -64,13 +64,14 @@ require_once DOL_DOCUMENT_ROOT . '/fourn/class/fournisseur.facture.class.php';
 require_once DOL_DOCUMENT_ROOT . '/fourn/class/paiementfourn.class.php';
 require_once DOL_DOCUMENT_ROOT . '/ecm/class/ecmfiles.class.php';
 require_once DOL_DOCUMENT_ROOT . '/core/lib/date.lib.php';
+require_once __DIR__ . '/../lib/easyocr.lib.php';
 
 top_httphead('application/json');
 
 $langs->load('easyocr@easyocr');
 
 // Security
-if (!$user->rights->easyocr->read) {
+if (!easyocrCheckRight($user, 'easyocr', 'read')) {
 	print json_encode(["status" => "error", "message" => $langs->trans('EasyOcrAccessDenied')]);
 	exit;
 }
@@ -147,7 +148,7 @@ $action = isset($_POST["action"]) ? $_POST["action"] : '';
 // ============================================================
 if ($action == "newInvoice") {
 
-	if (!$user->rights->easyocr->write) {
+	if (!easyocrCheckRight($user, 'easyocr', 'write')) {
 		print json_encode(["status" => "error", "message" => "Sin permiso de escritura"]);
 		exit;
 	}
@@ -412,7 +413,7 @@ if ($action == "newInvoice") {
 // ============================================================
 } else if ($action == "addTemplate") {
 
-	if (!$user->rights->easyocr->write) {
+	if (!easyocrCheckRight($user, 'easyocr', 'write')) {
 		print json_encode(["status" => "error", "message" => "Sin permiso de escritura"]);
 		exit;
 	}
@@ -461,7 +462,7 @@ if ($action == "newInvoice") {
 // ============================================================
 } else if ($action == "editTemplate") {
 
-	if (!$user->rights->easyocr->write) {
+	if (!easyocrCheckRight($user, 'easyocr', 'write')) {
 		print json_encode(["status" => "error", "message" => "Sin permiso de escritura"]);
 		exit;
 	}

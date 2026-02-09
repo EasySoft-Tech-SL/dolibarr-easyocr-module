@@ -908,7 +908,8 @@ const EasyOcr = (function () {
                 state.templatesData.forEach(t => {
                     const selected = state.templateId && t.rowid === state.templateId ? ' selected' : '';
                     const suffix = t.supplier_name ? ` (${t.supplier_name})` : '';
-                    tplSelect.innerHTML += `<option value="${t.rowid}"${selected} data-fk-soc="${t.fk_soc || ''}">${t.name}${suffix}</option>`;
+                    const displayName = t.name && t.name.trim() ? t.name : 'ID: ' + t.rowid;
+                    tplSelect.innerHTML += `<option value="${t.rowid}"${selected} data-fk-soc="${t.fk_soc || ''}">${displayName}${suffix}</option>`;
                 });
 
                 // Poblar selector de cuentas bancarias
@@ -954,7 +955,8 @@ const EasyOcr = (function () {
         const match = state.templatesData.find(t => t.fk_soc && String(t.fk_soc) === String(supplierId));
         if (match && state.pages.length > 0) {
             $('#eo-template-select').val(match.rowid).trigger('change');
-            toast((L.templateDetected || 'Template detected: %s').replace('%s', match.name), 'success');
+            const templateName = match.name && match.name.trim() ? match.name : 'ID: ' + match.rowid;
+            toast((L.templateDetected || 'Template detected: %s').replace('%s', templateName), 'success');
             loadTemplate();
         }
         updateReadiness();

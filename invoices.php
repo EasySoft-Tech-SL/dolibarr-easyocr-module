@@ -41,9 +41,10 @@ if (!$res) {
 
 require_once DOL_DOCUMENT_ROOT . '/core/lib/functions.lib.php';
 require_once DOL_DOCUMENT_ROOT . '/core/class/html.form.class.php';
+require_once __DIR__ . '/lib/easyocr.lib.php';
 
 // Security check
-if (!$user->rights->easyocr->read) {
+if (!easyocrCheckRight($user, 'easyocr', 'read')) {
     accessforbidden();
 }
 
@@ -79,7 +80,7 @@ if (GETPOST('cancel', 'alpha')) {
 }
 
 // Mass delete (quitar marca easyocr)
-if ($massaction == 'delete' && $user->rights->easyocr->delete) {
+if ($massaction == 'delete' && easyocrCheckRight($user, 'easyocr', 'delete')) {
     if (!empty($toselect)) {
         $db->begin();
         $error = 0;
@@ -102,7 +103,7 @@ if ($massaction == 'delete' && $user->rights->easyocr->delete) {
 }
 
 // Delete single record (quitar marca easyocr)
-if ($action == 'delete' && $confirm == 'yes' && $user->rights->easyocr->delete) {
+if ($action == 'delete' && $confirm == 'yes' && easyocrCheckRight($user, 'easyocr', 'delete')) {
     $id = GETPOST('id', 'int');
     $sql = "UPDATE " . MAIN_DB_PREFIX . "facture_fourn SET import_key = NULL WHERE rowid = " . ((int) $id) . " AND import_key = 'easyocr'";
     if ($db->query($sql)) {
@@ -204,7 +205,7 @@ if ($massaction == 'preDelete') {
 }
 
 $massactionbutton = '';
-if ($user->rights->easyocr->delete) {
+if (easyocrCheckRight($user, 'easyocr', 'delete')) {
     $massactionbutton = '<button type="submit" class="button butActionDelete" name="massaction" value="preDelete"><i class="fa fa-trash"></i> '.$langs->trans('EasyOcrDelete').'</button>';
 }
 

@@ -22,10 +22,11 @@ if (!$res) { die("Include of main fails"); }
 
 require_once DOL_DOCUMENT_ROOT . '/core/class/html.formother.class.php';
 require_once DOL_DOCUMENT_ROOT . '/core/class/html.form.class.php';
+require_once __DIR__ . '/lib/easyocr.lib.php';
 
 // Security check - require write permission to process invoices
-if (!$user->rights->easyocr->write) {
-    accessforbidden();
+if (!easyocrCheckRight($user, 'easyocr', 'write')) {
+	accessforbidden();
 }
 
 $form = new Form($db);

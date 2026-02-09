@@ -39,9 +39,10 @@ if (!$res) {
 }
 
 require_once DOL_DOCUMENT_ROOT . '/core/class/html.form.class.php';
+require_once __DIR__ . '/lib/easyocr.lib.php';
 
 // Security check
-if (!$user->rights->easyocr->write) {
+if (!easyocrCheckRight($user, 'easyocr', 'write')) {
     accessforbidden();
 }
 

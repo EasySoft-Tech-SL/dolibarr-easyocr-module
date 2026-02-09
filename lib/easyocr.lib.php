@@ -23,6 +23,24 @@
  */
 
 /**
+ * Check user permission, compatible with Dolibarr v14 through v23+.
+ * Uses $user->hasRight() when available (v16+), falls back to
+ * $user->rights->module->perm for older versions.
+ *
+ * @param  User   $user    User object
+ * @param  string $module  Module name (e.g. 'easyocr')
+ * @param  string $perm    Permission name (e.g. 'read', 'write', 'delete')
+ * @return bool             True if user has the permission
+ */
+function easyocrCheckRight($user, $module, $perm)
+{
+	if (method_exists($user, 'hasRight')) {
+		return $user->hasRight($module, $perm);
+	}
+	return !empty($user->rights->{$module}->{$perm});
+}
+
+/**
  * Prepare admin pages header
  *
  * @return array Array of tabs
