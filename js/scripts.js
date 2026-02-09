@@ -1433,7 +1433,10 @@ const EasyOcr = (function () {
         updateTemplateButtons();
         initSelect2();
         updateReadiness();
-        checkAIConfig();
+
+        // AI enabled state from PHP data attribute
+        var aiSection = document.getElementById('eo-ai-section');
+        state.aiEnabled = aiSection && aiSection.getAttribute('data-ai-enabled') === '1';
     }
 
     // ---- Select2 ----
@@ -1590,32 +1593,6 @@ const EasyOcr = (function () {
     }
 
     // ---- AI OCR ----
-    function checkAIConfig() {
-        $.ajax({
-            url: "ajax/ajax_easyocr.php",
-            type: 'POST',
-            dataType: 'json',
-            data: { action: "getAIConfig" },
-            success: function (data) {
-                state.aiEnabled = data.enabled;
-                var section = document.getElementById('eo-ai-section');
-                var active = document.getElementById('eo-ai-active');
-                var disabled = document.getElementById('eo-ai-disabled');
-                if (section) {
-                    if (data.enabled) {
-                        section.classList.remove('eo-ai-disabled');
-                        if (active) active.style.display = '';
-                        if (disabled) disabled.style.display = 'none';
-                    } else {
-                        section.classList.add('eo-ai-disabled');
-                        if (active) active.style.display = 'none';
-                        if (disabled) disabled.style.display = '';
-                    }
-                }
-            }
-        });
-    }
-
     function runAIOcr() {
         if (!state.pdfArrayBuffer) {
             toast(L.importPdfFirst || 'Import a PDF first', 'warn');

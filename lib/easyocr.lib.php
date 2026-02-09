@@ -60,15 +60,27 @@ function easyocr_admin_prepare_head()
 	$head[$h][2] = 'settings';
 	$h++;
 
+	// License agreement tab
+	$head[$h][0] = dol_buildpath('/easyocr/admin/copying.php', 1);
+	$head[$h][1] = '<span class="fas fa-file-contract" style="color: #34495e;"></span> ' . $langs->trans('EasyOcrCopying');
+	$head[$h][2] = 'copying';
+	$h++;
+
+	// Telemetry & Data Protection tab
+	$head[$h][0] = dol_buildpath('/easyocr/admin/telemetry.php', 1);
+	$head[$h][1] = '<span class="fas fa-shield-alt" style="color: #3498db;"></span> ' . $langs->trans('EasyOcrTelemetry');
+	$head[$h][2] = 'telemetry';
+	$h++;
+
 	// About tab
 	$head[$h][0] = dol_buildpath('/easyocr/admin/about.php', 1);
-	$head[$h][1] = $langs->trans('EasyOcrAbout');
+	$head[$h][1] = '<span class="fas fa-info-circle" style="color: #3498db;"></span> ' . $langs->trans('EasyOcrAbout');
 	$head[$h][2] = 'about';
 	$h++;
 
 	// ChangeLog tab
 	$head[$h][0] = dol_buildpath('/easyocr/admin/changelog.php', 1);
-	$head[$h][1] = $langs->trans('EasyOcrChangeLog');
+	$head[$h][1] = '<span class="fas fa-list-ul" style="color: #52c41a;"></span> ' . $langs->trans('EasyOcrChangeLog');
 	$head[$h][2] = 'changelog';
 	$h++;
 

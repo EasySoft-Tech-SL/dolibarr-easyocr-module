@@ -1,4 +1,4 @@
-﻿# EasyOcr - Italiano (Italia)
+# EasyOcr - Italiano (Italia)
 # Copyright (C) 2025-2026 EasySoft Tech S.L.
 
 Module402020Name = EasyOcr
@@ -268,3 +268,68 @@ EasyOcrAIMissingTotals = Gli importi totali sono obbligatori
 EasyOcrAISupplierNotFound = Fornitore non trovato. Selezionarne uno manualmente.
 EasyOcrAISupplierRequired = Selezionare un fornitore o inserire un codice fiscale
 EasyOcrAISupplierCreated = Fornitore creato:
+EasyOcrAIOff = INATTIVO
+EasyOcrAIDisabledHint = Estrai fornitore, P.IVA, date, importi e righe fattura con l'IA
+EasyOcrAIConfigure = Attivare IA OCR
+EasyOcrAIFeat1 = Estrae fornitore, P.IVA, date e importi
+EasyOcrAIFeat2 = Rileva tutte le righe della fattura
+EasyOcrAIFeat3 = Crea fatture e fornitori automaticamente
+EasyOcrAICtaHeadline = Potenzia la tua estrazione dati
+EasyOcrAIActivateHint = Attivalo da Configurazione > EasyOCR
+
+// Copying (License Agreement)
+EasyOcrCopying = Accordo di licenza
+EasyOcrCopyingLicense = Licenza
+EasyOcrCopyingAuthor = Autore
+EasyOcrCopyingContact = Contatto
+EasyOcrCopyingWeb = Sito web
+EasyOcrCopyingGPLTitle = Licenza GNU GPL v3
+EasyOcrCopyingGPLDesc = Questo modulo è software libero: puoi redistribuirlo e/o modificarlo secondo i termini della Licenza Pubblica Generale GNU versione 3. Questo ti permette di usare, studiare, modificare e distribuire il software liberamente, purché mantenga la stessa licenza.
+EasyOcrCopyingAITitle = Avviso sui servizi di IA
+EasyOcrCopyingAIDesc = La funzionalità easyOCR AI utilizza servizi di intelligenza artificiale di terze parti per l'elaborazione e l'estrazione di dati da documenti PDF. Attivando e utilizzando la funzione IA, accetti che il contenuto dei documenti elaborati venga inviato a questi servizi esterni. EasySoft Tech S.L. non memorizza né conserva i dati elaborati da questi servizi di terze parti. L'utente è responsabile di assicurarsi che i documenti elaborati non contengano informazioni che non dovrebbero essere condivise con servizi esterni.
+EasyOcrCopyingFullText = Testo completo della licenza
+EasyOcrCopyingFileNotFound = File di licenza non trovato (COPYING o LICENSE).
+
+// Telemetry & Data Protection
+EasyOcrTelemetry = Telemetria e protezione dei dati
+EasyOcrTelemetryModule = Modulo
+EasyOcrTelemetryPurpose = Finalità
+EasyOcrTelemetryPurposeDesc = Trasparenza sui dati trasmessi quando si utilizza la funzionalità IA OCR per l'estrazione di dati dalle fatture.
+EasyOcrTelemetryContact = Contatto
+EasyOcrTelemetryAITitle = Servizi IA di terze parti
+EasyOcrTelemetryAIWhat = Cosa fa l'IA?
+EasyOcrTelemetryAIWhatDesc = Quando attivi easyOCR AI, i documenti PDF vengono elaborati da un servizio di intelligenza artificiale che estrae automaticamente fornitore, P.IVA, date, importi e righe della fattura.
+EasyOcrTelemetryAISent = Quali dati vengono inviati?
+EasyOcrTelemetryAISentDesc = Solo il contenuto del documento PDF che elabori volontariamente. L'invio avviene solo quando fai clic sul pulsante di estrazione IA.
+EasyOcrTelemetryAINever = Cosa NON viene inviato?
+EasyOcrTelemetryAINeverDesc = Mai vengono inviati dati del tuo ERP (clienti, fornitori, fatture esistenti, dati bancari, password). Solo il contenuto del PDF che decidi di elaborare.
+EasyOcrTelemetryAIProvider = Fornitore del servizio
+EasyOcrTelemetryAIProviderDesc = Il servizio IA è fornito da un microservizio configurabile. L'URL e la chiave API sono configurati nella scheda Configurazione. EasySoft Tech S.L. può offrire un servizio gestito o puoi connettere il tuo servizio.
+EasyOcrTelemetryDataSent = Dati trasmessi al servizio IA
+EasyOcrTelemetryDataPDF = Contenuto del documento PDF elaborato (testo e immagini del PDF selezionato)
+EasyOcrTelemetryDataLang = Lingua del sistema (per ottimizzare l'estrazione)
+EasyOcrTelemetryDataDomain = Dominio di installazione (per controllo accesso API)
+EasyOcrTelemetryDataNever = Dati che non vengono MAI trasmessi
+EasyOcrTelemetryNeverClients = Dati di clienti o fornitori del tuo ERP
+EasyOcrTelemetryNeverInvoices = Fatture esistenti, importi o descrizioni del tuo sistema
+EasyOcrTelemetryNeverBank = Informazioni bancarie o dati di pagamento
+EasyOcrTelemetryNeverPasswords = Password, credenziali o token di accesso
+EasyOcrTelemetryNeverPersonal = Dati personali degli utenti dell'ERP
+EasyOcrTelemetrySecurity = Sicurezza e privacy
+EasyOcrTelemetrySecHTTPS = Tutte le comunicazioni sono cifrate tramite HTTPS/TLS
+EasyOcrTelemetrySecEU = I dati sono elaborati su server ubicati nell'Unione Europea
+EasyOcrTelemetrySecAccess = Accesso limitato: solo personale autorizzato di EasySoft
+EasyOcrTelemetrySecGDPR = Conformità GDPR: trattamento conforme alla normativa europea sulla protezione dei dati
+EasyOcrTelemetrySecNoSale = I dati elaborati NON sono venduti, commercializzati né utilizzati per addestrare modelli IA
+EasyOcrTelemetryLegal = Base giuridica del trattamento
+EasyOcrTelemetryLegalContract = Esecuzione di contratto
+EasyOcrTelemetryLegalContractDesc = L'elaborazione dei documenti è un servizio richiesto attivamente dall'utente facendo clic sul pulsante di estrazione IA.
+EasyOcrTelemetryLegalLegitimate = Interesse legittimo
+EasyOcrTelemetryLegalLegitimateDesc = Fornire un servizio di estrazione dati preciso e sicuro, proteggendo l'integrità del sistema.
+EasyOcrTelemetryLegalGDPR = Diritti GDPR
+EasyOcrTelemetryLegalGDPRDesc = L'utente mantiene tutti i suoi diritti di accesso, rettifica, cancellazione e portabilità conformi al GDPR.
+EasyOcrTelemetryRightsTitle = I tuoi diritti
+EasyOcrTelemetryRightsDesc = Hai il diritto di: accedere ai dati che elaboriamo, richiederne la rettifica o cancellazione, opporti al trattamento, e richiedere la portabilità dei tuoi dati. L'uso dell'IA è completamente volontario: se non attivi la funzione o non fai clic sul pulsante di estrazione, nessun dato verrà trasmesso.
+
+# ---- Messaggio GDPR all'attivazione del modulo ----
+EasyOcrGDPRInformation = Attivando easyOCR, accetti: (1) La Licenza Pubblica Generale GNU GPL v3 sotto cui è distribuito questo software. (2) Che la funzionalità easyOCR AI, se attivata, utilizzerà servizi di intelligenza artificiale di terze parti per l'estrazione dati, trasmettendo il contenuto dei documenti PDF che elabori volontariamente. (3) Che EasySoft Tech S.L. non memorizza i dati elaborati dai servizi IA di terze parti. Consulta le schede 'Accordo di licenza' e 'Telemetria e protezione dei dati' nella configurazione del modulo per ulteriori informazioni.

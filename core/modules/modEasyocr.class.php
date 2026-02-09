@@ -53,6 +53,7 @@ class modEasyocr extends DolibarrModules
 	public function __construct($db)
 	{
 		global $langs, $conf;
+		$langs->load("easyocr@easyocr");
 
 		$this->db = $db;
 
@@ -83,7 +84,7 @@ class modEasyocr extends DolibarrModules
 		$this->editor_url = 'https://easysoft.es';
 
 		// Possible values for version are: 'development', 'experimental', 'dolibarr' or version
-		$this->version = '1.0.0';
+		$this->version = '2.1.0';
 		$this->url_last_version = 'https://sdl.easysoft.es/getLastModuleVersion?module=easyocr&for_url_last_version=1&version=' . $this->version;
 
 
@@ -134,7 +135,9 @@ class modEasyocr extends DolibarrModules
 		$this->need_dolibarr_version = array(14, 0, 0);
 
 		// Messages at activation
-		$this->warnings_activation = array();
+		$this->warnings_activation = array(
+			'always' => 'EasyOcrGDPRInformation'
+		);
 		$this->warnings_activation_ext = array();
 
 		// Constants

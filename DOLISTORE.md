@@ -4,7 +4,7 @@
 
 | Campo | Valor |
 |-------|-------|
-| **Versión del módulo** | 2.0.0 |
+| **Versión del módulo** | 2.1.0 |
 | **Compatibilidad Min** | V16 |
 | **Compatibilidad Max** | V23 |
 | **PHP Min** | 7.4 |
@@ -64,6 +64,8 @@ Herramienta para extracción de datos de facturas PDF y generación automática 
     <li>✅ <strong>Historial completo</strong>: Visualiza todas las facturas procesadas y su historial.</li>
     <li>✅ <strong>Multi-proveedor</strong>: Maneja plantillas diferentes para cada proveedor.</li>
     <li>✅ <strong>Soporte multi-idioma</strong>: 8 idiomas (ES, EN, FR, DE, IT, PT, CA, GL).</li>
+    <li>✅ <strong>Cumplimiento GDPR</strong>: Transparencia total sobre procesamiento de datos y consentimiento informado.</li>
+    <li>✅ <strong>Privacidad y Seguridad</strong>: Comunicación cifrada, servidores EU, sin almacenamiento externo de documentos.</li>
     <li>✅ <strong>Libre y de código abierto</strong> bajo licencia GPL v3.</li>
 </ul>
 
@@ -83,6 +85,9 @@ Herramienta para extracción de datos de facturas PDF y generación automática 
     <li>🧩 Módulo <strong>EasyOcr para Dolibarr.</strong></li>
     <li>📘 Documentación completa en la pestaña "Acerca de".</li>
     <li>🎨 Interfaz visual intuitiva con visor PDF a dos paneles.</li>
+    <li>🔐 Pestaña de Telemetría y Protección de Datos con transparencia total.</li>
+    <li>📜 Pestaña de Acuerdo de Licencia con información legal completa.</li>
+    <li>🌍 Traducciones completas en 8 idiomas incluyendo contenido legal.</li>
     <li>💾 Gestión de plantillas persistentes por proveedor.</li>
     <li>⚡ Motor AJAX rápido para operaciones sin recarga.</li>
 </ul>
@@ -156,6 +161,8 @@ Tool for extracting data from PDF invoices and automatically generating supplier
     <li>✅ <strong>Reusable templates</strong>: Save selection patterns per supplier for quick processing.</li>
     <li>✅ <strong>Automatic invoice generation</strong>: Create supplier invoices directly from extracted data.</li>
     <li>✅ <strong>No external dependencies</strong>: Uses PDF.js - no external OCR services or third-party APIs required.</li>
+    <li>✅ <strong>GDPR Compliance</strong>: Full transparency on data processing and informed consent.</li>
+    <li>✅ <strong>Privacy & Security</strong>: Encrypted communication, EU servers, no external document storage.</li>
     <li>✅ <strong>Complete history</strong>: View all processed invoices and their history.</li>
     <li>✅ <strong>Multi-supplier</strong>: Handle different templates for each supplier.</li>
     <li>✅ <strong>Multi-language support</strong>: 8 languages (ES, EN, FR, DE, IT, PT, CA, GL).</li>
@@ -178,6 +185,9 @@ Tool for extracting data from PDF invoices and automatically generating supplier
     <li>🧩 <strong>EasyOcr module for Dolibarr.</strong></li>
     <li>📘 Complete documentation in the "About" tab.</li>
     <li>🎨 Intuitive visual interface with dual-panel PDF viewer.</li>
+    <li>🔐 Telemetry & Data Protection tab with full transparency.</li>
+    <li>📜 License Agreement tab with complete legal information.</li>
+    <li>🌍 Complete translations in 8 languages including legal content.</li>
     <li>💾 Persistent template management per supplier.</li>
     <li>⚡ Fast AJAX engine for operations without page reload.</li>
 </ul>
@@ -249,6 +259,8 @@ Outil d'extraction de données de factures PDF et de génération automatique de
     <li>✅ <strong>Visionneuse PDF native</strong> : Visualisez le document tout en extrayant les données - restez dans l'application.</li>
     <li>✅ <strong>Extraction intelligente</strong> : Sélectionnez les données visuellement avec des rectangles - simple et intuitif.</li>
     <li>✅ <strong>Modèles réutilisables</strong> : Enregistrez les modèles de sélection par fournisseur pour un traitement rapide.</li>
+    <li>✅ <strong>Conformité RGPD</strong> : Transparence totale sur le traitement des données et consentement éclairé.</li>
+    <li>✅ <strong>Confidentialité & Sécurité</strong> : Communication chiffrée, serveurs UE, aucun stockage externe de documents.</li>
     <li>✅ <strong>Génération automatique de factures</strong> : Créez des factures fournisseur directement à partir des données extraites.</li>
     <li>✅ <strong>Pas de dépendances externes</strong> : Utilise PDF.js - aucun service OCR externe ou API tiers requis.</li>
     <li>✅ <strong>Historique complet</strong> : Visualisez toutes les factures traitées et leur historique.</li>
@@ -270,6 +282,9 @@ Outil d'extraction de données de factures PDF et de génération automatique de
 <h3>Contenu</h3>
 
 <ul>
+    <li>🔐 Onglet Télémétrie & Protection des Données avec transparence totale.</li>
+    <li>📜 Onglet Accord de Licence avec informations légales complètes.</li>
+    <li>🌍 Traductions complètes en 8 langues incluant contenu légal.</li>
     <li>🧩 Module <strong>EasyOcr pour Dolibarr.</strong></li>
     <li>📘 Documentation complète dans l'onglet "À propos".</li>
     <li>🎨 Interface visuelle intuitive avec visionneuse PDF à deux panneaux.</li>
@@ -341,6 +356,8 @@ Tool zur Extraktion von Rechnungsdaten aus PDFs und automatischen Generierung vo
 
 <ul>
     <li>✅ <strong>Automatisierung der Dateneingabe</strong>: Reduziert die manuelle Eingabe von Lieferantenrechnungsdaten.</li>
+    <li>✅ <strong>DSGVO-Konformitaet</strong>: Vollstaendige Transparenz bei der Datenverarbeitung und informierte Einwilligung.</li>
+    <li>✅ <strong>Datenschutz & Sicherheit</strong>: Verschluesselte Kommunikation, EU-Server, keine externe Dokumentenspeicherung.</li>
     <li>✅ <strong>Nativer PDF-Viewer</strong>: Zeigen Sie das Dokument an, waehrend Sie Daten extrahieren - bleiben Sie innerhalb der Anwendung.</li>
     <li>✅ <strong>Intelligente Extraktion</strong>: Waehlen Sie Daten visuell mit Rechtecken - einfach und intuitiv.</li>
     <li>✅ <strong>Wiederverwendbare Vorlagen</strong>: Speichern Sie Auswahlmuster pro Lieferant fuer schnelle Verarbeitung.</li>
@@ -363,6 +380,9 @@ Tool zur Extraktion von Rechnungsdaten aus PDFs und automatischen Generierung vo
 </ul>
 
 <h3>Inhalt</h3>
+    <li>🔐 Telemetrie & Datenschutz-Reiter mit vollstaendiger Transparenz.</li>
+    <li>📜 Lizenzvereinbarung-Reiter mit vollstaendigen rechtlichen Informationen.</li>
+    <li>🌍 Vollstaendige Uebersetzungen in 8 Sprachen einschliesslich rechtlicher Inhalte.</li>
 
 <ul>
     <li>🧩 <strong>EasyOcr-Modul fuer Dolibarr.</strong></li>
@@ -434,7 +454,9 @@ Tool per l'estrazione di dati da fatture PDF e la generazione automatica di fatt
 
 <h3>Vantaggi</h3>
 
-<ul>
+<ul>Conformita GDPR</strong>: Trasparenza totale sull'elaborazione dei dati e consenso informato.</li>
+    <li>✅ <strong>Privacy & Sicurezza</strong>: Comunicazione crittografata, server EU, nessuna archiviazione esterna di documenti.</li>
+    <li>✅ <strong>
     <li>✅ <strong>Automazione della immissione dati</strong>: Riduce l'immissione manuale dei dati delle fatture fornitori.</li>
     <li>✅ <strong>Visualizzatore PDF nativo</strong>: Visualizza il documento mentre estrai i dati - rimani all'interno dell'applicazione.</li>
     <li>✅ <strong>Estrazione intelligente</strong>: Seleziona i dati visivamente con rettangoli - semplice e intuitivo.</li>
@@ -453,6 +475,9 @@ Tool per l'estrazione di dati da fatture PDF e la generazione automatica di fatt
     <li>📊 <strong>Gestione fatture fornitori</strong>: Elabora fatture PDF in batch con modelli.</li>
     <li>🏢 <strong>Aziende con piu fornitori</strong>: Crea un modello per fornitore per l'automazione.</li>
     <li>🛒 <strong>E-commerce e retail</strong>: Elabora le fatture di piu distributori.</li>
+    <li>🔐 Scheda Telemetria & Protezione Dati con trasparenza totale.</li>
+    <li>📜 Scheda Accordo di Licenza con informazioni legali complete.</li>
+    <li>🌍 Traduzioni complete in 8 lingue incluso contenuto legale.</li>
     <li>📦 <strong>Logistica e trasporto</strong>: Estrai i dati dai documenti di trasporto e dalle fatture di acquisto.</li>
     <li>💼 <strong>Consulenza e servizi professionali</strong>: Gestisci le fatture dei subappaltatori.</li>
 </ul>
@@ -525,12 +550,15 @@ No external service required. The module is fully autonomous and does not requir
 
 ## Contacto soporte (Support contact)
 ```
-Email: info@easysoft.es
-Web: https://www.easysoft.es
-Response time: 24-48 business hours
-Languages: Spanish, English, French
-```
-
+Emax] README.md actualizado (v2.1.0)
+- [x] ChangeLog.md actualizado (v2.1.0)
+- [x] Versión en module descriptor coincide (2.1.0)
+- [x] Todos los archivos .lang completos en 8 idiomas
+- [ ] Licencia GPL v3 incluida
+- [ ] Sin archivos de desarrollo (.git, .vscode, etc.)
+- [x] Pestañas administrativas con iconos consistentes
+- [x] Contenido legal y GDPR completo (Copying, Telemetry)
+- [x] DOLISTORE.md actualizado a v2.1.0
 ---
 
 # Checklist antes de subir

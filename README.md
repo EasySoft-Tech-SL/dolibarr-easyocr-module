@@ -20,6 +20,28 @@
 - **Multi-idioma**: Soporte para 8 idiomas (español, inglés, francés, alemán, italiano, portugués, catalán, gallego)
 - **Interfaz Moderna**: Diseño responsive y amigable con el usuario
 
+## 🆕 Novedades en v2.1.0
+
+### Cumplimiento Legal y GDPR
+- **Transparencia Total**: Nueva pestaña de Telemetría y Protección de Datos que explica en detalle qué información se procesa
+- **Advertencia de Consentimiento**: Información clara sobre el uso de servicios de IA de terceros durante la activación del módulo
+- **Acuerdo de Licencia**: Pestaña dedicada con información sobre GPL v3 y condiciones de uso
+- **30+ Traducciones Legales**: Todo el contenido legal disponible en 8 idiomas
+
+### Mejoras de Interfaz
+- **Sección IA Rediseñada**: Cuando el servicio de IA está inactivo, se muestra una presentación visual atractiva con:
+  - Diseño moderno con gradiente púrpura y animaciones
+  - Marca "easyOCR AI" con enlace a [easyocr.easysoft.es](https://easyocr.easysoft.es/)
+  - Tres beneficios destacados con viñetas de verificación
+  - Pista informativa sobre cómo activar el servicio
+- **Iconos Consistentes**: Todas las pestañas administrativas ahora tienen iconos Font Awesome para mejor navegación visual
+
+### Seguridad y Privacidad
+- **HTTPS Obligatorio**: Comunicación cifrada con servicios de IA
+- **Servidores EU**: Todos los datos se procesan en servidores ubicados en la Unión Europea
+- **Sin Almacenamiento**: Los documentos procesados no se almacenan en servidores externos
+- **Control de Acceso**: Autenticación mediante API Key para servicios de IA
+
 ## Requisitos
 
 - **Dolibarr ERP**: Versión 16.0 o superior

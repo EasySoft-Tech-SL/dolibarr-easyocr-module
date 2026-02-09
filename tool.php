@@ -23,11 +23,16 @@ if (!$res) { die("Include of main fails"); }
 require_once DOL_DOCUMENT_ROOT . '/core/class/html.formother.class.php';
 require_once DOL_DOCUMENT_ROOT . '/core/class/html.form.class.php';
 require_once __DIR__ . '/lib/easyocr.lib.php';
+require_once __DIR__ . '/lib/easyocr_ai.class.php';
 
 // Security check - require write permission to process invoices
 if (!easyocrCheckRight($user, 'easyocr', 'write')) {
 	accessforbidden();
 }
+
+// Check AI config server-side
+$aiService = new EasyOcrAI($db);
+$aiEnabled = $aiService->isEnabled();
 
 $form = new Form($db);
 $langs->load('easyocr@easyocr');
@@ -88,9 +93,9 @@ llxHeader("", "EasyOcr", '', '', 0, 0, $arrayofjs, $arrayofcss);
   <div class="eo-sidebar-scroll">
 
     <!-- Banner IA OCR — Siempre visible, dos estados -->
-    <div class="eo-section eo-ai-hero eo-ai-disabled" id="eo-ai-section">
+    <div class="eo-section eo-ai-hero<?php echo $aiEnabled ? '' : ' eo-ai-disabled'; ?>" id="eo-ai-section" data-ai-enabled="<?php echo $aiEnabled ? '1' : '0'; ?>">
       <!-- Estado activo -->
-      <div class="eo-ai-active-content" id="eo-ai-active" style="display:none">
+      <div class="eo-ai-active-content" id="eo-ai-active"<?php if (!$aiEnabled) echo ' style="display:none"'; ?>>
         <div class="eo-ai-hero-header">
           <div class="eo-ai-hero-icon">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a4 4 0 014 4v1a2 2 0 012 2v1a2 2 0 01-2 2H8a2 2 0 01-2-2V9a2 2 0 012-2V6a4 4 0 014-4z"/><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 14v4"/></svg>
@@ -109,21 +114,28 @@ llxHeader("", "EasyOcr", '', '', 0, 0, $arrayofjs, $arrayofcss);
           <?php echo $langs->trans('EasyOcrAIExtract'); ?>
         </button>
       </div>
-      <!-- Estado desactivado (CTA) -->
-      <div class="eo-ai-disabled-content" id="eo-ai-disabled">
+      <!-- Estado desactivado (promo) -->
+      <div class="eo-ai-disabled-content" id="eo-ai-disabled"<?php if ($aiEnabled) echo ' style="display:none"'; ?>>
         <div class="eo-ai-hero-header">
-          <div class="eo-ai-hero-icon eo-ai-icon-off">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a4 4 0 014 4v1a2 2 0 012 2v1a2 2 0 01-2 2H8a2 2 0 01-2-2V9a2 2 0 012-2V6a4 4 0 014-4z"/><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 14v4"/></svg>
+          <div class="eo-ai-hero-icon eo-ai-icon-promo">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M19 17v4"/><path d="M3 5h4"/><path d="M17 19h4"/></svg>
           </div>
           <div>
-            <span class="eo-ai-hero-title"><?php echo $langs->trans('EasyOcrAIOcr'); ?> <span class="eo-badge eo-badge-off"><?php echo $langs->trans('EasyOcrAIOff'); ?></span></span>
-            <p class="eo-ai-hero-hint-off"><?php echo $langs->trans('EasyOcrAIDisabledHint'); ?></p>
+            <span class="eo-ai-hero-title">easyOCR AI <span class="eo-badge eo-badge-ai">PRO</span></span>
+            <p class="eo-ai-cta-subtitle"><?php echo $langs->trans('EasyOcrAICtaHeadline'); ?></p>
           </div>
         </div>
-        <a href="<?php echo dol_buildpath('/custom/easyocr/admin/setup.php', 1); ?>" class="eo-btn eo-btn-ai-cta">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12.22 2h-.44a2 2 0 00-2 2v.18a2 2 0 01-1 1.73l-.43.25a2 2 0 01-2 0l-.15-.08a2 2 0 00-2.73.73l-.22.38a2 2 0 00.73 2.73l.15.1a2 2 0 011 1.72v.51a2 2 0 01-1 1.74l-.15.09a2 2 0 00-.73 2.73l.22.38a2 2 0 002.73.73l.15-.08a2 2 0 012 0l.43.25a2 2 0 011 1.73V20a2 2 0 002 2h.44a2 2 0 002-2v-.18a2 2 0 011-1.73l.43-.25a2 2 0 012 0l.15.08a2 2 0 002.73-.73l.22-.39a2 2 0 00-.73-2.73l-.15-.08a2 2 0 01-1-1.74v-.5a2 2 0 011-1.74l.15-.09a2 2 0 00.73-2.73l-.22-.38a2 2 0 00-2.73-.73l-.15.08a2 2 0 01-2 0l-.43-.25a2 2 0 01-1-1.73V4a2 2 0 00-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
-          <?php echo $langs->trans('EasyOcrAIConfigure'); ?>
-        </a>
+        <ul class="eo-ai-features">
+          <li><?php echo $langs->trans('EasyOcrAIFeat1'); ?></li>
+          <li><?php echo $langs->trans('EasyOcrAIFeat2'); ?></li>
+          <li><?php echo $langs->trans('EasyOcrAIFeat3'); ?></li>
+        </ul>
+        <div class="eo-ai-activate-hint">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+          <?php echo $langs->trans('EasyOcrAIActivateHint'); ?>
+          &middot;
+          <a href="https://easyocr.easysoft.es/" target="_blank" class="eo-ai-link">easyocr.easysoft.es</a>
+        </div>
       </div>
     </div>
 

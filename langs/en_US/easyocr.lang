@@ -1,4 +1,4 @@
-﻿# EasyOcr - English (US)
+# EasyOcr - English (US)
 # Copyright (C) 2025-2026 EasySoft Tech S.L.
 
 # --- Module descriptor ---
@@ -291,3 +291,66 @@ EasyOcrAIMissingTotals = Total amounts are required
 EasyOcrAISupplierNotFound = Supplier not found. Please select one manually.
 EasyOcrAISupplierRequired = Select a supplier or include a Tax ID
 EasyOcrAISupplierCreated = Supplier created:
+EasyOcrAIOff = INACTIVE
+EasyOcrAIDisabledHint = Extract supplier, tax ID, dates, amounts and invoice lines with AI
+EasyOcrAIConfigure = Enable AI OCR
+EasyOcrAIFeat1 = Extracts supplier, tax ID, dates and amounts
+EasyOcrAIFeat2 = Detects all invoice lines
+EasyOcrAIFeat3 = Creates invoices and suppliers automatically
+EasyOcrAICtaHeadline = Supercharge your data extraction
+EasyOcrAIActivateHint = Enable it from Setup > EasyOCR
+
+# ---- License Agreement (copying.php) ----
+EasyOcrCopying = License Agreement
+EasyOcrCopyingLicense = License
+EasyOcrCopyingAuthor = Author
+EasyOcrCopyingContact = Contact
+EasyOcrCopyingWeb = Website
+EasyOcrCopyingGPLTitle = GNU GPL v3 License
+EasyOcrCopyingGPLDesc = This module is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License version 3. This allows you to use, study, modify and distribute the software freely, as long as you maintain the same license.
+EasyOcrCopyingAITitle = AI Services Notice
+EasyOcrCopyingAIDesc = The easyOCR AI functionality uses third-party artificial intelligence services for processing and extracting data from PDF documents. By activating and using the AI function, you agree that the content of processed documents will be sent to these external services. EasySoft Tech S.L. does not store or retain data processed by these third-party services. The user is responsible for ensuring that processed documents do not contain information that should not be shared with external services.
+EasyOcrCopyingFullText = Full license text
+EasyOcrCopyingFileNotFound = License file not found (COPYING or LICENSE).
+# ---- Telemetry & Data Protection (telemetry.php) ----
+EasyOcrTelemetry = Telemetry & Data Protection
+EasyOcrTelemetryModule = Module
+EasyOcrTelemetryPurpose = Purpose
+EasyOcrTelemetryPurposeDesc = Transparency about data transmitted when using AI OCR functionality for invoice data extraction.
+EasyOcrTelemetryContact = Contact
+EasyOcrTelemetryAITitle = Third-party AI services
+EasyOcrTelemetryAIWhat = What does the AI do?
+EasyOcrTelemetryAIWhatDesc = When you activate easyOCR AI, PDF documents are processed by an artificial intelligence service that automatically extracts supplier, tax ID, dates, amounts and invoice lines.
+EasyOcrTelemetryAISent = What data is sent?
+EasyOcrTelemetryAISentDesc = Only the content of the PDF document you voluntarily process. Data is sent only when you click the AI extraction button.
+EasyOcrTelemetryAINever = What is NOT sent?
+EasyOcrTelemetryAINeverDesc = ERP data (customers, suppliers, existing invoices, banking data, passwords) is never sent. Only the content of the PDF you choose to process.
+EasyOcrTelemetryAIProvider = Service provider
+EasyOcrTelemetryAIProviderDesc = The AI service is provided by a configurable microservice. URL and API key are configured in the Settings tab. EasySoft Tech S.L. may offer a managed service or you can connect your own service.
+EasyOcrTelemetryDataSent = Data transmitted to the AI service
+EasyOcrTelemetryDataPDF = Content of the processed PDF document (text and images from the PDF you select)
+EasyOcrTelemetryDataLang = System language (to optimize extraction)
+EasyOcrTelemetryDataDomain = Installation domain (for API access control)
+EasyOcrTelemetryDataNever = Data NEVER transmitted
+EasyOcrTelemetryNeverClients = Customer or supplier data from your ERP
+EasyOcrTelemetryNeverInvoices = Existing invoices, amounts or descriptions from your system
+EasyOcrTelemetryNeverBank = Banking or payment information
+EasyOcrTelemetryNeverPasswords = Passwords, credentials or access tokens
+EasyOcrTelemetryNeverPersonal = Personal data of ERP users
+EasyOcrTelemetrySecurity = Security & Privacy
+EasyOcrTelemetrySecHTTPS = All communications are encrypted via HTTPS/TLS
+EasyOcrTelemetrySecEU = Data is processed on servers located in the European Union
+EasyOcrTelemetrySecAccess = Restricted access: only authorized EasySoft personnel
+EasyOcrTelemetrySecGDPR = GDPR compliant: processing in accordance with European data protection regulations
+EasyOcrTelemetrySecNoSale = Processed data is NOT sold, commercialized or used to train AI models
+EasyOcrTelemetryLegal = Legal basis for processing
+EasyOcrTelemetryLegalContract = Contract execution
+EasyOcrTelemetryLegalContractDesc = Document processing is a service actively requested by the user when clicking the AI extraction button.
+EasyOcrTelemetryLegalLegitimate = Legitimate interest
+EasyOcrTelemetryLegalLegitimateDesc = Providing an accurate and secure data extraction service, protecting system integrity.
+EasyOcrTelemetryLegalGDPR = GDPR Rights
+EasyOcrTelemetryLegalGDPRDesc = The user retains all rights of access, rectification, erasure and portability under GDPR.
+EasyOcrTelemetryRightsTitle = Your rights
+EasyOcrTelemetryRightsDesc = You have the right to: access data we process, request rectification or deletion, object to processing, and request data portability. AI usage is completely voluntary: if you do not activate the function or do not click the extraction button, no data will be transmitted.
+# ---- GDPR activation message ----
+EasyOcrGDPRInformation = By activating easyOCR, you accept: (1) The GNU GPL v3 License under which this software is distributed. (2) That the easyOCR AI functionality, if activated, will use third-party artificial intelligence services for data extraction, transmitting the content of PDF documents you voluntarily process. (3) That EasySoft Tech S.L. does not store data processed by third-party AI services. See the 'License Agreement' and 'Telemetry & Data Protection' tabs in module settings for more information.

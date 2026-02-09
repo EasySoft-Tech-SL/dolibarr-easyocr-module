@@ -1,4 +1,4 @@
-﻿# EasyOcr - Català (Espanya)
+# EasyOcr - Català (Espanya)
 # Copyright (C) 2025-2026 EasySoft Tech S.L.
 
 Module402020Name = EasyOcr
@@ -269,3 +269,68 @@ EasyOcrAIMissingTotals = Es requereixen els imports totals
 EasyOcrAISupplierNotFound = Proveïdor no trobat. Seleccioneu-ne un manualment.
 EasyOcrAISupplierRequired = Seleccioneu un proveïdor o incloeu un CIF/NIF
 EasyOcrAISupplierCreated = Proveïdor creat:
+EasyOcrAIOff = INACTIU
+EasyOcrAIDisabledHint = Extreu proveïdor, CIF, dates, imports i línies de factura amb IA
+EasyOcrAIConfigure = Activar IA OCR
+EasyOcrAIFeat1 = Extreu proveïdor, CIF, dates i imports
+EasyOcrAIFeat2 = Detecta totes les línies de factura
+EasyOcrAIFeat3 = Crea factures i proveïdors automàticament
+EasyOcrAICtaHeadline = Potencia la teva extracció de dades
+EasyOcrAIActivateHint = Activeu-lo des de Configuració > EasyOCR
+
+// Copying (License Agreement)
+EasyOcrCopying = Acord de llicència
+EasyOcrCopyingLicense = Llicència
+EasyOcrCopyingAuthor = Autor
+EasyOcrCopyingContact = Contacte
+EasyOcrCopyingWeb = Lloc web
+EasyOcrCopyingGPLTitle = Llicència GNU GPL v3
+EasyOcrCopyingGPLDesc = Aquest mòdul és programari lliure: podeu redistribuir-lo i/o modificar-lo sota els termes de la Llicència Pública General GNU versió 3. Això us permet usar, estudiar, modificar i distribuir el programari lliurement, sempre que mantingueu la mateixa llicència.
+EasyOcrCopyingAITitle = Avís sobre serveis d'IA
+EasyOcrCopyingAIDesc = La funcionalitat easyOCR AI utilitza serveis d'intel·ligència artificial de tercers per al processament i extracció de dades de documents PDF. En activar i utilitzar la funció d'IA, accepteu que el contingut dels documents processats serà enviat a aquests serveis externs. EasySoft Tech S.L. no emmagatzema ni reté les dades processades per aquests serveis de tercers. L'usuari és responsable d'assegurar-se que els documents processats no contenen informació que no s'hagi de compartir amb serveis externs.
+EasyOcrCopyingFullText = Text complet de la llicència
+EasyOcrCopyingFileNotFound = Fitxer de llicència no trobat (COPYING o LICENSE).
+
+// Telemetry & Data Protection
+EasyOcrTelemetry = Telemetria i protecció de dades
+EasyOcrTelemetryModule = Mòdul
+EasyOcrTelemetryPurpose = Finalitat
+EasyOcrTelemetryPurposeDesc = Transparència sobre les dades transmeses quan s'utilitza la funcionalitat IA OCR per a l'extracció de dades de factures.
+EasyOcrTelemetryContact = Contacte
+EasyOcrTelemetryAITitle = Serveis d'IA de tercers
+EasyOcrTelemetryAIWhat = Què fa la IA?
+EasyOcrTelemetryAIWhatDesc = Quan activeu easyOCR AI, els documents PDF són processats per un servei d'intel·ligència artificial que extreu automàticament proveïdor, CIF, dates, imports i línies de factura.
+EasyOcrTelemetryAISent = Quines dades s'envien?
+EasyOcrTelemetryAISentDesc = Només el contingut del document PDF que processeu voluntàriament. L'enviament només es produeix quan feu clic al botó d'extracció d'IA.
+EasyOcrTelemetryAINever = Què NO s'envia?
+EasyOcrTelemetryAINeverDesc = Mai s'envien dades del vostre ERP (clients, proveïdors, factures existents, dades bancàries, contrasenyes). Només el contingut del PDF que decidiu processar.
+EasyOcrTelemetryAIProvider = Proveïdor del servei
+EasyOcrTelemetryAIProviderDesc = El servei d'IA és proporcionat per un microservei configurable. La URL i clau API es configuren a la pestanya de Configuració. EasySoft Tech S.L. pot oferir un servei gestionat o podeu connectar el vostre propi servei.
+EasyOcrTelemetryDataSent = Dades transmeses al servei d'IA
+EasyOcrTelemetryDataPDF = Contingut del document PDF processat (text i imatges del PDF seleccionat)
+EasyOcrTelemetryDataLang = Idioma del sistema (per optimitzar l'extracció)
+EasyOcrTelemetryDataDomain = Domini d'instal·lació (per control d'accés a l'API)
+EasyOcrTelemetryDataNever = Dades que MAI es transmeten
+EasyOcrTelemetryNeverClients = Dades de clients o proveïdors del vostre ERP
+EasyOcrTelemetryNeverInvoices = Factures existents, imports o descripcions del vostre sistema
+EasyOcrTelemetryNeverBank = Informació bancària o dades de pagament
+EasyOcrTelemetryNeverPasswords = Contrasenyes, credencials o tokens d'accés
+EasyOcrTelemetryNeverPersonal = Dades personals d'usuaris de l'ERP
+EasyOcrTelemetrySecurity = Seguretat i privadesa
+EasyOcrTelemetrySecHTTPS = Totes les comunicacions estan xifrades mitjançant HTTPS/TLS
+EasyOcrTelemetrySecEU = Les dades es processen en servidors ubicats a la Unió Europea
+EasyOcrTelemetrySecAccess = Accés restringit: només personal autoritzat d'EasySoft
+EasyOcrTelemetrySecGDPR = Compliment RGPD: tractament conforme a la normativa europea de protecció de dades
+EasyOcrTelemetrySecNoSale = Les dades processades NO es venen, comercialitzen ni s'utilitzen per entrenar models d'IA
+EasyOcrTelemetryLegal = Base legal del tractament
+EasyOcrTelemetryLegalContract = Execució de contracte
+EasyOcrTelemetryLegalContractDesc = El processament de documents és un servei sol·licitat activament per l'usuari en fer clic al botó d'extracció d'IA.
+EasyOcrTelemetryLegalLegitimate = Interès legítim
+EasyOcrTelemetryLegalLegitimateDesc = Proporcionar un servei d'extracció de dades precís i segur, protegint la integritat del sistema.
+EasyOcrTelemetryLegalGDPR = Drets RGPD
+EasyOcrTelemetryLegalGDPRDesc = L'usuari manté tots els seus drets d'accés, rectificació, supressió i portabilitat conforme al RGPD.
+EasyOcrTelemetryRightsTitle = Els vostres drets
+EasyOcrTelemetryRightsDesc = Teniu dret a: accedir a les dades que processem, sol·licitar la seva rectificació o eliminació, oposar-vos al tractament, i sol·licitar la portabilitat de les vostres dades. L'ús de la IA és completament voluntari: si no activeu la funció o no feu clic al botó d'extracció, cap dada serà transmesa.
+
+# ---- Missatge RGPD a l'activació del mòdul ----
+EasyOcrGDPRInformation = En activar easyOCR, accepteu: (1) La Llicència Pública General GNU GPL v3 sota la qual es distribueix aquest programari. (2) Que la funcionalitat easyOCR AI, si s'activa, utilitzarà serveis d'intel·ligència artificial de tercers per a l'extracció de dades, transmetent el contingut dels documents PDF que processeu voluntàriament. (3) Que EasySoft Tech S.L. no emmagatzema les dades processades per serveis d'IA de tercers. Consulteu les pestanyes 'Acord de llicència' i 'Telemetria i protecció de dades' a la configuració del mòdul per a més informació.
