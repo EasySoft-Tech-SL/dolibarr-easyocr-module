@@ -18,5 +18,6 @@ CREATE TABLE IF NOT EXISTS llx_easyocr_template (
     rowid integer AUTO_INCREMENT PRIMARY KEY NOT NULL,
     name varchar(250),
     fk_soc integer DEFAULT NULL,
+    scale double(6,2) DEFAULT 1.50,
     date_creation timestamp DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=innodb;

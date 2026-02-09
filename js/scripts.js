@@ -987,6 +987,9 @@ const EasyOcr = (function () {
                 if (data.details && data.details.length > 0) {
                     state.pages.forEach(p => p.selections = []);
                     let pending = data.details.length;
+                    // Scale ratio: adapt saved coords to current zoom
+                    const savedScale = data.scale || 1.5;
+                    const ratio = state.scale / savedScale;
 
                     data.details.forEach(item => {
                         const pageIdx = parseInt(item.objectNum);
@@ -996,10 +999,10 @@ const EasyOcr = (function () {
 
                             page.selections.push({
                                 objectNum: pageIdx,
-                                startX: parseInt(item.startX),
-                                startY: parseInt(item.startY),
-                                width: parseInt(item.width),
-                                height: parseInt(item.height),
+                                startX: parseFloat(item.startX) * ratio,
+                                startY: parseFloat(item.startY) * ratio,
+                                width: parseFloat(item.width) * ratio,
+                                height: parseFloat(item.height) * ratio,
                                 color: item.color,
                                 label: item.label,
                                 text: ''
@@ -1088,6 +1091,7 @@ const EasyOcr = (function () {
                 action: "addTemplate",
                 name: name,
                 fk_soc: supplier,
+                scale: state.scale,
                 selections: JSON.stringify(details)
             },
             success: function (data) {
@@ -1120,6 +1124,7 @@ const EasyOcr = (function () {
                 action: "editTemplate",
                 template_id: state.templateId,
                 fk_soc: supplier,
+                scale: state.scale,
                 selections: JSON.stringify(details)
             },
             success: function (data) {

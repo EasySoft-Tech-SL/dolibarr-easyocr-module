@@ -381,10 +381,11 @@ if ($action == "newInvoice") {
 
 	$template_id = GETPOST("template_id", "int");
 
-	$sql = "SELECT fk_soc FROM " . MAIN_DB_PREFIX . "easyocr_template WHERE rowid = " . ((int) $template_id);
+	$sql = "SELECT fk_soc, scale FROM " . MAIN_DB_PREFIX . "easyocr_template WHERE rowid = " . ((int) $template_id);
 	$resql = $db->query($sql);
 	$tpl_data = $db->fetch_object($resql);
 	$fk_soc = $tpl_data ? $tpl_data->fk_soc : null;
+	$tpl_scale = $tpl_data && $tpl_data->scale ? floatval($tpl_data->scale) : 1.5;
 
 	$sql = "SELECT objectNum, startX, startY, width, height, color, label";
 	$sql .= " FROM " . MAIN_DB_PREFIX . "easyocr_template_details";
@@ -405,7 +406,7 @@ if ($action == "newInvoice") {
 		}
 	}
 
-	print json_encode(["details" => $result, "fk_soc" => $fk_soc]);
+	print json_encode(["details" => $result, "fk_soc" => $fk_soc, "scale" => $tpl_scale]);
 
 
 // ============================================================
@@ -420,12 +421,14 @@ if ($action == "newInvoice") {
 
 	$name = GETPOST("name", "alphanohtml");
 	$fk_soc = GETPOST("fk_soc", "int");
+	$tpl_scale = GETPOST("scale", "alpha");
+	$tpl_scale = $tpl_scale ? floatval($tpl_scale) : 1.5;
 	$selections = json_decode(GETPOST("selections", "restricthtml"), true);
 
 	$db->begin();
 
-	$sql = "INSERT INTO " . MAIN_DB_PREFIX . "easyocr_template (name, fk_soc, date_creation)";
-	$sql .= " VALUES ('" . $db->escape($name) . "', " . ($fk_soc > 0 ? ((int) $fk_soc) : "NULL") . ", NOW())";
+	$sql = "INSERT INTO " . MAIN_DB_PREFIX . "easyocr_template (name, fk_soc, scale, date_creation)";
+	$sql .= " VALUES ('" . $db->escape($name) . "', " . ($fk_soc > 0 ? ((int) $fk_soc) : "NULL") . ", " . $tpl_scale . ", NOW())";
 
 	if (!$db->query($sql)) {
 		$db->rollback();
@@ -469,11 +472,13 @@ if ($action == "newInvoice") {
 
 	$template_id = GETPOST("template_id", "int");
 	$fk_soc = GETPOST("fk_soc", "int");
+	$tpl_scale = GETPOST("scale", "alpha");
+	$tpl_scale = $tpl_scale ? floatval($tpl_scale) : 1.5;
 	$selections = json_decode(GETPOST("selections", "restricthtml"), true);
 
 	$db->begin();
 
-	$sql = "UPDATE " . MAIN_DB_PREFIX . "easyocr_template SET fk_soc = " . ($fk_soc > 0 ? ((int) $fk_soc) : "NULL");
+	$sql = "UPDATE " . MAIN_DB_PREFIX . "easyocr_template SET fk_soc = " . ($fk_soc > 0 ? ((int) $fk_soc) : "NULL") . ", scale = " . $tpl_scale;
 	$sql .= " WHERE rowid = " . ((int) $template_id);
 	$db->query($sql);
 
