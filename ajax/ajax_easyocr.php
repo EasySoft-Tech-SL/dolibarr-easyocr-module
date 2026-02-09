@@ -83,8 +83,14 @@ if (!easyocrCheckRight($user, 'easyocr', 'read')) {
 function convertFlexibleDate($fecha)
 {
 	$formatosPosibles = [
-		'd/m/Y', 'd/m/y', 'Y-m-d', 'm-d-Y', 'd-m-Y',
-		'Y/m/d', 'd.m.Y', 'm/d/Y'
+		'd/m/Y',
+		'd/m/y',
+		'Y-m-d',
+		'm-d-Y',
+		'd-m-Y',
+		'Y/m/d',
+		'd.m.Y',
+		'm/d/Y'
 	];
 	foreach ($formatosPosibles as $formato) {
 		$fechaObj = DateTime::createFromFormat($formato, $fecha);
@@ -190,7 +196,10 @@ if ($action == "newInvoice") {
 	$facture = new FactureFournisseur($db);
 	$facture->socid = $fk_soc;
 	$facture->ref_supplier = $ref_supplier;
-	$facture->date = dol_mktime(12, 0, 0,
+	$facture->date = dol_mktime(
+		12,
+		0,
+		0,
 		date('m', strtotime($datef_str)),
 		date('d', strtotime($datef_str)),
 		date('Y', strtotime($datef_str))
@@ -201,7 +210,10 @@ if ($action == "newInvoice") {
 	// Set due date if provided
 	if (!empty($date_echeance_str)) {
 		$date_ech = convertFlexibleDate($date_echeance_str);
-		$facture->date_echeance = dol_mktime(12, 0, 0,
+		$facture->date_echeance = dol_mktime(
+			12,
+			0,
+			0,
 			date('m', strtotime($date_ech)),
 			date('d', strtotime($date_ech)),
 			date('Y', strtotime($date_ech))
@@ -303,9 +315,9 @@ if ($action == "newInvoice") {
 	print json_encode(["status" => "ok", "id" => $newId, "ref" => $ref]);
 
 
-// ============================================================
-// OBTENER DATOS PARA EL FORMULARIO (proveedores, templates, bancos, pagos)
-// ============================================================
+	// ============================================================
+	// OBTENER DATOS PARA EL FORMULARIO (proveedores, templates, bancos, pagos)
+	// ============================================================
 } else if ($action == "getDetails") {
 
 	// Proveedores
@@ -376,9 +388,9 @@ if ($action == "newInvoice") {
 	]);
 
 
-// ============================================================
-// OBTENER DETALLES DE UN TEMPLATE
-// ============================================================
+	// ============================================================
+	// OBTENER DETALLES DE UN TEMPLATE
+	// ============================================================
 } else if ($action == "getDetailsTemplate") {
 
 	$template_id = GETPOST("template_id", "int");
@@ -411,9 +423,9 @@ if ($action == "newInvoice") {
 	print json_encode(["details" => $result, "fk_soc" => $fk_soc, "scale" => $tpl_scale]);
 
 
-// ============================================================
-// CREAR TEMPLATE
-// ============================================================
+	// ============================================================
+	// CREAR TEMPLATE
+	// ============================================================
 } else if ($action == "addTemplate") {
 
 	if (!easyocrCheckRight($user, 'easyocr', 'write')) {
@@ -462,9 +474,9 @@ if ($action == "newInvoice") {
 	print json_encode(["status" => "ok", "id" => $template_id]);
 
 
-// ============================================================
-// EDITAR TEMPLATE
-// ============================================================
+	// ============================================================
+	// EDITAR TEMPLATE
+	// ============================================================
 } else if ($action == "editTemplate") {
 
 	if (!easyocrCheckRight($user, 'easyocr', 'write')) {
@@ -510,9 +522,9 @@ if ($action == "newInvoice") {
 	print json_encode(["status" => "ok"]);
 
 
-// ============================================================
-// BUSCAR PROVEEDOR POR CIF/NIF
-// ============================================================
+	// ============================================================
+	// BUSCAR PROVEEDOR POR CIF/NIF
+	// ============================================================
 } else if ($action == "findSupplierByCIF") {
 
 	$cif = GETPOST("cif", "alphanohtml");
@@ -524,17 +536,19 @@ if ($action == "newInvoice") {
 	// Clean the CIF - remove spaces, dashes
 	$cif_clean = preg_replace('/[\s\-\.]/', '', trim($cif));
 
-	// Search in societe table by siren, siret, idprof1-6, tva_intra
+	// Search in societe table by siren, siret, ape, idprof4-6, tva_intra
 	$sql = "SELECT s.rowid, s.nom FROM " . MAIN_DB_PREFIX . "societe s";
 	$sql .= " WHERE s.fournisseur = 1";
+	$sql .= " AND s.status = 1";
 	$sql .= " AND s.entity IN (" . getEntity('societe') . ")";
 	$sql .= " AND (";
 	$sql .= " REPLACE(REPLACE(REPLACE(s.siren, ' ', ''), '-', ''), '.', '') = '" . $db->escape($cif_clean) . "'";
 	$sql .= " OR REPLACE(REPLACE(REPLACE(s.siret, ' ', ''), '-', ''), '.', '') = '" . $db->escape($cif_clean) . "'";
+	$sql .= " OR REPLACE(REPLACE(REPLACE(s.ape, ' ', ''), '-', ''), '.', '') = '" . $db->escape($cif_clean) . "'";
+	$sql .= " OR REPLACE(REPLACE(REPLACE(s.idprof4, ' ', ''), '-', ''), '.', '') = '" . $db->escape($cif_clean) . "'";
+	$sql .= " OR REPLACE(REPLACE(REPLACE(s.idprof5, ' ', ''), '-', ''), '.', '') = '" . $db->escape($cif_clean) . "'";
+	$sql .= " OR REPLACE(REPLACE(REPLACE(s.idprof6, ' ', ''), '-', ''), '.', '') = '" . $db->escape($cif_clean) . "'";
 	$sql .= " OR REPLACE(REPLACE(REPLACE(s.tva_intra, ' ', ''), '-', ''), '.', '') = '" . $db->escape($cif_clean) . "'";
-	for ($i = 1; $i <= 6; $i++) {
-		$sql .= " OR REPLACE(REPLACE(REPLACE(s.idprof" . $i . ", ' ', ''), '-', ''), '.', '') = '" . $db->escape($cif_clean) . "'";
-	}
 	$sql .= ")";
 	$sql .= " LIMIT 1";
 
@@ -545,14 +559,16 @@ if ($action == "newInvoice") {
 	} else {
 		// Search also non-suppliers â€” maybe exists as client, upgrade to supplier
 		$sql2 = "SELECT s.rowid, s.nom FROM " . MAIN_DB_PREFIX . "societe s";
-		$sql2 .= " WHERE s.entity IN (" . getEntity('societe') . ")";
+		$sql2 .= " WHERE s.status = 1";
+		$sql2 .= " AND s.entity IN (" . getEntity('societe') . ")";
 		$sql2 .= " AND (";
 		$sql2 .= " REPLACE(REPLACE(REPLACE(s.siren, ' ', ''), '-', ''), '.', '') = '" . $db->escape($cif_clean) . "'";
 		$sql2 .= " OR REPLACE(REPLACE(REPLACE(s.siret, ' ', ''), '-', ''), '.', '') = '" . $db->escape($cif_clean) . "'";
+		$sql2 .= " OR REPLACE(REPLACE(REPLACE(s.ape, ' ', ''), '-', ''), '.', '') = '" . $db->escape($cif_clean) . "'";
+		$sql2 .= " OR REPLACE(REPLACE(REPLACE(s.idprof4, ' ', ''), '-', ''), '.', '') = '" . $db->escape($cif_clean) . "'";
+		$sql2 .= " OR REPLACE(REPLACE(REPLACE(s.idprof5, ' ', ''), '-', ''), '.', '') = '" . $db->escape($cif_clean) . "'";
+		$sql2 .= " OR REPLACE(REPLACE(REPLACE(s.idprof6, ' ', ''), '-', ''), '.', '') = '" . $db->escape($cif_clean) . "'";
 		$sql2 .= " OR REPLACE(REPLACE(REPLACE(s.tva_intra, ' ', ''), '-', ''), '.', '') = '" . $db->escape($cif_clean) . "'";
-		for ($i = 1; $i <= 6; $i++) {
-			$sql2 .= " OR REPLACE(REPLACE(REPLACE(s.idprof" . $i . ", ' ', ''), '-', ''), '.', '') = '" . $db->escape($cif_clean) . "'";
-		}
 		$sql2 .= ") LIMIT 1";
 
 		$resql2 = $db->query($sql2);
@@ -597,8 +613,8 @@ if ($action == "newInvoice") {
 					$newSoc->tva_intra = $cif;
 					$newSoc->country_code = substr($cifUpper, 0, 2);
 				}
-				// Also store in idprof1 (CIF/NIF field in Spain, Tax ID elsewhere)
-				$newSoc->idprof1 = $cif;
+				// Store in siren (CIF/NIF field in Spain/France, Tax ID elsewhere)
+				$newSoc->siren = $cif;
 
 				if (!empty($supplierAddress)) $newSoc->address = $supplierAddress;
 				if (!empty($supplierCity))    $newSoc->town    = $supplierCity;
@@ -634,7 +650,24 @@ if ($action == "newInvoice") {
 				if ($newId > 0) {
 					print json_encode(["status" => "ok", "fk_soc" => $newId, "name" => $newSoc->name, "created" => true]);
 				} else {
-					print json_encode(["status" => "error", "message" => "Error creating supplier: " . $newSoc->error]);
+					// Build detailed error message
+					$errorDetails = [];
+					$errorDetails[] = "Main error: " . ($newSoc->error ?: 'Unknown error');
+
+					if (!empty($newSoc->errors)) {
+						$errorDetails[] = "Additional errors: " . implode(', ', $newSoc->errors);
+					}
+
+					$errorDetails[] = "Attempted data - Name: '" . ($newSoc->name ?: 'N/A') . "'";
+					$errorDetails[] = "CIF/Tax ID: '" . ($cif ?: 'N/A') . "'";
+					$errorDetails[] = "Country: '" . ($supplierCountry ?: ($newSoc->country_code ?: 'N/A')) . "'";
+					$errorDetails[] = "Supplier code: '" . ($newSoc->code_fournisseur ?: 'N/A') . "'";
+
+					if (!empty($db->lasterror())) {
+						$errorDetails[] = "DB error: " . $db->lasterror();
+					}
+
+					print json_encode(["status" => "error", "message" => "Error creating supplier. " . implode(' | ', $errorDetails)]);
 				}
 			} else {
 				print json_encode(["status" => "not_found"]);
@@ -643,9 +676,9 @@ if ($action == "newInvoice") {
 	}
 
 
-// ============================================================
-// AI OCR - CREATE INVOICE FROM AI STRUCTURED DATA (multi-line)
-// ============================================================
+	// ============================================================
+	// AI OCR - CREATE INVOICE FROM AI STRUCTURED DATA (multi-line)
+	// ============================================================
 } else if ($action == "newInvoiceAI") {
 
 	if (!easyocrCheckRight($user, 'easyocr', 'write')) {
@@ -682,13 +715,14 @@ if ($action == "newInvoice") {
 
 		// 1) Search as supplier
 		$sqlS = "SELECT s.rowid FROM " . MAIN_DB_PREFIX . "societe s";
-		$sqlS .= " WHERE s.fournisseur = 1 AND s.entity IN (" . getEntity('societe') . ") AND (";
+		$sqlS .= " WHERE s.fournisseur = 1 AND s.status = 1 AND s.entity IN (" . getEntity('societe') . ") AND (";
 		$sqlS .= " REPLACE(REPLACE(REPLACE(s.siren,' ',''),'-',''),'.','')='" . $db->escape($cif_clean) . "'";
 		$sqlS .= " OR REPLACE(REPLACE(REPLACE(s.siret,' ',''),'-',''),'.','')='" . $db->escape($cif_clean) . "'";
+		$sqlS .= " OR REPLACE(REPLACE(REPLACE(s.ape,' ',''),'-',''),'.','')='" . $db->escape($cif_clean) . "'";
+		$sqlS .= " OR REPLACE(REPLACE(REPLACE(s.idprof4,' ',''),'-',''),'.','')='" . $db->escape($cif_clean) . "'";
+		$sqlS .= " OR REPLACE(REPLACE(REPLACE(s.idprof5,' ',''),'-',''),'.','')='" . $db->escape($cif_clean) . "'";
+		$sqlS .= " OR REPLACE(REPLACE(REPLACE(s.idprof6,' ',''),'-',''),'.','')='" . $db->escape($cif_clean) . "'";
 		$sqlS .= " OR REPLACE(REPLACE(REPLACE(s.tva_intra,' ',''),'-',''),'.','')='" . $db->escape($cif_clean) . "'";
-		for ($i = 1; $i <= 6; $i++) {
-			$sqlS .= " OR REPLACE(REPLACE(REPLACE(s.idprof" . $i . ",' ',''),'-',''),'.','')='" . $db->escape($cif_clean) . "'";
-		}
 		$sqlS .= ") LIMIT 1";
 		$resS = $db->query($sqlS);
 		if ($resS && $db->num_rows($resS) > 0) {
@@ -698,13 +732,16 @@ if ($action == "newInvoice") {
 		// 2) Search as non-supplier (client) and upgrade
 		if (empty($fk_soc)) {
 			$sqlNS = "SELECT s.rowid FROM " . MAIN_DB_PREFIX . "societe s";
-			$sqlNS .= " WHERE s.entity IN (" . getEntity('societe') . ") AND (";
+			$sqlNS .= " WHERE s.status = 1 AND s.entity IN (" . getEntity('societe') . ") AND (";
 			$sqlNS .= " REPLACE(REPLACE(REPLACE(s.siren,' ',''),'-',''),'.','')='" . $db->escape($cif_clean) . "'";
+			$sqlNS .= " OR REPLACE(REPLACE(REPLACE(s.ape,' ',''),'-',''),'.','')='" . $db->escape($cif_clean) . "'";
+			$sqlNS .= " OR REPLACE(REPLACE(REPLACE(s.idprof4,' ',''),'-',''),'.','')='" . $db->escape($cif_clean) . "'";
+			$sqlNS .= " OR REPLACE(REPLACE(REPLACE(s.idprof5,' ',''),'-',''),'.','')='" . $db->escape($cif_clean) . "'";
 			$sqlNS .= " OR REPLACE(REPLACE(REPLACE(s.siret,' ',''),'-',''),'.','')='" . $db->escape($cif_clean) . "'";
+			$sqlNS .= " OR REPLACE(REPLACE(REPLACE(s.idprof4,' ',''),'-',''),'.','')='" . $db->escape($cif_clean) . "'";
+			$sqlNS .= " OR REPLACE(REPLACE(REPLACE(s.idprof5,' ',''),'-',''),'.','')='" . $db->escape($cif_clean) . "'";
+			$sqlNS .= " OR REPLACE(REPLACE(REPLACE(s.idprof6,' ',''),'-',''),'.','')='" . $db->escape($cif_clean) . "'";
 			$sqlNS .= " OR REPLACE(REPLACE(REPLACE(s.tva_intra,' ',''),'-',''),'.','')='" . $db->escape($cif_clean) . "'";
-			for ($i = 1; $i <= 6; $i++) {
-				$sqlNS .= " OR REPLACE(REPLACE(REPLACE(s.idprof" . $i . ",' ',''),'-',''),'.','')='" . $db->escape($cif_clean) . "'";
-			}
 			$sqlNS .= ") LIMIT 1";
 			$resNS = $db->query($sqlNS);
 			if ($resNS && $db->num_rows($resNS) > 0) {
@@ -726,7 +763,7 @@ if ($action == "newInvoice") {
 			$newSoc->client      = 0;
 			$newSoc->fournisseur = 1;
 			$newSoc->status      = 1;
-			$newSoc->idprof1     = $supplier_tax_id;
+			$newSoc->siren       = $supplier_tax_id;
 
 			$cifUpper = strtoupper($cif_clean);
 			if (preg_match('/^[A-Z]{2}/', $cifUpper)) {
@@ -760,7 +797,24 @@ if ($action == "newInvoice") {
 				$supplier_created = true;
 				$supplier_created_name = $newSoc->name;
 			} else {
-				print json_encode(["status" => "error", "message" => "Error creating supplier: " . $newSoc->error]);
+				// Build detailed error message
+				$errorDetails = [];
+				$errorDetails[] = "Main error: " . ($newSoc->error ?: 'Unknown error');
+
+				if (!empty($newSoc->errors)) {
+					$errorDetails[] = "Additional errors: " . implode(', ', $newSoc->errors);
+				}
+
+				$errorDetails[] = "Attempted data - Name: '" . ($newSoc->name ?: 'N/A') . "'";
+				$errorDetails[] = "CIF/Tax ID: '" . ($supplier_tax_id ?: 'N/A') . "'";
+				$errorDetails[] = "Country: '" . ($supplier_country ?: ($newSoc->country_code ?: 'N/A')) . "'";
+				$errorDetails[] = "Supplier code: '" . ($newSoc->code_fournisseur ?: 'N/A') . "'";
+
+				if (!empty($db->lasterror())) {
+					$errorDetails[] = "DB error: " . $db->lasterror();
+				}
+
+				print json_encode(["status" => "error", "message" => "Error creating supplier. " . implode(' | ', $errorDetails)]);
 				exit;
 			}
 		}
@@ -795,7 +849,10 @@ if ($action == "newInvoice") {
 	$facture = new FactureFournisseur($db);
 	$facture->socid = $fk_soc;
 	$facture->ref_supplier = $ref_supplier;
-	$facture->date = dol_mktime(12, 0, 0,
+	$facture->date = dol_mktime(
+		12,
+		0,
+		0,
 		date('m', strtotime($datef_str)),
 		date('d', strtotime($datef_str)),
 		date('Y', strtotime($datef_str))
@@ -809,7 +866,10 @@ if ($action == "newInvoice") {
 
 	if (!empty($date_echeance_str)) {
 		$date_ech = convertFlexibleDate($date_echeance_str);
-		$facture->date_echeance = dol_mktime(12, 0, 0,
+		$facture->date_echeance = dol_mktime(
+			12,
+			0,
+			0,
 			date('m', strtotime($date_ech)),
 			date('d', strtotime($date_ech)),
 			date('Y', strtotime($date_ech))
@@ -926,9 +986,9 @@ if ($action == "newInvoice") {
 	print json_encode(["status" => "ok", "id" => $newId, "ref" => $ref, "supplier_created" => $supplier_created, "supplier_name" => $supplier_created_name]);
 
 
-// ============================================================
-// AI OCR - PROCESS PDF WITH AI SERVICE
-// ============================================================
+	// ============================================================
+	// AI OCR - PROCESS PDF WITH AI SERVICE
+	// ============================================================
 } else if ($action == "aiOcr") {
 
 	if (!easyocrCheckRight($user, 'easyocr', 'write')) {
@@ -961,9 +1021,9 @@ if ($action == "newInvoice") {
 	print json_encode(["status" => "ok", "data" => $result]);
 
 
-// ============================================================
-// AI OCR - SSE STREAM PROXY (avoids CORS, keeps apiKey server-side)
-// ============================================================
+	// ============================================================
+	// AI OCR - SSE STREAM PROXY (avoids CORS, keeps apiKey server-side)
+	// ============================================================
 } else if ($action == "aiOcrStream") {
 
 	if (!easyocrCheckRight($user, 'easyocr', 'write')) {
@@ -1000,7 +1060,9 @@ if ($action == "newInvoice") {
 	// Disable all output buffering
 	@ini_set('output_buffering', 'off');
 	@ini_set('zlib.output_compression', false);
-	while (ob_get_level()) { ob_end_clean(); }
+	while (ob_get_level()) {
+		ob_end_clean();
+	}
 	ob_implicit_flush(true);
 
 	$url    = $aiService->getBaseUrl() . '/api/v1/ocr/base64/stream';
@@ -1039,9 +1101,9 @@ if ($action == "newInvoice") {
 	exit;
 
 
-// ============================================================
-// AI CONFIG - CHECK IF AI IS AVAILABLE
-// ============================================================
+	// ============================================================
+	// AI CONFIG - CHECK IF AI IS AVAILABLE
+	// ============================================================
 } else if ($action == "getAIConfig") {
 
 	$aiService = new EasyOcrAI($db);
@@ -1049,5 +1111,4 @@ if ($action == "newInvoice") {
 		"enabled" => $aiService->isEnabled(),
 		"url" => $aiService->getBaseUrl()
 	]);
-
 }
