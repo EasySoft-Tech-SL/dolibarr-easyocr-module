@@ -5,6 +5,26 @@ Todos los cambios notables de EasyOcr se documentarán en este archivo.
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/),
 y este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 
+## [2.1.1] - 2026-02-09
+
+### Corregido
+- **IVA 0% en líneas de factura AI**: Las líneas con array `taxes: []` vacío de la API ahora heredan el tipo impositivo del documento (ej. 21%) en lugar de quedar a 0%
+  - Frontend: extracción de `defaultTaxRate` desde `totals.taxes` del documento y fallback en `createLineRow()`
+  - Backend: nuevo parámetro `default_tax_rate` y fallback final en el bucle de líneas
+- **Líneas de descuento no insertadas**: Corregida la inserción de líneas tipo descuento que no se guardaban en la factura
+- **Checkbox "Seleccionar Todo" en invoices.php**: Eliminado `})();` duplicado en `scripts.js` que impedía el funcionamiento del selector masivo
+- **Facturas AI no visibles en invoices.php**: Añadido filtro `import_key = 'easyocr-ai'` además de `'easyocr'` para mostrar facturas creadas por el modal AI
+- **Pérdida de país del tercero al upgradear**: Al convertir un cliente existente a proveedor, se usaba `$existingSoc->update()` que sobrescribía campos como el país. Ahora se usa SQL directo actualizando solo `fournisseur` y `code_fournisseur`
+
+### Añadido
+- **Botón "Show Payload"** en el modal AI para visualizar la respuesta JSON completa de la API
+- **Parámetro `include_text: false`** en las llamadas a la API de OCR para optimizar el payload
+- **Fallback de tipo impositivo en 4 capas**: (1) array taxes, (2) campos planos, (3) cálculo desde total/net_amount, (4) tasa por defecto del documento
+
+### Mejorado
+- **Botón "Abrir" en preview de factura**: Rediseño visual del botón de apertura de factura en el modal de previsualización
+- **Preservación de datos del tercero**: Las operaciones de upgrade de cliente a proveedor ahora preservan todos los campos existentes (país, dirección, etc.) usando SQL directo en lugar de `update()` completo
+
 ## [2.1.0] - 2025-01-19
 
 ### Añadido

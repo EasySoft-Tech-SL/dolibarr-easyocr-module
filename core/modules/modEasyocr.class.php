@@ -41,7 +41,7 @@ include_once DOL_DOCUMENT_ROOT . '/core/modules/DolibarrModules.class.php';
  * @author     EasySoft Tech S.L. <info@easysoft.es>
  * @copyright  2025-2026 EasySoft Tech S.L.
  * @license    GPL-3.0-or-later
- * @version    2.0.0
+ * @version    2.1.1
  */
 class modEasyocr extends DolibarrModules
 {
@@ -84,7 +84,7 @@ class modEasyocr extends DolibarrModules
 		$this->editor_url = 'https://easysoft.es';
 
 		// Possible values for version are: 'development', 'experimental', 'dolibarr' or version
-		$this->version = '2.1.0';
+		$this->version = '2.1.1';
 		$this->url_last_version = 'https://sdl.easysoft.es/getLastModuleVersion?module=easyocr&for_url_last_version=1&version=' . $this->version;
 
 

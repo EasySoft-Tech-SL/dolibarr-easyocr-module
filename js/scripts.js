@@ -31,7 +31,8 @@ const EasyOcr = (function () {
         paymentTypesData: [], // Cache de tipos de pago
         pdfArrayBuffer: null, // Para re-render en zoom
         aiEnabled: false,     // AI OCR habilitado
-        aiResult: null        // Último resultado AI OCR
+        aiResult: null,       // Último resultado AI OCR
+        defaultTaxRate: 0     // Tasa IVA por defecto del documento (de totals.taxes)
     };
 
     // Historial para undo
@@ -1886,6 +1887,20 @@ const EasyOcr = (function () {
 
         // --- Totals — parse new format with surcharges & withholdings ---
         var totals = sd.totals || {};
+
+        // Extract default tax rate from totals.taxes (use first IVA/TVA/VAT rate found)
+        state.defaultTaxRate = 0;
+        if (totals.taxes && Array.isArray(totals.taxes)) {
+            for (var ti = 0; ti < totals.taxes.length; ti++) {
+                var docTax = totals.taxes[ti];
+                var docTaxType = String(docTax.tax_type || '').toLowerCase();
+                if (docTaxType === 'tva' || docTaxType === 'iva' || docTaxType === 'vat') {
+                    state.defaultTaxRate = parseFloat(docTax.tax_rate) || 0;
+                    break;
+                }
+            }
+        }
+
         var totalsMap = {
             subtotal: totals.net_subtotal || totals.subtotal || null,
             tax: totals.tax_total || totals.tax || null,
@@ -2043,6 +2058,11 @@ const EasyOcr = (function () {
                 var computedRate = Math.round((totAmt / netAmt - 1) * 100);
                 if (computedRate > 0 && computedRate <= 100) tvaRate = computedRate;
             }
+        }
+
+        // Source 4: use document's default tax rate from totals.taxes if still missing
+        if (!tvaRate && state.defaultTaxRate > 0) {
+            tvaRate = state.defaultTaxRate;
         }
 
         // Normalize: 0 → empty for display
@@ -2311,6 +2331,8 @@ const EasyOcr = (function () {
             invoice_status: editedData.invoice_status || 'validated',
             journal_code: editedData.journal_code || '',
             invoice_type: '0', // Standard supplier invoice
+            // Default tax rate from document totals (fallback for lines with empty taxes)
+            default_tax_rate: state.defaultTaxRate || 0,
             // Supplier data for auto-resolve/create
             supplier_name: editedData.supplier.name || '',
             supplier_tax_id: editedData.supplier.tax_id || '',

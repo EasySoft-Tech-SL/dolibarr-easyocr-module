@@ -596,11 +596,22 @@ if ($action == "newInvoice") {
 			$obj2 = $db->fetch_object($resql2);
 			$existingSoc = new Societe($db);
 			$existingSoc->fetch($obj2->rowid);
-			$existingSoc->fournisseur = 1;
-			if (empty($existingSoc->code_fournisseur) || $existingSoc->code_fournisseur == '-1') {
+			
+			// Generate supplier code if needed
+			$newCodeFournisseur = $existingSoc->code_fournisseur;
+			if (empty($newCodeFournisseur) || $newCodeFournisseur == '-1') {
 				$existingSoc->get_codefournisseur();
+				$newCodeFournisseur = $existingSoc->code_fournisseur;
 			}
-			$existingSoc->update($existingSoc->id, $user);
+			
+			// Update only fournisseur flag and code using SQL (preserves country and other fields)
+			$sqlUpgrade = "UPDATE " . MAIN_DB_PREFIX . "societe SET fournisseur = 1";
+			if (!empty($newCodeFournisseur) && $newCodeFournisseur != '-1') {
+				$sqlUpgrade .= ", code_fournisseur = '" . $db->escape($newCodeFournisseur) . "'";
+			}
+			$sqlUpgrade .= " WHERE rowid = " . ((int) $obj2->rowid);
+			$db->query($sqlUpgrade);
+			
 			print json_encode(["status" => "ok", "fk_soc" => $existingSoc->id, "name" => $existingSoc->nom, "created" => false, "upgraded" => true]);
 		} else {
 			// Not found at all â€” auto-create if requested
@@ -715,6 +726,9 @@ if ($action == "newInvoice") {
 	$notes = GETPOST("notes", "restricthtml");
 	$items_json = GETPOST("items", "restricthtml");
 
+	// Default tax rate from document totals (fallback for lines with empty taxes)
+	$default_tax_rate = floatval(GETPOST("default_tax_rate", "alpha"));
+
 	// Supplier data from AI modal
 	$supplier_name    = GETPOST('supplier_name', 'alphanohtml');
 	$supplier_tax_id  = GETPOST('supplier_tax_id', 'alphanohtml');
@@ -762,13 +776,25 @@ if ($action == "newInvoice") {
 			$sqlNS .= ") LIMIT 1";
 			$resNS = $db->query($sqlNS);
 			if ($resNS && $db->num_rows($resNS) > 0) {
+				$objNS = $db->fetch_object($resNS);
 				$existingSoc = new Societe($db);
-				$existingSoc->fetch($db->fetch_object($resNS)->rowid);
-				$existingSoc->fournisseur = 1;
-				if (empty($existingSoc->code_fournisseur) || $existingSoc->code_fournisseur == '-1') {
+				$existingSoc->fetch($objNS->rowid);
+				
+				// Generate supplier code if needed
+				$newCodeFournisseur = $existingSoc->code_fournisseur;
+				if (empty($newCodeFournisseur) || $newCodeFournisseur == '-1') {
 					$existingSoc->get_codefournisseur();
+					$newCodeFournisseur = $existingSoc->code_fournisseur;
 				}
-				$existingSoc->update($existingSoc->id, $user);
+				
+				// Update only fournisseur flag and code using SQL (preserves country and other fields)
+				$sqlUpgrade = "UPDATE " . MAIN_DB_PREFIX . "societe SET fournisseur = 1";
+				if (!empty($newCodeFournisseur) && $newCodeFournisseur != '-1') {
+					$sqlUpgrade .= ", code_fournisseur = '" . $db->escape($newCodeFournisseur) . "'";
+				}
+				$sqlUpgrade .= " WHERE rowid = " . ((int) $objNS->rowid);
+				$db->query($sqlUpgrade);
+				
 				$fk_soc = $existingSoc->id;
 			}
 		}
@@ -982,6 +1008,12 @@ if ($action == "newInvoice") {
 			}
 			if ($localtax2_rate == 0 && !empty($item['irpf_rate'])) {
 				$localtax2_rate = -abs(floatval($item['irpf_rate']));
+			}
+
+			// Final fallback: use document's default tax rate if line has no IVA
+			if ($tva_rate == 0 && $default_tax_rate > 0) {
+				$tva_rate = $default_tax_rate;
+				dol_syslog("EasyOCR: Line #$lineIndex using default_tax_rate=$default_tax_rate (line had empty taxes)", LOG_DEBUG);
 			}
 
 			// Calculate unit_price from net_amount or total if missing
