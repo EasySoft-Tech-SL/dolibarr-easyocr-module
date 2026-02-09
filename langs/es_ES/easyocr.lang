@@ -1,0 +1,231 @@
+﻿# EasyOcr - Español (España)
+# Copyright (C) 2025-2026 EasySoft Tech S.L.
+
+# --- Module descriptor ---
+Module402020Name = EasyOcr
+ModuleEasyocrDesc = Extracción de texto e importación de facturas desde PDF
+ModuleEasyocrDescLong = Herramienta de extracción de contenido textual de archivos PDF para la creación automática de facturas de proveedor en Dolibarr.
+
+# --- Admin tabs ---
+EasyOcrSetup = Configuración
+EasyOcrAbout = Acerca de
+EasyOcrChangeLog = Historial de cambios
+EasyOcrConfigurationOptions = Opciones de configuración
+EasyOcrModuleDescription = Descripción del módulo
+EasyOcrModuleActiveInfo = El módulo EasyOcr está activo
+EasyOcrSetupInfo = Información de configuración
+EasyOcrSetupInfoDesc = Accede a las herramientas del módulo desde el menú principal de EasyOcr
+EasyOcrReadmeFileNotFound = Archivo README no encontrado
+EasyOcrChangeLogFileNotFound = Archivo ChangeLog no encontrado
+EasyOcrPermRead = Leer plantillas y facturas procesadas
+EasyOcrPermWrite = Crear y editar plantillas, procesar facturas
+EasyOcrPermDelete = Eliminar plantillas y registros de facturas
+
+# --- Menus ---
+EasyOcrMenuUploadPdf = Cargar Pdf
+EasyOcrMenuTemplates = Plantillas
+EasyOcrMenuInvoices = Facturas
+
+# --- tool.php (visor PDF) ---
+EasyOcrImportPdf = Importar PDF
+EasyOcrNoFileSelected = Ningún archivo seleccionado
+EasyOcrZoomOut = Alejar (-)
+EasyOcrZoomIn = Acercar (+)
+EasyOcrDropHere = Haz click o arrastra un PDF aquí
+EasyOcrImportPdfToStart = Importa un PDF para comenzar
+EasyOcrDragAndDrop = o arrastra y suelta un archivo aquí
+EasyOcrDropPdfHere = Suelta el PDF aquí
+EasyOcrLabels = Etiquetas
+EasyOcrSelectLabelHint = Selecciona una etiqueta → Dibuja un rectángulo sobre el PDF
+EasyOcrTemplates = Plantillas
+EasyOcrNoTemplate = Sin plantilla
+EasyOcrApply = Aplicar
+EasyOcrClearTemplate = Limpiar plantilla
+EasyOcrPdfMetadata = Metadatos PDF
+EasyOcrExtractedData = Datos extraídos
+EasyOcrSupplier = Proveedor
+EasyOcrSelectSupplier = Selecciona proveedor
+EasyOcrNoSelectionsYet = Sin selecciones aún
+EasyOcrReadinessSupplier = Proveedor
+EasyOcrReadinessInvoice = Factura
+EasyOcrReadinessDate = Fecha
+EasyOcrReadinessHT = HT totales
+EasyOcrReadinessTTC = Precio total
+EasyOcrCompleteness = Completitud
+EasyOcrPromoBadge = Próximamente
+EasyOcrPromoTitle = Extracción masiva con IA
+EasyOcrPromoText = Sube múltiples facturas y extrae todos los datos automáticamente sin intervención manual. Disponible con suscripción.
+EasyOcrSaveTemplate = Guardar plantilla
+EasyOcrEditTemplate = Editar plantilla
+EasyOcrGenerateInvoice = Generar Factura
+EasyOcrHelpAndShortcuts = Ayuda y atajos
+EasyOcrHelpKeyboardTitle = Atajos de teclado
+EasyOcrHelpSelectLabel = Seleccionar etiqueta
+EasyOcrHelpUndo = Deshacer última acción
+EasyOcrHelpSaveEditTpl = Guardar/Editar plantilla
+EasyOcrHelpGenerateInvoice = Generar factura
+EasyOcrHelpCloseModal = Cerrar modal / Deseleccionar
+EasyOcrHelpInteractionTitle = Interacción
+EasyOcrHelpDragPdf = Arrastra un PDF al visor para cargarlo
+EasyOcrHelpDrawRects = Dibuja rectángulos tras seleccionar etiqueta
+EasyOcrHelpDragSelections = Arrastra selecciones para moverlas
+EasyOcrHelpResizeCorners = Usa las esquinas para redimensionar
+EasyOcrHelpZoom = +/− para hacer zoom al PDF
+
+# --- Modal guardar plantilla ---
+EasyOcrSaveAsTemplate = Guardar como plantilla
+EasyOcrTemplateName = Nombre de la plantilla
+EasyOcrTemplateNamePlaceholder = Ej: Factura Proveedor X
+EasyOcrAssociatedSupplier = Proveedor asociado
+EasyOcrNoSupplierGeneric = Sin proveedor (genérico)
+EasyOcrAutoSelectSupplierHint = Al cargar esta plantilla se seleccionará automáticamente el proveedor
+EasyOcrSave = Guardar
+
+# --- Modal confirmar factura ---
+EasyOcrConfirmGenerateInvoice = Confirmar generación de factura
+EasyOcrConfirmIntro = Se creará una factura de proveedor con los siguientes datos:
+EasyOcrCreatePayment = Crear pago asociado a la factura
+EasyOcrPaymentMode = Modo de pago
+EasyOcrSelectPaymentMode = Selecciona modo de pago
+EasyOcrBankAccount = Cuenta bancaria
+EasyOcrSelectBankAccount = Selecciona cuenta bancaria
+EasyOcrCancel = Cancelar
+EasyOcrConfirmAndGenerate = Confirmar y Generar
+
+# --- Modal preview factura ---
+EasyOcrInvoiceCreated = Factura creada
+EasyOcrOpenNewTab = Abrir en pestaña nueva
+EasyOcrOpen = Abrir ↗
+
+# --- templates.php ---
+EasyOcrTemplatesTitle = Plantillas
+EasyOcrDeleteTemplate = Eliminar Plantilla
+EasyOcrConfirmDeleteTemplate = ¿Confirmar eliminación de esta plantilla?
+EasyOcrTemplatesDeleted = Plantillas eliminadas
+EasyOcrTemplateDeleted = Plantilla eliminada
+EasyOcrErrorDeletingTemplates = Error al eliminar plantillas
+EasyOcrTemplateNameExists = El nombre de plantilla ya existe
+EasyOcrTemplateUpdated = Plantilla actualizada
+EasyOcrErrorUpdatingTemplate = Error al actualizar plantilla
+EasyOcrName = Nombre
+EasyOcrCreation = Creación
+EasyOcrActions = Acciones
+EasyOcrNoSupplier = Sin proveedor
+EasyOcrSearch = Buscar
+EasyOcrClear = Limpiar
+EasyOcrShow = Mostrar
+EasyOcrDelete = Eliminar
+EasyOcrConfirm = Confirmar
+EasyOcrConfirmDeleteTemplates = ¿Eliminar %s plantilla(s) seleccionada(s)?
+EasyOcrNoTemplatesFound = No se encontraron plantillas
+EasyOcrEditName = Editar Nombre
+EasyOcrNameLabel = Nombre:
+EasyOcrSearchPlaceholder = Buscar...
+EasyOcrAllSuppliers = Todos
+
+# --- invoices.php ---
+EasyOcrInvoicesTitle = Facturas
+EasyOcrDeleteInvoice = Eliminar Factura
+EasyOcrConfirmDeleteInvoice = ¿Confirmar eliminación de este registro?
+EasyOcrRecordsDeleted = Registros eliminados
+EasyOcrRecordDeleted = Registro eliminado
+EasyOcrErrorDeletingRecords = Error al eliminar registros
+EasyOcrRef = Ref.
+EasyOcrSupplierRef = Ref. Proveedor
+EasyOcrDate = Fecha
+EasyOcrThirdParty = Tercero
+EasyOcrDeleteRecord = Eliminar registro
+EasyOcrConfirmDeleteRecords = ¿Eliminar %s registro(s) seleccionado(s)?
+EasyOcrNoInvoicesFound = No se encontraron facturas
+
+# --- templates_view.php ---
+EasyOcrEditTemplateTitle = Editar Plantilla
+EasyOcrTemplateNameLabel = Nombre de la Plantilla
+EasyOcrFieldRequired = El campo <b>Nombre</b> es requerido
+EasyOcrTemplateExists = La plantilla ya existe
+EasyOcrTemplateUpdatedOk = Plantilla actualizada correctamente
+EasyOcrErrorUpdatingTpl = Error al actualizar plantilla
+
+# --- admin/setup.php ---
+EasyOcrAboutModule = Acerca del modulo EasyOcr
+EasyOcrBackToModules = Volver al listado de módulos
+EasyOcrAbout = Acerca de
+EasyOcrForDolibarr = EASYOCR PARA DOLIBARR ERP CRM
+EasyOcrFeaturesTitle = Características
+EasyOcrFeaturesDesc = Es una herramienta o componente de software diseñada específicamente para extraer contenido textual de archivos PDF (Portable Document Format). Esta funcionalidad es esencial en diversas aplicaciones y servicios que requieren la extracción y manipulación de texto de documentos PDF.
+EasyOcrLicenseTitle = Licencias
+EasyOcrLicenseDesc = Todos los derechos reservados a EasySoft Tech S.L.
+EasyOcrSetupTitle = configuración de EasyOcr
+
+# --- JS (scripts.js) toasts y UI ---
+EasyOcrNothingToUndo = Nada que deshacer
+EasyOcrActionUndone = Acción deshecha
+EasyOcrErrorLoadingPdf = Error al cargar el PDF
+EasyOcrTemplateDetected = Plantilla "%s" detectada para este proveedor
+EasyOcrSelectTemplateFirst = Selecciona una plantilla primero
+EasyOcrTemplateNoSelections = La plantilla no tiene selecciones
+EasyOcrErrorLoadingTemplate = Error al cargar la plantilla
+EasyOcrEnterTemplateName = Ingresa un nombre para la plantilla
+EasyOcrTemplateSavedOk = Plantilla guardada correctamente
+EasyOcrErrorSavingTemplate = Error al guardar la plantilla
+EasyOcrTemplateEditedOk = Plantilla actualizada correctamente
+EasyOcrErrorEditingTemplate = Error al editar la plantilla
+EasyOcrCompleteAllFields = Completa todos los campos antes de generar
+EasyOcrSelectBankForPayment = Selecciona una cuenta bancaria para el pago
+EasyOcrSelectPaymentType = Selecciona un modo de pago
+EasyOcrInvoiceCreatedOk = Factura creada correctamente — puedes cargar otro PDF
+EasyOcrInvoiceAlreadyExists = Esta factura ya existe en el sistema
+EasyOcrErrorGeneratingInvoice = Error al generar la factura
+EasyOcrSelectPdfFile = Por favor selecciona un archivo PDF
+EasyOcrOnlyPdfAccepted = Solo se aceptan archivos PDF
+EasyOcrNoMetadata = Sin metadatos disponibles
+EasyOcrNoRelevantMetadata = Sin metadatos relevantes
+
+# --- JS labels (etiquetas de selección) ---
+EasyOcrLabelDate = Con fecha de
+EasyOcrLabelInvoice = Factura
+EasyOcrLabelHT = HT totales
+EasyOcrLabelTTC = Precio total
+EasyOcrAccessDenied = Acceso denegado
+EasyOcrPaymentAutoNote = Pago generado automáticamente por EasyOcr
+
+EasyOcrErrorCreatingInvoice = Error al crear factura
+EasyOcrInvoiceLineDesc = Mira el detalle en los archivos adjuntos
+EasyOcrErrorAddingLine = Error al añadir línea
+EasyOcrErrorValidating = Error al validar
+EasyOcrErrorCreatingTemplate = Error al crear plantilla
+EasyOcrPage = Pág.
+EasyOcrDeleteSelection = Eliminar
+EasyOcrInvoiceNumber = Nº Factura
+EasyOcrTaxableBase = Base imponible
+EasyOcrMetaTitle = Título
+EasyOcrMetaAuthor = Autor
+EasyOcrMetaSubject = Asunto
+EasyOcrMetaCreator = Creador
+EasyOcrMetaProducer = Productor
+EasyOcrMetaCreationDate = Fecha creación
+EasyOcrMetaModDate = Fecha modificación
+EasyOcrMetaKeywords = Palabras clave
+EasyOcrMetaTrapped = Trapped
+EasyOcrPdfVersion = Versión PDF
+EasyOcrXmpAuthor = XMP Autor
+EasyOcrXmpDescription = XMP Descripción
+EasyOcrXmpTitle = XMP Título
+EasyOcrXmpSubject = XMP Asunto
+EasyOcrInvoiceCreatedWithRef = Factura %s creada
+EasyOcrRefPlaceholder = SI...
+
+# --- New OCR labels ---
+EasyOcrLabelIVA = IVA
+EasyOcrLabelDesc = Descripción
+EasyOcrLabelCIF = CIF/NIF
+EasyOcrLabelDueDate = Vencimiento
+EasyOcrReadinessIVA = IVA
+EasyOcrReadinessDesc = Descripción
+EasyOcrReadinessCIF = CIF/NIF
+EasyOcrReadinessDueDate = Vencimiento
+EasyOcrOptional = (opcional)
+EasyOcrSupplierAutoDetected = Proveedor detectado automáticamente por CIF/NIF
+EasyOcrNoSupplierFoundByCIF = Ningún proveedor encontrado con ese CIF/NIF
+EasyOcrDueDate = Vencimiento
+EasyOcrDescription = Descripción

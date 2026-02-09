@@ -65,6 +65,7 @@ $pageprev = $page - 1;
 $pagenext = $page + 1;
 
 $form = new Form($db);
+$langs->load('easyocr@easyocr');
 
 // Clear filters
 if (GETPOSTISSET('button_removefilter') || GETPOSTISSET('button_removefilter_x')) {
@@ -91,10 +92,10 @@ if ($massaction == 'delete' && $user->rights->easyocr->delete) {
         }
         if (!$error) {
             $db->commit();
-            setEventMessages(count($toselect) > 1 ? "Registros eliminados" : "Registro eliminado", null, 'mesgs');
+            setEventMessages(count($toselect) > 1 ? $langs->trans('EasyOcrRecordsDeleted') : $langs->trans('EasyOcrRecordDeleted'), null, 'mesgs');
         } else {
             $db->rollback();
-            setEventMessages("Error al eliminar registros", null, 'errors');
+            setEventMessages($langs->trans('EasyOcrErrorDeletingRecords'), null, 'errors');
         }
         $action = '';
     }
@@ -105,11 +106,11 @@ if ($action == 'delete' && $confirm == 'yes' && $user->rights->easyocr->delete) 
     $id = GETPOST('id', 'int');
     $sql = "UPDATE " . MAIN_DB_PREFIX . "facture_fourn SET import_key = NULL WHERE rowid = " . ((int) $id) . " AND import_key = 'easyocr'";
     if ($db->query($sql)) {
-        setEventMessages("Registro eliminado", null, 'mesgs');
+        setEventMessages($langs->trans('EasyOcrRecordDeleted'), null, 'mesgs');
         header('Location: ' . $_SERVER['PHP_SELF']);
         exit;
     } else {
-        setEventMessages("Error al eliminar registro", null, 'errors');
+        setEventMessages($langs->trans('EasyOcrErrorDeletingRecords'), null, 'errors');
     }
     $action = '';
 }
@@ -152,11 +153,11 @@ $arrayofcss = array(
     '/custom/easyocr/css/eo-panel.css'
 );
 
-llxHeader('', 'Facturas - EasyOcr', '', '', 0, 0, $arrayofjs, $arrayofcss);
+llxHeader('', $langs->trans('EasyOcrInvoicesTitle').' - EasyOcr', '', '', 0, 0, $arrayofjs, $arrayofcss);
 
 // Confirm dialog
 if ($action == 'delete') {
-    $formconfirm = $form->formconfirm($_SERVER['PHP_SELF'] . '?id=' . GETPOST('id', 'int'), 'Eliminar Factura', '¿Confirmar eliminación de este registro?', 'delete', '', 0, 1);
+    $formconfirm = $form->formconfirm($_SERVER['PHP_SELF'] . '?id=' . GETPOST('id', 'int'), $langs->trans('EasyOcrDeleteInvoice'), $langs->trans('EasyOcrConfirmDeleteInvoice'), 'delete', '', 0, 1);
     print $formconfirm;
 }
 
@@ -166,50 +167,50 @@ print '<input type="hidden" name="token" value="' . newToken() . '">';
 print '<div class="eo-panel-header">';
 print '<div class="eo-panel-title">';
 print '<img src="'.DOL_URL_ROOT.'/custom/easyocr/img/invoice.png" class="eo-icon" alt="">';
-print '<h1>Facturas <span class="opacitymedium">(' . $nbtotalofrecords . ')</span></h1>';
+print '<h1>'.$langs->trans('EasyOcrInvoicesTitle').' <span class="opacitymedium">(' . $nbtotalofrecords . ')</span></h1>';
 print '</div>';
 print '</div>';
 
 // Filters
 print '<div class="eo-panel-filters">';
 print '<div class="eo-filter-group">';
-print '<label>Ref.:</label>';
-print '<input type="text" name="search_ref" class="flat maxwidth100" value="' . dol_escape_htmltag($searchRef) . '" placeholder="SI...">';
+print '<label>'.$langs->trans('EasyOcrRef').':</label>';
+print '<input type="text" name="search_ref" class="flat maxwidth100" value="' . dol_escape_htmltag($searchRef) . '" placeholder="'.$langs->trans('EasyOcrRefPlaceholder').'">';
 print '</div>';
 
 print '<div class="eo-filter-group">';
-print '<label>Ref. Proveedor:</label>';
-print '<input type="text" name="search_supplier_ref" class="flat maxwidth150" value="' . dol_escape_htmltag($searchSupplierRef) . '" placeholder="Buscar...">';
+print '<label>'.$langs->trans('EasyOcrSupplierRef').':</label>';
+print '<input type="text" name="search_supplier_ref" class="flat maxwidth150" value="' . dol_escape_htmltag($searchSupplierRef) . '" placeholder="'.$langs->trans('EasyOcrSearchPlaceholder').'">';
 print '</div>';
 
 print '<div class="eo-filter-group">';
-print '<label>Tercero:</label>';
-print $form->select_company($searchSupplier, 'search_supplier', 's.fournisseur=1', 'Todos', 0, 0, array(), 0, 'flat maxwidth200');
+print '<label>'.$langs->trans('EasyOcrThirdParty').':</label>';
+print $form->select_company($searchSupplier, 'search_supplier', 's.fournisseur=1', $langs->trans('EasyOcrAllSuppliers'), 0, 0, array(), 0, 'flat maxwidth200');
 print '</div>';
 
 print '<div class="eo-filter-actions">';
-print '<button type="submit" class="button buttongen" name="button_search"><i class="fa fa-search"></i> Buscar</button>';
-print '<button type="submit" class="button buttongen" name="button_removefilter"><i class="fa fa-remove"></i> Limpiar</button>';
+print '<button type="submit" class="button buttongen" name="button_search"><i class="fa fa-search"></i> '.$langs->trans('EasyOcrSearch').'</button>';
+print '<button type="submit" class="button buttongen" name="button_removefilter"><i class="fa fa-remove"></i> '.$langs->trans('EasyOcrClear').'</button>';
 print '</div>';
 print '</div>';
 
 // Mass actions
 if ($massaction == 'preDelete') {
     print '<div class="eo-mass-confirm">';
-    print '<span><i class="fa fa-warning"></i> ¿Eliminar ' . count($toselect) . ' registro(s) seleccionado(s)?</span>';
-    print '<button type="submit" name="massaction" value="delete" class="button butActionDelete">Confirmar</button>';
-    print '<button type="submit" name="cancel" value="1" class="button button-cancel">Cancelar</button>';
+    print '<span><i class="fa fa-warning"></i> '.sprintf($langs->trans('EasyOcrConfirmDeleteRecords'), count($toselect)).'</span>';
+    print '<button type="submit" name="massaction" value="delete" class="button butActionDelete">'.$langs->trans('EasyOcrConfirm').'</button>';
+    print '<button type="submit" name="cancel" value="1" class="button button-cancel">'.$langs->trans('EasyOcrCancel').'</button>';
     print '</div>';
 }
 
 $massactionbutton = '';
 if ($user->rights->easyocr->delete) {
-    $massactionbutton = '<button type="submit" class="button butActionDelete" name="massaction" value="preDelete"><i class="fa fa-trash"></i> Eliminar</button>';
+    $massactionbutton = '<button type="submit" class="button butActionDelete" name="massaction" value="preDelete"><i class="fa fa-trash"></i> '.$langs->trans('EasyOcrDelete').'</button>';
 }
 
 print '<div class="eo-panel-controls">';
 print '<div class="eo-limit-selector">';
-print 'Mostrar: ';
+print $langs->trans('EasyOcrShow').': ';
 print '<select name="limit" class="flat" onchange="this.form.submit()">';
 foreach (array(10, 20, 50, 100) as $val) {
     print '<option value="'.$val.'"'.($limit == $val ? ' selected' : '').'>'.$val.'</option>';
@@ -231,11 +232,11 @@ if ($num > 0) {
     print '<input type="checkbox" id="checkall" class="flat checkforselect">';
 }
 print '</th>';
-print '<th class="liste_titre">Ref.</th>';
-print '<th class="liste_titre">Ref. Proveedor</th>';
-print '<th class="liste_titre center">Fecha</th>';
-print '<th class="liste_titre">Tercero</th>';
-print '<th class="liste_titre center">Acciones</th>';
+print '<th class="liste_titre">'.$langs->trans('EasyOcrRef').'</th>';
+print '<th class="liste_titre">'.$langs->trans('EasyOcrSupplierRef').'</th>';
+print '<th class="liste_titre center">'.$langs->trans('EasyOcrDate').'</th>';
+print '<th class="liste_titre">'.$langs->trans('EasyOcrThirdParty').'</th>';
+print '<th class="liste_titre center">'.$langs->trans('EasyOcrActions').'</th>';
 print '</tr>';
 print '</thead>';
 print '<tbody>';
@@ -276,7 +277,7 @@ if ($num > 0) {
         
         // Actions
         print '<td class="center nowraponall">';
-        print '<a href="' . $_SERVER['PHP_SELF'] . '?action=delete&id=' . $obj->rowid . '" class="eo-action-btn" title="Eliminar registro">';
+        print '<a href="' . $_SERVER['PHP_SELF'] . '?action=delete&id=' . $obj->rowid . '" class="eo-action-btn" title="'.$langs->trans('EasyOcrDeleteRecord').'">';
         print '<i class="fa fa-trash"></i>';
         print '</a>';
         print '</td>';
@@ -285,7 +286,7 @@ if ($num > 0) {
         $i++;
     }
 } else {
-    print '<tr><td colspan="6" class="opacitymedium center">No se encontraron facturas</td></tr>';
+    print '<tr><td colspan="6" class="opacitymedium center">'.$langs->trans('EasyOcrNoInvoicesFound').'</td></tr>';
 }
 
 print '</tbody>';

@@ -17,16 +17,16 @@
  */
 
 /**
- * \file       admin/setup.php
+ * \file       admin/about.php
  * \ingroup    easyocr
- * \brief      EasyOcr module setup page
+ * \brief      About page - Module information, README
  */
 
 // Load Dolibarr environment
 $res = 0;
 // Try main.inc.php into web root known defined into CONTEXT_DOCUMENT_ROOT (not always defined)
 if (!$res && !empty($_SERVER["CONTEXT_DOCUMENT_ROOT"])) {
-	$res = @include $_SERVER["CONTEXT_DOCUMENT_ROOT"]."/main.inc.php";
+    $res = @include $_SERVER["CONTEXT_DOCUMENT_ROOT"]."/main.inc.php";
 }
 // Try main.inc.php into web root detected using web root calculated from SCRIPT_FILENAME
 $tmp = empty($_SERVER['SCRIPT_FILENAME']) ? '' : $_SERVER['SCRIPT_FILENAME'];
@@ -34,30 +34,31 @@ $tmp2 = realpath(__FILE__);
 $i = strlen($tmp) - 1;
 $j = strlen($tmp2) - 1;
 while ($i > 0 && $j > 0 && isset($tmp[$i]) && isset($tmp2[$j]) && $tmp[$i] == $tmp2[$j]) {
-	$i--;
-	$j--;
+    $i--;
+    $j--;
 }
 if (!$res && $i > 0 && file_exists(substr($tmp, 0, ($i + 1))."/main.inc.php")) {
-	$res = @include substr($tmp, 0, ($i + 1))."/main.inc.php";
+    $res = @include substr($tmp, 0, ($i + 1))."/main.inc.php";
 }
 if (!$res && $i > 0 && file_exists(dirname(substr($tmp, 0, ($i + 1)))."/main.inc.php")) {
-	$res = @include dirname(substr($tmp, 0, ($i + 1)))."/main.inc.php";
+    $res = @include dirname(substr($tmp, 0, ($i + 1)))."/main.inc.php";
 }
 // Try main.inc.php using relative path
 if (!$res && file_exists("../../main.inc.php")) {
-	$res = @include "../../main.inc.php";
+    $res = @include "../../main.inc.php";
 }
 if (!$res && file_exists("../../../main.inc.php")) {
-	$res = @include "../../../main.inc.php";
+    $res = @include "../../../main.inc.php";
 }
 if (!$res) {
-	die("Include of main fails");
+    die("Include of main fails");
 }
 
 global $db, $langs, $user, $conf;
 
 // Libraries
 require_once DOL_DOCUMENT_ROOT.'/core/lib/admin.lib.php';
+require_once DOL_DOCUMENT_ROOT.'/core/lib/functions2.lib.php';
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.form.class.php';
 require_once __DIR__.'/../lib/easyocr.lib.php';
 
@@ -66,21 +67,12 @@ $langs->loadLangs(array('errors', 'admin', 'easyocr@easyocr'));
 
 // Access control
 if (!$user->admin) {
-	accessforbidden();
+    accessforbidden();
 }
 
 // Parameters
 $action = GETPOST('action', 'aZ09');
 $backtopage = GETPOST('backtopage', 'alpha');
-
-$error = 0;
-
-
-/*
- * Actions
- */
-
-// TODO: Add configuration actions here if needed
 
 
 /*
@@ -89,7 +81,7 @@ $error = 0;
 
 $form = new Form($db);
 
-$title = $langs->trans('EasyOcrSetup');
+$title = $langs->trans('EasyOcrAbout');
 $help_url = '';
 
 llxHeader('', $title, $help_url);
@@ -100,38 +92,41 @@ print load_fiche_titre($title, $linkback, 'title_setup');
 
 // Configuration header
 $head = easyocr_admin_prepare_head();
-print dol_get_fiche_head($head, 'settings', $langs->trans('EasyOcrSetup'), -1, 'easyocr@easyocr');
+print dol_get_fiche_head($head, 'about', $langs->trans("Module402020Name"), 0, 'easyocr@easyocr');
 
-// Configuration content
-print '<div class="div-table-responsive-no-min">';
-print '<table class="noborder centpercent">';
+// Get and process README file content
+$pathoffile = dol_buildpath("/easyocr/README.md", 0);
 
-print '<tr class="liste_titre">';
-print '<td>'.$langs->trans("EasyOcrConfigurationOptions").'</td>';
-print '<td class="center">'.$langs->trans("Status").'</td>';
-print '</tr>';
+if (file_exists($pathoffile)) {
+    $content = file_get_contents($pathoffile);
 
-// Example configuration option
-print '<tr class="oddeven">';
-print '<td>'.$langs->trans("EasyOcrModuleDescription").'</td>';
-print '<td class="center">';
-print $langs->trans("EasyOcrModuleActiveInfo");
-print '</td>';
-print '</tr>';
+    // Convert markdown to HTML if Dolibarr version supports it
+    if ((float) DOL_VERSION >= 6.0) {
+        require_once DOL_DOCUMENT_ROOT.'/core/lib/parsemd.lib.php';
+        
+        $replacearray = array(
+            'doc/' => dol_buildpath('easyocr/doc/', 1),
+            'img/' => dol_buildpath('easyocr/img/', 1),
+            'images/' => dol_buildpath('easyocr/images/', 1),
+        );
 
-print '</table>';
-print '</div>';
+        $content = dolMd2Html($content, 'parsedown', $replacearray);
+    } else {
+        $content = nl2br(dol_escape_htmltag($content));
+    }
 
-print '<br>';
-
-// Information box
-print '<div class="info">';
-print '<strong>'.$langs->trans("EasyOcrSetupInfo").'</strong><br>';
-print $langs->trans("EasyOcrSetupInfoDesc");
-print '</div>';
+    print '<div class="moduledesclong" style="padding: 15px;">';
+    print $content;
+    print '</div>';
+} else {
+    print '<div class="info">';
+    print $langs->trans("EasyOcrReadmeFileNotFound");
+    print '</div>';
+}
 
 // Page end
 print dol_get_fiche_end();
 
+// Page end
 llxFooter();
 $db->close();

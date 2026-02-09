@@ -8,13 +8,6 @@ y este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 ## [2.0.0] - 2026-02-07
 
 ### Cambio Mayor
-- **Renombrado completo de MasterPdf a EasyOcr**
-  - Branding EasySoft Tech S.L.
-  - Prefijos CSS actualizado: `mp-*` → `eo-*`
-  - Namespace JavaScript: `MasterPdf` → `EasyOcr`
-  - Class Rights: `masterpdf` → `easyocr`
-  - Número de módulo: 402020
-  - Todos los archivos .lang actualizados
 
 ### Añadido
 - Soporte multi-idioma (8 idiomas):
@@ -58,7 +51,6 @@ y este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 ## [1.0.0] - 2025-06-15
 
 ### Añadido
-- Versión inicial de MasterPdf (posterior renombrado a EasyOcr)
 - Visor PDF interactivo de dos paneles
 - Extracción de texto nativo con PDF.js
 - Selección visual de datos mediante rectángulos

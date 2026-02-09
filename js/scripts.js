@@ -11,6 +11,9 @@ if (typeof pdfjsLib !== 'undefined' && window.EasyOcrWorkerSrc) {
 
 const EasyOcr = (function () {
 
+    // Translations (set by scripts.js.php before this code)
+    const L = window.EasyOcrLang || {};
+
     // ---- Estado global ----
     const state = {
         file: null,
@@ -35,10 +38,14 @@ const EasyOcr = (function () {
 
     // Etiquetas disponibles
     const tags = [
-        { label: "Con fecha de", color: "#8a27b2", key: "Confechade" },
-        { label: "Factura", color: "#1c7cff", key: "Factura" },
-        { label: "HT totales", color: "#e51515", key: "HTtotales" },
-        { label: "Precio total", color: "#e515b3", key: "Preciototal" },
+        { label: L.labelDate || "Invoice date", color: "#8a27b2", key: "Confechade" },
+        { label: L.labelInvoice || "Invoice", color: "#1c7cff", key: "Factura" },
+        { label: L.labelHT || "Total excl. tax", color: "#e51515", key: "HTtotales" },
+        { label: L.labelTTC || "Total price", color: "#e515b3", key: "Preciototal" },
+        { label: L.labelIVA || "Tax amount", color: "#ff6b35", key: "IVA" },
+        { label: L.labelDesc || "Description", color: "#27ae60", key: "Descripcion" },
+        { label: L.labelCIF || "Tax ID", color: "#16a085", key: "CIFNIF" },
+        { label: L.labelDueDate || "Due date", color: "#f39c12", key: "Vencimiento" },
     ];
 
     // Toast stacking
@@ -97,7 +104,7 @@ const EasyOcr = (function () {
 
     function undo() {
         if (history.length === 0) {
-            toast('Nada que deshacer', 'warn');
+            toast(L.nothingToUndo, 'warn');
             return;
         }
         const snapshot = history.pop();
@@ -110,7 +117,7 @@ const EasyOcr = (function () {
         renderTags();
         renderSelections();
         updateReadiness();
-        toast('Acción deshecha');
+        toast(L.actionUndone);
     }
 
     // ---- Obtener selecciones usadas ----
@@ -173,10 +180,10 @@ const EasyOcr = (function () {
     // ---- Validación visual / Readiness ----
     function updateReadiness() {
         const supplier = $('#eo-supplier').val();
-        const factura = getSelectionValue('Factura');
-        const fecha = getSelectionValue('Con fecha de');
-        const totalTtc = getSelectionValue('Precio total');
-        const totalHt = getSelectionValue('HT totales');
+        const factura = getSelectionValue(L.labelInvoice);
+        const fecha = getSelectionValue(L.labelDate);
+        const totalTtc = getSelectionValue(L.labelTTC);
+        const totalHt = getSelectionValue(L.labelHT);
 
         const checks = [
             { id: 'eo-chk-supplier', ok: !!supplier },
@@ -223,7 +230,7 @@ const EasyOcr = (function () {
         countBadge.textContent = allSelections.length;
 
         if (allSelections.length === 0) {
-            container.innerHTML = '<div class="eo-empty-selections">Sin selecciones aún</div>';
+            container.innerHTML = '<div class="eo-empty-selections">' + (L.noSelectionsYet) + '</div>';
             updateReadiness();
             return;
         }
@@ -235,9 +242,9 @@ const EasyOcr = (function () {
                     <div class="eo-sel-label">
                         <span class="eo-sel-color" style="background:${sel.color}"></span>
                         ${sel.label}
-                        <span class="eo-sel-page">Pág. ${sel.pageIdx + 1}</span>
+                        <span class="eo-sel-page">${(L.page || 'Pág.') + ' '}${sel.pageIdx + 1}</span>
                     </div>
-                    <button class="eo-sel-delete" onclick="EasyOcr.deleteSelection(${sel.pageIdx}, ${sel.selIdx})" title="Eliminar">✕</button>
+                    <button class="eo-sel-delete" onclick="EasyOcr.deleteSelection(${sel.pageIdx}, ${sel.selIdx})" title="${L.deleteSelection || 'Eliminar'}">✕</button>
                 </div>
                 <input type="text" class="eo-sel-input" 
                     data-page="${sel.pageIdx}" 
@@ -286,12 +293,28 @@ const EasyOcr = (function () {
             page.ctx.strokeRect(sel.startX, sel.startY, sel.width, sel.height);
 
             const labelH = 18;
+            const closeW = 18;
             page.ctx.fillStyle = sel.color;
             page.ctx.font = 'bold 11px sans-serif';
             const textW = page.ctx.measureText(sel.label).width + 12;
-            page.ctx.fillRect(sel.startX, sel.startY - labelH, textW, labelH);
+            // Label background + close button area
+            page.ctx.fillRect(sel.startX, sel.startY - labelH, textW + closeW, labelH);
+            // Label text
             page.ctx.fillStyle = '#fff';
             page.ctx.fillText(sel.label, sel.startX + 6, sel.startY - 5);
+            // Separator line
+            page.ctx.strokeStyle = 'rgba(255,255,255,0.45)';
+            page.ctx.lineWidth = 1;
+            page.ctx.beginPath();
+            page.ctx.moveTo(sel.startX + textW, sel.startY - labelH + 3);
+            page.ctx.lineTo(sel.startX + textW, sel.startY - 3);
+            page.ctx.stroke();
+            // Close "✕" glyph
+            page.ctx.fillStyle = '#fff';
+            page.ctx.font = 'bold 12px sans-serif';
+            const xGlyph = '✕';
+            const xGlyphW = page.ctx.measureText(xGlyph).width;
+            page.ctx.fillText(xGlyph, sel.startX + textW + (closeW - xGlyphW) / 2, sel.startY - 4);
 
             const hs = 6;
             page.ctx.fillStyle = sel.color;
@@ -344,6 +367,22 @@ const EasyOcr = (function () {
             return null;
         }
 
+        function getCloseButtonAt(x, y) {
+            const labelH = 18;
+            const closeW = 18;
+            page.ctx.font = 'bold 11px sans-serif';
+            for (let i = page.selections.length - 1; i >= 0; i--) {
+                const s = page.selections[i];
+                const textW = page.ctx.measureText(s.label).width + 12;
+                const bx = s.startX + textW;
+                const by = s.startY - labelH;
+                if (x >= bx && x <= bx + closeW && y >= by && y <= by + labelH) {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
         function getSelectionAt(x, y) {
             for (let i = page.selections.length - 1; i >= 0; i--) {
                 const s = page.selections[i];
@@ -356,6 +395,18 @@ const EasyOcr = (function () {
 
         canvas.addEventListener('mousedown', function (e) {
             const pos = getMousePos(e);
+
+            // Close button on label bar
+            const closeIdx = getCloseButtonAt(pos.x, pos.y);
+            if (closeIdx >= 0) {
+                pushHistory();
+                page.selections.splice(closeIdx, 1);
+                redrawPage(pageIdx);
+                renderSelections();
+                renderTags();
+                e.preventDefault();
+                return;
+            }
 
             const handleInfo = getHandleAt(pos.x, pos.y);
             if (handleInfo) {
@@ -448,14 +499,18 @@ const EasyOcr = (function () {
             }
 
             // Cursor hover
-            const hInfo = getHandleAt(pos.x, pos.y);
-            if (hInfo) {
-                const cursors = { nw: 'nw-resize', ne: 'ne-resize', sw: 'sw-resize', se: 'se-resize' };
-                canvas.style.cursor = cursors[hInfo.handle];
-            } else if (getSelectionAt(pos.x, pos.y) >= 0 && !state.activeTag) {
-                canvas.style.cursor = 'move';
+            if (getCloseButtonAt(pos.x, pos.y) >= 0) {
+                canvas.style.cursor = 'pointer';
             } else {
-                canvas.style.cursor = state.activeTag ? 'crosshair' : 'default';
+                const hInfo = getHandleAt(pos.x, pos.y);
+                if (hInfo) {
+                    const cursors = { nw: 'nw-resize', ne: 'ne-resize', sw: 'sw-resize', se: 'se-resize' };
+                    canvas.style.cursor = cursors[hInfo.handle];
+                } else if (getSelectionAt(pos.x, pos.y) >= 0 && !state.activeTag) {
+                    canvas.style.cursor = 'move';
+                } else {
+                    canvas.style.cursor = state.activeTag ? 'crosshair' : 'default';
+                }
             }
         });
 
@@ -734,7 +789,7 @@ const EasyOcr = (function () {
                 }
             });
 
-            label.textContent = 'Pág. ' + (closest + 1) + ' / ' + canvases.length;
+            label.textContent = (L.page || 'Pág.') + ' ' + (closest + 1) + ' / ' + canvases.length;
             label.style.display = canvases.length > 1 ? '' : 'none';
         });
     }
@@ -820,7 +875,7 @@ const EasyOcr = (function () {
                 }
             }).catch(function (err) {
                 hideLoader();
-                toast('Error al cargar el PDF: ' + err.message, 'error');
+                toast(L.errorLoadingPdf + ': ' + err.message, 'error');
             });
         };
         reader.readAsArrayBuffer(file);
@@ -841,15 +896,15 @@ const EasyOcr = (function () {
 
                 const supplierSelect = document.getElementById('eo-supplier');
                 const tplSupplierSelect = document.getElementById('eo-template-supplier');
-                supplierSelect.innerHTML = '<option value="">Selecciona proveedor</option>';
-                tplSupplierSelect.innerHTML = '<option value="">Sin proveedor (genérico)</option>';
+                supplierSelect.innerHTML = '<option value="">' + (L.selectSupplier || 'Select supplier') + '</option>';
+                tplSupplierSelect.innerHTML = '<option value="">' + (L.noSupplierGeneric || 'No supplier (generic)') + '</option>';
                 state.suppliersData.forEach(s => {
                     supplierSelect.innerHTML += `<option value="${s.rowid}">${s.nom}</option>`;
                     tplSupplierSelect.innerHTML += `<option value="${s.rowid}">${s.nom}</option>`;
                 });
 
                 const tplSelect = document.getElementById('eo-template-select');
-                tplSelect.innerHTML = '<option value="">Sin plantilla</option>';
+                tplSelect.innerHTML = '<option value="">' + (L.noTemplate || 'No template') + '</option>';
                 state.templatesData.forEach(t => {
                     const selected = state.templateId && t.rowid === state.templateId ? ' selected' : '';
                     const suffix = t.supplier_name ? ` (${t.supplier_name})` : '';
@@ -859,7 +914,7 @@ const EasyOcr = (function () {
                 // Poblar selector de cuentas bancarias
                 const bankSelect = document.getElementById('eo-payment-bank');
                 if (bankSelect) {
-                    bankSelect.innerHTML = '<option value="">Selecciona cuenta bancaria</option>';
+                    bankSelect.innerHTML = '<option value="">' + (L.selectBankAccount || 'Select bank account') + '</option>';
                     state.banksData.forEach(b => {
                         const curr = b.currency_code ? ` (${b.currency_code})` : '';
                         const num = b.number ? ` - ${b.number}` : '';
@@ -870,7 +925,7 @@ const EasyOcr = (function () {
                 // Poblar selector de tipos de pago
                 const paymentTypeSelect = document.getElementById('eo-payment-type');
                 if (paymentTypeSelect) {
-                    paymentTypeSelect.innerHTML = '<option value="">Selecciona modo de pago</option>';
+                    paymentTypeSelect.innerHTML = '<option value="">' + (L.selectPaymentMode || 'Select payment mode') + '</option>';
                     // Usar un Set para evitar duplicados por si acaso
                     const uniquePaymentTypes = new Map();
                     state.paymentTypesData.forEach(pt => {
@@ -899,7 +954,7 @@ const EasyOcr = (function () {
         const match = state.templatesData.find(t => t.fk_soc && String(t.fk_soc) === String(supplierId));
         if (match && state.pages.length > 0) {
             $('#eo-template-select').val(match.rowid).trigger('change');
-            toast('Plantilla "' + match.name + '" detectada para este proveedor', 'success');
+            toast((L.templateDetected || 'Template detected: %s').replace('%s', match.name), 'success');
             loadTemplate();
         }
         updateReadiness();
@@ -909,7 +964,7 @@ const EasyOcr = (function () {
     function loadTemplate() {
         const tplId = $('#eo-template-select').val();
         if (!tplId) {
-            toast('Selecciona una plantilla primero', 'warn');
+            toast(L.selectTemplateFirst || 'Select a template first', 'warn');
             return;
         }
 
@@ -962,12 +1017,12 @@ const EasyOcr = (function () {
                     });
                 } else {
                     hideLoader();
-                    toast('La plantilla no tiene selecciones', 'warn');
+                    toast(L.templateNoSelections, 'warn');
                 }
             },
             error: function () {
                 hideLoader();
-                toast('Error al cargar la plantilla', 'error');
+                toast(L.errorLoadingTemplate, 'error');
             }
         });
     }
@@ -1015,7 +1070,7 @@ const EasyOcr = (function () {
     function saveTemplate() {
         const name = document.getElementById('eo-template-name').value.trim();
         if (!name) {
-            toast('Ingresa un nombre para la plantilla', 'error');
+            toast(L.enterTemplateName, 'error');
             return;
         }
 
@@ -1038,12 +1093,12 @@ const EasyOcr = (function () {
                 if (data.status === 'ok') {
                     hideSaveTemplate();
                     loadInitialData();
-                    toast('Plantilla guardada correctamente');
+                    toast(L.templateSavedOk);
                 }
             },
             error: function () {
                 hideLoader();
-                toast('Error al guardar la plantilla', 'error');
+                toast(L.errorSavingTemplate, 'error');
             }
         });
     }
@@ -1068,12 +1123,12 @@ const EasyOcr = (function () {
             success: function (data) {
                 hideLoader();
                 if (data.status === 'ok') {
-                    toast('Plantilla actualizada correctamente');
+                    toast(L.templateEditedOk);
                 }
             },
             error: function () {
                 hideLoader();
-                toast('Error al editar la plantilla', 'error');
+                toast(L.errorEditingTemplate, 'error');
             }
         });
     }
@@ -1094,24 +1149,39 @@ const EasyOcr = (function () {
 
         const supplier = $('#eo-supplier').val();
         const supplierName = $('#eo-supplier option:selected').text();
-        const factura = getSelectionValue('Factura');
-        const fecha = getSelectionValue('Con fecha de');
-        const totalTtc = getSelectionValue('Precio total');
-        const totalHt = getSelectionValue('HT totales');
+        const factura = getSelectionValue(L.labelInvoice);
+        const fecha = getSelectionValue(L.labelDate);
+        const totalTtc = getSelectionValue(L.labelTTC);
+        const totalHt = getSelectionValue(L.labelHT);
+        const iva = getSelectionValue(L.labelIVA);
+        const desc = getSelectionValue(L.labelDesc);
+        const cif = getSelectionValue(L.labelCIF);
+        const dueDate = getSelectionValue(L.labelDueDate);
 
         if (!supplier || !factura || !fecha || !totalTtc || !totalHt) {
-            toast('Completa todos los campos antes de generar', 'error');
+            toast(L.completeAllFields, 'error');
             return;
         }
 
         // Modal de confirmación
-        const confirmHtml = `
+        let confirmHtml = `
             <div class="eo-confirm-grid">
-                <div class="eo-confirm-row"><span class="eo-confirm-label">Proveedor:</span><span class="eo-confirm-value">${supplierName}</span></div>
-                <div class="eo-confirm-row"><span class="eo-confirm-label">Nº Factura:</span><span class="eo-confirm-value">${factura}</span></div>
-                <div class="eo-confirm-row"><span class="eo-confirm-label">Fecha:</span><span class="eo-confirm-value">${fecha}</span></div>
-                <div class="eo-confirm-row"><span class="eo-confirm-label">Base imponible:</span><span class="eo-confirm-value">${totalHt}</span></div>
-                <div class="eo-confirm-row"><span class="eo-confirm-label">Total TTC:</span><span class="eo-confirm-value">${totalTtc}</span></div>
+                <div class="eo-confirm-row"><span class="eo-confirm-label">${(L.supplierLabel || 'Supplier') + ':'}</span><span class="eo-confirm-value">${supplierName}</span></div>
+                <div class="eo-confirm-row"><span class="eo-confirm-label">${(L.invoiceNumber || 'Invoice No.') + ':'}</span><span class="eo-confirm-value">${factura}</span></div>
+                <div class="eo-confirm-row"><span class="eo-confirm-label">${(L.dateLabel || 'Date') + ':'}</span><span class="eo-confirm-value">${fecha}</span></div>
+                <div class="eo-confirm-row"><span class="eo-confirm-label">${(L.taxableBase || 'Tax base') + ':'}</span><span class="eo-confirm-value">${totalHt}</span></div>
+                <div class="eo-confirm-row"><span class="eo-confirm-label">${(L.totalTTC || 'Total') + ':'}</span><span class="eo-confirm-value">${totalTtc}</span></div>`;
+
+        if (iva) confirmHtml += `
+                <div class="eo-confirm-row"><span class="eo-confirm-label">${(L.labelIVA || 'Tax amount') + ':'}</span><span class="eo-confirm-value">${iva}</span></div>`;
+        if (desc) confirmHtml += `
+                <div class="eo-confirm-row"><span class="eo-confirm-label">${(L.labelDesc || 'Description') + ':'}</span><span class="eo-confirm-value eo-confirm-desc">${desc}</span></div>`;
+        if (cif) confirmHtml += `
+                <div class="eo-confirm-row"><span class="eo-confirm-label">${(L.labelCIF || 'Tax ID') + ':'}</span><span class="eo-confirm-value">${cif}</span></div>`;
+        if (dueDate) confirmHtml += `
+                <div class="eo-confirm-row"><span class="eo-confirm-label">${(L.labelDueDate || 'Due date') + ':'}</span><span class="eo-confirm-value">${dueDate}</span></div>`;
+
+        confirmHtml += `
             </div>`;
 
         document.getElementById('eo-confirm-body').innerHTML = confirmHtml;
@@ -1125,11 +1195,11 @@ const EasyOcr = (function () {
             const bankId = $('#eo-payment-bank').val();
             const paymentTypeId = $('#eo-payment-type').val();
             if (!bankId) {
-                toast('Selecciona una cuenta bancaria para el pago', 'error');
+                toast(L.selectBankForPayment, 'error');
                 return;
             }
             if (!paymentTypeId) {
-                toast('Selecciona un modo de pago', 'error');
+                toast(L.selectPaymentType, 'error');
                 return;
             }
         }
@@ -1141,10 +1211,18 @@ const EasyOcr = (function () {
         formData.append('action', 'newInvoice');
         formData.append('file', state.file);
         formData.append('fk_soc', $('#eo-supplier').val());
-        formData.append('ref_supplier', getSelectionValue('Factura'));
-        formData.append('datef', getSelectionValue('Con fecha de'));
-        formData.append('total_ttc', getSelectionValue('Precio total'));
-        formData.append('total_ht', getSelectionValue('HT totales'));
+        formData.append('ref_supplier', getSelectionValue(L.labelInvoice));
+        formData.append('datef', getSelectionValue(L.labelDate));
+        formData.append('total_ttc', getSelectionValue(L.labelTTC));
+        formData.append('total_ht', getSelectionValue(L.labelHT));
+
+        // New optional fields
+        const ivaVal = getSelectionValue(L.labelIVA);
+        const descVal = getSelectionValue(L.labelDesc);
+        const dueDateVal = getSelectionValue(L.labelDueDate);
+        if (ivaVal) formData.append('total_tva', ivaVal);
+        if (descVal) formData.append('description', descVal);
+        if (dueDateVal) formData.append('date_echeance', dueDateVal);
 
         // Datos de pago
         if (createPayment) {
@@ -1164,15 +1242,15 @@ const EasyOcr = (function () {
                 hideLoader();
                 if (data.status === 'ok') {
                     showInvoicePreview(data.id, data.ref || '');
-                    toast('Factura creada correctamente — puedes cargar otro PDF', 'success');
+                    toast(L.invoiceCreatedOk, 'success');
                     resetWorkspace();
                 } else if (data.status === 'repeat') {
-                    toast('Esta factura ya existe en el sistema', 'warn');
+                    toast(L.invoiceAlreadyExists, 'warn');
                 }
             },
             error: function () {
                 hideLoader();
-                toast('Error al generar la factura', 'error');
+                toast(L.errorGeneratingInvoice, 'error');
             }
         });
     }
@@ -1193,6 +1271,26 @@ const EasyOcr = (function () {
         document.getElementById('eo-payment-options').style.display = checked ? 'block' : 'none';
     }
 
+    // ---- Auto-detect supplier by CIF/NIF ----
+    function autoDetectSupplierByCIF(cif) {
+        if (!cif || state._lastCIFSearch === cif) return;
+        state._lastCIFSearch = cif;
+
+        $.ajax({
+            url: "ajax/ajax_easyocr.php",
+            type: 'POST',
+            dataType: 'json',
+            data: { action: 'findSupplierByCIF', cif: cif.trim() },
+            success: function (data) {
+                if (data.status === 'ok' && data.fk_soc) {
+                    $('#eo-supplier').val(data.fk_soc);
+                    toast(L.supplierAutoDetected || 'Supplier auto-detected by Tax ID', 'success');
+                    updateReadiness();
+                }
+            }
+        });
+    }
+
     function getSelectionValue(label) {
         for (const page of state.pages) {
             for (const sel of page.selections) {
@@ -1209,7 +1307,7 @@ const EasyOcr = (function () {
             const file = e.target.files[0];
             if (!file) return;
             if (file.type !== 'application/pdf') {
-                toast('Por favor selecciona un archivo PDF', 'error');
+                toast(L.selectPdfFile || 'Select a PDF file', 'error');
                 return;
             }
             loadPDF(file);
@@ -1251,7 +1349,7 @@ const EasyOcr = (function () {
             if (file && file.type === 'application/pdf') {
                 loadPDF(file);
             } else {
-                toast('Solo se aceptan archivos PDF', 'error');
+                toast(L.onlyPdfAccepted, 'error');
             }
         });
 
@@ -1261,8 +1359,8 @@ const EasyOcr = (function () {
             const tag = e.target.tagName;
             if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
 
-            // 1-4: Seleccionar etiqueta
-            if (e.key >= '1' && e.key <= '4') {
+            // 1-8: Seleccionar etiqueta
+            if (e.key >= '1' && e.key <= '8') {
                 e.preventDefault();
                 selectTag(parseInt(e.key) - 1);
                 return;
@@ -1355,21 +1453,21 @@ const EasyOcr = (function () {
         }
 
         if (!meta || !meta.info) {
-            container.innerHTML = '<span class="eo-meta-empty">Sin metadatos disponibles</span>';
+            container.innerHTML = '<span class="eo-meta-empty">' + (L.noMetadata) + '</span>';
             return;
         }
 
         const info = meta.info;
         const knownFields = [
-            { key: 'Title', label: 'Título' },
-            { key: 'Author', label: 'Autor' },
-            { key: 'Subject', label: 'Asunto' },
-            { key: 'Creator', label: 'Creador' },
-            { key: 'Producer', label: 'Productor' },
-            { key: 'CreationDate', label: 'Fecha creación' },
-            { key: 'ModDate', label: 'Fecha modificación' },
-            { key: 'Keywords', label: 'Palabras clave' },
-            { key: 'Trapped', label: 'Trapped' }
+            { key: 'Title', label: L.metaTitle || 'Título' },
+            { key: 'Author', label: L.metaAuthor || 'Autor' },
+            { key: 'Subject', label: L.metaSubject || 'Asunto' },
+            { key: 'Creator', label: L.metaCreator || 'Creador' },
+            { key: 'Producer', label: L.metaProducer || 'Productor' },
+            { key: 'CreationDate', label: L.metaCreationDate || 'Fecha creación' },
+            { key: 'ModDate', label: L.metaModDate || 'Fecha modificación' },
+            { key: 'Keywords', label: L.metaKeywords || 'Palabras clave' },
+            { key: 'Trapped', label: L.metaTrapped || 'Trapped' }
         ];
         const knownKeys = knownFields.map(f => f.key);
 
@@ -1395,14 +1493,14 @@ const EasyOcr = (function () {
             }
         });
 
-        html += `<div class="eo-meta-row"><span class="eo-meta-label">Versión PDF:</span><span class="eo-meta-value">${info.PDFFormatVersion || '—'}</span></div>`;
+        html += `<div class="eo-meta-row"><span class="eo-meta-label">${L.pdfVersion || 'Versión PDF'}:</span><span class="eo-meta-value">${info.PDFFormatVersion || '—'}</span></div>`;
 
         if (meta.metadata) {
             const xmpFields = [
-                { ns: 'http://purl.org/dc/elements/1.1/', key: 'creator', label: 'XMP Autor' },
-                { ns: 'http://purl.org/dc/elements/1.1/', key: 'description', label: 'XMP Descripción' },
-                { ns: 'http://purl.org/dc/elements/1.1/', key: 'title', label: 'XMP Título' },
-                { ns: 'http://purl.org/dc/elements/1.1/', key: 'subject', label: 'XMP Asunto' }
+                { ns: 'http://purl.org/dc/elements/1.1/', key: 'creator', label: L.xmpAuthor || 'XMP Autor' },
+                { ns: 'http://purl.org/dc/elements/1.1/', key: 'description', label: L.xmpDescription || 'XMP Descripción' },
+                { ns: 'http://purl.org/dc/elements/1.1/', key: 'title', label: L.xmpTitle || 'XMP Título' },
+                { ns: 'http://purl.org/dc/elements/1.1/', key: 'subject', label: L.xmpSubject || 'XMP Asunto' }
             ];
             xmpFields.forEach(f => {
                 try {
@@ -1419,7 +1517,7 @@ const EasyOcr = (function () {
             html += `<div class="eo-meta-row"><span class="eo-meta-label">Páginas:</span><span class="eo-meta-value">${state.pdfDoc.numPages}</span></div>`;
         }
 
-        container.innerHTML = hasData ? html : '<span class="eo-meta-empty">Sin metadatos relevantes</span>';
+        container.innerHTML = hasData ? html : '<span class="eo-meta-empty">' + (L.noRelevantMetadata) + '</span>';
     }
 
     // ---- Preview de factura creada en iframe ----
@@ -1427,7 +1525,7 @@ const EasyOcr = (function () {
         const url = '../../fourn/facture/card.php?mainmenu=billing&facid=' + facId;
         document.getElementById('eo-invoice-iframe').src = url;
         document.getElementById('eo-invoice-link').href = url;
-        document.getElementById('eo-invoice-title').textContent = ref ? 'Factura ' + ref + ' creada' : 'Factura creada';
+        document.getElementById('eo-invoice-title').textContent = ref ? (L.invoiceCreatedWithRef || 'Factura %s creada').replace('%s', ref) : (L.invoiceCreatedOk || 'Factura creada');
         showModal('eo-modal-invoice');
     }
 
@@ -1451,7 +1549,7 @@ const EasyOcr = (function () {
         // Limpiar UI
         document.getElementById('canvas-container').innerHTML = '';
         document.getElementById('eo-empty-state').style.display = '';
-        document.getElementById('eo-filename').textContent = 'Ningún archivo seleccionado';
+        document.getElementById('eo-filename').textContent = L.noFileSelected || 'Ningún archivo seleccionado';
         document.getElementById('pdfInput').value = '';
 
         const zoomControls = document.getElementById('eo-zoom-controls');

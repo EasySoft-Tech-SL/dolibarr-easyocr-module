@@ -157,71 +157,9 @@
   max-width: 500px;
 }
 
-.eo-empty-state::before {
-  content: '';
-  position: absolute;
-  inset: -4px;
-  border-radius: 18px;
-  padding: 2px;
-  background: linear-gradient(45deg, #5a67d8, #10b981, #5a67d8);
-  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  opacity: 0;
-  transition: opacity 0.5s ease;
-  animation: eo-border-rotate 4s linear infinite;
-  animation-play-state: paused;
-}
-
-.eo-empty-state:hover::before {
-  opacity: 0.4;
-  animation-play-state: running;
-}
-
-@keyframes eo-border-rotate {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(360deg);
-  }
-}
-
 .eo-empty-state:hover {
-  color: #5a67d8;
-  transform: scale(1.02);
   border-color: #5a67d8;
-  background: rgba(255, 255, 255, 0.9);
-  box-shadow: 0 8px 24px rgba(90, 103, 216, 0.15);
-}
-
-.eo-empty-state svg {
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
-  transition: all 0.4s ease;
-  animation: eo-float 3s ease-in-out infinite;
-}
-
-.eo-empty-state:hover svg {
-  filter: drop-shadow(0 4px 8px rgba(90, 103, 216, 0.3));
-  animation: eo-float-hover 2s ease-in-out infinite;
-}
-
-@keyframes eo-float {
-  0%, 100% {
-    transform: translateY(0px) scale(1);
-  }
-  50% {
-    transform: translateY(-8px) scale(1);
-  }
-}
-
-@keyframes eo-float-hover {
-  0%, 100% {
-    transform: translateY(-4px) scale(1.05);
-  }
-  50% {
-    transform: translateY(-12px) scale(1.08);
-  }
+  background: rgba(255, 255, 255, 0.95);
 }
 
 .eo-empty-state p {
@@ -642,6 +580,24 @@
   color: #2d6a4f;
   font-weight: 800;
 }
+.eo-chk-optional {
+  color: #d4d4d4;
+}
+.eo-readiness-optional {
+  opacity: 0.7;
+}
+.eo-optional-badge {
+  font-size: 9px;
+  color: #aaa;
+  font-style: italic;
+  margin-left: auto;
+}
+.eo-confirm-desc {
+  max-width: 220px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 .eo-readiness {
   font-size: 12px;
   color: #999;
@@ -804,6 +760,47 @@
 @keyframes eo-pulse {
   0%, 100% { box-shadow: 0 0 0 0 rgba(39, 174, 96, 0.4); }
   50% { box-shadow: 0 0 0 8px rgba(39, 174, 96, 0); }
+}
+
+/* ---- Banner suscripción IA ---- */
+.eo-promo-banner {
+  margin: 0 16px 8px;
+  padding: 10px 12px;
+  border: 1px solid #d5dce4;
+  border-left: 3px solid #5a67d8;
+  border-radius: 4px;
+  background: #f8f9fb;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  flex-shrink: 0;
+}
+.eo-promo-badge {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #fff;
+  background: #5a67d8;
+  padding: 2px 6px;
+  border-radius: 3px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.eo-promo-text {
+  font-size: 12px;
+  line-height: 1.5;
+  color: #4a5568;
+}
+.eo-promo-text strong {
+  display: block;
+  font-size: 12px;
+  color: #2d3748;
+  margin-bottom: 2px;
+}
+.eo-promo-text span {
+  color: #718096;
 }
 
 /* ---- Acciones (footer sidebar) ---- */

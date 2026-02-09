@@ -64,6 +64,7 @@ $pageprev = $page - 1;
 $pagenext = $page + 1;
 
 $form = new Form($db);
+$langs->load('easyocr@easyocr');
 
 // Clear filters
 if (GETPOSTISSET('button_removefilter') || GETPOSTISSET('button_removefilter_x')) {
@@ -96,10 +97,10 @@ if ($massaction == 'delete' && $user->rights->easyocr->delete) {
         }
         if (!$error) {
             $db->commit();
-            setEventMessages(count($toselect) > 1 ? "Plantillas eliminadas" : "Plantilla eliminada", null, 'mesgs');
+            setEventMessages(count($toselect) > 1 ? $langs->trans('EasyOcrTemplatesDeleted') : $langs->trans('EasyOcrTemplateDeleted'), null, 'mesgs');
         } else {
             $db->rollback();
-            setEventMessages("Error al eliminar plantillas", null, 'errors');
+            setEventMessages($langs->trans('EasyOcrErrorDeletingTemplates'), null, 'errors');
         }
         $action = '';
     }
@@ -122,12 +123,12 @@ if ($action == 'delete' && $confirm == 'yes' && $user->rights->easyocr->delete) 
     }
     if (!$error) {
         $db->commit();
-        setEventMessages("Plantilla eliminada", null, 'mesgs');
+        setEventMessages($langs->trans('EasyOcrTemplateDeleted'), null, 'mesgs');
         header('Location: ' . $_SERVER['PHP_SELF']);
         exit;
     } else {
         $db->rollback();
-        setEventMessages("Error al eliminar plantilla", null, 'errors');
+        setEventMessages($langs->trans('EasyOcrErrorDeletingTemplates'), null, 'errors');
     }
     $action = '';
 }
@@ -144,13 +145,13 @@ if ($action == 'update_name' && $user->rights->easyocr->write) {
         $obj_check = $db->fetch_object($resql);
         
         if ($obj_check->num > 0) {
-            setEventMessages("El nombre de plantilla ya existe", null, 'warnings');
+            setEventMessages($langs->trans('EasyOcrTemplateNameExists'), null, 'warnings');
         } else {
             $sql = "UPDATE " . MAIN_DB_PREFIX . "easyocr_template SET name = '" . $db->escape($newName) . "' WHERE rowid = " . ((int) $id);
             if ($db->query($sql)) {
-                setEventMessages("Plantilla actualizada", null, 'mesgs');
+                setEventMessages($langs->trans('EasyOcrTemplateUpdated'), null, 'mesgs');
             } else {
-                setEventMessages("Error al actualizar plantilla", null, 'errors');
+                setEventMessages($langs->trans('EasyOcrErrorUpdatingTemplate'), null, 'errors');
             }
         }
     }
@@ -192,11 +193,11 @@ $arrayofcss = array(
     '/custom/easyocr/css/eo-panel.css'
 );
 
-llxHeader('', 'Plantillas - EasyOcr', '', '', 0, 0, $arrayofjs, $arrayofcss);
+llxHeader('', $langs->trans('EasyOcrTemplatesTitle').' - EasyOcr', '', '', 0, 0, $arrayofjs, $arrayofcss);
 
 // Confirm dialog
 if ($action == 'delete') {
-    $formconfirm = $form->formconfirm($_SERVER['PHP_SELF'] . '?id=' . GETPOST('id', 'int'), 'Eliminar Plantilla', '¿Confirmar eliminación de esta plantilla?', 'delete', '', 0, 1);
+    $formconfirm = $form->formconfirm($_SERVER['PHP_SELF'] . '?id=' . GETPOST('id', 'int'), $langs->trans('EasyOcrDeleteTemplate'), $langs->trans('EasyOcrConfirmDeleteTemplate'), 'delete', '', 0, 1);
     print $formconfirm;
 }
 
@@ -206,46 +207,46 @@ print '<input type="hidden" name="token" value="' . newToken() . '">';
 print '<div class="eo-panel-header">';
 print '<div class="eo-panel-title">';
 print '<img src="'.DOL_URL_ROOT.'/custom/easyocr/img/templates.png" class="eo-icon" alt="">';
-print '<h1>Plantillas <span class="opacitymedium">(' . $nbtotalofrecords . ')</span></h1>';
+print '<h1>'.$langs->trans('EasyOcrTemplatesTitle').' <span class="opacitymedium">(' . $nbtotalofrecords . ')</span></h1>';
 print '</div>';
 print '</div>';
 
 // Filters
 print '<div class="eo-panel-filters">';
 print '<div class="eo-filter-group">';
-print '<label>Nombre:</label>';
-print '<input type="text" name="search_name" class="flat maxwidth150" value="' . dol_escape_htmltag($searchName) . '" placeholder="Buscar...">';
+print '<label>'.$langs->trans('EasyOcrNameLabel').'</label>';
+print '<input type="text" name="search_name" class="flat maxwidth150" value="' . dol_escape_htmltag($searchName) . '" placeholder="'.$langs->trans('EasyOcrSearchPlaceholder').'">';
 print '</div>';
 
 print '<div class="eo-filter-group">';
-print '<label>Proveedor:</label>';
-print $form->select_company($searchSupplier, 'search_supplier', 's.fournisseur=1', 'Todos', 0, 0, array(), 0, 'flat maxwidth200');
+print '<label>'.$langs->trans('EasyOcrSupplier').':</label>';
+print $form->select_company($searchSupplier, 'search_supplier', 's.fournisseur=1', $langs->trans('EasyOcrAllSuppliers'), 0, 0, array(), 0, 'flat maxwidth200');
 print '</div>';
 
 print '<div class="eo-filter-actions">';
-print '<button type="submit" class="button buttongen" name="button_search"><i class="fa fa-search"></i> Buscar</button>';
-print '<button type="submit" class="button buttongen" name="button_removefilter"><i class="fa fa-remove"></i> Limpiar</button>';
+print '<button type="submit" class="button buttongen" name="button_search"><i class="fa fa-search"></i> '.$langs->trans('EasyOcrSearch').'</button>';
+print '<button type="submit" class="button buttongen" name="button_removefilter"><i class="fa fa-remove"></i> '.$langs->trans('EasyOcrClear').'</button>';
 print '</div>';
 print '</div>';
 
 // Mass actions
 if ($massaction == 'preDelete') {
     print '<div class="eo-mass-confirm">';
-    print '<span><i class="fa fa-warning"></i> ¿Eliminar ' . count($toselect) . ' plantilla(s) seleccionada(s)?</span>';
-    print '<button type="submit" name="massaction" value="delete" class="button butActionDelete">Confirmar</button>';
-    print '<button type="submit" name="cancel" value="1" class="button button-cancel">Cancelar</button>';
+    print '<span><i class="fa fa-warning"></i> '.sprintf($langs->trans('EasyOcrConfirmDeleteTemplates'), count($toselect)).'</span>';
+    print '<button type="submit" name="massaction" value="delete" class="button butActionDelete">'.$langs->trans('EasyOcrConfirm').'</button>';
+    print '<button type="submit" name="cancel" value="1" class="button button-cancel">'.$langs->trans('EasyOcrCancel').'</button>';
     print '</div>';
 }
 
 $selectedfields = '';
 $massactionbutton = '';
 if ($user->rights->easyocr->delete) {
-    $massactionbutton = '<button type="submit" class="button butActionDelete" name="massaction" value="preDelete"><i class="fa fa-trash"></i> Eliminar</button>';
+    $massactionbutton = '<button type="submit" class="button butActionDelete" name="massaction" value="preDelete"><i class="fa fa-trash"></i> '.$langs->trans('EasyOcrDelete').'</button>';
 }
 
 print '<div class="eo-panel-controls">';
 print '<div class="eo-limit-selector">';
-print 'Mostrar: ';
+print $langs->trans('EasyOcrShow').': ';
 print '<select name="limit" class="flat" onchange="this.form.submit()">';
 foreach (array(10, 20, 50, 100) as $val) {
     print '<option value="'.$val.'"'.($limit == $val ? ' selected' : '').'>'.$val.'</option>';
@@ -268,10 +269,10 @@ if ($num > 0) {
     print '<input type="checkbox" id="checkall" class="flat checkforselect">';
 }
 print '</th>';
-print '<th class="liste_titre">Nombre</th>';
-print '<th class="liste_titre">Proveedor</th>';
-print '<th class="liste_titre center">Creación</th>';
-print '<th class="liste_titre center">Acciones</th>';
+print '<th class="liste_titre">'.$langs->trans('EasyOcrName').'</th>';
+print '<th class="liste_titre">'.$langs->trans('EasyOcrSupplier').'</th>';
+print '<th class="liste_titre center">'.$langs->trans('EasyOcrCreation').'</th>';
+print '<th class="liste_titre center">'.$langs->trans('EasyOcrActions').'</th>';
 print '</tr>';
 print '</thead>';
 print '<tbody>';
@@ -301,7 +302,7 @@ if ($num > 0) {
             $supplierLink = DOL_URL_ROOT . '/fourn/card.php?socid=' . $obj->fk_soc;
             print '<a href="' . $supplierLink . '">' . dol_escape_htmltag($obj->supplier_name) . '</a>';
         } else {
-            print '<span class="opacitymedium">Sin proveedor</span>';
+            print '<span class="opacitymedium">'.$langs->trans('EasyOcrNoSupplier').'</span>';
         }
         print '</td>';
         
@@ -312,7 +313,7 @@ if ($num > 0) {
         
         // Actions
         print '<td class="center nowraponall">';
-        print '<a href="' . $_SERVER['PHP_SELF'] . '?action=delete&id=' . $obj->rowid . '" class="eo-action-btn" title="Eliminar">';
+        print '<a href="' . $_SERVER['PHP_SELF'] . '?action=delete&id=' . $obj->rowid . '" class="eo-action-btn" title="'.$langs->trans('EasyOcrDelete').'">';
         print '<i class="fa fa-trash"></i>';
         print '</a>';
         print '</td>';
@@ -321,7 +322,7 @@ if ($num > 0) {
         $i++;
     }
 } else {
-    print '<tr><td colspan="5" class="opacitymedium center">No se encontraron plantillas</td></tr>';
+    print '<tr><td colspan="5" class="opacitymedium center">'.$langs->trans('EasyOcrNoTemplatesFound').'</td></tr>';
 }
 
 print '</tbody>';
@@ -341,7 +342,7 @@ print '</form>';
 print '<div id="eoEditModal" class="eo-modal" style="display:none;">';
 print '<div class="eo-modal-content eo-modal-sm">';
 print '<div class="eo-modal-header">';
-print '<h3>Editar Nombre</h3>';
+print '<h3>'.$langs->trans('EasyOcrEditName').'</h3>';
 print '<span class="eo-modal-close">&times;</span>';
 print '</div>';
 print '<form id="eoEditForm" method="POST" action="' . $_SERVER['PHP_SELF'] . '">';
@@ -349,12 +350,12 @@ print '<input type="hidden" name="token" value="' . newToken() . '">';
 print '<input type="hidden" name="action" value="update_name">';
 print '<input type="hidden" name="id" id="eoEditId" value="">';
 print '<div class="eo-modal-body">';
-print '<label class="fieldrequired">Nombre:</label>';
+print '<label class="fieldrequired">'.$langs->trans('EasyOcrNameLabel').'</label>';
 print '<input type="text" name="name" id="eoEditName" class="flat minwidth300" required>';
 print '</div>';
 print '<div class="eo-modal-footer">';
-print '<button type="submit" class="button"><i class="fa fa-save"></i> Guardar</button>';
-print '<button type="button" class="button button-cancel eo-modal-close">Cancelar</button>';
+print '<button type="submit" class="button"><i class="fa fa-save"></i> '.$langs->trans('EasyOcrSave').'</button>';
+print '<button type="button" class="button button-cancel eo-modal-close">'.$langs->trans('EasyOcrCancel').'</button>';
 print '</div>';
 print '</form>';
 print '</div>';

@@ -161,19 +161,19 @@ class modEasyocr extends DolibarrModules
 
 		// Permission to read (view templates and invoices)
 		$this->rights[$r][0] = $this->numero . sprintf("%02d", $r + 1);
-		$this->rights[$r][1] = 'Leer plantillas y facturas procesadas';
+		$this->rights[$r][1] = 'EasyOcrPermRead';
 		$this->rights[$r][4] = 'read';
 		$r++;
 
 		// Permission to write (create/edit templates and process invoices)
 		$this->rights[$r][0] = $this->numero . sprintf("%02d", $r + 1);
-		$this->rights[$r][1] = 'Crear y editar plantillas, procesar facturas';
+		$this->rights[$r][1] = 'EasyOcrPermWrite';
 		$this->rights[$r][4] = 'write';
 		$r++;
 
 		// Permission to delete (remove templates and invoice records)
 		$this->rights[$r][0] = $this->numero . sprintf("%02d", $r + 1);
-		$this->rights[$r][1] = 'Eliminar plantillas y registros de facturas';
+		$this->rights[$r][1] = 'EasyOcrPermDelete';
 		$this->rights[$r][4] = 'delete';
 		$r++;
 
@@ -199,7 +199,7 @@ class modEasyocr extends DolibarrModules
 		$this->menu[$r++] = array(
 			'fk_menu'  => 'fk_mainmenu=easyocr',
 			'type'     => 'left',
-			'titre'    => 'Cargar Pdf',
+			'titre'    => 'EasyOcrMenuUploadPdf',
 			'prefix'   => '<img src="' . DOL_URL_ROOT . '/custom/easyocr/img/uploadpdf.png" width="40px" height="40px">',
 			'mainmenu' => 'easyocr',
 			'leftmenu' => 'easyocr_tool',
@@ -215,7 +215,7 @@ class modEasyocr extends DolibarrModules
 		$this->menu[$r++] = array(
 			'fk_menu'  => 'fk_mainmenu=easyocr',
 			'type'     => 'left',
-			'titre'    => 'Plantillas',
+			'titre'    => 'EasyOcrMenuTemplates',
 			'prefix'   => '<img src="' . DOL_URL_ROOT . '/custom/easyocr/img/templates.png" width="40px" height="40px">',
 			'mainmenu' => 'easyocr',
 			'leftmenu' => 'easyocr_templates',
@@ -231,7 +231,7 @@ class modEasyocr extends DolibarrModules
 		$this->menu[$r++] = array(
 			'fk_menu'  => 'fk_mainmenu=easyocr',
 			'type'     => 'left',
-			'titre'    => 'Facturas',
+			'titre'    => 'EasyOcrMenuInvoices',
 			'prefix'   => '<img src="' . DOL_URL_ROOT . '/custom/easyocr/img/invoice.png" width="40px" height="40px">',
 			'mainmenu' => 'easyocr',
 			'leftmenu' => 'easyocr_invoices',

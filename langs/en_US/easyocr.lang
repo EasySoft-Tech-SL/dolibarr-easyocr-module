@@ -1,0 +1,229 @@
+﻿# EasyOcr - English (US)
+# Copyright (C) 2025-2026 EasySoft Tech S.L.
+
+# --- Module descriptor ---
+Module402020Name = EasyOcr
+ModuleEasyocrDesc = Text extraction and invoice import from PDF
+ModuleEasyocrDescLong = Tool for extracting text content from PDF files for automatic creation of supplier invoices in Dolibarr.
+# --- Admin tabs ---
+EasyOcrSetup = Setup
+EasyOcrAbout = About
+EasyOcrChangeLog = ChangeLog
+EasyOcrConfigurationOptions = Configuration options
+EasyOcrModuleDescription = Module description
+EasyOcrModuleActiveInfo = The EasyOcr module is active
+EasyOcrSetupInfo = Setup information
+EasyOcrSetupInfoDesc = Access module tools from the main EasyOcr menu
+EasyOcrReadmeFileNotFound = README file not found
+EasyOcrChangeLogFileNotFound = ChangeLog file not foundEasyOcrPermRead = Read templates and processed invoices
+EasyOcrPermWrite = Create and edit templates, process invoices
+EasyOcrPermDelete = Delete templates and invoice records
+
+# --- Menus ---
+EasyOcrMenuUploadPdf = Upload PDF
+EasyOcrMenuTemplates = Templates
+EasyOcrMenuInvoices = Invoices
+
+# --- tool.php (PDF viewer) ---
+EasyOcrImportPdf = Import PDF
+EasyOcrNoFileSelected = No file selected
+EasyOcrZoomOut = Zoom out (-)
+EasyOcrZoomIn = Zoom in (+)
+EasyOcrDropHere = Click or drag a PDF here
+EasyOcrImportPdfToStart = Import a PDF to begin
+EasyOcrDragAndDrop = or drag and drop a file here
+EasyOcrDropPdfHere = Drop the PDF here
+EasyOcrLabels = Labels
+EasyOcrSelectLabelHint = Select a label → Draw a rectangle on the PDF
+EasyOcrTemplates = Templates
+EasyOcrNoTemplate = No template
+EasyOcrApply = Apply
+EasyOcrClearTemplate = Clear template
+EasyOcrPdfMetadata = PDF Metadata
+EasyOcrExtractedData = Extracted data
+EasyOcrSupplier = Supplier
+EasyOcrSelectSupplier = Select supplier
+EasyOcrNoSelectionsYet = No selections yet
+EasyOcrReadinessSupplier = Supplier
+EasyOcrReadinessInvoice = Invoice
+EasyOcrReadinessDate = Date
+EasyOcrReadinessHT = Total excl. tax
+EasyOcrReadinessTTC = Total price
+EasyOcrCompleteness = Completeness
+EasyOcrPromoBadge = Coming soon
+EasyOcrPromoTitle = Bulk extraction with AI
+EasyOcrPromoText = Upload multiple invoices and extract all data automatically without manual intervention. Available with subscription.
+EasyOcrSaveTemplate = Save template
+EasyOcrEditTemplate = Edit template
+EasyOcrGenerateInvoice = Generate Invoice
+EasyOcrHelpAndShortcuts = Help and shortcuts
+EasyOcrHelpKeyboardTitle = Keyboard shortcuts
+EasyOcrHelpSelectLabel = Select label
+EasyOcrHelpUndo = Undo last action
+EasyOcrHelpSaveEditTpl = Save/Edit template
+EasyOcrHelpGenerateInvoice = Generate invoice
+EasyOcrHelpCloseModal = Close modal / Deselect
+EasyOcrHelpInteractionTitle = Interaction
+EasyOcrHelpDragPdf = Drag a PDF to the viewer to load it
+EasyOcrHelpDrawRects = Draw rectangles after selecting a label
+EasyOcrHelpDragSelections = Drag selections to move them
+EasyOcrHelpResizeCorners = Use corners to resize
+EasyOcrHelpZoom = +/− to zoom the PDF
+
+# --- Save template modal ---
+EasyOcrSaveAsTemplate = Save as template
+EasyOcrTemplateName = Template name
+EasyOcrTemplateNamePlaceholder = E.g.: Supplier X Invoice
+EasyOcrAssociatedSupplier = Associated supplier
+EasyOcrNoSupplierGeneric = No supplier (generic)
+EasyOcrAutoSelectSupplierHint = Loading this template will automatically select the supplier
+EasyOcrSave = Save
+
+# --- Confirm invoice modal ---
+EasyOcrConfirmGenerateInvoice = Confirm invoice generation
+EasyOcrConfirmIntro = A supplier invoice will be created with the following data:
+EasyOcrCreatePayment = Create payment linked to the invoice
+EasyOcrPaymentMode = Payment mode
+EasyOcrSelectPaymentMode = Select payment mode
+EasyOcrBankAccount = Bank account
+EasyOcrSelectBankAccount = Select bank account
+EasyOcrCancel = Cancel
+EasyOcrConfirmAndGenerate = Confirm and Generate
+
+# --- Invoice preview modal ---
+EasyOcrInvoiceCreated = Invoice created
+EasyOcrOpenNewTab = Open in new tab
+EasyOcrOpen = Open ↗
+
+# --- templates.php ---
+EasyOcrTemplatesTitle = Templates
+EasyOcrDeleteTemplate = Delete Template
+EasyOcrConfirmDeleteTemplate = Confirm deletion of this template?
+EasyOcrTemplatesDeleted = Templates deleted
+EasyOcrTemplateDeleted = Template deleted
+EasyOcrErrorDeletingTemplates = Error deleting templates
+EasyOcrTemplateNameExists = Template name already exists
+EasyOcrTemplateUpdated = Template updated
+EasyOcrErrorUpdatingTemplate = Error updating template
+EasyOcrName = Name
+EasyOcrCreation = Creation
+EasyOcrActions = Actions
+EasyOcrNoSupplier = No supplier
+EasyOcrSearch = Search
+EasyOcrClear = Clear
+EasyOcrShow = Show
+EasyOcrDelete = Delete
+EasyOcrConfirm = Confirm
+EasyOcrConfirmDeleteTemplates = Delete %s selected template(s)?
+EasyOcrNoTemplatesFound = No templates found
+EasyOcrEditName = Edit Name
+EasyOcrNameLabel = Name:
+EasyOcrSearchPlaceholder = Search...
+EasyOcrAllSuppliers = All
+
+# --- invoices.php ---
+EasyOcrInvoicesTitle = Invoices
+EasyOcrDeleteInvoice = Delete Invoice
+EasyOcrConfirmDeleteInvoice = Confirm deletion of this record?
+EasyOcrRecordsDeleted = Records deleted
+EasyOcrRecordDeleted = Record deleted
+EasyOcrErrorDeletingRecords = Error deleting records
+EasyOcrRef = Ref.
+EasyOcrSupplierRef = Supplier Ref.
+EasyOcrDate = Date
+EasyOcrThirdParty = Third party
+EasyOcrDeleteRecord = Delete record
+EasyOcrConfirmDeleteRecords = Delete %s selected record(s)?
+EasyOcrNoInvoicesFound = No invoices found
+
+# --- templates_view.php ---
+EasyOcrEditTemplateTitle = Edit Template
+EasyOcrTemplateNameLabel = Template Name
+EasyOcrFieldRequired = The <b>Name</b> field is required
+EasyOcrTemplateExists = Template already exists
+EasyOcrTemplateUpdatedOk = Template updated successfully
+EasyOcrErrorUpdatingTpl = Error updating template
+
+# --- admin/setup.php ---
+EasyOcrAboutModule = About the EasyOcr module
+EasyOcrBackToModules = Back to modules list
+EasyOcrAbout = About
+EasyOcrForDolibarr = EASYOCR FOR DOLIBARR ERP CRM
+EasyOcrFeaturesTitle = Features
+EasyOcrFeaturesDesc = A tool or software component specifically designed to extract text content from PDF (Portable Document Format) files. This functionality is essential in various applications and services that require the extraction and manipulation of text from PDF documents.
+EasyOcrLicenseTitle = Licenses
+EasyOcrLicenseDesc = All rights reserved to EasySoft Tech S.L.
+EasyOcrSetupTitle = EasyOcr configuration
+
+# --- JS (scripts.js) toasts and UI ---
+EasyOcrNothingToUndo = Nothing to undo
+EasyOcrActionUndone = Action undone
+EasyOcrErrorLoadingPdf = Error loading PDF
+EasyOcrTemplateDetected = Template "%s" detected for this supplier
+EasyOcrSelectTemplateFirst = Select a template first
+EasyOcrTemplateNoSelections = Template has no selections
+EasyOcrErrorLoadingTemplate = Error loading template
+EasyOcrEnterTemplateName = Enter a template name
+EasyOcrTemplateSavedOk = Template saved successfully
+EasyOcrErrorSavingTemplate = Error saving template
+EasyOcrTemplateEditedOk = Template updated successfully
+EasyOcrErrorEditingTemplate = Error editing template
+EasyOcrCompleteAllFields = Complete all fields before generating
+EasyOcrSelectBankForPayment = Select a bank account for payment
+EasyOcrSelectPaymentType = Select a payment mode
+EasyOcrInvoiceCreatedOk = Invoice created successfully — you can load another PDF
+EasyOcrInvoiceAlreadyExists = This invoice already exists in the system
+EasyOcrErrorGeneratingInvoice = Error generating invoice
+EasyOcrSelectPdfFile = Please select a PDF file
+EasyOcrOnlyPdfAccepted = Only PDF files are accepted
+EasyOcrNoMetadata = No metadata available
+EasyOcrNoRelevantMetadata = No relevant metadata
+
+# --- JS labels (selection labels) ---
+EasyOcrLabelDate = Invoice date
+EasyOcrLabelInvoice = Invoice
+EasyOcrLabelHT = Total excl. tax
+EasyOcrLabelTTC = Total price
+EasyOcrAccessDenied = Access denied
+EasyOcrPaymentAutoNote = Payment automatically generated by EasyOcr
+
+EasyOcrErrorCreatingInvoice = Error creating invoice
+EasyOcrInvoiceLineDesc = See details in the attached files
+EasyOcrErrorAddingLine = Error adding line
+EasyOcrErrorValidating = Error validating
+EasyOcrErrorCreatingTemplate = Error creating template
+EasyOcrPage = Page
+EasyOcrDeleteSelection = Delete
+EasyOcrInvoiceNumber = Invoice No.
+EasyOcrTaxableBase = Tax base
+EasyOcrMetaTitle = Title
+EasyOcrMetaAuthor = Author
+EasyOcrMetaSubject = Subject
+EasyOcrMetaCreator = Creator
+EasyOcrMetaProducer = Producer
+EasyOcrMetaCreationDate = Creation date
+EasyOcrMetaModDate = Modification date
+EasyOcrMetaKeywords = Keywords
+EasyOcrMetaTrapped = Trapped
+EasyOcrPdfVersion = PDF version
+EasyOcrXmpAuthor = XMP Author
+EasyOcrXmpDescription = XMP Description
+EasyOcrXmpTitle = XMP Title
+EasyOcrXmpSubject = XMP Subject
+EasyOcrInvoiceCreatedWithRef = Invoice %s created
+EasyOcrRefPlaceholder = SI...
+
+# --- New OCR labels ---
+EasyOcrLabelIVA = Tax amount
+EasyOcrLabelDesc = Description
+EasyOcrLabelCIF = Tax ID
+EasyOcrLabelDueDate = Due date
+EasyOcrReadinessIVA = Tax amount
+EasyOcrReadinessDesc = Description
+EasyOcrReadinessCIF = Tax ID
+EasyOcrReadinessDueDate = Due date
+EasyOcrOptional = (optional)
+EasyOcrSupplierAutoDetected = Supplier auto-detected by Tax ID
+EasyOcrNoSupplierFoundByCIF = No supplier found with that Tax ID
+EasyOcrDueDate = Due date
+EasyOcrDescription = Description

@@ -54,13 +54,14 @@ if (!$id) {
 }
 
 $form = new Form($db);
+$langs->load('easyocr@easyocr');
 
 // Process form
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && GETPOST('save', 'alpha')) {
     $name = GETPOST('name', 'alpha');
     
     if (empty($name)) {
-        setEventMessages("El campo <b>Nombre</b> es requerido", null, "errors");
+        setEventMessages($langs->trans('EasyOcrFieldRequired'), null, "errors");
     } else {
         // Check duplicate
         $sql = "SELECT COUNT(*) as num FROM " . MAIN_DB_PREFIX . "easyocr_template WHERE rowid <> " . ((int) $id) . " AND name = '" . $db->escape($name) . "'";
@@ -68,15 +69,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && GETPOST('save', 'alpha')) {
         $obj_check = $db->fetch_object($resql);
         
         if ($obj_check->num > 0) {
-            setEventMessages("La plantilla ya existe", null, "warnings");
+            setEventMessages($langs->trans('EasyOcrTemplateExists'), null, "warnings");
         } else {
             $sql = "UPDATE " . MAIN_DB_PREFIX . "easyocr_template SET name = '" . $db->escape($name) . "' WHERE rowid = " . ((int) $id);
             if ($db->query($sql)) {
-                setEventMessages("Plantilla actualizada correctamente", null, "mesgs");
+                setEventMessages($langs->trans('EasyOcrTemplateUpdatedOk'), null, "mesgs");
                 header('Location: templates.php');
                 exit;
             } else {
-                setEventMessages("Error al actualizar plantilla", null, "errors");
+                setEventMessages($langs->trans('EasyOcrErrorUpdatingTpl'), null, "errors");
             }
         }
     }
@@ -96,12 +97,12 @@ $templateName = $obj->name;
 
 // Page header
 $arrayofcss = array('/custom/easyocr/css/eo-panel.css');
-llxHeader('', 'Editar Plantilla - EasyOcr', '', '', 0, 0, array(), $arrayofcss);
+llxHeader('', $langs->trans('EasyOcrEditTemplateTitle').' - EasyOcr', '', '', 0, 0, array(), $arrayofcss);
 
 print '<div class="eo-panel-header">';
 print '<div class="eo-panel-title">';
 print '<img src="'.DOL_URL_ROOT.'/custom/easyocr/img/templates.png" class="eo-icon" alt="">';
-print '<h1>Editar Plantilla</h1>';
+print '<h1>'.$langs->trans('EasyOcrEditTemplateTitle').'</h1>';
 print '</div>';
 print '</div>';
 
@@ -112,13 +113,13 @@ print '<input type="hidden" name="save" value="1">';
 print '<div style="background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); max-width: 600px; margin: 0 auto;">';
 
 print '<div style="margin-bottom: 25px;">';
-print '<label class="fieldrequired" style="display: block; margin-bottom: 8px; font-weight: 600; color: #333;">Nombre de la Plantilla</label>';
+print '<label class="fieldrequired" style="display: block; margin-bottom: 8px; font-weight: 600; color: #333;">'.$langs->trans('EasyOcrTemplateNameLabel').'</label>';
 print '<input type="text" name="name" value="' . dol_escape_htmltag($templateName) . '" class="flat minwidth400" required style="padding: 10px 12px; border: 1px solid #cbd5e0; border-radius: 4px; font-size: 14px; width: 100%;">';
 print '</div>';
 
 print '<div style="display: flex; justify-content: flex-end; gap: 10px; padding-top: 20px; border-top: 1px solid #e9ecef;">';
-print '<a href="templates.php" class="button button-cancel" style="padding: 10px 20px; background: #6c757d; color: white; border-radius: 4px; text-decoration: none; font-weight: 600;">Cancelar</a>';
-print '<button type="submit" class="button" style="padding: 10px 20px; background: #966ea2; color: white; border: none; border-radius: 4px; font-weight: 600; cursor: pointer;"><i class="fa fa-save"></i> Guardar</button>';
+print '<a href="templates.php" class="button button-cancel" style="padding: 10px 20px; background: #6c757d; color: white; border-radius: 4px; text-decoration: none; font-weight: 600;">'.$langs->trans('EasyOcrCancel').'</a>';
+print '<button type="submit" class="button" style="padding: 10px 20px; background: #966ea2; color: white; border: none; border-radius: 4px; font-weight: 600; cursor: pointer;"><i class="fa fa-save"></i> '.$langs->trans('EasyOcrSave').'</button>';
 print '</div>';
 
 print '</div>';
