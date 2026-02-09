@@ -136,7 +136,10 @@ class EasyOcrAI
 
 		$url = $this->baseUrl . '/api/v1/ocr/base64';
 
-		$jsonPayload = json_encode(array('base64_data' => $base64Data));
+		$jsonPayload = json_encode(array(
+			'base64_data'  => $base64Data,
+			'include_text' => false
+		));
 
 		return $this->doRequest($url, $jsonPayload, false);
 	}

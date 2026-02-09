@@ -64,6 +64,7 @@ require_once DOL_DOCUMENT_ROOT . '/fourn/class/fournisseur.facture.class.php';
 require_once DOL_DOCUMENT_ROOT . '/fourn/class/paiementfourn.class.php';
 require_once DOL_DOCUMENT_ROOT . '/ecm/class/ecmfiles.class.php';
 require_once DOL_DOCUMENT_ROOT . '/societe/class/societe.class.php';
+require_once DOL_DOCUMENT_ROOT . '/product/class/product.class.php';
 require_once DOL_DOCUMENT_ROOT . '/core/lib/date.lib.php';
 require_once __DIR__ . '/../lib/easyocr.lib.php';
 require_once __DIR__ . '/../lib/easyocr_ai.class.php';
@@ -182,13 +183,19 @@ if ($action == "newInvoice") {
 	$date_echeance_str = GETPOST("date_echeance", "alphanohtml");
 
 	// Verificar duplicado por ref_supplier + proveedor
-	$sql_check = "SELECT rowid FROM " . MAIN_DB_PREFIX . "facture_fourn";
+	$sql_check = "SELECT rowid, ref FROM " . MAIN_DB_PREFIX . "facture_fourn";
 	$sql_check .= " WHERE ref_supplier = '" . $db->escape($ref_supplier) . "'";
 	$sql_check .= " AND fk_soc = " . ((int) $fk_soc);
 	$sql_check .= " AND entity IN (" . getEntity('supplier_invoice') . ")";
 	$resql_check = $db->query($sql_check);
 	if ($resql_check && $db->num_rows($resql_check) > 0) {
-		print json_encode(["status" => "repeat"]);
+		$existingObj = $db->fetch_object($resql_check);
+		print json_encode([
+			"status" => "repeat",
+			"existing_id" => $existingObj->rowid,
+			"existing_ref" => $existingObj->ref,
+			"existing_ref_supplier" => $ref_supplier
+		]);
 		exit;
 	}
 
@@ -380,11 +387,23 @@ if ($action == "newInvoice") {
 		}
 	}
 
+	// Diarios contables (series de factura de proveedor)
+	$result_journals = array();
+	$sql = "SELECT rowid, code, label FROM " . MAIN_DB_PREFIX . "accounting_journal";
+	$sql .= " WHERE nature = 2 AND active = 1 AND entity = " . ((int) $conf->entity) . " ORDER BY code";
+	$resql = $db->query($sql);
+	if ($resql) {
+		while ($obj = $db->fetch_object($resql)) {
+			$result_journals[] = array('rowid' => $obj->rowid, 'code' => $obj->code, 'label' => $obj->label);
+		}
+	}
+
 	print json_encode([
 		"suppliers" => $result_suppliers,
 		"templates" => $result_templates,
 		"banks" => $result_banks,
-		"payment_types" => $result_payment_types
+		"payment_types" => $result_payment_types,
+		"journals" => $result_journals
 	]);
 
 
@@ -734,10 +753,8 @@ if ($action == "newInvoice") {
 			$sqlNS = "SELECT s.rowid FROM " . MAIN_DB_PREFIX . "societe s";
 			$sqlNS .= " WHERE s.status = 1 AND s.entity IN (" . getEntity('societe') . ") AND (";
 			$sqlNS .= " REPLACE(REPLACE(REPLACE(s.siren,' ',''),'-',''),'.','')='" . $db->escape($cif_clean) . "'";
-			$sqlNS .= " OR REPLACE(REPLACE(REPLACE(s.ape,' ',''),'-',''),'.','')='" . $db->escape($cif_clean) . "'";
-			$sqlNS .= " OR REPLACE(REPLACE(REPLACE(s.idprof4,' ',''),'-',''),'.','')='" . $db->escape($cif_clean) . "'";
-			$sqlNS .= " OR REPLACE(REPLACE(REPLACE(s.idprof5,' ',''),'-',''),'.','')='" . $db->escape($cif_clean) . "'";
 			$sqlNS .= " OR REPLACE(REPLACE(REPLACE(s.siret,' ',''),'-',''),'.','')='" . $db->escape($cif_clean) . "'";
+			$sqlNS .= " OR REPLACE(REPLACE(REPLACE(s.ape,' ',''),'-',''),'.','')='" . $db->escape($cif_clean) . "'";
 			$sqlNS .= " OR REPLACE(REPLACE(REPLACE(s.idprof4,' ',''),'-',''),'.','')='" . $db->escape($cif_clean) . "'";
 			$sqlNS .= " OR REPLACE(REPLACE(REPLACE(s.idprof5,' ',''),'-',''),'.','')='" . $db->escape($cif_clean) . "'";
 			$sqlNS .= " OR REPLACE(REPLACE(REPLACE(s.idprof6,' ',''),'-',''),'.','')='" . $db->escape($cif_clean) . "'";
@@ -834,21 +851,47 @@ if ($action == "newInvoice") {
 	$items = !empty($items_json) ? json_decode($items_json, true) : array();
 	if (!is_array($items)) $items = array();
 
-	// Duplicate check
-	$sql_check = "SELECT rowid FROM " . MAIN_DB_PREFIX . "facture_fourn";
+	// Additional params
+	$invoice_status = GETPOST('invoice_status', 'alpha'); // 'draft' or 'validated'
+	$invoice_type = GETPOST('invoice_type', 'int');       // 0=standard, 2=credit_note
+	$journal_code = GETPOST('journal_code', 'alphanohtml');
+
+	// Duplicate check — return existing invoice details
+	$sql_check = "SELECT rowid, ref FROM " . MAIN_DB_PREFIX . "facture_fourn";
 	$sql_check .= " WHERE ref_supplier = '" . $db->escape($ref_supplier) . "'";
 	$sql_check .= " AND fk_soc = " . ((int) $fk_soc);
 	$sql_check .= " AND entity IN (" . getEntity('supplier_invoice') . ")";
 	$resql_check = $db->query($sql_check);
 	if ($resql_check && $db->num_rows($resql_check) > 0) {
-		print json_encode(["status" => "repeat"]);
+		$existingObj = $db->fetch_object($resql_check);
+		print json_encode([
+			"status" => "repeat",
+			"existing_id" => $existingObj->rowid,
+			"existing_ref" => $existingObj->ref,
+			"existing_ref_supplier" => $ref_supplier
+		]);
 		exit;
+	}
+
+	// Auto-fill payment mode/conditions from supplier
+	$supplier_payment_mode = 0;
+	$supplier_payment_cond = 0;
+	if (!empty($fk_soc)) {
+		$socTmp = new Societe($db);
+		$socTmp->fetch($fk_soc);
+		if (!empty($socTmp->mode_reglement_supplier_id)) {
+			$supplier_payment_mode = $socTmp->mode_reglement_supplier_id;
+		}
+		if (!empty($socTmp->cond_reglement_supplier_id)) {
+			$supplier_payment_cond = $socTmp->cond_reglement_supplier_id;
+		}
 	}
 
 	// Create invoice
 	$facture = new FactureFournisseur($db);
 	$facture->socid = $fk_soc;
 	$facture->ref_supplier = $ref_supplier;
+	$facture->type = (!empty($invoice_type) && in_array((int)$invoice_type, [0, 2, 3, 5])) ? (int)$invoice_type : 0;
 	$facture->date = dol_mktime(
 		12,
 		0,
@@ -858,7 +901,16 @@ if ($action == "newInvoice") {
 		date('Y', strtotime($datef_str))
 	);
 	$facture->multicurrency_code = $conf->currency;
+	$facture->special_code = 0;
 	$facture->import_key = 'easyocr-ai';
+
+	// Set payment mode/conditions from supplier
+	if ($supplier_payment_mode > 0) {
+		$facture->mode_reglement_id = $supplier_payment_mode;
+	}
+	if ($supplier_payment_cond > 0) {
+		$facture->cond_reglement_id = $supplier_payment_cond;
+	}
 
 	if (!empty($notes)) {
 		$facture->note_private = $notes;
@@ -883,59 +935,207 @@ if ($action == "newInvoice") {
 		exit;
 	}
 
-	$sql = "UPDATE " . MAIN_DB_PREFIX . "facture_fourn SET import_key = 'easyocr-ai' WHERE rowid = " . ((int) $newId);
+	$sql = "UPDATE " . MAIN_DB_PREFIX . "facture_fourn SET import_key = 'easyocr-ai'";
+	if (!empty($journal_code)) {
+		$sql .= ", fk_account = (SELECT rowid FROM " . MAIN_DB_PREFIX . "accounting_journal WHERE code = '" . $db->escape($journal_code) . "' AND entity = " . ((int)$conf->entity) . " LIMIT 1)";
+	}
+	$sql .= " WHERE rowid = " . ((int) $newId);
 	$db->query($sql);
 
-	// Add lines - one per AI-extracted item
+	// Add lines — full tax support (IVA/TVA, RE, IRPF) + product matching
+	$lineErrors = array();
 	if (!empty($items)) {
+		$lineIndex = 0;
 		foreach ($items as $item) {
-			$desc = !empty($item['description']) ? $item['description'] : 'LÃ­nea';
+			$lineIndex++;
+			$desc = !empty($item['description']) ? $item['description'] : 'Línea';
 			$qty = !empty($item['quantity']) ? floatval($item['quantity']) : 1;
-			$unit_price = !empty($item['unit_price']) ? convertToNumber($item['unit_price']) : 0;
-			$tax_rate = !empty($item['tax_rate']) ? floatval($item['tax_rate']) : 0;
+			$unit_price = isset($item['unit_price']) && $item['unit_price'] !== '' ? convertToNumber($item['unit_price']) : 0;
+			$discount = !empty($item['discount_percent']) ? floatval($item['discount_percent']) : 0;
+			$itemType = isset($item['item_type']) ? strtolower(trim($item['item_type'])) : '';
 
-			// If no unit_price but we have total and qty, compute it
+			// Tax handling — parse taxes array from new API format
+			$tva_rate = 0;
+			$localtax1_rate = 0; // RE (Recargo de Equivalencia)
+			$localtax2_rate = 0; // IRPF (retención)
+
+			if (!empty($item['taxes']) && is_array($item['taxes'])) {
+				foreach ($item['taxes'] as $tax) {
+					$taxType = strtolower($tax['tax_type'] ?? '');
+					$taxRate = floatval($tax['tax_rate'] ?? 0);
+					if (in_array($taxType, ['tva', 'iva', 'vat'])) {
+						$tva_rate = $taxRate;
+					} elseif ($taxType === 're') {
+						$localtax1_rate = $taxRate;
+					} elseif ($taxType === 'irpf') {
+						$localtax2_rate = -abs($taxRate); // IRPF is negative (withholding)
+					}
+				}
+			}
+
+			// Fallback: if taxes array didn't yield a rate, check flat fields
+			if ($tva_rate == 0 && !empty($item['tax_rate'])) {
+				$tva_rate = floatval($item['tax_rate']);
+			}
+			if ($localtax1_rate == 0 && !empty($item['re_rate'])) {
+				$localtax1_rate = floatval($item['re_rate']);
+			}
+			if ($localtax2_rate == 0 && !empty($item['irpf_rate'])) {
+				$localtax2_rate = -abs(floatval($item['irpf_rate']));
+			}
+
+			// Calculate unit_price from net_amount or total if missing
+			if ($unit_price == 0 && !empty($item['net_amount'])) {
+				$net = convertToNumber($item['net_amount']);
+				$unit_price = $net / ($qty > 0 ? $qty : 1);
+				if ($discount > 0) {
+					$unit_price = $unit_price / (1 - $discount / 100);
+				}
+			}
 			if ($unit_price == 0 && !empty($item['total'])) {
 				$lineTotal = convertToNumber($item['total']);
-				$lineTaxAmt = !empty($item['tax_amount']) ? convertToNumber($item['tax_amount']) : 0;
+				$lineTaxAmt = 0;
+				if (!empty($item['taxes']) && is_array($item['taxes'])) {
+					foreach ($item['taxes'] as $tax) {
+						$lineTaxAmt += floatval($tax['tax_amount'] ?? 0);
+					}
+				} elseif (!empty($item['tax_amount'])) {
+					$lineTaxAmt = convertToNumber($item['tax_amount']);
+				}
 				$unit_price = ($lineTotal - $lineTaxAmt) / ($qty > 0 ? $qty : 1);
 			}
 
-			$facture->addline(
-				$desc,
-				$unit_price,
-				$tax_rate,
-				0,          // txlocaltax1
-				0,          // txlocaltax2
-				$qty
+			// Product matching by code/ref — skip for discount/surcharge/other types
+			$fk_product = 0;
+			$skipProductMatch = in_array($itemType, ['discount', 'surcharge', 'other', '']);
+			if (!$skipProductMatch && !empty($item['code'])) {
+				$sqlProd = "SELECT rowid FROM " . MAIN_DB_PREFIX . "product";
+				$sqlProd .= " WHERE (ref = '" . $db->escape($item['code']) . "'";
+				$sqlProd .= " OR barcode = '" . $db->escape($item['code']) . "')";
+				$sqlProd .= " AND entity IN (" . getEntity('product') . ") LIMIT 1";
+				$resProd = $db->query($sqlProd);
+				if ($resProd && $db->num_rows($resProd) > 0) {
+					$fk_product = $db->fetch_object($resProd)->rowid;
+				} else {
+					// Auto-create product if not found
+					$newProduct = new Product($db);
+					$newProduct->ref = $item['code'];
+					$newProduct->label = $desc;
+					$newProduct->status = 1;        // On sale
+					$newProduct->status_buy = 1;     // On purchase
+					$newProduct->type = 0;           // Product
+					if (in_array($itemType, ['service', 'shipping', 'fee'])) {
+						$newProduct->type = 1;       // Service
+					}
+					$newProduct->price = abs($unit_price);
+					$newProduct->price_base_type = 'HT';
+					$newProduct->tva_tx = $tva_rate;
+					$newProduct->localtax1_tx = $localtax1_rate;
+					$newProduct->localtax2_tx = $localtax2_rate;
+					$prodId = $newProduct->create($user);
+					if ($prodId > 0) {
+						$fk_product = $prodId;
+					}
+				}
+			}
+
+			// Determine line type: 0=product, 1=service
+			$line_type = 0;
+			if (in_array($itemType, ['service', 'shipping', 'fee', 'surcharge', 'discount'])) {
+				$line_type = 1;
+			}
+
+			dol_syslog("EasyOCR addline #$lineIndex: desc=$desc, pu=$unit_price, tva=$tva_rate, ltx1=$localtax1_rate, ltx2=$localtax2_rate, qty=$qty, fk_prod=$fk_product, disc=$discount, type=$line_type, itemType=$itemType", LOG_DEBUG);
+
+			$addLineResult = $facture->addline(
+				$desc,              // description
+				$unit_price,         // pu (unit price HT)
+				$tva_rate,           // txtva
+				$localtax1_rate,     // txlocaltax1 (RE)
+				$localtax2_rate,     // txlocaltax2 (IRPF)
+				$qty,                // qty
+				$fk_product,         // fk_product
+				$discount,           // remise_percent
+				'',                  // date_start
+				'',                  // date_end
+				0,                   // ventil
+				'',                  // info_bits
+				'HT',               // price_base_type
+				$line_type           // type (0=product, 1=service)
 			);
+
+			if ($addLineResult < 0) {
+				dol_syslog("EasyOCR addline #$lineIndex FAILED: " . $facture->error, LOG_ERR);
+				$lineErrors[] = "Line $lineIndex ($desc): " . $facture->error;
+			}
 		}
 	} else {
 		// Fallback: single line with totals
 		$tva_tx = calculateIVA($total_ht, $total_tva);
 		$facture->addline(
 			$langs->trans('EasyOcrInvoiceLineDesc'),
-			$total_ht,
-			$tva_tx,
-			0,
-			0,
-			1
+			$total_ht,       // pu
+			$tva_tx,         // txtva
+			0,               // txlocaltax1
+			0,               // txlocaltax2
+			1,               // qty
+			0,               // fk_product
+			0,               // remise_percent
+			'',              // date_start
+			'',              // date_end
+			0,               // ventil
+			'',              // info_bits
+			'HT',            // price_base_type
+			0                // type
 		);
 	}
 
-	// Validate
-	$result = $facture->validate($user);
-	if ($result <= 0) {
-		print json_encode(["status" => "error", "message" => $langs->trans('EasyOcrErrorValidating') . ': ' . $facture->error]);
-		exit;
-	}
+	// Update invoice totals with OCR values (before validation) using raw query
+	// This ensures totals match the original document even if line calculations differ slightly
+	$ocr_total_ht = $total_ht;
+	$ocr_total_tva = $total_tva;
+	$ocr_total_ttc = $total_ttc;
+	$ocr_localtax1 = convertToNumber(GETPOST('total_localtax1', 'alphanohtml')); // RE (Recargo Equivalencia)
+	$ocr_localtax2 = convertToNumber(GETPOST('total_localtax2', 'alphanohtml')); // IRPF (Retención) - negative
 
-	$facture->fetch($newId);
-	$ref = $facture->ref;
+	$sql_totals = "UPDATE " . MAIN_DB_PREFIX . "facture_fourn SET ";
+	$sql_totals .= " total_ht = " . ((float) $ocr_total_ht);
+	$sql_totals .= ", tva = " . ((float) $ocr_total_tva);
+	$sql_totals .= ", total_ttc = " . ((float) $ocr_total_ttc);
+	if ($ocr_localtax1 != 0) {
+		$sql_totals .= ", localtax1 = " . ((float) $ocr_localtax1);
+	}
+	if ($ocr_localtax2 != 0) {
+		// IRPF is stored as negative (withholding reduces total)
+		$sql_totals .= ", localtax2 = " . ((float) -abs($ocr_localtax2));
+	}
+	$sql_totals .= " WHERE rowid = " . ((int) $newId);
+	$db->query($sql_totals);
+
+	dol_syslog("EasyOCR AI: Updated invoice totals - HT: $ocr_total_ht, TVA: $ocr_total_tva, TTC: $ocr_total_ttc, LTX1: $ocr_localtax1, LTX2: $ocr_localtax2", LOG_DEBUG);
+
+	// Validate or leave as draft
+	$ref = '(PROV' . $newId . ')';
+	if ($invoice_status !== 'draft') {
+		$result = $facture->validate($user);
+		if ($result <= 0) {
+			$errMsg = $langs->trans('EasyOcrErrorValidating') . ': ' . $facture->error;
+			if (!empty($lineErrors)) {
+				$errMsg .= ' | Line errors: ' . implode('; ', $lineErrors);
+			}
+			print json_encode(["status" => "error", "message" => $errMsg]);
+			exit;
+		}
+		$facture->fetch($newId);
+		$ref = $facture->ref;
+	} else {
+		// Even for drafts, refetch to get calculated totals
+		$facture->fetch($newId);
+	}
 
 	// Upload PDF
 	if (isset($_FILES['file']) && $_FILES['file']['error'] === UPLOAD_ERR_OK) {
-		$ref_clean = dol_sanitizeFileName($facture->ref);
+		$ref_clean = dol_sanitizeFileName($ref);
 		$reldir = 'fournisseur/facture/' . get_exdir($newId, 2, 0, 0, $facture, 'invoice_supplier') . $ref_clean;
 		$upload_dir = DOL_DATA_ROOT . '/' . $reldir;
 
@@ -960,30 +1160,44 @@ if ($action == "newInvoice") {
 		}
 	}
 
-	// Payment
+	// Payment — use the invoice's calculated total (not the modal's header total)
 	$create_payment = GETPOST('create_payment', 'alpha');
 	if ($create_payment == '1' && GETPOST('payment_bank_id', 'int') > 0) {
-		$payment_bank_id = GETPOST('payment_bank_id', 'int');
-		$payment_type_id = GETPOST('payment_type_id', 'int') > 0 ? GETPOST('payment_type_id', 'int') : 6;
+		// Only create payment if invoice is validated
+		if ($invoice_status !== 'draft') {
+			$payment_bank_id = GETPOST('payment_bank_id', 'int');
+			$payment_type_id = GETPOST('payment_type_id', 'int') > 0 ? GETPOST('payment_type_id', 'int') : 6;
 
-		$paiement = new PaiementFourn($db);
-		$paiement->datepaye = $facture->date;
-		$paiement->amounts = array($newId => $total_ttc);
-		$paiement->multicurrency_amounts = array($newId => $total_ttc);
-		$paiement->multicurrency_code = array($newId => $conf->currency);
-		$paiement->multicurrency_tx = array($newId => 1);
-		$paiement->paiementid = $payment_type_id;
-		$paiement->num_payment = $ref_supplier;
-		$paiement->note_private = $langs->trans('EasyOcrPaymentAutoNote');
-		$paiement->fk_account = $payment_bank_id;
+			// Use the invoice's real total_ttc to avoid overpayment
+			$paymentAmount = $facture->total_ttc;
 
-		$paiement_id = $paiement->create($user, 1);
-		if ($paiement_id > 0) {
-			$paiement->addPaymentToBank($user, 'payment_supplier', '(SupplierInvoicePayment)', $payment_bank_id, '', '');
+			$paiement = new PaiementFourn($db);
+			$paiement->datepaye = $facture->date;
+			$paiement->amounts = array($newId => $paymentAmount);
+			$paiement->multicurrency_amounts = array($newId => $paymentAmount);
+			$paiement->multicurrency_code = array($newId => $conf->currency);
+			$paiement->multicurrency_tx = array($newId => 1);
+			$paiement->paiementid = $payment_type_id;
+			$paiement->num_payment = $ref_supplier;
+			$paiement->note_private = $langs->trans('EasyOcrPaymentAutoNote');
+			$paiement->fk_account = $payment_bank_id;
+
+			$paiement_id = $paiement->create($user, 1);
+			if ($paiement_id > 0) {
+				$paiement->addPaymentToBank($user, 'payment_supplier', '(SupplierInvoicePayment)', $payment_bank_id, '', '');
+			}
 		}
 	}
 
-	print json_encode(["status" => "ok", "id" => $newId, "ref" => $ref, "supplier_created" => $supplier_created, "supplier_name" => $supplier_created_name]);
+	print json_encode([
+		"status" => "ok",
+		"id" => $newId,
+		"ref" => $ref,
+		"supplier_created" => $supplier_created,
+		"supplier_name" => $supplier_created_name,
+		"is_draft" => ($invoice_status === 'draft'),
+		"line_errors" => $lineErrors
+	]);
 
 
 	// ============================================================
@@ -1077,8 +1291,9 @@ if ($action == "newInvoice") {
 			'Accept: text/event-stream'
 		],
 		CURLOPT_POSTFIELDS     => json_encode([
-			'base64_data' => $base64Data,
-			'filename'    => $filename
+			'base64_data'  => $base64Data,
+			'filename'     => $filename,
+			'include_text' => false
 		]),
 		CURLOPT_RETURNTRANSFER => false,
 		CURLOPT_TIMEOUT        => 120,
@@ -1111,4 +1326,91 @@ if ($action == "newInvoice") {
 		"enabled" => $aiService->isEnabled(),
 		"url" => $aiService->getBaseUrl()
 	]);
+
+
+// ============================================================
+// GET SUPPLIER PAYMENT INFO (mode + conditions)
+// ============================================================
+} else if ($action == "getSupplierPaymentInfo") {
+
+	$fk_soc = GETPOST("fk_soc", "int");
+	if (empty($fk_soc)) {
+		print json_encode(["status" => "error", "message" => "Supplier ID required"]);
+		exit;
+	}
+
+	$soc = new Societe($db);
+	$soc->fetch($fk_soc);
+
+	$payment_mode_id = !empty($soc->mode_reglement_supplier_id) ? $soc->mode_reglement_supplier_id : 0;
+	$payment_cond_id = !empty($soc->cond_reglement_supplier_id) ? $soc->cond_reglement_supplier_id : 0;
+
+	// Get payment mode label
+	$payment_mode_label = '';
+	if ($payment_mode_id > 0) {
+		$sql = "SELECT libelle as label, code FROM " . MAIN_DB_PREFIX . "c_paiement WHERE id = " . ((int)$payment_mode_id);
+		$res = $db->query($sql);
+		if ($res && $db->num_rows($res) > 0) {
+			$obj = $db->fetch_object($res);
+			$translated = $langs->transnoentitiesnoconv("PaymentTypeShort" . $obj->code);
+			$payment_mode_label = ($translated !== "PaymentTypeShort" . $obj->code) ? $translated : $obj->label;
+		}
+	}
+
+	// Get payment condition label
+	$payment_cond_label = '';
+	if ($payment_cond_id > 0) {
+		$sql = "SELECT libelle as label FROM " . MAIN_DB_PREFIX . "c_payment_term WHERE rowid = " . ((int)$payment_cond_id);
+		$res = $db->query($sql);
+		if ($res && $db->num_rows($res) > 0) {
+			$payment_cond_label = $db->fetch_object($res)->label;
+		}
+	}
+
+	print json_encode([
+		"status" => "ok",
+		"payment_mode_id" => $payment_mode_id,
+		"payment_mode_label" => $payment_mode_label,
+		"payment_cond_id" => $payment_cond_id,
+		"payment_cond_label" => $payment_cond_label
+	]);
+
+
+// ============================================================
+// SEARCH PRODUCTS BY REF/LABEL
+// ============================================================
+} else if ($action == "searchProducts") {
+
+	$term = GETPOST("term", "alphanohtml");
+	if (empty($term) || strlen($term) < 2) {
+		print json_encode([]);
+		exit;
+	}
+
+	$sql = "SELECT p.rowid, p.ref, p.label, p.price, p.tva_tx, p.localtax1_tx, p.localtax2_tx, p.type";
+	$sql .= " FROM " . MAIN_DB_PREFIX . "product p";
+	$sql .= " WHERE p.entity IN (" . getEntity('product') . ")";
+	$sql .= " AND p.tobuy = 1";
+	$sql .= " AND (p.ref LIKE '%" . $db->escape($term) . "%' OR p.label LIKE '%" . $db->escape($term) . "%' OR p.barcode = '" . $db->escape($term) . "')";
+	$sql .= " ORDER BY p.ref LIMIT 20";
+
+	$result = array();
+	$resql = $db->query($sql);
+	if ($resql) {
+		while ($obj = $db->fetch_object($resql)) {
+			$result[] = array(
+				'rowid' => $obj->rowid,
+				'ref' => $obj->ref,
+				'label' => $obj->label,
+				'price' => $obj->price,
+				'tva_tx' => $obj->tva_tx,
+				'localtax1_tx' => $obj->localtax1_tx,
+				'localtax2_tx' => $obj->localtax2_tx,
+				'type' => $obj->type
+			);
+		}
+	}
+
+	print json_encode($result);
+
 }

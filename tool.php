@@ -297,9 +297,17 @@ llxHeader("", "EasyOcr", '', '', 0, 0, $arrayofjs, $arrayofcss);
 <div id="eo-modal-invoice" class="eo-modal-overlay">
   <div class="eo-modal eo-modal-lg">
     <div class="eo-modal-header">
-      <h4 id="eo-invoice-title"><?php echo $langs->trans('EasyOcrInvoiceCreated'); ?></h4>
+      <div class="eo-invoice-header-left">
+        <div class="eo-invoice-header-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+        </div>
+        <h4 id="eo-invoice-title"><?php echo $langs->trans('EasyOcrInvoiceCreated'); ?></h4>
+      </div>
       <div class="eo-modal-header-actions">
-        <a id="eo-invoice-link" href="#" target="_blank" class="eo-btn eo-btn-sm eo-btn-primary" title="<?php echo $langs->trans('EasyOcrOpenNewTab'); ?>"><?php echo $langs->trans('EasyOcrOpen'); ?></a>
+        <a id="eo-invoice-link" href="#" target="_blank" class="eo-invoice-open-btn" title="<?php echo $langs->trans('EasyOcrOpenNewTab'); ?>">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+          <?php echo $langs->trans('EasyOcrOpenNewTab') ?: 'Abrir en pestaña'; ?>
+        </a>
         <button class="eo-modal-close" onclick="EasyOcr.closeInvoicePreview()">✕</button>
       </div>
     </div>
@@ -327,7 +335,18 @@ llxHeader("", "EasyOcr", '', '', 0, 0, $arrayofjs, $arrayofcss);
           </div>
         </div>
       </div>
-      <button class="eo-modal-close" onclick="EasyOcr.closeAIModal()">✕</button>
+      <div class="eo-ai-header-actions">
+        <button class="eo-btn-payload" id="eo-btn-show-payload" onclick="EasyOcr.toggleAIPayload()" title="Show JSON payload">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+          JSON
+        </button>
+        <button class="eo-modal-close" onclick="EasyOcr.closeAIModal()">✕</button>
+      </div>
+    </div>
+
+    <!-- Payload viewer -->
+    <div id="eo-ai-payload-panel" class="eo-ai-payload-panel" style="display:none">
+      <pre id="eo-ai-payload-content" class="eo-ai-payload-content"></pre>
     </div>
 
     <div class="eo-modal-ai-body">
@@ -388,11 +407,15 @@ llxHeader("", "EasyOcr", '', '', 0, 0, $arrayofjs, $arrayofcss);
             <table class="eo-ai-table" id="eo-ai-lines-table">
               <thead>
                 <tr>
+                  <th class="eo-ai-th-code"><?php echo $langs->trans('EasyOcrAICode') ?: 'Código'; ?></th>
                   <th class="eo-ai-th-desc"><?php echo $langs->trans('EasyOcrAILineDesc'); ?></th>
+                  <th class="eo-ai-th-type"><?php echo $langs->trans('EasyOcrAIType') ?: 'Tipo'; ?></th>
                   <th class="eo-ai-th-qty"><?php echo $langs->trans('EasyOcrAIQty'); ?></th>
                   <th class="eo-ai-th-price"><?php echo $langs->trans('EasyOcrAIPrice'); ?></th>
+                  <th class="eo-ai-th-disc"><?php echo $langs->trans('EasyOcrAIDiscount') ?: 'Dto%'; ?></th>
                   <th class="eo-ai-th-tax"><?php echo $langs->trans('EasyOcrAITaxRate'); ?></th>
-                  <th class="eo-ai-th-taxamt"><?php echo $langs->trans('EasyOcrAITaxAmount'); ?></th>
+                  <th class="eo-ai-th-re"><?php echo $langs->trans('EasyOcrAIRE') ?: 'RE%'; ?></th>
+                  <th class="eo-ai-th-irpf"><?php echo $langs->trans('EasyOcrAIIRPF') ?: 'IRPF%'; ?></th>
                   <th class="eo-ai-th-total"><?php echo $langs->trans('EasyOcrAITotal'); ?></th>
                   <th class="eo-ai-th-actions"></th>
                 </tr>
@@ -442,17 +465,40 @@ llxHeader("", "EasyOcr", '', '', 0, 0, $arrayofjs, $arrayofcss);
 
     <div class="eo-modal-ai-footer">
       <div class="eo-ai-footer-options">
-        <label class="eo-checkbox-label eo-checkbox-sm">
-          <input type="checkbox" id="eo-ai-create-payment" onchange="EasyOcr.toggleAIPayment()">
-          <?php echo $langs->trans('EasyOcrCreatePayment'); ?>
-        </label>
-        <div id="eo-ai-payment-options" class="eo-ai-payment-opts" style="display:none">
-          <select id="eo-ai-payment-type" class="eo-select eo-select-sm">
-            <option value=""><?php echo $langs->trans('EasyOcrSelectPaymentMode'); ?></option>
-          </select>
-          <select id="eo-ai-payment-bank" class="eo-select eo-select-sm">
-            <option value=""><?php echo $langs->trans('EasyOcrSelectBankAccount'); ?></option>
-          </select>
+        <!-- Row 1: Invoice status + Journal -->
+        <div class="eo-ai-footer-row">
+          <div class="eo-ai-option-group">
+            <span class="eo-ai-option-label"><?php echo $langs->trans('EasyOcrAIInvoiceStatus') ?: 'Estado'; ?></span>
+            <span class="eo-ai-option-sep"></span>
+            <label class="eo-radio-label eo-radio-sm">
+              <input type="radio" name="eo-ai-invoice-status" value="validated" checked> <?php echo $langs->trans('EasyOcrAIValidated') ?: 'Validada'; ?>
+            </label>
+            <label class="eo-radio-label eo-radio-sm">
+              <input type="radio" name="eo-ai-invoice-status" value="draft"> <?php echo $langs->trans('EasyOcrAIDraft') ?: 'Borrador'; ?>
+            </label>
+          </div>
+          <div class="eo-ai-option-group">
+            <span class="eo-ai-option-label"><?php echo $langs->trans('EasyOcrAIJournal') ?: 'Diario'; ?></span>
+            <span class="eo-ai-option-sep"></span>
+            <select id="eo-ai-journal" class="eo-select eo-select-sm">
+              <option value=""><?php echo $langs->trans('EasyOcrAIJournalAuto') ?: '-- Automático --'; ?></option>
+            </select>
+          </div>
+        </div>
+        <!-- Row 2: Payment -->
+        <div class="eo-ai-footer-row">
+          <label class="eo-checkbox-label eo-checkbox-sm">
+            <input type="checkbox" id="eo-ai-create-payment" onchange="EasyOcr.toggleAIPayment()">
+            <?php echo $langs->trans('EasyOcrCreatePayment'); ?>
+          </label>
+          <div id="eo-ai-payment-options" class="eo-ai-payment-opts" style="display:none">
+            <select id="eo-ai-payment-type" class="eo-select eo-select-sm">
+              <option value=""><?php echo $langs->trans('EasyOcrSelectPaymentMode'); ?></option>
+            </select>
+            <select id="eo-ai-payment-bank" class="eo-select eo-select-sm">
+              <option value=""><?php echo $langs->trans('EasyOcrSelectBankAccount'); ?></option>
+            </select>
+          </div>
         </div>
       </div>
       <div class="eo-ai-footer-btns">

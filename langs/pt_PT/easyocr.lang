@@ -241,7 +241,7 @@ EasyOcrAIPayment = Pagamento
 EasyOcrAINotes = Notas
 EasyOcrAIAddLine = Adicionar linha
 EasyOcrAILineDesc = Descrição
-EasyOcrAITaxRate = % IVA
+EasyOcrAITaxRate = %% IVA
 EasyOcrAIApplyToInvoice = Aplicar à fatura
 EasyOcrAIDocType = Tipo
 EasyOcrAIName = Nome
@@ -334,3 +334,21 @@ EasyOcrTelemetryRightsDesc = Tem o direito de: aceder aos dados que processamos,
 
 # ---- Mensagem RGPD na ativação do módulo ----
 EasyOcrGDPRInformation = Ao ativar easyOCR, aceita: (1) A Licença Pública Geral GNU GPL v3 sob a qual este software é distribuído. (2) Que a funcionalidade easyOCR AI, se ativada, utilizará serviços de inteligência artificial de terceiros para a extração de dados, transmitindo o conteúdo dos documentos PDF que processa voluntariamente. (3) Que a EasySoft Tech S.L. não armazena os dados processados por serviços de IA de terceiros. Consulte os separadores 'Acordo de licença' e 'Telemetria e proteção de dados' na configuração do módulo para mais informações.
+
+# ---- Modal IA: colunas e opções extra ----
+EasyOcrAICode = Código
+EasyOcrAIType = Tipo
+EasyOcrAIRE = RE%%
+EasyOcrAIIRPF = IRPF%%
+EasyOcrAIInvoiceStatus = Estado
+EasyOcrAIValidated = Validada
+EasyOcrAIDraft = Rascunho
+EasyOcrAIJournal = Diário
+EasyOcrAIJournalAuto = -- Automático --
+EasyOcrTypeProduct = Produto
+EasyOcrTypeService = Serviço
+EasyOcrTypeShipping = Envio/Portes
+EasyOcrTypeSurcharge = Sobretaxa
+EasyOcrTypeFee = Taxa
+EasyOcrTypeDiscount = Desconto
+EasyOcrTypeOther = Outro

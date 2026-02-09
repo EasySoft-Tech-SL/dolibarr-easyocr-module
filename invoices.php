@@ -86,7 +86,7 @@ if ($massaction == 'delete' && easyocrCheckRight($user, 'easyocr', 'delete')) {
         $error = 0;
         foreach ($toselect as $toselectid) {
             $toselectid = (int) $toselectid;
-            $sql = "UPDATE " . MAIN_DB_PREFIX . "facture_fourn SET import_key = NULL WHERE rowid = " . $toselectid . " AND import_key = 'easyocr'";
+            $sql = "UPDATE " . MAIN_DB_PREFIX . "facture_fourn SET import_key = NULL WHERE rowid = " . $toselectid . " AND import_key IN ('easyocr','easyocr-ai')";
             if (!$db->query($sql)) {
                 $error++;
             }
@@ -105,7 +105,7 @@ if ($massaction == 'delete' && easyocrCheckRight($user, 'easyocr', 'delete')) {
 // Delete single record (quitar marca easyocr)
 if ($action == 'delete' && $confirm == 'yes' && easyocrCheckRight($user, 'easyocr', 'delete')) {
     $id = GETPOST('id', 'int');
-    $sql = "UPDATE " . MAIN_DB_PREFIX . "facture_fourn SET import_key = NULL WHERE rowid = " . ((int) $id) . " AND import_key = 'easyocr'";
+    $sql = "UPDATE " . MAIN_DB_PREFIX . "facture_fourn SET import_key = NULL WHERE rowid = " . ((int) $id) . " AND import_key IN ('easyocr','easyocr-ai')";
     if ($db->query($sql)) {
         setEventMessages($langs->trans('EasyOcrRecordDeleted'), null, 'mesgs');
         header('Location: ' . $_SERVER['PHP_SELF']);
@@ -120,7 +120,7 @@ if ($action == 'delete' && $confirm == 'yes' && easyocrCheckRight($user, 'easyoc
 $sql = "SELECT c.rowid, c.ref, c.ref_supplier, c.datef, c.fk_soc, d.nom as supplier";
 $sql .= " FROM " . MAIN_DB_PREFIX . "facture_fourn as c";
 $sql .= " JOIN " . MAIN_DB_PREFIX . "societe as d ON c.fk_soc = d.rowid";
-$sql .= " WHERE c.import_key = 'easyocr'";
+$sql .= " WHERE c.import_key IN ('easyocr','easyocr-ai')";
 
 // Filters
 if ($searchRef) {
@@ -148,10 +148,10 @@ $num = $db->num_rows($resql);
 
 // Page header
 $arrayofjs = array(
-    '/custom/easyocr/js/eo-panel.js'
+    dol_buildpath('/custom/easyocr/js/eo-panel.js', 1)
 );
 $arrayofcss = array(
-    '/custom/easyocr/css/eo-panel.css'
+    dol_buildpath('/custom/easyocr/css/eo-panel.css', 1)
 );
 
 llxHeader('', $langs->trans('EasyOcrInvoicesTitle').' - EasyOcr', '', '', 0, 0, $arrayofjs, $arrayofcss);
@@ -162,8 +162,12 @@ if ($action == 'delete') {
     print $formconfirm;
 }
 
-print '<form method="GET" action="' . $_SERVER['PHP_SELF'] . '" name="formfilter" autocomplete="off">';
+print '<form method="POST" action="' . $_SERVER['PHP_SELF'] . '" name="formfilter" autocomplete="off">';
 print '<input type="hidden" name="token" value="' . newToken() . '">';
+print '<input type="hidden" name="formfilteraction" id="formfilteraction">';
+print '<input type="hidden" name="page" value="' . $page . '">';
+print '<input type="hidden" name="sortfield" value="">';
+print '<input type="hidden" name="sortorder" value="">';
 
 print '<div class="eo-panel-header">';
 print '<div class="eo-panel-title">';

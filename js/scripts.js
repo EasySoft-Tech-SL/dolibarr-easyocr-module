@@ -895,6 +895,7 @@ const EasyOcr = (function () {
                 state.templatesData = data.templates || [];
                 state.banksData = data.banks || [];
                 state.paymentTypesData = data.payment_types || [];
+                state.journalsData = data.journals || [];
 
                 const supplierSelect = document.getElementById('eo-supplier');
                 const tplSupplierSelect = document.getElementById('eo-template-supplier');
@@ -1556,6 +1557,7 @@ const EasyOcr = (function () {
         state.templateId = null;
         state.pdfDoc = null;
         state.pdfArrayBuffer = null;
+        state.aiResult = null;
         state.activeTag = null;
         state.isDrawing = false;
         state.pages = [];
@@ -1596,6 +1598,12 @@ const EasyOcr = (function () {
     function runAIOcr() {
         if (!state.pdfArrayBuffer) {
             toast(L.importPdfFirst || 'Import a PDF first', 'warn');
+            return;
+        }
+
+        // If we already have AI results, just re-show the modal
+        if (state.aiResult) {
+            document.getElementById('eo-modal-ai').style.display = 'flex';
             return;
         }
 
@@ -1687,16 +1695,17 @@ const EasyOcr = (function () {
                         if (!eventStr) continue;
 
                         var lines = eventStr.split('\n');
-                        var eventType = '', eventData = '';
+                        var eventType = '', dataLines = [];
                         for (var j = 0; j < lines.length; j++) {
                             var line = lines[j];
                             // Handle "event: x" or "event:x"
                             if (line.indexOf('event:') === 0) {
                                 eventType = line.substring(6).trim();
                             } else if (line.indexOf('data:') === 0) {
-                                eventData = line.substring(5).trim();
+                                dataLines.push(line.substring(5).trim());
                             }
                         }
+                        var eventData = dataLines.join('\n');
                         if (!eventType || !eventData) continue;
 
                         try { var data = JSON.parse(eventData); }
@@ -1866,7 +1875,7 @@ const EasyOcr = (function () {
         if (tbody) {
             tbody.innerHTML = '';
             if (items.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7" class="eo-ai-empty-lines">' + (L.aiNoLines || 'No line items') + '</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="11" class="eo-ai-empty-lines">' + (L.aiNoLines || 'No line items') + '</td></tr>';
             } else {
                 items.forEach(function (item, idx) {
                     tbody.appendChild(createLineRow(item, idx));
@@ -1875,15 +1884,26 @@ const EasyOcr = (function () {
         }
         if (countEl) countEl.textContent = items.length;
 
-        // --- Totals ---
+        // --- Totals — parse new format with surcharges & withholdings ---
         var totals = sd.totals || {};
+        var totalsMap = {
+            subtotal: totals.net_subtotal || totals.subtotal || null,
+            tax: totals.tax_total || totals.tax || null,
+            discount: totals.discount_total || totals.discount || null,
+            surcharge: totals.surcharge_total || null,
+            withholding: totals.withholding_total || null,
+            total: totals.total || null,
+            total_payable: totals.total_payable || null
+        };
         var totalsFields = [
             { key: 'subtotal', label: L.taxableBase || 'Subtotal', half: true, money: true },
             { key: 'tax', label: L.aiTaxes || 'Tax', half: true, money: true },
             { key: 'discount', label: L.aiDiscount || 'Discount', half: true, money: true },
+            { key: 'surcharge', label: 'RE / Recargo', half: true, money: true },
+            { key: 'withholding', label: 'IRPF / Retención', half: true, money: true },
             { key: 'total', label: L.aiTotal || 'Total', half: true, money: true }
         ];
-        renderFieldGroup('eo-ai-totals-fields', totalsFields, totals);
+        renderFieldGroup('eo-ai-totals-fields', totalsFields, totalsMap);
 
         // --- Payment ---
         var pay = sd.payment || {};
@@ -1981,23 +2001,99 @@ const EasyOcr = (function () {
         var tr = document.createElement('tr');
         tr.setAttribute('data-ai-line-idx', idx);
 
+        // Extract tax info — robust multi-source extraction
+        var tvaRate = '', tvaAmt = '', reRate = '', irpfRate = '';
+
+        // Source 1: taxes array (handle both parsed array and JSON string)
+        var taxesArr = item.taxes;
+        if (typeof taxesArr === 'string') {
+            try { taxesArr = JSON.parse(taxesArr); } catch (e) { taxesArr = null; }
+        }
+        if (taxesArr && Array.isArray(taxesArr)) {
+            for (var t = 0; t < taxesArr.length; t++) {
+                var tax = taxesArr[t];
+                if (!tax || typeof tax !== 'object') continue;
+                var tt = String(tax.tax_type || '').toLowerCase().trim();
+                var rate = parseFloat(tax.tax_rate);
+                if (isNaN(rate)) rate = 0;
+                var amt = parseFloat(tax.tax_amount);
+                if (isNaN(amt)) amt = 0;
+                if (tt === 'tva' || tt === 'iva' || tt === 'vat') {
+                    if (rate) tvaRate = rate;
+                    if (amt) tvaAmt = amt;
+                } else if (tt === 're') {
+                    if (rate) reRate = rate;
+                } else if (tt === 'irpf') {
+                    if (rate) irpfRate = rate;
+                }
+            }
+        }
+
+        // Source 2: flat fields as fallback
+        if (!tvaRate && item.tax_rate) tvaRate = parseFloat(item.tax_rate) || '';
+        if (!tvaAmt && item.tax_amount) tvaAmt = parseFloat(item.tax_amount) || '';
+        if (!reRate && item.re_rate) reRate = parseFloat(item.re_rate) || '';
+        if (!irpfRate && item.irpf_rate) irpfRate = parseFloat(item.irpf_rate) || '';
+
+        // Source 3: compute IVA from net_amount and total if still missing
+        if (!tvaRate && item.net_amount && item.total) {
+            var netAmt = parseFloat(item.net_amount);
+            var totAmt = parseFloat(item.total);
+            if (netAmt !== 0 && totAmt !== 0 && Math.abs(totAmt) > Math.abs(netAmt)) {
+                var computedRate = Math.round((totAmt / netAmt - 1) * 100);
+                if (computedRate > 0 && computedRate <= 100) tvaRate = computedRate;
+            }
+        }
+
+        // Normalize: 0 → empty for display
+        if (tvaRate === 0) tvaRate = '';
+        if (reRate === 0) reRate = '';
+        if (irpfRate === 0) irpfRate = '';
+
         var fields = [
+            { key: 'code', cls: '', val: item.code || '' },
             { key: 'description', cls: '', val: item.description || item.label || item.name || '' },
+            { key: 'item_type', cls: '', val: item.item_type || 'product' },
             { key: 'quantity', cls: 'eo-ai-td-input-num', val: item.quantity || item.qty || '1' },
             { key: 'unit_price', cls: 'eo-ai-td-input-num', val: item.unit_price || item.price || '' },
-            { key: 'tax_rate', cls: 'eo-ai-td-input-num', val: item.tax_rate || '' },
-            { key: 'tax_amount', cls: 'eo-ai-td-input-num', val: item.tax_amount || '' },
-            { key: 'total', cls: 'eo-ai-td-input-num', val: item.total || item.amount || item.line_total || '' }
+            { key: 'discount_percent', cls: 'eo-ai-td-input-num', val: item.discount_percent || '' },
+            { key: 'tax_rate', cls: 'eo-ai-td-input-num', val: tvaRate },
+            { key: 're_rate', cls: 'eo-ai-td-input-num', val: reRate },
+            { key: 'irpf_rate', cls: 'eo-ai-td-input-num', val: irpfRate },
+            { key: 'total', cls: 'eo-ai-td-input-num', val: item.net_amount || item.total || item.amount || item.line_total || '' }
         ];
 
         fields.forEach(function (f) {
             var td = document.createElement('td');
-            var input = document.createElement('input');
-            input.type = 'text';
-            input.className = 'eo-ai-td-input ' + f.cls;
-            input.value = String(f.val);
-            input.setAttribute('data-ai-line-key', f.key);
-            td.appendChild(input);
+            if (f.key === 'item_type') {
+                var sel = document.createElement('select');
+                sel.className = 'eo-ai-td-input eo-ai-td-select';
+                sel.setAttribute('data-ai-line-key', f.key);
+                var types = [
+                    { val: 'product', lbl: L.typeProduct || 'Producto' },
+                    { val: 'service', lbl: L.typeService || 'Servicio' },
+                    { val: 'shipping', lbl: L.typeShipping || 'Envío/Portes' },
+                    { val: 'surcharge', lbl: L.typeSurcharge || 'Recargo' },
+                    { val: 'fee', lbl: L.typeFee || 'Tasa' },
+                    { val: 'discount', lbl: L.typeDiscount || 'Descuento' },
+                    { val: 'other', lbl: L.typeOther || 'Otro' }
+                ];
+                types.forEach(function(t) {
+                    var opt = document.createElement('option');
+                    opt.value = t.val;
+                    opt.textContent = t.lbl;
+                    if (t.val === f.val) opt.selected = true;
+                    sel.appendChild(opt);
+                });
+                td.appendChild(sel);
+            } else {
+                var input = document.createElement('input');
+                input.type = 'text';
+                input.className = 'eo-ai-td-input ' + f.cls;
+                input.value = String(f.val);
+                input.setAttribute('data-ai-line-key', f.key);
+                td.appendChild(input);
+            }
             tr.appendChild(td);
         });
 
@@ -2052,6 +2148,11 @@ const EasyOcr = (function () {
     function closeAIModal() {
         var modal = document.getElementById('eo-modal-ai');
         if (modal) modal.style.display = 'none';
+        // Close payload panel if open
+        var panel = document.getElementById('eo-ai-payload-panel');
+        var btn = document.getElementById('eo-btn-show-payload');
+        if (panel) panel.style.display = 'none';
+        if (btn) btn.classList.remove('active');
     }
 
     function collectAIModalData() {
@@ -2081,19 +2182,40 @@ const EasyOcr = (function () {
         var notesInput = document.querySelector('[data-ai-section="notes"]');
         if (notesInput) result.notes = notesInput.value.trim();
 
-        // Collect line items
+        // Collect line items with taxes array reconstruction
         var rows = document.querySelectorAll('#eo-ai-lines-tbody tr[data-ai-line-idx]');
         rows.forEach(function (row) {
             var line = {};
             var inputs = row.querySelectorAll('.eo-ai-td-input');
             inputs.forEach(function (input) {
                 var key = input.getAttribute('data-ai-line-key');
-                if (key) line[key] = input.value.trim();
+                if (key) {
+                    // Handle both input and select elements
+                    line[key] = (input.tagName === 'SELECT') ? input.value : input.value.trim();
+                }
             });
             if (line.description || line.quantity || line.unit_price || line.total) {
+                // Reconstruct taxes array from flat columns
+                line.taxes = [];
+                if (line.tax_rate && parseFloat(line.tax_rate) !== 0) {
+                    line.taxes.push({ tax_type: 'iva', tax_rate: parseFloat(line.tax_rate) || 0, tax_amount: 0 });
+                }
+                if (line.re_rate && parseFloat(line.re_rate) !== 0) {
+                    line.taxes.push({ tax_type: 're', tax_rate: parseFloat(line.re_rate) || 0, tax_amount: 0 });
+                }
+                if (line.irpf_rate && parseFloat(line.irpf_rate) !== 0) {
+                    line.taxes.push({ tax_type: 'irpf', tax_rate: parseFloat(line.irpf_rate) || 0, tax_amount: 0 });
+                }
                 result.items.push(line);
             }
         });
+
+        // Collect journal and invoice status
+        var journalSel = document.getElementById('eo-ai-journal');
+        if (journalSel) result.journal_code = journalSel.value || '';
+
+        var statusRadio = document.querySelector('input[name="eo-ai-invoice-status"]:checked');
+        result.invoice_status = statusRadio ? statusRadio.value : 'validated';
 
         return result;
     }
@@ -2168,6 +2290,10 @@ const EasyOcr = (function () {
     function doCreateAIInvoice(editedData, fkSoc, subtotal, totalTax, totalFinal, doPayment) {
         closeAIModal();
 
+        // Parse surcharge (RE) and withholding (IRPF) totals
+        var surchargeTotal = parseFloat(editedData.totals.surcharge) || 0;
+        var withholdingTotal = parseFloat(editedData.totals.withholding) || 0;
+
         var postData = {
             action: 'newInvoiceAI',
             fk_soc: fkSoc || '0',
@@ -2177,8 +2303,14 @@ const EasyOcr = (function () {
             total_ht: subtotal.toFixed(2),
             total_ttc: totalFinal.toFixed(2),
             total_tva: totalTax.toFixed(2),
+            total_localtax1: surchargeTotal.toFixed(2),   // RE (Recargo Equivalencia)
+            total_localtax2: withholdingTotal.toFixed(2), // IRPF (Retención)
             items: JSON.stringify(editedData.items),
             notes: editedData.notes || '',
+            // Invoice options
+            invoice_status: editedData.invoice_status || 'validated',
+            journal_code: editedData.journal_code || '',
+            invoice_type: '0', // Standard supplier invoice
             // Supplier data for auto-resolve/create
             supplier_name: editedData.supplier.name || '',
             supplier_tax_id: editedData.supplier.tax_id || '',
@@ -2230,11 +2362,29 @@ const EasyOcr = (function () {
             if (data.supplier_created) {
                 toast((L.aiSupplierCreated || 'Proveedor creado: ') + (data.supplier_name || ''), 'success');
             }
+            // Show line errors as warnings if any
+            if (data.line_errors && data.line_errors.length > 0) {
+                toast((L.aiLineErrors || 'Errores en líneas: ') + data.line_errors.join('; '), 'warn');
+            }
+            if (data.is_draft) {
+                toast(L.invoiceDraftOk || 'Factura creada en borrador', 'success');
+            } else {
+                toast(L.invoiceCreatedOk, 'success');
+            }
             showInvoicePreview(data.id, data.ref || '');
-            toast(L.invoiceCreatedOk, 'success');
             resetWorkspace();
         } else if (data.status === 'repeat') {
-            toast(L.invoiceAlreadyExists, 'warn');
+            var msg = L.invoiceAlreadyExists || 'La factura ya existe';
+            if (data.existing_ref) {
+                msg += ': ' + data.existing_ref;
+            }
+            if (data.existing_ref_supplier) {
+                msg += ' (Ref: ' + data.existing_ref_supplier + ')';
+            }
+            if (data.existing_id) {
+                msg += ' <a href="' + DOL_URL_ROOT + '/fourn/facture/card.php?facid=' + data.existing_id + '" target="_blank" style="color:#fff;text-decoration:underline;">Ver factura</a>';
+            }
+            toast(msg, 'warn');
         } else {
             toast(data.message || L.errorGeneratingInvoice, 'error');
         }
@@ -2248,6 +2398,23 @@ const EasyOcr = (function () {
     function toggleAIPayment() {
         var checked = document.getElementById('eo-ai-create-payment').checked;
         document.getElementById('eo-ai-payment-options').style.display = checked ? 'flex' : 'none';
+    }
+
+    function toggleAIPayload() {
+        var panel = document.getElementById('eo-ai-payload-panel');
+        var content = document.getElementById('eo-ai-payload-content');
+        var btn = document.getElementById('eo-btn-show-payload');
+        if (!panel) return;
+        if (panel.style.display === 'none') {
+            if (state.aiResult && content) {
+                content.textContent = JSON.stringify(state.aiResult, null, 2);
+            }
+            panel.style.display = 'block';
+            if (btn) btn.classList.add('active');
+        } else {
+            panel.style.display = 'none';
+            if (btn) btn.classList.remove('active');
+        }
     }
 
     function populateAIPaymentSelects() {
@@ -2269,6 +2436,14 @@ const EasyOcr = (function () {
                     seen[pt.id] = true;
                     paySel.innerHTML += '<option value="' + pt.id + '">' + pt.label + '</option>';
                 }
+            });
+        }
+        // Populate journal selector
+        var journalSel = document.getElementById('eo-ai-journal');
+        if (journalSel && state.journalsData) {
+            journalSel.innerHTML = '<option value="">' + (L.selectJournal || '-- Diario automático --') + '</option>';
+            state.journalsData.forEach(function (j) {
+                journalSel.innerHTML += '<option value="' + j.code + '">' + j.code + ' - ' + j.label + '</option>';
             });
         }
     }
@@ -2328,6 +2503,7 @@ const EasyOcr = (function () {
         applyAIResult,
         createAIInvoice,
         toggleAIPayment,
+        toggleAIPayload,
         closeAIModal,
         aiAddLine,
     };

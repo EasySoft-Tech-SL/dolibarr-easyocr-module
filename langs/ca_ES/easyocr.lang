@@ -241,7 +241,7 @@ EasyOcrAIPayment = Pagament
 EasyOcrAINotes = Notes
 EasyOcrAIAddLine = Afegir línia
 EasyOcrAILineDesc = Descripció
-EasyOcrAITaxRate = % IVA
+EasyOcrAITaxRate = %% IVA
 EasyOcrAIApplyToInvoice = Aplicar a factura
 EasyOcrAIDocType = Tipus
 EasyOcrAIName = Nom
@@ -334,3 +334,21 @@ EasyOcrTelemetryRightsDesc = Teniu dret a: accedir a les dades que processem, so
 
 # ---- Missatge RGPD a l'activació del mòdul ----
 EasyOcrGDPRInformation = En activar easyOCR, accepteu: (1) La Llicència Pública General GNU GPL v3 sota la qual es distribueix aquest programari. (2) Que la funcionalitat easyOCR AI, si s'activa, utilitzarà serveis d'intel·ligència artificial de tercers per a l'extracció de dades, transmetent el contingut dels documents PDF que processeu voluntàriament. (3) Que EasySoft Tech S.L. no emmagatzema les dades processades per serveis d'IA de tercers. Consulteu les pestanyes 'Acord de llicència' i 'Telemetria i protecció de dades' a la configuració del mòdul per a més informació.
+
+# ---- Modal IA: columnes i opcions extra ----
+EasyOcrAICode = Codi
+EasyOcrAIType = Tipus
+EasyOcrAIRE = RE%%
+EasyOcrAIIRPF = IRPF%%
+EasyOcrAIInvoiceStatus = Estat
+EasyOcrAIValidated = Validada
+EasyOcrAIDraft = Esborrany
+EasyOcrAIJournal = Diari
+EasyOcrAIJournalAuto = -- Automàtic --
+EasyOcrTypeProduct = Producte
+EasyOcrTypeService = Servei
+EasyOcrTypeShipping = Enviament/Ports
+EasyOcrTypeSurcharge = Recàrrec
+EasyOcrTypeFee = Taxa
+EasyOcrTypeDiscount = Descompte
+EasyOcrTypeOther = Altre

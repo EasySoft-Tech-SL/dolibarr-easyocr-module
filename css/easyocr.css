@@ -1000,6 +1000,63 @@ svg.eo-spin {
   gap: 8px;
 }
 
+/* Invoice preview header */
+.eo-invoice-header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.eo-invoice-header-icon {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #dbeafe, #ede9fe);
+  border-radius: 8px;
+  color: #4f46e5;
+  flex-shrink: 0;
+}
+.eo-invoice-header-left h4 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+/* Open in new tab button */
+.eo-invoice-open-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #4f46e5;
+  background: #eef2ff;
+  border: 1px solid #c7d2fe;
+  border-radius: 8px;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.eo-invoice-open-btn:hover {
+  background: #e0e7ff;
+  border-color: #a5b4fc;
+  color: #4338ca;
+  box-shadow: 0 2px 8px rgba(79, 70, 229, 0.15);
+  transform: translateY(-1px);
+  text-decoration: none;
+}
+.eo-invoice-open-btn:active {
+  transform: translateY(0);
+  box-shadow: none;
+}
+.eo-invoice-open-btn svg {
+  flex-shrink: 0;
+}
+
 /* Help bar (textwithpicto) */
 .eo-help-bar {
   padding: 8px 16px;
@@ -1371,6 +1428,69 @@ svg.eo-spin {
   color: #374151;
   background: #f3f4f6;
 }
+
+/* Payload button */
+.eo-btn-payload {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+  font-weight: 600;
+  color: #6b7280;
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s;
+  margin-right: 6px;
+}
+.eo-btn-payload:hover {
+  color: #374151;
+  background: #e5e7eb;
+  border-color: #d1d5db;
+}
+.eo-btn-payload.active {
+  color: #2563eb;
+  background: #eff6ff;
+  border-color: #93c5fd;
+}
+
+/* Payload panel */
+.eo-ai-payload-panel {
+  background: #1e1e2e;
+  border-bottom: 1px solid #313244;
+  max-height: 300px;
+  overflow: auto;
+  animation: eo-payload-slide 0.2s ease-out;
+}
+
+/* Header actions group */
+.eo-ai-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+@keyframes eo-payload-slide {
+  from { max-height: 0; opacity: 0; }
+  to { max-height: 300px; opacity: 1; }
+}
+.eo-ai-payload-content {
+  margin: 0;
+  padding: 12px 16px;
+  font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+  font-size: 11px;
+  line-height: 1.5;
+  color: #cdd6f4;
+  white-space: pre-wrap;
+  word-break: break-word;
+  tab-size: 2;
+}
+.eo-ai-payload-content::-webkit-scrollbar { width: 6px; }
+.eo-ai-payload-content::-webkit-scrollbar-thumb { background: #45475a; border-radius: 3px; }
+
 .eo-modal-ai-title-row {
   display: flex;
   align-items: center;
@@ -1623,13 +1743,26 @@ textarea.eo-ai-field-input {
 }
 
 /* Column widths */
-.eo-ai-th-desc    { min-width: 200px; }
-.eo-ai-th-qty     { width: 56px; text-align: center; }
-.eo-ai-th-price   { width: 72px; text-align: right; }
-.eo-ai-th-tax     { width: 56px; text-align: right; }
-.eo-ai-th-taxamt  { width: 72px; text-align: right; }
-.eo-ai-th-total   { width: 78px; text-align: right; }
+.eo-ai-th-code    { width: 80px; }
+.eo-ai-th-desc    { min-width: 160px; }
+.eo-ai-th-type    { width: 80px; }
+.eo-ai-th-qty     { width: 50px; text-align: center; }
+.eo-ai-th-price   { width: 68px; text-align: right; }
+.eo-ai-th-disc    { width: 48px; text-align: right; }
+.eo-ai-th-tax     { width: 50px; text-align: right; }
+.eo-ai-th-re      { width: 48px; text-align: right; }
+.eo-ai-th-irpf    { width: 48px; text-align: right; }
+.eo-ai-th-total   { width: 72px; text-align: right; }
 .eo-ai-th-actions { width: 32px; text-align: center; }
+
+.eo-ai-td-select {
+  font-size: 11px;
+  padding: 3px 4px;
+  border: 1px solid #e5e7eb;
+  border-radius: 4px;
+  background: #fff;
+  width: 100%;
+}
 
 .eo-ai-row-delete {
   display: flex;
@@ -1662,14 +1795,19 @@ textarea.eo-ai-field-input {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  padding: 12px 20px;
-  background: #fff;
+  padding: 14px 20px;
+  background: #f9fafb;
   border-top: 1px solid #e5e7eb;
 }
 .eo-ai-footer-options {
   display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.eo-ai-footer-row {
+  display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 16px;
   flex-wrap: wrap;
 }
 .eo-ai-footer-options .eo-checkbox-sm {
@@ -1684,9 +1822,57 @@ textarea.eo-ai-field-input {
 }
 .eo-ai-payment-opts .eo-select-sm {
   font-size: 11px;
-  padding: 4px 8px;
+  padding: 5px 8px;
   flex: 1;
   min-width: 0;
+}
+.eo-ai-option-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  white-space: nowrap;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 5px 10px;
+}
+.eo-ai-option-label {
+  color: #6b7280;
+  font-weight: 600;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+.eo-ai-option-sep {
+  width: 1px;
+  height: 16px;
+  background: #e5e7eb;
+  margin: 0 2px;
+}
+.eo-radio-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  color: #374151;
+}
+.eo-radio-sm { font-size: 12px; }
+.eo-radio-sm input[type="radio"] {
+  margin: 0;
+  width: 13px;
+  height: 13px;
+  accent-color: #6366f1;
+}
+.eo-ai-option-group .eo-select-sm {
+  font-size: 11px;
+  padding: 3px 6px;
+  min-width: 100px;
+  max-width: 220px;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  background: #fff;
 }
 .eo-ai-footer-btns {
   display: flex;

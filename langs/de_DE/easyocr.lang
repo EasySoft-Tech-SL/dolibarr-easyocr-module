@@ -336,3 +336,21 @@ EasyOcrTelemetryRightsDesc = Sie haben das Recht: auf Zugang zu den von uns vera
 
 # ---- DSGVO-Nachricht bei Modulaktivierung ----
 EasyOcrGDPRInformation = Durch Aktivierung von easyOCR akzeptieren Sie: (1) Die GNU GPL v3 Lizenz, unter der diese Software verbreitet wird. (2) Dass die easyOCR AI-Funktionalität, falls aktiviert, KI-Dienste Dritter für die Datenextraktion nutzt und den Inhalt der von Ihnen freiwillig verarbeiteten PDF-Dokumente überträgt. (3) Dass EasySoft Tech S.L. keine von KI-Drittanbieterdiensten verarbeiteten Daten speichert. Siehe Reiter 'Lizenzvereinbarung' und 'Telemetrie und Datenschutz' in der Modulkonfiguration für weitere Informationen.
+
+# ---- KI-Modal: zusätzliche Spalten und Optionen ----
+EasyOcrAICode = Code
+EasyOcrAIType = Typ
+EasyOcrAIRE = RE%%
+EasyOcrAIIRPF = IRPF%%
+EasyOcrAIInvoiceStatus = Status
+EasyOcrAIValidated = Validiert
+EasyOcrAIDraft = Entwurf
+EasyOcrAIJournal = Journal
+EasyOcrAIJournalAuto = -- Automatisch --
+EasyOcrTypeProduct = Produkt
+EasyOcrTypeService = Dienstleistung
+EasyOcrTypeShipping = Versand
+EasyOcrTypeSurcharge = Zuschlag
+EasyOcrTypeFee = Gebühr
+EasyOcrTypeDiscount = Rabatt
+EasyOcrTypeOther = Sonstiges

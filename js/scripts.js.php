@@ -197,7 +197,14 @@ window.EasyOcrLang = {
   aiMissingTotals: <?php echo transJson('EasyOcrAIMissingTotals'); ?>,
   aiSupplierNotFound: <?php echo transJson('EasyOcrAISupplierNotFound'); ?>,
   aiSupplierRequired: <?php echo transJson('EasyOcrAISupplierRequired'); ?>,
-  aiSupplierCreated: <?php echo transJson('EasyOcrAISupplierCreated'); ?>
+  aiSupplierCreated: <?php echo transJson('EasyOcrAISupplierCreated'); ?>,
+  typeProduct: <?php echo transJson('EasyOcrTypeProduct'); ?>,
+  typeService: <?php echo transJson('EasyOcrTypeService'); ?>,
+  typeShipping: <?php echo transJson('EasyOcrTypeShipping'); ?>,
+  typeSurcharge: <?php echo transJson('EasyOcrTypeSurcharge'); ?>,
+  typeFee: <?php echo transJson('EasyOcrTypeFee'); ?>,
+  typeDiscount: <?php echo transJson('EasyOcrTypeDiscount'); ?>,
+  typeOther: <?php echo transJson('EasyOcrTypeOther'); ?>
 };
 <?php
 

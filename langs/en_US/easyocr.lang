@@ -354,3 +354,21 @@ EasyOcrTelemetryRightsTitle = Your rights
 EasyOcrTelemetryRightsDesc = You have the right to: access data we process, request rectification or deletion, object to processing, and request data portability. AI usage is completely voluntary: if you do not activate the function or do not click the extraction button, no data will be transmitted.
 # ---- GDPR activation message ----
 EasyOcrGDPRInformation = By activating easyOCR, you accept: (1) The GNU GPL v3 License under which this software is distributed. (2) That the easyOCR AI functionality, if activated, will use third-party artificial intelligence services for data extraction, transmitting the content of PDF documents you voluntarily process. (3) That EasySoft Tech S.L. does not store data processed by third-party AI services. See the 'License Agreement' and 'Telemetry & Data Protection' tabs in module settings for more information.
+
+# ---- AI Modal: extra columns and options ----
+EasyOcrAICode = Code
+EasyOcrAIType = Type
+EasyOcrAIRE = RE%%
+EasyOcrAIIRPF = IRPF%%
+EasyOcrAIInvoiceStatus = Status
+EasyOcrAIValidated = Validated
+EasyOcrAIDraft = Draft
+EasyOcrAIJournal = Journal
+EasyOcrAIJournalAuto = -- Automatic --
+EasyOcrTypeProduct = Product
+EasyOcrTypeService = Service
+EasyOcrTypeShipping = Shipping
+EasyOcrTypeSurcharge = Surcharge
+EasyOcrTypeFee = Fee
+EasyOcrTypeDiscount = Discount
+EasyOcrTypeOther = Other
