@@ -85,6 +85,47 @@ llxHeader("", "EasyOcr", '', '', 0, 0, $arrayofjs, $arrayofcss);
 
   <!-- Panel derecho: Controles -->
   <div class="eo-sidebar" id="eo-sidebar">
+  <div class="eo-sidebar-scroll">
+
+    <!-- Banner IA OCR — Siempre visible, dos estados -->
+    <div class="eo-section eo-ai-hero eo-ai-disabled" id="eo-ai-section">
+      <!-- Estado activo -->
+      <div class="eo-ai-active-content" id="eo-ai-active" style="display:none">
+        <div class="eo-ai-hero-header">
+          <div class="eo-ai-hero-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a4 4 0 014 4v1a2 2 0 012 2v1a2 2 0 01-2 2H8a2 2 0 01-2-2V9a2 2 0 012-2V6a4 4 0 014-4z"/><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 14v4"/></svg>
+          </div>
+          <div>
+            <span class="eo-ai-hero-title"><?php echo $langs->trans('EasyOcrAIOcr'); ?> <span class="eo-badge eo-badge-ai">PRO</span></span>
+            <p class="eo-ai-hero-hint"><?php echo $langs->trans('EasyOcrAIOcrHint'); ?></p>
+          </div>
+        </div>
+        <div class="eo-ai-progress" id="eo-ai-progress" style="display:none">
+          <div class="eo-ai-progress-bar"><div class="eo-ai-progress-fill" id="eo-ai-progress-fill"></div></div>
+          <span class="eo-ai-progress-text" id="eo-ai-progress-text"></span>
+        </div>
+        <button class="eo-btn eo-btn-ai" onclick="EasyOcr.runAIOcr()" id="eo-btn-ai-ocr">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a4 4 0 014 4v1a2 2 0 012 2v1a2 2 0 01-2 2H8a2 2 0 01-2-2V9a2 2 0 012-2V6a4 4 0 014-4z"/><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 14v4"/></svg>
+          <?php echo $langs->trans('EasyOcrAIExtract'); ?>
+        </button>
+      </div>
+      <!-- Estado desactivado (CTA) -->
+      <div class="eo-ai-disabled-content" id="eo-ai-disabled">
+        <div class="eo-ai-hero-header">
+          <div class="eo-ai-hero-icon eo-ai-icon-off">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a4 4 0 014 4v1a2 2 0 012 2v1a2 2 0 01-2 2H8a2 2 0 01-2-2V9a2 2 0 012-2V6a4 4 0 014-4z"/><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 14v4"/></svg>
+          </div>
+          <div>
+            <span class="eo-ai-hero-title"><?php echo $langs->trans('EasyOcrAIOcr'); ?> <span class="eo-badge eo-badge-off"><?php echo $langs->trans('EasyOcrAIOff'); ?></span></span>
+            <p class="eo-ai-hero-hint-off"><?php echo $langs->trans('EasyOcrAIDisabledHint'); ?></p>
+          </div>
+        </div>
+        <a href="<?php echo dol_buildpath('/custom/easyocr/admin/setup.php', 1); ?>" class="eo-btn eo-btn-ai-cta">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12.22 2h-.44a2 2 0 00-2 2v.18a2 2 0 01-1 1.73l-.43.25a2 2 0 01-2 0l-.15-.08a2 2 0 00-2.73.73l-.22.38a2 2 0 00.73 2.73l.15.1a2 2 0 011 1.72v.51a2 2 0 01-1 1.74l-.15.09a2 2 0 00-.73 2.73l.22.38a2 2 0 002.73.73l.15-.08a2 2 0 012 0l.43.25a2 2 0 011 1.73V20a2 2 0 002 2h.44a2 2 0 002-2v-.18a2 2 0 011-1.73l.43-.25a2 2 0 012 0l.15.08a2 2 0 002.73-.73l.22-.39a2 2 0 00-.73-2.73l-.15-.08a2 2 0 01-1-1.74v-.5a2 2 0 011-1.74l.15-.09a2 2 0 00.73-2.73l-.22-.38a2 2 0 00-2.73-.73l-.15.08a2 2 0 01-2 0l-.43-.25a2 2 0 01-1-1.73V4a2 2 0 00-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+          <?php echo $langs->trans('EasyOcrAIConfigure'); ?>
+        </a>
+      </div>
+    </div>
 
     <!-- Etiquetas -->
     <div class="eo-section">
@@ -147,14 +188,7 @@ llxHeader("", "EasyOcr", '', '', 0, 0, $arrayofjs, $arrayofcss);
       </div>
     </div>
 
-    <!-- Banner suscripción IA -->
-    <div class="eo-promo-banner">
-      <div class="eo-promo-badge"><?php echo $langs->trans('EasyOcrPromoBadge'); ?></div>
-      <div class="eo-promo-text">
-        <strong><?php echo $langs->trans('EasyOcrPromoTitle'); ?></strong>
-        <span><?php echo $langs->trans('EasyOcrPromoText'); ?></span>
-      </div>
-    </div>
+  </div><!-- /.eo-sidebar-scroll -->
 
     <!-- Acciones -->
     <div class="eo-actions">
@@ -259,6 +293,165 @@ llxHeader("", "EasyOcr", '', '', 0, 0, $arrayofjs, $arrayofcss);
     </div>
     <div class="eo-modal-body eo-modal-body-iframe">
       <iframe id="eo-invoice-iframe" src="about:blank" frameborder="0"></iframe>
+    </div>
+  </div>
+</div>
+
+<!-- Modal AI OCR Result - Premium -->
+<div id="eo-modal-ai" class="eo-modal-overlay">
+  <div class="eo-modal eo-modal-ai">
+    <div class="eo-modal-ai-header">
+      <div class="eo-modal-ai-title-row">
+        <div class="eo-modal-ai-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a4 4 0 014 4v1a2 2 0 012 2v1a2 2 0 01-2 2H8a2 2 0 01-2-2V9a2 2 0 012-2V6a4 4 0 014-4z"/><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 14v4"/></svg>
+        </div>
+        <div>
+          <h4><?php echo $langs->trans('EasyOcrAIResult'); ?></h4>
+          <div class="eo-modal-ai-meta">
+            <span id="eo-ai-meta-confidence" class="eo-ai-meta-pill"></span>
+            <span id="eo-ai-meta-time" class="eo-ai-meta-pill"></span>
+            <span id="eo-ai-meta-tokens" class="eo-ai-meta-pill"></span>
+            <span id="eo-ai-meta-pages" class="eo-ai-meta-pill"></span>
+          </div>
+        </div>
+      </div>
+      <button class="eo-modal-close" onclick="EasyOcr.closeAIModal()">✕</button>
+    </div>
+
+    <div class="eo-modal-ai-body">
+      <!-- Sección Documento -->
+      <div class="eo-ai-card">
+        <div class="eo-ai-card-header" onclick="this.parentElement.classList.toggle('collapsed')">
+          <div class="eo-ai-card-icon eo-ai-icon-doc">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          </div>
+          <span class="eo-ai-card-title"><?php echo $langs->trans('EasyOcrAIDocument'); ?></span>
+          <svg class="eo-ai-card-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="eo-ai-card-body" id="eo-ai-doc-fields"></div>
+      </div>
+
+      <!-- Sección Proveedor -->
+      <div class="eo-ai-card" id="eo-ai-card-supplier">
+        <div class="eo-ai-card-header" onclick="this.parentElement.classList.toggle('collapsed')">
+          <div class="eo-ai-card-icon eo-ai-icon-supplier">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          </div>
+          <span class="eo-ai-card-title"><?php echo $langs->trans('EasyOcrAISupplier'); ?></span>
+          <svg class="eo-ai-card-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="eo-ai-card-body" id="eo-ai-supplier-fields"></div>
+      </div>
+
+      <!-- Sección Cliente -->
+      <div class="eo-ai-card" id="eo-ai-card-customer">
+        <div class="eo-ai-card-header" onclick="this.parentElement.classList.toggle('collapsed')">
+          <div class="eo-ai-card-icon eo-ai-icon-customer">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          </div>
+          <span class="eo-ai-card-title"><?php echo $langs->trans('EasyOcrAICustomer'); ?></span>
+          <svg class="eo-ai-card-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="eo-ai-card-body" id="eo-ai-customer-fields"></div>
+      </div>
+
+      <!-- Sección Líneas de factura -->
+      <div class="eo-ai-card">
+        <div class="eo-ai-card-header" onclick="this.parentElement.classList.toggle('collapsed')">
+          <div class="eo-ai-card-icon eo-ai-icon-lines">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+          </div>
+          <span class="eo-ai-card-title"><?php echo $langs->trans('EasyOcrAILines'); ?></span>
+          <span class="eo-ai-card-count" id="eo-ai-lines-count">0</span>
+          <svg class="eo-ai-card-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="eo-ai-card-body eo-ai-card-body-lines" id="eo-ai-lines-container">
+          <div class="eo-ai-lines-toolbar">
+            <button class="eo-btn-icon-sm" onclick="EasyOcr.aiAddLine()" title="<?php echo $langs->trans('EasyOcrAIAddLine'); ?>">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              <?php echo $langs->trans('EasyOcrAIAddLine'); ?>
+            </button>
+          </div>
+          <div class="eo-ai-lines-table-wrap">
+            <table class="eo-ai-table" id="eo-ai-lines-table">
+              <thead>
+                <tr>
+                  <th class="eo-ai-th-desc"><?php echo $langs->trans('EasyOcrAILineDesc'); ?></th>
+                  <th class="eo-ai-th-qty"><?php echo $langs->trans('EasyOcrAIQty'); ?></th>
+                  <th class="eo-ai-th-price"><?php echo $langs->trans('EasyOcrAIPrice'); ?></th>
+                  <th class="eo-ai-th-tax"><?php echo $langs->trans('EasyOcrAITaxRate'); ?></th>
+                  <th class="eo-ai-th-taxamt"><?php echo $langs->trans('EasyOcrAITaxAmount'); ?></th>
+                  <th class="eo-ai-th-total"><?php echo $langs->trans('EasyOcrAITotal'); ?></th>
+                  <th class="eo-ai-th-actions"></th>
+                </tr>
+              </thead>
+              <tbody id="eo-ai-lines-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sección Totales -->
+      <div class="eo-ai-card">
+        <div class="eo-ai-card-header" onclick="this.parentElement.classList.toggle('collapsed')">
+          <div class="eo-ai-card-icon eo-ai-icon-totals">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+          </div>
+          <span class="eo-ai-card-title"><?php echo $langs->trans('EasyOcrAITotals'); ?></span>
+          <svg class="eo-ai-card-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="eo-ai-card-body" id="eo-ai-totals-fields"></div>
+      </div>
+
+      <!-- Sección Pago -->
+      <div class="eo-ai-card" id="eo-ai-card-payment">
+        <div class="eo-ai-card-header" onclick="this.parentElement.classList.toggle('collapsed')">
+          <div class="eo-ai-card-icon eo-ai-icon-payment">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+          </div>
+          <span class="eo-ai-card-title"><?php echo $langs->trans('EasyOcrAIPayment'); ?></span>
+          <svg class="eo-ai-card-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="eo-ai-card-body" id="eo-ai-payment-fields"></div>
+      </div>
+
+      <!-- Sección Notas -->
+      <div class="eo-ai-card" id="eo-ai-notes-card" style="display:none">
+        <div class="eo-ai-card-header" onclick="this.parentElement.classList.toggle('collapsed')">
+          <div class="eo-ai-card-icon eo-ai-icon-notes">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          </div>
+          <span class="eo-ai-card-title"><?php echo $langs->trans('EasyOcrAINotes'); ?></span>
+          <svg class="eo-ai-card-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="eo-ai-card-body" id="eo-ai-notes-fields"></div>
+      </div>
+    </div>
+
+    <div class="eo-modal-ai-footer">
+      <div class="eo-ai-footer-options">
+        <label class="eo-checkbox-label eo-checkbox-sm">
+          <input type="checkbox" id="eo-ai-create-payment" onchange="EasyOcr.toggleAIPayment()">
+          <?php echo $langs->trans('EasyOcrCreatePayment'); ?>
+        </label>
+        <div id="eo-ai-payment-options" class="eo-ai-payment-opts" style="display:none">
+          <select id="eo-ai-payment-type" class="eo-select eo-select-sm">
+            <option value=""><?php echo $langs->trans('EasyOcrSelectPaymentMode'); ?></option>
+          </select>
+          <select id="eo-ai-payment-bank" class="eo-select eo-select-sm">
+            <option value=""><?php echo $langs->trans('EasyOcrSelectBankAccount'); ?></option>
+          </select>
+        </div>
+      </div>
+      <div class="eo-ai-footer-btns">
+        <button class="eo-btn eo-btn-outline" onclick="EasyOcr.closeAIModal()">
+          <?php echo $langs->trans('EasyOcrCancel'); ?>
+        </button>
+        <button class="eo-btn eo-btn-success" onclick="EasyOcr.createAIInvoice()" id="eo-btn-ai-create">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+          <?php echo $langs->trans('EasyOcrAICreateInvoice'); ?>
+        </button>
+      </div>
     </div>
   </div>
 </div>

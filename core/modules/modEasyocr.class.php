@@ -104,7 +104,9 @@ class modEasyocr extends DolibarrModules
 			'models' => 0,
 			'printing' => 0,
 			'theme' => 0,
-			'css' => array(),
+			'css' => array(
+				'/easyocr/css/easyocr.css.php'
+			),
 			'js' => array(),
 			'hooks' => array(),
 			'moduleforexternal' => 0,

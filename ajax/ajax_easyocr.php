@@ -63,8 +63,10 @@ require_once DOL_DOCUMENT_ROOT . '/core/lib/functions.lib.php';
 require_once DOL_DOCUMENT_ROOT . '/fourn/class/fournisseur.facture.class.php';
 require_once DOL_DOCUMENT_ROOT . '/fourn/class/paiementfourn.class.php';
 require_once DOL_DOCUMENT_ROOT . '/ecm/class/ecmfiles.class.php';
+require_once DOL_DOCUMENT_ROOT . '/societe/class/societe.class.php';
 require_once DOL_DOCUMENT_ROOT . '/core/lib/date.lib.php';
 require_once __DIR__ . '/../lib/easyocr.lib.php';
+require_once __DIR__ . '/../lib/easyocr_ai.class.php';
 
 top_httphead('application/json');
 
@@ -217,7 +219,7 @@ if ($action == "newInvoice") {
 	$sql = "UPDATE " . MAIN_DB_PREFIX . "facture_fourn SET import_key = 'easyocr' WHERE rowid = " . ((int) $newId);
 	$db->query($sql);
 
-	// Añadir línea de detalle
+	// AÃ±adir lÃ­nea de detalle
 	$line_desc = !empty($ocr_description) ? $ocr_description : $langs->trans('EasyOcrInvoiceLineDesc');
 	$tva_tx = calculateIVA($total_ht, $total_tva);
 	$result = $facture->addline(
@@ -274,7 +276,7 @@ if ($action == "newInvoice") {
 		}
 	}
 
-	// Crear pago asociado si se solicitó
+	// Crear pago asociado si se solicitÃ³
 	$create_payment = GETPOST('create_payment', 'alpha');
 	if ($create_payment == '1' && GETPOST('payment_bank_id', 'int') > 0) {
 
@@ -539,9 +541,513 @@ if ($action == "newInvoice") {
 	$resql = $db->query($sql);
 	if ($resql && $db->num_rows($resql) > 0) {
 		$obj = $db->fetch_object($resql);
-		print json_encode(["status" => "ok", "fk_soc" => $obj->rowid, "name" => $obj->nom]);
+		print json_encode(["status" => "ok", "fk_soc" => $obj->rowid, "name" => $obj->nom, "created" => false]);
 	} else {
-		print json_encode(["status" => "not_found"]);
+		// Search also non-suppliers â€” maybe exists as client, upgrade to supplier
+		$sql2 = "SELECT s.rowid, s.nom FROM " . MAIN_DB_PREFIX . "societe s";
+		$sql2 .= " WHERE s.entity IN (" . getEntity('societe') . ")";
+		$sql2 .= " AND (";
+		$sql2 .= " REPLACE(REPLACE(REPLACE(s.siren, ' ', ''), '-', ''), '.', '') = '" . $db->escape($cif_clean) . "'";
+		$sql2 .= " OR REPLACE(REPLACE(REPLACE(s.siret, ' ', ''), '-', ''), '.', '') = '" . $db->escape($cif_clean) . "'";
+		$sql2 .= " OR REPLACE(REPLACE(REPLACE(s.tva_intra, ' ', ''), '-', ''), '.', '') = '" . $db->escape($cif_clean) . "'";
+		for ($i = 1; $i <= 6; $i++) {
+			$sql2 .= " OR REPLACE(REPLACE(REPLACE(s.idprof" . $i . ", ' ', ''), '-', ''), '.', '') = '" . $db->escape($cif_clean) . "'";
+		}
+		$sql2 .= ") LIMIT 1";
+
+		$resql2 = $db->query($sql2);
+		if ($resql2 && $db->num_rows($resql2) > 0) {
+			// Exists as non-supplier â€” upgrade to supplier
+			$obj2 = $db->fetch_object($resql2);
+			$existingSoc = new Societe($db);
+			$existingSoc->fetch($obj2->rowid);
+			$existingSoc->fournisseur = 1;
+			if (empty($existingSoc->code_fournisseur) || $existingSoc->code_fournisseur == '-1') {
+				$existingSoc->get_codefournisseur();
+			}
+			$existingSoc->update($existingSoc->id, $user);
+			print json_encode(["status" => "ok", "fk_soc" => $existingSoc->id, "name" => $existingSoc->nom, "created" => false, "upgraded" => true]);
+		} else {
+			// Not found at all â€” auto-create if requested
+			$autoCreate = GETPOST('auto_create', 'alpha');
+			if ($autoCreate == '1') {
+				$supplierName    = GETPOST('supplier_name', 'alphanohtml');
+				$supplierAddress = GETPOST('supplier_address', 'alphanohtml');
+				$supplierCity    = GETPOST('supplier_city', 'alphanohtml');
+				$supplierZip     = GETPOST('supplier_zip', 'alphanohtml');
+				$supplierCountry = GETPOST('supplier_country', 'alphanohtml');
+				$supplierPhone   = GETPOST('supplier_phone', 'alphanohtml');
+				$supplierEmail   = GETPOST('supplier_email', 'alphanohtml');
+
+				if (empty($supplierName)) {
+					print json_encode(["status" => "error", "message" => "Supplier name is required to create"]);
+					exit;
+				}
+
+				$newSoc = new Societe($db);
+				$newSoc->name        = $supplierName;
+				$newSoc->client      = 0;
+				$newSoc->fournisseur = 1;
+				$newSoc->status      = 1; // Active
+
+				// Set CIF/NIF â€” try to identify type
+				$cifUpper = strtoupper($cif_clean);
+				// VAT number (starts with country code)
+				if (preg_match('/^[A-Z]{2}/', $cifUpper)) {
+					$newSoc->tva_intra = $cif;
+					$newSoc->country_code = substr($cifUpper, 0, 2);
+				}
+				// Also store in idprof1 (CIF/NIF field in Spain, Tax ID elsewhere)
+				$newSoc->idprof1 = $cif;
+
+				if (!empty($supplierAddress)) $newSoc->address = $supplierAddress;
+				if (!empty($supplierCity))    $newSoc->town    = $supplierCity;
+				if (!empty($supplierZip))     $newSoc->zip     = $supplierZip;
+				if (!empty($supplierPhone))   $newSoc->phone   = $supplierPhone;
+				if (!empty($supplierEmail))   $newSoc->email   = $supplierEmail;
+
+				// Resolve country ID from country code or name
+				if (!empty($supplierCountry)) {
+					$countryClean = trim($supplierCountry);
+					$sqlCountry = "SELECT rowid FROM " . MAIN_DB_PREFIX . "c_country";
+					$sqlCountry .= " WHERE (code = '" . $db->escape(strtoupper(substr($countryClean, 0, 2))) . "'";
+					$sqlCountry .= " OR label LIKE '" . $db->escape($countryClean) . "%')";
+					$sqlCountry .= " AND active = 1 LIMIT 1";
+					$resCountry = $db->query($sqlCountry);
+					if ($resCountry && $db->num_rows($resCountry) > 0) {
+						$objC = $db->fetch_object($resCountry);
+						$newSoc->country_id = $objC->rowid;
+					}
+				} elseif (!empty($newSoc->country_code)) {
+					$sqlCC = "SELECT rowid FROM " . MAIN_DB_PREFIX . "c_country WHERE code = '" . $db->escape($newSoc->country_code) . "' AND active = 1 LIMIT 1";
+					$resCC = $db->query($sqlCC);
+					if ($resCC && $db->num_rows($resCC) > 0) {
+						$objCC = $db->fetch_object($resCC);
+						$newSoc->country_id = $objCC->rowid;
+					}
+				}
+
+				// Generate supplier code
+				$newSoc->get_codefournisseur();
+
+				$newId = $newSoc->create($user);
+				if ($newId > 0) {
+					print json_encode(["status" => "ok", "fk_soc" => $newId, "name" => $newSoc->name, "created" => true]);
+				} else {
+					print json_encode(["status" => "error", "message" => "Error creating supplier: " . $newSoc->error]);
+				}
+			} else {
+				print json_encode(["status" => "not_found"]);
+			}
+		}
 	}
+
+
+// ============================================================
+// AI OCR - CREATE INVOICE FROM AI STRUCTURED DATA (multi-line)
+// ============================================================
+} else if ($action == "newInvoiceAI") {
+
+	if (!easyocrCheckRight($user, 'easyocr', 'write')) {
+		print json_encode(["status" => "error", "message" => "Sin permiso de escritura"]);
+		exit;
+	}
+
+	$fk_soc = GETPOST("fk_soc", "int");
+	$ref_supplier = GETPOST("ref_supplier", "alphanohtml");
+	$datef_str = convertFlexibleDate(GETPOST("datef", "alphanohtml"));
+	$total_ttc_str = GETPOST("total_ttc", "alphanohtml");
+	$total_ht_str = GETPOST("total_ht", "alphanohtml");
+	$total_tva_str = GETPOST("total_tva", "alphanohtml");
+	$date_echeance_str = GETPOST("date_echeance", "alphanohtml");
+	$notes = GETPOST("notes", "restricthtml");
+	$items_json = GETPOST("items", "restricthtml");
+
+	// Supplier data from AI modal
+	$supplier_name    = GETPOST('supplier_name', 'alphanohtml');
+	$supplier_tax_id  = GETPOST('supplier_tax_id', 'alphanohtml');
+	$supplier_address = GETPOST('supplier_address', 'alphanohtml');
+	$supplier_city    = GETPOST('supplier_city', 'alphanohtml');
+	$supplier_zip     = GETPOST('supplier_zip', 'alphanohtml');
+	$supplier_country = GETPOST('supplier_country', 'alphanohtml');
+	$supplier_phone   = GETPOST('supplier_phone', 'alphanohtml');
+	$supplier_email   = GETPOST('supplier_email', 'alphanohtml');
+
+	$supplier_created = false;
+	$supplier_created_name = '';
+
+	// ---- Resolve supplier if fk_soc not provided ----
+	if (empty($fk_soc) && !empty($supplier_tax_id)) {
+		$cif_clean = preg_replace('/[\s\-\.]/', '', trim($supplier_tax_id));
+
+		// 1) Search as supplier
+		$sqlS = "SELECT s.rowid FROM " . MAIN_DB_PREFIX . "societe s";
+		$sqlS .= " WHERE s.fournisseur = 1 AND s.entity IN (" . getEntity('societe') . ") AND (";
+		$sqlS .= " REPLACE(REPLACE(REPLACE(s.siren,' ',''),'-',''),'.','')='" . $db->escape($cif_clean) . "'";
+		$sqlS .= " OR REPLACE(REPLACE(REPLACE(s.siret,' ',''),'-',''),'.','')='" . $db->escape($cif_clean) . "'";
+		$sqlS .= " OR REPLACE(REPLACE(REPLACE(s.tva_intra,' ',''),'-',''),'.','')='" . $db->escape($cif_clean) . "'";
+		for ($i = 1; $i <= 6; $i++) {
+			$sqlS .= " OR REPLACE(REPLACE(REPLACE(s.idprof" . $i . ",' ',''),'-',''),'.','')='" . $db->escape($cif_clean) . "'";
+		}
+		$sqlS .= ") LIMIT 1";
+		$resS = $db->query($sqlS);
+		if ($resS && $db->num_rows($resS) > 0) {
+			$fk_soc = $db->fetch_object($resS)->rowid;
+		}
+
+		// 2) Search as non-supplier (client) and upgrade
+		if (empty($fk_soc)) {
+			$sqlNS = "SELECT s.rowid FROM " . MAIN_DB_PREFIX . "societe s";
+			$sqlNS .= " WHERE s.entity IN (" . getEntity('societe') . ") AND (";
+			$sqlNS .= " REPLACE(REPLACE(REPLACE(s.siren,' ',''),'-',''),'.','')='" . $db->escape($cif_clean) . "'";
+			$sqlNS .= " OR REPLACE(REPLACE(REPLACE(s.siret,' ',''),'-',''),'.','')='" . $db->escape($cif_clean) . "'";
+			$sqlNS .= " OR REPLACE(REPLACE(REPLACE(s.tva_intra,' ',''),'-',''),'.','')='" . $db->escape($cif_clean) . "'";
+			for ($i = 1; $i <= 6; $i++) {
+				$sqlNS .= " OR REPLACE(REPLACE(REPLACE(s.idprof" . $i . ",' ',''),'-',''),'.','')='" . $db->escape($cif_clean) . "'";
+			}
+			$sqlNS .= ") LIMIT 1";
+			$resNS = $db->query($sqlNS);
+			if ($resNS && $db->num_rows($resNS) > 0) {
+				$existingSoc = new Societe($db);
+				$existingSoc->fetch($db->fetch_object($resNS)->rowid);
+				$existingSoc->fournisseur = 1;
+				if (empty($existingSoc->code_fournisseur) || $existingSoc->code_fournisseur == '-1') {
+					$existingSoc->get_codefournisseur();
+				}
+				$existingSoc->update($existingSoc->id, $user);
+				$fk_soc = $existingSoc->id;
+			}
+		}
+
+		// 3) Create new supplier
+		if (empty($fk_soc) && !empty($supplier_name)) {
+			$newSoc = new Societe($db);
+			$newSoc->name        = $supplier_name;
+			$newSoc->client      = 0;
+			$newSoc->fournisseur = 1;
+			$newSoc->status      = 1;
+			$newSoc->idprof1     = $supplier_tax_id;
+
+			$cifUpper = strtoupper($cif_clean);
+			if (preg_match('/^[A-Z]{2}/', $cifUpper)) {
+				$newSoc->tva_intra    = $supplier_tax_id;
+				$newSoc->country_code = substr($cifUpper, 0, 2);
+			}
+
+			if (!empty($supplier_address)) $newSoc->address = $supplier_address;
+			if (!empty($supplier_city))    $newSoc->town    = $supplier_city;
+			if (!empty($supplier_zip))     $newSoc->zip     = $supplier_zip;
+			if (!empty($supplier_phone))   $newSoc->phone   = $supplier_phone;
+			if (!empty($supplier_email))   $newSoc->email   = $supplier_email;
+
+			// Resolve country
+			if (!empty($supplier_country)) {
+				$cc = trim($supplier_country);
+				$sqlC = "SELECT rowid FROM " . MAIN_DB_PREFIX . "c_country WHERE (code='" . $db->escape(strtoupper(substr($cc, 0, 2))) . "' OR label LIKE '" . $db->escape($cc) . "%') AND active=1 LIMIT 1";
+				$resC = $db->query($sqlC);
+				if ($resC && $db->num_rows($resC) > 0) $newSoc->country_id = $db->fetch_object($resC)->rowid;
+			} elseif (!empty($newSoc->country_code)) {
+				$sqlCC = "SELECT rowid FROM " . MAIN_DB_PREFIX . "c_country WHERE code='" . $db->escape($newSoc->country_code) . "' AND active=1 LIMIT 1";
+				$resCC = $db->query($sqlCC);
+				if ($resCC && $db->num_rows($resCC) > 0) $newSoc->country_id = $db->fetch_object($resCC)->rowid;
+			}
+
+			$newSoc->get_codefournisseur();
+
+			$createdId = $newSoc->create($user);
+			if ($createdId > 0) {
+				$fk_soc = $createdId;
+				$supplier_created = true;
+				$supplier_created_name = $newSoc->name;
+			} else {
+				print json_encode(["status" => "error", "message" => "Error creating supplier: " . $newSoc->error]);
+				exit;
+			}
+		}
+	}
+
+	// Still no supplier? Error
+	if (empty($fk_soc)) {
+		print json_encode(["status" => "error", "message" => $langs->trans('EasyOcrAISupplierRequired')]);
+		exit;
+	}
+
+	$total_ht = convertToNumber($total_ht_str);
+	$total_ttc = convertToNumber($total_ttc_str);
+	$total_tva = !empty($total_tva_str) ? convertToNumber($total_tva_str) : ($total_ttc - $total_ht);
+
+	// Parse items
+	$items = !empty($items_json) ? json_decode($items_json, true) : array();
+	if (!is_array($items)) $items = array();
+
+	// Duplicate check
+	$sql_check = "SELECT rowid FROM " . MAIN_DB_PREFIX . "facture_fourn";
+	$sql_check .= " WHERE ref_supplier = '" . $db->escape($ref_supplier) . "'";
+	$sql_check .= " AND fk_soc = " . ((int) $fk_soc);
+	$sql_check .= " AND entity IN (" . getEntity('supplier_invoice') . ")";
+	$resql_check = $db->query($sql_check);
+	if ($resql_check && $db->num_rows($resql_check) > 0) {
+		print json_encode(["status" => "repeat"]);
+		exit;
+	}
+
+	// Create invoice
+	$facture = new FactureFournisseur($db);
+	$facture->socid = $fk_soc;
+	$facture->ref_supplier = $ref_supplier;
+	$facture->date = dol_mktime(12, 0, 0,
+		date('m', strtotime($datef_str)),
+		date('d', strtotime($datef_str)),
+		date('Y', strtotime($datef_str))
+	);
+	$facture->multicurrency_code = $conf->currency;
+	$facture->import_key = 'easyocr-ai';
+
+	if (!empty($notes)) {
+		$facture->note_private = $notes;
+	}
+
+	if (!empty($date_echeance_str)) {
+		$date_ech = convertFlexibleDate($date_echeance_str);
+		$facture->date_echeance = dol_mktime(12, 0, 0,
+			date('m', strtotime($date_ech)),
+			date('d', strtotime($date_ech)),
+			date('Y', strtotime($date_ech))
+		);
+	}
+
+	$newId = $facture->create($user);
+
+	if ($newId <= 0) {
+		print json_encode(["status" => "error", "message" => $langs->trans('EasyOcrErrorCreatingInvoice') . ': ' . $facture->error]);
+		exit;
+	}
+
+	$sql = "UPDATE " . MAIN_DB_PREFIX . "facture_fourn SET import_key = 'easyocr-ai' WHERE rowid = " . ((int) $newId);
+	$db->query($sql);
+
+	// Add lines - one per AI-extracted item
+	if (!empty($items)) {
+		foreach ($items as $item) {
+			$desc = !empty($item['description']) ? $item['description'] : 'LÃ­nea';
+			$qty = !empty($item['quantity']) ? floatval($item['quantity']) : 1;
+			$unit_price = !empty($item['unit_price']) ? convertToNumber($item['unit_price']) : 0;
+			$tax_rate = !empty($item['tax_rate']) ? floatval($item['tax_rate']) : 0;
+
+			// If no unit_price but we have total and qty, compute it
+			if ($unit_price == 0 && !empty($item['total'])) {
+				$lineTotal = convertToNumber($item['total']);
+				$lineTaxAmt = !empty($item['tax_amount']) ? convertToNumber($item['tax_amount']) : 0;
+				$unit_price = ($lineTotal - $lineTaxAmt) / ($qty > 0 ? $qty : 1);
+			}
+
+			$facture->addline(
+				$desc,
+				$unit_price,
+				$tax_rate,
+				0,          // txlocaltax1
+				0,          // txlocaltax2
+				$qty
+			);
+		}
+	} else {
+		// Fallback: single line with totals
+		$tva_tx = calculateIVA($total_ht, $total_tva);
+		$facture->addline(
+			$langs->trans('EasyOcrInvoiceLineDesc'),
+			$total_ht,
+			$tva_tx,
+			0,
+			0,
+			1
+		);
+	}
+
+	// Validate
+	$result = $facture->validate($user);
+	if ($result <= 0) {
+		print json_encode(["status" => "error", "message" => $langs->trans('EasyOcrErrorValidating') . ': ' . $facture->error]);
+		exit;
+	}
+
+	$facture->fetch($newId);
+	$ref = $facture->ref;
+
+	// Upload PDF
+	if (isset($_FILES['file']) && $_FILES['file']['error'] === UPLOAD_ERR_OK) {
+		$ref_clean = dol_sanitizeFileName($facture->ref);
+		$reldir = 'fournisseur/facture/' . get_exdir($newId, 2, 0, 0, $facture, 'invoice_supplier') . $ref_clean;
+		$upload_dir = DOL_DATA_ROOT . '/' . $reldir;
+
+		if (!dol_is_dir($upload_dir)) {
+			dol_mkdir($upload_dir);
+		}
+
+		$fileName = dol_sanitizeFileName(basename($_FILES['file']['name']));
+		$destFileName = $ref_clean . '-' . $fileName;
+		$destFullPath = $upload_dir . '/' . $destFileName;
+
+		if (move_uploaded_file($_FILES['file']['tmp_name'], $destFullPath)) {
+			$ecmfile = new EcmFiles($db);
+			$ecmfile->filepath = $reldir;
+			$ecmfile->filename = $destFileName;
+			$ecmfile->fullpath_orig = $fileName;
+			$ecmfile->gen_or_uploaded = 'uploaded';
+			$ecmfile->src_object_type = 'supplier_invoice';
+			$ecmfile->src_object_id = $newId;
+			$ecmfile->fk_user_c = $user->id;
+			$ecmfile->create($user);
+		}
+	}
+
+	// Payment
+	$create_payment = GETPOST('create_payment', 'alpha');
+	if ($create_payment == '1' && GETPOST('payment_bank_id', 'int') > 0) {
+		$payment_bank_id = GETPOST('payment_bank_id', 'int');
+		$payment_type_id = GETPOST('payment_type_id', 'int') > 0 ? GETPOST('payment_type_id', 'int') : 6;
+
+		$paiement = new PaiementFourn($db);
+		$paiement->datepaye = $facture->date;
+		$paiement->amounts = array($newId => $total_ttc);
+		$paiement->multicurrency_amounts = array($newId => $total_ttc);
+		$paiement->multicurrency_code = array($newId => $conf->currency);
+		$paiement->multicurrency_tx = array($newId => 1);
+		$paiement->paiementid = $payment_type_id;
+		$paiement->num_payment = $ref_supplier;
+		$paiement->note_private = $langs->trans('EasyOcrPaymentAutoNote');
+		$paiement->fk_account = $payment_bank_id;
+
+		$paiement_id = $paiement->create($user, 1);
+		if ($paiement_id > 0) {
+			$paiement->addPaymentToBank($user, 'payment_supplier', '(SupplierInvoicePayment)', $payment_bank_id, '', '');
+		}
+	}
+
+	print json_encode(["status" => "ok", "id" => $newId, "ref" => $ref, "supplier_created" => $supplier_created, "supplier_name" => $supplier_created_name]);
+
+
+// ============================================================
+// AI OCR - PROCESS PDF WITH AI SERVICE
+// ============================================================
+} else if ($action == "aiOcr") {
+
+	if (!easyocrCheckRight($user, 'easyocr', 'write')) {
+		print json_encode(["status" => "error", "message" => "Sin permiso de escritura"]);
+		exit;
+	}
+
+	$aiService = new EasyOcrAI($db);
+
+	if (!$aiService->isEnabled()) {
+		print json_encode(["status" => "error", "message" => $langs->trans('EasyOcrAINotConfigured')]);
+		exit;
+	}
+
+	// Accept base64 data from frontend
+	$base64Data = GETPOST("base64_data", "restricthtml");
+
+	if (empty($base64Data)) {
+		print json_encode(["status" => "error", "message" => "No PDF data provided"]);
+		exit;
+	}
+
+	$result = $aiService->processBase64($base64Data);
+
+	if ($result === false) {
+		print json_encode(["status" => "error", "message" => $aiService->error]);
+		exit;
+	}
+
+	print json_encode(["status" => "ok", "data" => $result]);
+
+
+// ============================================================
+// AI OCR - SSE STREAM PROXY (avoids CORS, keeps apiKey server-side)
+// ============================================================
+} else if ($action == "aiOcrStream") {
+
+	if (!easyocrCheckRight($user, 'easyocr', 'write')) {
+		header('Content-Type: text/event-stream');
+		echo "event: error\ndata: " . json_encode(["message" => "Sin permiso de escritura"]) . "\n\n";
+		exit;
+	}
+
+	$aiService = new EasyOcrAI($db);
+
+	if (!$aiService->isEnabled()) {
+		header('Content-Type: text/event-stream');
+		echo "event: error\ndata: " . json_encode(["message" => $langs->trans('EasyOcrAINotConfigured')]) . "\n\n";
+		exit;
+	}
+
+	// Get base64 data â€” use $_POST directly to avoid Dolibarr sanitization on large payloads
+	$base64Data = isset($_POST['base64_data']) ? $_POST['base64_data'] : '';
+	$filename   = GETPOST('filename', 'alpha') ?: 'document.pdf';
+
+	if (empty($base64Data)) {
+		header('Content-Type: text/event-stream');
+		echo "event: error\ndata: " . json_encode(["message" => "No PDF data"]) . "\n\n";
+		exit;
+	}
+
+	// SSE headers
+	header('Content-Type: text/event-stream');
+	header('Cache-Control: no-cache');
+	header('Connection: keep-alive');
+	header('X-Accel-Buffering: no');          // nginx
+	header('Content-Encoding: none');         // disable mod_deflate
+
+	// Disable all output buffering
+	@ini_set('output_buffering', 'off');
+	@ini_set('zlib.output_compression', false);
+	while (ob_get_level()) { ob_end_clean(); }
+	ob_implicit_flush(true);
+
+	$url    = $aiService->getBaseUrl() . '/api/v1/ocr/base64/stream';
+	$apiKey = $aiService->getApiKey();
+
+	$ch = curl_init($url);
+	curl_setopt_array($ch, [
+		CURLOPT_POST           => true,
+		CURLOPT_HTTPHEADER     => [
+			'Content-Type: application/json',
+			'X-API-Key: ' . $apiKey,
+			'Accept: text/event-stream'
+		],
+		CURLOPT_POSTFIELDS     => json_encode([
+			'base64_data' => $base64Data,
+			'filename'    => $filename
+		]),
+		CURLOPT_RETURNTRANSFER => false,
+		CURLOPT_TIMEOUT        => 120,
+		CURLOPT_WRITEFUNCTION  => function ($ch, $chunk) {
+			echo $chunk;
+			flush();
+			return strlen($chunk);
+		}
+	]);
+
+	$ok = curl_exec($ch);
+
+	if (!$ok || curl_errno($ch)) {
+		$errMsg = curl_error($ch) ?: 'Connection failed';
+		echo "event: error\ndata: " . json_encode(["message" => $errMsg]) . "\n\n";
+		flush();
+	}
+
+	curl_close($ch);
+	exit;
+
+
+// ============================================================
+// AI CONFIG - CHECK IF AI IS AVAILABLE
+// ============================================================
+} else if ($action == "getAIConfig") {
+
+	$aiService = new EasyOcrAI($db);
+	print json_encode([
+		"enabled" => $aiService->isEnabled(),
+		"url" => $aiService->getBaseUrl()
+	]);
 
 }

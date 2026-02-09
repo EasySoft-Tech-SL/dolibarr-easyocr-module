@@ -29,7 +29,9 @@ const EasyOcr = (function () {
         templatesData: [],   // Cache de plantillas
         banksData: [],       // Cache de cuentas bancarias
         paymentTypesData: [], // Cache de tipos de pago
-        pdfArrayBuffer: null // Para re-render en zoom
+        pdfArrayBuffer: null, // Para re-render en zoom
+        aiEnabled: false,     // AI OCR habilitado
+        aiResult: null        // Último resultado AI OCR
     };
 
     // Historial para undo
@@ -940,6 +942,9 @@ const EasyOcr = (function () {
                     });
                 }
 
+                // Poblar selectores del modal AI (mismas opciones)
+                populateAIPaymentSelects();
+
                 initSelect2();
                 updateReadiness();
             }
@@ -1428,6 +1433,7 @@ const EasyOcr = (function () {
         updateTemplateButtons();
         initSelect2();
         updateReadiness();
+        checkAIConfig();
     }
 
     // ---- Select2 ----
@@ -1583,6 +1589,743 @@ const EasyOcr = (function () {
         updateReadiness();
     }
 
+    // ---- AI OCR ----
+    function checkAIConfig() {
+        $.ajax({
+            url: "ajax/ajax_easyocr.php",
+            type: 'POST',
+            dataType: 'json',
+            data: { action: "getAIConfig" },
+            success: function (data) {
+                state.aiEnabled = data.enabled;
+                var section = document.getElementById('eo-ai-section');
+                var active = document.getElementById('eo-ai-active');
+                var disabled = document.getElementById('eo-ai-disabled');
+                if (section) {
+                    if (data.enabled) {
+                        section.classList.remove('eo-ai-disabled');
+                        if (active) active.style.display = '';
+                        if (disabled) disabled.style.display = 'none';
+                    } else {
+                        section.classList.add('eo-ai-disabled');
+                        if (active) active.style.display = 'none';
+                        if (disabled) disabled.style.display = '';
+                    }
+                }
+            }
+        });
+    }
+
+    function runAIOcr() {
+        if (!state.pdfArrayBuffer) {
+            toast(L.importPdfFirst || 'Import a PDF first', 'warn');
+            return;
+        }
+
+        // Convert ArrayBuffer to base64
+        var bytes = new Uint8Array(state.pdfArrayBuffer);
+        var binary = '';
+        var chunkSize = 8192;
+        for (var i = 0; i < bytes.length; i += chunkSize) {
+            binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunkSize));
+        }
+        var base64 = btoa(binary);
+
+        // Try SSE stream via PHP proxy, fallback to classic AJAX
+        if (state.aiEnabled && window.fetch && window.ReadableStream) {
+            runAIOcrSSE(base64);
+        } else {
+            runAIOcrClassic(base64);
+        }
+    }
+
+    /* ---------- SSE via PHP proxy (same origin, no CORS) ---------- */
+    function runAIOcrSSE(base64) {
+        var btn = document.getElementById('eo-btn-ai-ocr');
+        var progressEl = document.getElementById('eo-ai-progress');
+        var fillEl = document.getElementById('eo-ai-progress-fill');
+        var textEl = document.getElementById('eo-ai-progress-text');
+
+        // Disable button and show progress bar
+        if (btn) {
+            btn.disabled = true;
+            btn.dataset.origText = btn.innerHTML;
+            btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="eo-spin"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg> ' + (L.aiProcessing || 'Procesando...');
+        }
+        if (progressEl) progressEl.style.display = 'block';
+        if (fillEl) fillEl.style.width = '0%';
+        if (textEl) textEl.textContent = L.aiStarting || 'Iniciando...';
+
+        // POST to PHP SSE proxy — same origin, no CORS issues
+        var formData = new FormData();
+        formData.append('action', 'aiOcrStream');
+        formData.append('base64_data', base64);
+        formData.append('filename', state.file ? state.file.name : 'document.pdf');
+
+        fetch('ajax/ajax_easyocr.php', {
+            method: 'POST',
+            body: formData
+        }).then(function (response) {
+            if (!response.ok) {
+                throw new Error('HTTP ' + response.status);
+            }
+            return readSSEStream(response, fillEl, textEl);
+        }).then(function (resultData) {
+            resetAIProgress();
+            if (resultData) {
+                state.aiResult = resultData;
+                displayAIResult(resultData);
+                toast(L.aiOcrSuccess || 'AI extraction complete', 'success');
+            } else {
+                toast(L.aiNoData || 'No data extracted', 'warn');
+            }
+        }).catch(function (err) {
+            console.warn('SSE stream error, falling back to classic:', err.message);
+            resetAIProgress();
+            runAIOcrClassic(base64);
+        });
+    }
+
+    /* ---------- SSE parser — handles both "event: x" and "event:x" ---------- */
+    function readSSEStream(response, fillEl, textEl) {
+        return new Promise(function (resolve, reject) {
+            var reader = response.body.getReader();
+            var decoder = new TextDecoder();
+            var buffer = '';
+            var result = null;
+
+            function pump() {
+                reader.read().then(function (ref) {
+                    var done = ref.done;
+                    var value = ref.value;
+                    if (done) { resolve(result); return; }
+
+                    buffer += decoder.decode(value, { stream: true });
+                    // Split on double newline (SSE event separator)
+                    var events = buffer.split('\n\n');
+                    buffer = events.pop(); // keep incomplete tail
+
+                    for (var i = 0; i < events.length; i++) {
+                        var eventStr = events[i].trim();
+                        if (!eventStr) continue;
+
+                        var lines = eventStr.split('\n');
+                        var eventType = '', eventData = '';
+                        for (var j = 0; j < lines.length; j++) {
+                            var line = lines[j];
+                            // Handle "event: x" or "event:x"
+                            if (line.indexOf('event:') === 0) {
+                                eventType = line.substring(6).trim();
+                            } else if (line.indexOf('data:') === 0) {
+                                eventData = line.substring(5).trim();
+                            }
+                        }
+                        if (!eventType || !eventData) continue;
+
+                        try { var data = JSON.parse(eventData); }
+                        catch (e) { continue; }
+
+                        if (eventType === 'progress') {
+                            if (fillEl) fillEl.style.width = (data.percent || 0) + '%';
+                            if (textEl) textEl.textContent = data.message || data.step || '';
+                        } else if (eventType === 'result') {
+                            result = data;
+                            if (fillEl) fillEl.style.width = '100%';
+                            if (textEl) textEl.textContent = L.aiOcrSuccess || 'Completado';
+                        } else if (eventType === 'error') {
+                            reject(new Error(data.message || 'SSE error'));
+                            return;
+                        }
+                    }
+                    pump();
+                }).catch(reject);
+            }
+            pump();
+        });
+    }
+
+    /* ---------- Classic AJAX fallback with simulated progress ---------- */
+    function runAIOcrClassic(base64) {
+        var progressEl = document.getElementById('eo-ai-progress');
+        var fillEl = document.getElementById('eo-ai-progress-fill');
+        var textEl = document.getElementById('eo-ai-progress-text');
+        var btn = document.getElementById('eo-btn-ai-ocr');
+
+        // Show progress bar with simulated stages
+        if (btn && !btn.disabled) {
+            btn.disabled = true;
+            btn.dataset.origText = btn.innerHTML;
+            btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="eo-spin"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg> ' + (L.aiProcessing || 'Procesando...');
+        }
+        if (progressEl) progressEl.style.display = 'block';
+        if (fillEl) fillEl.style.width = '0%';
+        startSimulatedProgress(fillEl, textEl);
+
+        $.ajax({
+            url: "ajax/ajax_easyocr.php",
+            type: 'POST',
+            dataType: 'json',
+            data: { action: "aiOcr", base64_data: base64 },
+            success: function (response) {
+                stopSimulatedProgress();
+                if (fillEl) fillEl.style.width = '100%';
+                if (textEl) textEl.textContent = '';
+                resetAIProgress();
+                if (response.status === 'ok' && response.data) {
+                    state.aiResult = response.data;
+                    displayAIResult(response.data);
+                    toast(L.aiOcrSuccess || 'AI extraction complete', 'success');
+                } else {
+                    toast(response.message || (L.aiOcrError || 'AI OCR error'), 'error');
+                }
+            },
+            error: function (xhr) {
+                stopSimulatedProgress();
+                resetAIProgress();
+                toast(L.aiOcrError || 'AI OCR service error', 'error');
+            }
+        });
+    }
+
+    /* ---------- Simulated progress for classic AJAX ---------- */
+    function startSimulatedProgress(fillEl, textEl) {
+        var steps = [
+            { pct: 5,  msg: L.aiStarting || 'Enviando archivo...', delay: 500  },
+            { pct: 15, msg: 'Validando documento...',              delay: 2000 },
+            { pct: 25, msg: 'Extrayendo texto (OCR)...',           delay: 4000 },
+            { pct: 40, msg: 'Procesando páginas...',               delay: 7000 },
+            { pct: 55, msg: 'OCR completado...',                   delay: 10000 },
+            { pct: 65, msg: 'Estructurando datos con IA...',       delay: 13000 },
+            { pct: 80, msg: 'Finalizando análisis...',             delay: 18000 },
+            { pct: 90, msg: 'Casi listo...',                       delay: 25000 }
+        ];
+        state._simTimers = [];
+        for (var i = 0; i < steps.length; i++) {
+            (function (s) {
+                var t = setTimeout(function () {
+                    if (fillEl) fillEl.style.width = s.pct + '%';
+                    if (textEl) textEl.textContent = s.msg;
+                }, s.delay);
+                state._simTimers.push(t);
+            })(steps[i]);
+        }
+    }
+
+    function stopSimulatedProgress() {
+        if (state._simTimers) {
+            for (var i = 0; i < state._simTimers.length; i++) {
+                clearTimeout(state._simTimers[i]);
+            }
+            state._simTimers = [];
+        }
+    }
+
+    function resetAIProgress() {
+        var btn = document.getElementById('eo-btn-ai-ocr');
+        var progressEl = document.getElementById('eo-ai-progress');
+        if (btn && btn.dataset.origText) {
+            btn.disabled = false;
+            btn.innerHTML = btn.dataset.origText;
+        }
+        if (progressEl) {
+            setTimeout(function () { progressEl.style.display = 'none'; }, 1200);
+        }
+    }
+
+    // ========== AI MODAL PREMIUM ==========
+
+    function displayAIResult(data) {
+        var sd = data.structured_data || data;
+
+        // --- Meta pills ---
+        setMetaPill('eo-ai-meta-confidence', data.confidence != null, (data.confidence != null ? Math.round(data.confidence * 100) + '%' : ''));
+        setMetaPill('eo-ai-meta-time', data.processing_time_ms > 0, (data.processing_time_ms > 0 ? (data.processing_time_ms / 1000).toFixed(1) + 's' : ''));
+        setMetaPill('eo-ai-meta-tokens', data.tokens && data.tokens.total, (data.tokens ? data.tokens.total + ' tok' : ''));
+        var pageCount = sd.metadata && sd.metadata.page_count ? sd.metadata.page_count : null;
+        setMetaPill('eo-ai-meta-pages', pageCount, (pageCount ? pageCount + 'p' : ''));
+
+        // --- Document fields ---
+        var docFields = [
+            { key: 'document_type', label: L.aiDocType || 'Type', half: true },
+            { key: 'document_number', label: L.invoiceNumber || 'Invoice No.', half: true },
+            { key: 'issue_date', label: L.dateLabel || 'Date', half: true },
+            { key: 'due_date', label: L.dueDateLabel || 'Due date', half: true },
+            { key: 'currency', label: L.currency || 'Currency', half: true }
+        ];
+        renderFieldGroup('eo-ai-doc-fields', docFields, sd);
+
+        // --- Supplier fields ---
+        var sup = sd.supplier || {};
+        var supplierFields = [
+            { key: 'name', label: L.aiName || 'Name', half: false },
+            { key: 'tax_id', label: L.labelCIF || 'Tax ID', half: true },
+            { key: 'address', label: L.aiAddress || 'Address', half: true },
+            { key: 'city', label: L.aiCity || 'City', half: true },
+            { key: 'postal_code', label: L.aiPostalCode || 'Postal code', half: true },
+            { key: 'country', label: L.aiCountry || 'Country', half: true },
+            { key: 'phone', label: L.aiPhone || 'Phone', half: true },
+            { key: 'email', label: L.aiEmail || 'Email', half: true }
+        ];
+        var hasSup = renderFieldGroup('eo-ai-supplier-fields', supplierFields, sup);
+        toggleCard('eo-ai-card-supplier', hasSup);
+
+        // --- Customer fields ---
+        var cust = sd.customer || {};
+        var customerFields = [
+            { key: 'name', label: L.aiName || 'Name', half: false },
+            { key: 'tax_id', label: L.labelCIF || 'Tax ID', half: true },
+            { key: 'address', label: L.aiAddress || 'Address', half: true },
+            { key: 'city', label: L.aiCity || 'City', half: true },
+            { key: 'postal_code', label: L.aiPostalCode || 'Postal code', half: true },
+            { key: 'country', label: L.aiCountry || 'Country', half: true }
+        ];
+        var hasCust = renderFieldGroup('eo-ai-customer-fields', customerFields, cust);
+        toggleCard('eo-ai-card-customer', hasCust);
+
+        // --- Line items ---
+        var items = sd.items || [];
+        var tbody = document.getElementById('eo-ai-lines-tbody');
+        var countEl = document.getElementById('eo-ai-lines-count');
+        if (tbody) {
+            tbody.innerHTML = '';
+            if (items.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="eo-ai-empty-lines">' + (L.aiNoLines || 'No line items') + '</td></tr>';
+            } else {
+                items.forEach(function (item, idx) {
+                    tbody.appendChild(createLineRow(item, idx));
+                });
+            }
+        }
+        if (countEl) countEl.textContent = items.length;
+
+        // --- Totals ---
+        var totals = sd.totals || {};
+        var totalsFields = [
+            { key: 'subtotal', label: L.taxableBase || 'Subtotal', half: true, money: true },
+            { key: 'tax', label: L.aiTaxes || 'Tax', half: true, money: true },
+            { key: 'discount', label: L.aiDiscount || 'Discount', half: true, money: true },
+            { key: 'total', label: L.aiTotal || 'Total', half: true, money: true }
+        ];
+        renderFieldGroup('eo-ai-totals-fields', totalsFields, totals);
+
+        // --- Payment ---
+        var pay = sd.payment || {};
+        var payFields = [
+            { key: 'method', label: L.aiPayMethod || 'Method', half: true },
+            { key: 'status', label: L.aiPayStatus || 'Status', half: true },
+            { key: 'bank_account', label: L.aiPayBank || 'Bank account', half: false },
+            { key: 'reference', label: L.aiPayRef || 'Reference', half: true }
+        ];
+        var hasPay = renderFieldGroup('eo-ai-payment-fields', payFields, pay);
+        toggleCard('eo-ai-card-payment', hasPay);
+
+        // --- Notes ---
+        var notesCard = document.getElementById('eo-ai-notes-card');
+        var notesContainer = document.getElementById('eo-ai-notes-fields');
+        if (notesCard && notesContainer) {
+            if (sd.notes) {
+                notesCard.style.display = '';
+                notesContainer.innerHTML = '';
+                var fg = document.createElement('div');
+                fg.className = 'eo-ai-field-group full-width';
+                var ta = document.createElement('textarea');
+                ta.className = 'eo-ai-field-input';
+                ta.setAttribute('data-ai-section', 'notes');
+                ta.setAttribute('data-ai-key', 'notes');
+                ta.value = sd.notes;
+                ta.rows = 3;
+                fg.appendChild(ta);
+                notesContainer.appendChild(fg);
+            } else {
+                notesCard.style.display = 'none';
+            }
+        }
+
+        // Show modal
+        document.getElementById('eo-modal-ai').style.display = 'flex';
+    }
+
+    function toggleCard(cardId, hasData) {
+        var card = document.getElementById(cardId);
+        if (!card) return;
+        if (hasData) {
+            card.style.display = '';
+            card.classList.remove('collapsed');
+        } else {
+            card.style.display = 'none';
+        }
+    }
+
+    function setMetaPill(id, condition, text) {
+        var el = document.getElementById(id);
+        if (!el) return;
+        if (condition) {
+            el.textContent = text;
+            el.classList.add('visible');
+        } else {
+            el.classList.remove('visible');
+        }
+    }
+
+    function renderFieldGroup(containerId, fields, dataObj) {
+        var container = document.getElementById(containerId);
+        if (!container) return false;
+        container.innerHTML = '';
+        var hasAnyValue = false;
+
+        fields.forEach(function (f) {
+            var val = dataObj[f.key];
+            if (val === undefined || val === null) val = '';
+            if (String(val).trim() !== '') hasAnyValue = true;
+
+            var fg = document.createElement('div');
+            fg.className = 'eo-ai-field-group' + (f.half ? '' : ' full-width');
+
+            var lbl = document.createElement('label');
+            lbl.className = 'eo-ai-field-lbl';
+            lbl.textContent = f.label;
+
+            var input = document.createElement('input');
+            input.type = 'text';
+            input.className = 'eo-ai-field-input' + (f.money ? ' eo-ai-input-money' : '');
+            input.value = String(val);
+            input.setAttribute('data-ai-section', containerId);
+            input.setAttribute('data-ai-key', f.key);
+
+            fg.appendChild(lbl);
+            fg.appendChild(input);
+            container.appendChild(fg);
+        });
+
+        return hasAnyValue;
+    }
+
+    function createLineRow(item, idx) {
+        var tr = document.createElement('tr');
+        tr.setAttribute('data-ai-line-idx', idx);
+
+        var fields = [
+            { key: 'description', cls: '', val: item.description || item.label || item.name || '' },
+            { key: 'quantity', cls: 'eo-ai-td-input-num', val: item.quantity || item.qty || '1' },
+            { key: 'unit_price', cls: 'eo-ai-td-input-num', val: item.unit_price || item.price || '' },
+            { key: 'tax_rate', cls: 'eo-ai-td-input-num', val: item.tax_rate || '' },
+            { key: 'tax_amount', cls: 'eo-ai-td-input-num', val: item.tax_amount || '' },
+            { key: 'total', cls: 'eo-ai-td-input-num', val: item.total || item.amount || item.line_total || '' }
+        ];
+
+        fields.forEach(function (f) {
+            var td = document.createElement('td');
+            var input = document.createElement('input');
+            input.type = 'text';
+            input.className = 'eo-ai-td-input ' + f.cls;
+            input.value = String(f.val);
+            input.setAttribute('data-ai-line-key', f.key);
+            td.appendChild(input);
+            tr.appendChild(td);
+        });
+
+        // Delete button
+        var tdDel = document.createElement('td');
+        var btnDel = document.createElement('button');
+        btnDel.className = 'eo-ai-row-delete';
+        btnDel.innerHTML = '✕';
+        btnDel.title = L.deleteSelection || 'Delete';
+        btnDel.onclick = function () {
+            tr.style.transition = 'opacity 0.2s, transform 0.2s';
+            tr.style.opacity = '0';
+            tr.style.transform = 'translateX(20px)';
+            setTimeout(function () {
+                tr.remove();
+                updateLineCount();
+            }, 200);
+        };
+        tdDel.appendChild(btnDel);
+        tr.appendChild(tdDel);
+
+        return tr;
+    }
+
+    function aiAddLine() {
+        var tbody = document.getElementById('eo-ai-lines-tbody');
+        if (!tbody) return;
+
+        // Remove "no lines" placeholder if present
+        var emptyRow = tbody.querySelector('.eo-ai-empty-lines');
+        if (emptyRow) emptyRow.closest('tr').remove();
+
+        var idx = tbody.querySelectorAll('tr').length;
+        var newRow = createLineRow({}, idx);
+        newRow.style.animation = 'eo-ai-in 0.25s ease-out';
+        tbody.appendChild(newRow);
+        updateLineCount();
+
+        // Focus on description
+        var firstInput = newRow.querySelector('input');
+        if (firstInput) firstInput.focus();
+    }
+
+    function updateLineCount() {
+        var tbody = document.getElementById('eo-ai-lines-tbody');
+        var countEl = document.getElementById('eo-ai-lines-count');
+        if (!tbody || !countEl) return;
+        var rows = tbody.querySelectorAll('tr[data-ai-line-idx]');
+        countEl.textContent = rows.length;
+    }
+
+    function closeAIModal() {
+        var modal = document.getElementById('eo-modal-ai');
+        if (modal) modal.style.display = 'none';
+    }
+
+    function collectAIModalData() {
+        var result = { document: {}, supplier: {}, customer: {}, items: [], totals: {}, payment: {}, notes: '' };
+
+        // Collect simple field groups
+        var sections = {
+            'eo-ai-doc-fields': 'document',
+            'eo-ai-supplier-fields': 'supplier',
+            'eo-ai-customer-fields': 'customer',
+            'eo-ai-totals-fields': 'totals',
+            'eo-ai-payment-fields': 'payment'
+        };
+
+        Object.keys(sections).forEach(function (containerId) {
+            var sectionKey = sections[containerId];
+            var container = document.getElementById(containerId);
+            if (!container) return;
+            var inputs = container.querySelectorAll('.eo-ai-field-input');
+            inputs.forEach(function (input) {
+                var key = input.getAttribute('data-ai-key');
+                if (key) result[sectionKey][key] = input.value.trim();
+            });
+        });
+
+        // Collect notes
+        var notesInput = document.querySelector('[data-ai-section="notes"]');
+        if (notesInput) result.notes = notesInput.value.trim();
+
+        // Collect line items
+        var rows = document.querySelectorAll('#eo-ai-lines-tbody tr[data-ai-line-idx]');
+        rows.forEach(function (row) {
+            var line = {};
+            var inputs = row.querySelectorAll('.eo-ai-td-input');
+            inputs.forEach(function (input) {
+                var key = input.getAttribute('data-ai-line-key');
+                if (key) line[key] = input.value.trim();
+            });
+            if (line.description || line.quantity || line.unit_price || line.total) {
+                result.items.push(line);
+            }
+        });
+
+        return result;
+    }
+
+    function applyAIResult() {
+        // Legacy — now createAIInvoice handles everything
+        createAIInvoice();
+    }
+
+    function createAIInvoice() {
+        var editedData = collectAIModalData();
+
+        // Validate minimum required fields
+        if (!editedData.document.document_number) {
+            toast(L.aiMissingInvoiceNum || 'Invoice number is required', 'error');
+            return;
+        }
+        if (!editedData.document.issue_date) {
+            toast(L.aiMissingDate || 'Invoice date is required', 'error');
+            return;
+        }
+
+        // Calculate totals
+        var subtotal = parseFloat(editedData.totals.subtotal) || 0;
+        var totalTax = parseFloat(editedData.totals.tax) || 0;
+        var totalFinal = parseFloat(editedData.totals.total) || 0;
+
+        if (editedData.items.length > 0 && subtotal === 0) {
+            var computedSubtotal = 0;
+            var computedTax = 0;
+            editedData.items.forEach(function (item) {
+                var qty = parseFloat(item.quantity) || 1;
+                var price = parseFloat(item.unit_price) || 0;
+                var lineTotal = parseFloat(item.total) || (qty * price);
+                var lineTax = parseFloat(item.tax_amount) || 0;
+                computedSubtotal += (lineTotal - lineTax) || lineTotal;
+                computedTax += lineTax;
+            });
+            if (computedSubtotal > 0) subtotal = computedSubtotal;
+            if (computedTax > 0 && totalTax === 0) totalTax = computedTax;
+        }
+
+        if (totalFinal === 0 && subtotal > 0) {
+            totalFinal = subtotal + totalTax;
+        }
+        if (subtotal === 0 && totalFinal > 0) {
+            subtotal = totalFinal - totalTax;
+        }
+
+        if (subtotal <= 0 && totalFinal <= 0) {
+            toast(L.aiMissingTotals || 'Totals are required', 'error');
+            return;
+        }
+
+        // Check payment options
+        var createPayment = document.getElementById('eo-ai-create-payment');
+        var doPayment = createPayment && createPayment.checked;
+        if (doPayment) {
+            var bankId = $('#eo-ai-payment-bank').val();
+            var payTypeId = $('#eo-ai-payment-type').val();
+            if (!bankId) { toast(L.selectBankForPayment, 'error'); return; }
+            if (!payTypeId) { toast(L.selectPaymentType, 'error'); return; }
+        }
+
+        // Supplier: use selected or let backend resolve by CIF
+        var supplierId = $('#eo-supplier').val() || '';
+
+        showLoader();
+        doCreateAIInvoice(editedData, supplierId, subtotal, totalTax, totalFinal, doPayment);
+    }
+
+    function doCreateAIInvoice(editedData, fkSoc, subtotal, totalTax, totalFinal, doPayment) {
+        closeAIModal();
+
+        var postData = {
+            action: 'newInvoiceAI',
+            fk_soc: fkSoc || '0',
+            ref_supplier: editedData.document.document_number,
+            datef: editedData.document.issue_date,
+            date_echeance: editedData.document.due_date || '',
+            total_ht: subtotal.toFixed(2),
+            total_ttc: totalFinal.toFixed(2),
+            total_tva: totalTax.toFixed(2),
+            items: JSON.stringify(editedData.items),
+            notes: editedData.notes || '',
+            // Supplier data for auto-resolve/create
+            supplier_name: editedData.supplier.name || '',
+            supplier_tax_id: editedData.supplier.tax_id || '',
+            supplier_address: editedData.supplier.address || '',
+            supplier_city: editedData.supplier.city || '',
+            supplier_zip: editedData.supplier.postal_code || '',
+            supplier_country: editedData.supplier.country || '',
+            supplier_phone: editedData.supplier.phone || '',
+            supplier_email: editedData.supplier.email || ''
+        };
+
+        if (doPayment) {
+            postData.create_payment = '1';
+            postData.payment_bank_id = $('#eo-ai-payment-bank').val();
+            postData.payment_type_id = $('#eo-ai-payment-type').val();
+        }
+
+        // Attach the PDF file if we have it
+        if (state.file) {
+            var formData = new FormData();
+            formData.append('file', state.file);
+            Object.keys(postData).forEach(function (k) { formData.append(k, postData[k]); });
+
+            $.ajax({
+                url: "ajax/ajax_easyocr.php",
+                type: 'POST',
+                dataType: 'json',
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: handleAIInvoiceResult,
+                error: handleAIInvoiceError
+            });
+        } else {
+            $.ajax({
+                url: "ajax/ajax_easyocr.php",
+                type: 'POST',
+                dataType: 'json',
+                data: postData,
+                success: handleAIInvoiceResult,
+                error: handleAIInvoiceError
+            });
+        }
+    }
+
+    function handleAIInvoiceResult(data) {
+        hideLoader();
+        if (data.status === 'ok') {
+            if (data.supplier_created) {
+                toast((L.aiSupplierCreated || 'Proveedor creado: ') + (data.supplier_name || ''), 'success');
+            }
+            showInvoicePreview(data.id, data.ref || '');
+            toast(L.invoiceCreatedOk, 'success');
+            resetWorkspace();
+        } else if (data.status === 'repeat') {
+            toast(L.invoiceAlreadyExists, 'warn');
+        } else {
+            toast(data.message || L.errorGeneratingInvoice, 'error');
+        }
+    }
+
+    function handleAIInvoiceError() {
+        hideLoader();
+        toast(L.errorGeneratingInvoice, 'error');
+    }
+
+    function toggleAIPayment() {
+        var checked = document.getElementById('eo-ai-create-payment').checked;
+        document.getElementById('eo-ai-payment-options').style.display = checked ? 'flex' : 'none';
+    }
+
+    function populateAIPaymentSelects() {
+        var bankSel = document.getElementById('eo-ai-payment-bank');
+        if (bankSel && state.banksData) {
+            bankSel.innerHTML = '<option value="">' + (L.selectBankAccount || 'Select bank') + '</option>';
+            state.banksData.forEach(function (b) {
+                var curr = b.currency_code ? ' (' + b.currency_code + ')' : '';
+                var num = b.number ? ' - ' + b.number : '';
+                bankSel.innerHTML += '<option value="' + b.rowid + '">' + b.label + num + curr + '</option>';
+            });
+        }
+        var paySel = document.getElementById('eo-ai-payment-type');
+        if (paySel && state.paymentTypesData) {
+            paySel.innerHTML = '<option value="">' + (L.selectPaymentMode || 'Select mode') + '</option>';
+            var seen = {};
+            state.paymentTypesData.forEach(function (pt) {
+                if (!seen[pt.id]) {
+                    seen[pt.id] = true;
+                    paySel.innerHTML += '<option value="' + pt.id + '">' + pt.label + '</option>';
+                }
+            });
+        }
+    }
+
+    function setSelectionValue(label, value) {
+        for (var p = 0; p < state.pages.length; p++) {
+            for (var s = 0; s < state.pages[p].selections.length; s++) {
+                if (state.pages[p].selections[s].label === label) {
+                    state.pages[p].selections[s].text = value;
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    function getNestedValue(obj, key) {
+        if (!obj || typeof obj !== 'object') return undefined;
+        if (obj[key] !== undefined) return obj[key];
+        var keys = Object.keys(obj);
+        for (var i = 0; i < keys.length; i++) {
+            if (typeof obj[keys[i]] === 'object' && obj[keys[i]] !== null) {
+                if (obj[keys[i]][key] !== undefined) return obj[keys[i]][key];
+            }
+        }
+        return undefined;
+    }
+
+    function escapeHtml(str) {
+        var div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    }
+
     // Arrancar
     document.addEventListener('DOMContentLoaded', init);
 
@@ -1604,6 +2347,12 @@ const EasyOcr = (function () {
         undo,
         zoomIn,
         zoomOut,
+        runAIOcr,
+        applyAIResult,
+        createAIInvoice,
+        toggleAIPayment,
+        closeAIModal,
+        aiAddLine,
     };
 
 })();
