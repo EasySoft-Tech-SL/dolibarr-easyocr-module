@@ -334,6 +334,30 @@ EasyOcrTelemetryLegalGDPRDesc = Der Benutzer behält alle seine Rechte auf Zugan
 EasyOcrTelemetryRightsTitle = Ihre Rechte
 EasyOcrTelemetryRightsDesc = Sie haben das Recht: auf Zugang zu den von uns verarbeiteten Daten, auf Berichtigung oder Löschung, auf Widerspruch gegen die Verarbeitung und auf Datenübertragbarkeit. Die Nutzung der KI ist vollständig freiwillig: Wenn Sie die Funktion nicht aktivieren oder nicht auf die Extraktionsschaltfläche klicken, werden keine Daten übermittelt.
 
+# ---- Europäische KI-Verordnung (EU) 2024/1689 ----
+EasyOcrTelemetryEUAITitle = Europäische Verordnung über Künstliche Intelligenz
+EasyOcrTelemetryEUAIRegulation = Anwendbare Vorschriften
+EasyOcrTelemetryEUAIRegulationDesc = Die Verordnung (EU) 2024/1689 des Europäischen Parlaments und des Rates vom 13. Juni 2024 legt harmonisierte Vorschriften für künstliche Intelligenz fest (KI-Verordnung). Dieses Modul verwendet KI-Dienste von Drittanbietern und erfüllt die geltenden Pflichten als Betreiber/Endnutzer.
+EasyOcrTelemetryEUAIArticle50 = Artikel 50 — Transparenz
+EasyOcrTelemetryEUAIArticle50Desc = Artikel 50 der KI-Verordnung, anwendbar ab August 2026, verpflichtet dazu, Personen ausdrücklich darüber zu informieren, dass sie mit einem System der künstlichen Intelligenz interagieren. Gemäß den Empfehlungen der Spanischen Datenschutzbehörde (AEPD) erfüllt dieses Modul die Anforderungen vorausschauend und informiert klar über die KI-Nutzung.
+EasyOcrTelemetryEUAIRiskLevel = Risikostufe
+EasyOcrTelemetryEUAIRiskLevelDesc = Die KI-Nutzung in diesem Modul beschränkt sich auf die Datenextraktion aus Rechnungen zwischen Unternehmen (B2B). Diese Nutzung wird als minimales Risiko eingestuft, da sie keine Bewertungen, Diagnosen oder autonomen Entscheidungen über natürliche Personen vornimmt. Über die informative Transparenz hinaus sind keine zusätzlichen besonderen Maßnahmen erforderlich.
+EasyOcrTelemetryEUAICompliance = Vorausschauende Einhaltung
+EasyOcrTelemetryEUAIComplianceDesc = Obwohl Artikel 50 erst ab August 2026 vollständig durchsetzbar sein wird, erfüllt dieses Modul die Transparenz- und Informationsanforderungen bereits vorausschauend, im Einklang mit den AEPD-Empfehlungen und der DSGVO.
+EasyOcrTelemetryAITransparencyTitle = Transparenzhinweis zur Nutzung Künstlicher Intelligenz
+EasyOcrTelemetryAITransparencyDesc = Dieses Modul kann auf künstlicher Intelligenz basierende Werkzeuge verwenden, um bestimmte Aufgaben wie Rechnungsstellungsprozesse zu unterstützen. Insbesondere nutzt die easyOCR AI-Funktionalität einen KI-Dienst eines Drittanbieters zur automatischen Datenextraktion aus PDF-Dokumenten (Lieferant, Steuernummer, Daten, Beträge und Rechnungspositionen). Die Nutzung dieser Funktionalität ist freiwillig und erfordert eine ausdrückliche Benutzeraktion. Die von der KI generierten Ergebnisse sind vor der Anwendung stets vom Benutzer überprüfbar und bearbeitbar, wodurch jederzeit die menschliche Kontrolle gewährleistet ist.
+EasyOcrTelemetryUserObligationsTitle = Pflichten des Benutzers als KI-Betreiber
+EasyOcrTelemetryObligationUse = Nutzung gemäß Anweisungen
+EasyOcrTelemetryObligationUseDesc = Der Benutzer muss die KI-Systeme gemäß den Anweisungen des Entwicklers verwenden und die im Modul festgelegte Dokumentation und Konfiguration befolgen.
+EasyOcrTelemetryObligationHuman = Menschliche Aufsicht
+EasyOcrTelemetryObligationHumanDesc = Der Benutzer muss die menschliche Aufsicht bei Entscheidungen sicherstellen, insbesondere bei sensiblen. KI-Ergebnisse sind stets überprüfbar und bearbeitbar, bevor Rechnungen oder Datensätze im System erstellt werden.
+EasyOcrTelemetryObligationInform = Betroffene Personen informieren
+EasyOcrTelemetryObligationInformDesc = Der Benutzer muss betroffene Personen (Mitarbeiter, Kunden, Lieferanten) darüber informieren, dass KI-Tools in den Rechnungsstellungsprozessen verwendet werden können. Diese Telemetrie-Seite ist Teil dieser Information.
+EasyOcrTelemetryObligationValidate = Datenvalidierung
+EasyOcrTelemetryObligationValidateDesc = Der Benutzer ist verantwortlich für die Validierung der eingegebenen Daten und der von der KI extrahierten Ergebnisse, um Verzerrungen oder Fehler vor der endgültigen Anwendung im ERP zu vermeiden.
+EasyOcrTelemetryLegalEUAI = KI-Verordnung (EU) 2024/1689
+EasyOcrTelemetryLegalEUAIDesc = Die Datenverarbeitung durch KI erfolgt gemäß der Verordnung (EU) 2024/1689 über Künstliche Intelligenz unter Einhaltung der Transparenzpflichten (Art. 50) und der Verantwortlichkeiten des Benutzers als Betreiber/Bereitsteller von KI-Systemen.
+
 # ---- DSGVO-Nachricht bei Modulaktivierung ----
 EasyOcrGDPRInformation = Durch Aktivierung von easyOCR akzeptieren Sie: (1) Die GNU GPL v3 Lizenz, unter der diese Software verbreitet wird. (2) Dass die easyOCR AI-Funktionalität, falls aktiviert, KI-Dienste Dritter für die Datenextraktion nutzt und den Inhalt der von Ihnen freiwillig verarbeiteten PDF-Dokumente überträgt. (3) Dass EasySoft Tech S.L. keine von KI-Drittanbieterdiensten verarbeiteten Daten speichert. Siehe Reiter 'Lizenzvereinbarung' und 'Telemetrie und Datenschutz' in der Modulkonfiguration für weitere Informationen.
 

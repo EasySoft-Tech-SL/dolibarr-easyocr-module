@@ -352,6 +352,30 @@ EasyOcrTelemetryLegalGDPR = GDPR Rights
 EasyOcrTelemetryLegalGDPRDesc = The user retains all rights of access, rectification, erasure and portability under GDPR.
 EasyOcrTelemetryRightsTitle = Your rights
 EasyOcrTelemetryRightsDesc = You have the right to: access data we process, request rectification or deletion, object to processing, and request data portability. AI usage is completely voluntary: if you do not activate the function or do not click the extraction button, no data will be transmitted.
+
+# ---- EU AI Regulation (EU) 2024/1689 ----
+EasyOcrTelemetryEUAITitle = European Artificial Intelligence Regulation
+EasyOcrTelemetryEUAIRegulation = Applicable regulation
+EasyOcrTelemetryEUAIRegulationDesc = Regulation (EU) 2024/1689 of the European Parliament and of the Council, of 13 June 2024, establishes harmonized rules on artificial intelligence (AI Act). This module uses third-party AI services and complies with applicable obligations as an operator/end-user.
+EasyOcrTelemetryEUAIArticle50 = Article 50 — Transparency
+EasyOcrTelemetryEUAIArticle50Desc = Article 50 of the AI Regulation, enforceable from August 2026, requires expressly informing individuals that they are interacting with an artificial intelligence system. Following the recommendations of the Spanish Data Protection Agency (AEPD), this module anticipates compliance and clearly informs about AI usage.
+EasyOcrTelemetryEUAIRiskLevel = Risk level
+EasyOcrTelemetryEUAIRiskLevelDesc = AI usage in this module is limited to data extraction from invoices between businesses (B2B). This use is classified as minimal risk, as it does not evaluate, diagnose or make autonomous decisions about natural persons. No additional special measures are required beyond informational transparency.
+EasyOcrTelemetryEUAICompliance = Anticipated compliance
+EasyOcrTelemetryEUAIComplianceDesc = Although Article 50 will not be fully enforceable until August 2026, this module anticipates compliance with transparency and information requirements, in line with AEPD recommendations and in accordance with GDPR (General Data Protection Regulation).
+EasyOcrTelemetryAITransparencyTitle = Transparency Notice on the use of Artificial Intelligence
+EasyOcrTelemetryAITransparencyDesc = This module may use artificial intelligence-based tools to support certain tasks such as invoicing processes. Specifically, the easyOCR AI functionality employs a third-party AI service for automatic data extraction from PDF documents (supplier, tax ID, dates, amounts and invoice lines). The use of this functionality is voluntary and requires explicit user action. AI-generated results are always reviewable and editable by the user before application, ensuring human oversight at all times.
+EasyOcrTelemetryUserObligationsTitle = User obligations as AI operator
+EasyOcrTelemetryObligationUse = Use according to instructions
+EasyOcrTelemetryObligationUseDesc = The user must use AI systems according to the instructions provided by the developer, following the documentation and configuration established in the module.
+EasyOcrTelemetryObligationHuman = Human oversight
+EasyOcrTelemetryObligationHumanDesc = The user must ensure human oversight in decisions, especially sensitive ones. AI results are always reviewable and editable before generating any invoice or record in the system.
+EasyOcrTelemetryObligationInform = Inform affected persons
+EasyOcrTelemetryObligationInformDesc = The user must inform affected persons (employees, clients, suppliers) that AI tools may be used in invoicing processes. This Telemetry page constitutes part of that information.
+EasyOcrTelemetryObligationValidate = Data validation
+EasyOcrTelemetryObligationValidateDesc = The user is responsible for validating input data and AI-extracted results to avoid biases or errors before final application in the ERP.
+EasyOcrTelemetryLegalEUAI = AI Regulation (EU) 2024/1689
+EasyOcrTelemetryLegalEUAIDesc = Data processing through AI is carried out in accordance with Regulation (EU) 2024/1689 on Artificial Intelligence, complying with transparency obligations (Art. 50) and user responsibilities as an operator/deployer of AI systems.
 # ---- GDPR activation message ----
 EasyOcrGDPRInformation = By activating easyOCR, you accept: (1) The GNU GPL v3 License under which this software is distributed. (2) That the easyOCR AI functionality, if activated, will use third-party artificial intelligence services for data extraction, transmitting the content of PDF documents you voluntarily process. (3) That EasySoft Tech S.L. does not store data processed by third-party AI services. See the 'License Agreement' and 'Telemetry & Data Protection' tabs in module settings for more information.
 

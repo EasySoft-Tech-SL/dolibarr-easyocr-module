@@ -5,6 +5,16 @@ Todos los cambios notables de EasyOcr se documentarán en este archivo.
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/),
 y este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 
+## [2.3.0] - 2026-02-10
+
+### Añadido
+- **Cumplimiento Reglamento IA (UE) 2024/1689**: Nueva sección en `telemetry.php` con información sobre el Reglamento Europeo de Inteligencia Artificial, artículo 50 (transparencia), nivel de riesgo, cumplimiento anticipado
+- **Aviso de transparencia sobre uso de IA**: Cuadro destacado informando que el módulo puede usar IA para facturación, uso voluntario y resultados revisables
+- **Obligaciones del usuario como operador de IA**: Sección con 4 obligaciones (uso conforme, intervención humana, informar afectados, validar datos)
+- **Base legal ampliada**: Nueva referencia al Reglamento (UE) 2024/1689 en la sección de base legal
+- **20+ claves de traducción** en 8 idiomas (es, en, fr, de, it, pt, ca, gl) para las nuevas secciones de telemetría
+- **Constantes por defecto al activar módulo**: `EASYOCR_AI_ENABLED=1` y `EASYOCR_AI_URL=https://api.easyocr.easysoft.es` se configuran automáticamente en `$this->const`
+
 ## [2.2.0] - 2026-02-10
 
 ### Añadido

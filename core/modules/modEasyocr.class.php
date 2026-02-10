@@ -41,7 +41,7 @@ include_once DOL_DOCUMENT_ROOT . '/core/modules/DolibarrModules.class.php';
  * @author     EasySoft Tech S.L. <info@easysoft.es>
  * @copyright  2025-2026 EasySoft Tech S.L.
  * @license    GPL-3.0-or-later
- * @version    2.2.0
+ * @version    2.3.0
  */
 class modEasyocr extends DolibarrModules
 {
@@ -84,7 +84,7 @@ class modEasyocr extends DolibarrModules
 		$this->editor_url = 'https://easysoft.es';
 
 		// Possible values for version are: 'development', 'experimental', 'dolibarr' or version
-		$this->version = '2.2.0';
+		$this->version = '2.3.0';
 		$this->url_last_version = 'https://sdl.easysoft.es/getLastModuleVersion?module=easyocr&for_url_last_version=1&version=' . $this->version;
 
 
@@ -141,7 +141,10 @@ class modEasyocr extends DolibarrModules
 		$this->warnings_activation_ext = array();
 
 		// Constants
-		$this->const = array();
+		$this->const = array(
+			array('EASYOCR_AI_ENABLED', 'chaine', '1', 'Enable AI OCR functionality', 0, 'current', 1),
+			array('EASYOCR_AI_URL', 'chaine', 'https://api.easyocr.easysoft.es', 'AI OCR service URL', 0, 'current', 1),
+		);
 
 		if (!isset($conf->easyocr) || !isset($conf->easyocr->enabled)) {
 			$conf->easyocr = new stdClass();

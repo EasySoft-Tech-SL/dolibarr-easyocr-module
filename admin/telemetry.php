@@ -219,7 +219,78 @@ print '</div>';
 print '<br>';
 
 // =============================================
-// 5. Legal basis
+// 5. EU AI Regulation (Reglamento (UE) 2024/1689)
+// =============================================
+print '<div class="div-table-responsive-no-min">';
+print '<table class="noborder centpercent">';
+print '<tr class="liste_titre">';
+print '<td colspan="2"><span class="fas fa-gavel" style="color: #2980b9;"></span> '.$langs->trans("EasyOcrTelemetryEUAITitle").'</td>';
+print '</tr>';
+
+print '<tr class="oddeven">';
+print '<td class="titlefieldcreate">'.$langs->trans("EasyOcrTelemetryEUAIRegulation").'</td>';
+print '<td>'.$langs->trans("EasyOcrTelemetryEUAIRegulationDesc").'</td>';
+print '</tr>';
+
+print '<tr class="oddeven">';
+print '<td>'.$langs->trans("EasyOcrTelemetryEUAIArticle50").'</td>';
+print '<td>'.$langs->trans("EasyOcrTelemetryEUAIArticle50Desc").'</td>';
+print '</tr>';
+
+print '<tr class="oddeven">';
+print '<td>'.$langs->trans("EasyOcrTelemetryEUAIRiskLevel").'</td>';
+print '<td>'.$langs->trans("EasyOcrTelemetryEUAIRiskLevelDesc").'</td>';
+print '</tr>';
+
+print '<tr class="oddeven">';
+print '<td>'.$langs->trans("EasyOcrTelemetryEUAICompliance").'</td>';
+print '<td>'.$langs->trans("EasyOcrTelemetryEUAIComplianceDesc").'</td>';
+print '</tr>';
+
+print '</table>';
+print '</div>';
+
+print '<br>';
+
+// =============================================
+// 6. AI Transparency Notice
+// =============================================
+print '<div class="warning">';
+print '<strong><span class="fas fa-info-circle"></span> '.$langs->trans("EasyOcrTelemetryAITransparencyTitle").'</strong><br><br>';
+print $langs->trans("EasyOcrTelemetryAITransparencyDesc");
+print '</div>';
+
+print '<br>';
+
+// =============================================
+// 7. End-User Obligations (AI Deployer)
+// =============================================
+print '<div class="div-table-responsive-no-min">';
+print '<table class="noborder centpercent">';
+print '<tr class="liste_titre">';
+print '<td colspan="2"><span class="fas fa-user-shield" style="color: #e67e22;"></span> '.$langs->trans("EasyOcrTelemetryUserObligationsTitle").'</td>';
+print '</tr>';
+
+$obligations = array(
+	'EasyOcrTelemetryObligationUse' => 'EasyOcrTelemetryObligationUseDesc',
+	'EasyOcrTelemetryObligationHuman' => 'EasyOcrTelemetryObligationHumanDesc',
+	'EasyOcrTelemetryObligationInform' => 'EasyOcrTelemetryObligationInformDesc',
+	'EasyOcrTelemetryObligationValidate' => 'EasyOcrTelemetryObligationValidateDesc',
+);
+foreach ($obligations as $titleKey => $descKey) {
+	print '<tr class="oddeven">';
+	print '<td class="titlefieldcreate">'.$langs->trans($titleKey).'</td>';
+	print '<td>'.$langs->trans($descKey).'</td>';
+	print '</tr>';
+}
+
+print '</table>';
+print '</div>';
+
+print '<br>';
+
+// =============================================
+// 8. Legal basis
 // =============================================
 print '<div class="div-table-responsive-no-min">';
 print '<table class="noborder centpercent">';
@@ -242,13 +313,18 @@ print '<td>'.$langs->trans("EasyOcrTelemetryLegalGDPR").'</td>';
 print '<td>'.$langs->trans("EasyOcrTelemetryLegalGDPRDesc").'</td>';
 print '</tr>';
 
+print '<tr class="oddeven">';
+print '<td>'.$langs->trans("EasyOcrTelemetryLegalEUAI").'</td>';
+print '<td>'.$langs->trans("EasyOcrTelemetryLegalEUAIDesc").'</td>';
+print '</tr>';
+
 print '</table>';
 print '</div>';
 
 print '<br>';
 
 // =============================================
-// 6. User Rights
+// 9. User Rights
 // =============================================
 print '<div class="info">';
 print '<strong>'.$langs->trans("EasyOcrTelemetryRightsTitle").'</strong><br><br>';

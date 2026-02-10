@@ -331,6 +331,30 @@ EasyOcrTelemetryLegalGDPRDesc = L'utente mantiene tutti i suoi diritti di access
 EasyOcrTelemetryRightsTitle = I tuoi diritti
 EasyOcrTelemetryRightsDesc = Hai il diritto di: accedere ai dati che elaboriamo, richiederne la rettifica o cancellazione, opporti al trattamento, e richiedere la portabilità dei tuoi dati. L'uso dell'IA è completamente volontario: se non attivi la funzione o non fai clic sul pulsante di estrazione, nessun dato verrà trasmesso.
 
+# ---- Regolamento Europeo sull'IA (UE) 2024/1689 ----
+EasyOcrTelemetryEUAITitle = Regolamento Europeo sull'Intelligenza Artificiale
+EasyOcrTelemetryEUAIRegulation = Normativa applicabile
+EasyOcrTelemetryEUAIRegulationDesc = Il Regolamento (UE) 2024/1689 del Parlamento europeo e del Consiglio, del 13 giugno 2024, stabilisce norme armonizzate in materia di intelligenza artificiale (Regolamento sull'IA). Questo modulo utilizza servizi di IA di terze parti e rispetta gli obblighi applicabili come operatore/utente finale.
+EasyOcrTelemetryEUAIArticle50 = Articolo 50 — Trasparenza
+EasyOcrTelemetryEUAIArticle50Desc = L'articolo 50 del Regolamento sull'IA, applicabile da agosto 2026, obbliga a informare espressamente le persone che stanno interagendo con un sistema di intelligenza artificiale. Seguendo le raccomandazioni dell'Agenzia Spagnola per la Protezione dei Dati (AEPD), questo modulo anticipa tale conformità e informa chiaramente sull'uso dell'IA.
+EasyOcrTelemetryEUAIRiskLevel = Livello di rischio
+EasyOcrTelemetryEUAIRiskLevelDesc = L'uso dell'IA in questo modulo è limitato all'estrazione di dati da fatture tra aziende (B2B). Questo uso è classificato come a rischio minimo, poiché non valuta, diagnostica né prende decisioni autonome riguardo a persone fisiche. Non sono necessarie misure speciali aggiuntive oltre alla trasparenza informativa.
+EasyOcrTelemetryEUAICompliance = Conformità anticipata
+EasyOcrTelemetryEUAIComplianceDesc = Sebbene l'articolo 50 non sarà pienamente applicabile fino ad agosto 2026, questo modulo si conforma anticipatamente ai requisiti di trasparenza e informazione, in linea con le raccomandazioni dell'AEPD e in conformità con il GDPR.
+EasyOcrTelemetryAITransparencyTitle = Avviso di Trasparenza sull'uso dell'Intelligenza Artificiale
+EasyOcrTelemetryAITransparencyDesc = Questo modulo può utilizzare strumenti basati sull'intelligenza artificiale per supportare determinate attività come i processi di fatturazione. In particolare, la funzionalità easyOCR AI impiega un servizio di IA di terze parti per l'estrazione automatica di dati da documenti PDF (fornitore, codice fiscale, date, importi e righe di fattura). L'uso di questa funzionalità è volontario e richiede l'azione esplicita dell'utente. I risultati generati dall'IA sono sempre verificabili e modificabili dall'utente prima dell'applicazione, garantendo l'intervento umano in ogni momento.
+EasyOcrTelemetryUserObligationsTitle = Obblighi dell'utente come operatore di IA
+EasyOcrTelemetryObligationUse = Utilizzo conforme alle istruzioni
+EasyOcrTelemetryObligationUseDesc = L'utente deve utilizzare i sistemi di IA conformemente alle istruzioni fornite dallo sviluppatore, seguendo la documentazione e la configurazione stabilite nel modulo.
+EasyOcrTelemetryObligationHuman = Supervisione umana
+EasyOcrTelemetryObligationHumanDesc = L'utente deve garantire la supervisione umana nelle decisioni, specialmente quelle più sensibili. I risultati dell'IA sono sempre verificabili e modificabili prima di generare qualsiasi fattura o record nel sistema.
+EasyOcrTelemetryObligationInform = Informare le persone interessate
+EasyOcrTelemetryObligationInformDesc = L'utente deve informare le persone interessate (dipendenti, clienti, fornitori) che strumenti di IA possono essere utilizzati nei processi di fatturazione. Questa pagina di Telemetria costituisce parte di tale informazione.
+EasyOcrTelemetryObligationValidate = Validazione dei dati
+EasyOcrTelemetryObligationValidateDesc = L'utente è responsabile della validazione dei dati inseriti e dei risultati estratti dall'IA per evitare distorsioni o errori prima della loro applicazione definitiva nell'ERP.
+EasyOcrTelemetryLegalEUAI = Regolamento sull'IA (UE) 2024/1689
+EasyOcrTelemetryLegalEUAIDesc = Il trattamento dei dati tramite IA viene effettuato in conformità al Regolamento (UE) 2024/1689 sull'Intelligenza Artificiale, rispettando gli obblighi di trasparenza (Art. 50) e le responsabilità dell'utente come operatore/distributore di sistemi di IA.
+
 # ---- Messaggio GDPR all'attivazione del modulo ----
 EasyOcrGDPRInformation = Attivando easyOCR, accetti: (1) La Licenza Pubblica Generale GNU GPL v3 sotto cui è distribuito questo software. (2) Che la funzionalità easyOCR AI, se attivata, utilizzerà servizi di intelligenza artificiale di terze parti per l'estrazione dati, trasmettendo il contenuto dei documenti PDF che elabori volontariamente. (3) Che EasySoft Tech S.L. non memorizza i dati elaborati dai servizi IA di terze parti. Consulta le schede 'Accordo di licenza' e 'Telemetria e protezione dei dati' nella configurazione del modulo per ulteriori informazioni.
 
