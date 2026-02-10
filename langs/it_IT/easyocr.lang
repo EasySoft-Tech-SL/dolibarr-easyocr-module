@@ -351,3 +351,19 @@ EasyOcrTypeSurcharge = Supplemento
 EasyOcrTypeFee = Tassa
 EasyOcrTypeDiscount = Sconto
 EasyOcrTypeOther = Altro
+
+# --- Custom Instructions (AI) ---
+EasyOcrCustomInstructions = Istruzioni IA
+EasyOcrCustomInstructionsHint = Istruzioni aggiuntive per l'IA durante l'elaborazione delle fatture di questo fornitore.
+EasyOcrCustomInstructionsPlaceholder = Es: Questo fornitore include sempre le spese di spedizione nell'ultima riga. L'IVA è sempre del 21%%...
+EasyOcrCustomInstructionsSaveHint = Queste istruzioni verranno inviate all'IA ogni volta che viene utilizzato questo modello.
+
+# --- Templates & Invoices list ---
+EasyOcrNumFields = N. Campi
+EasyOcrScale = Scala
+EasyOcrTemplateFields = Campi del modello
+EasyOcrFieldLabel = Etichetta
+EasyOcrWidth = Larghezza
+EasyOcrHeight = Altezza
+EasyOcrOrigin = Origine
+EasyOcrRemoveMark = Rimuovi contrassegno EasyOcr

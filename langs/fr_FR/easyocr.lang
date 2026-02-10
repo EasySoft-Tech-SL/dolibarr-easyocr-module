@@ -373,3 +373,19 @@ EasyOcrTypeSurcharge = Majoration
 EasyOcrTypeFee = Frais
 EasyOcrTypeDiscount = Remise
 EasyOcrTypeOther = Autre
+
+# --- Custom Instructions (AI) ---
+EasyOcrCustomInstructions = Instructions IA
+EasyOcrCustomInstructionsHint = Instructions supplémentaires pour l'IA lors du traitement des factures de ce fournisseur.
+EasyOcrCustomInstructionsPlaceholder = Ex: Ce fournisseur inclut toujours les frais de port sur la dernière ligne. La TVA est toujours de 21%%...
+EasyOcrCustomInstructionsSaveHint = Ces instructions seront envoyées à l'IA chaque fois que ce modèle sera utilisé.
+
+# --- Templates & Invoices list ---
+EasyOcrNumFields = Nbre champs
+EasyOcrScale = Échelle
+EasyOcrTemplateFields = Champs du modèle
+EasyOcrFieldLabel = Libellé
+EasyOcrWidth = Largeur
+EasyOcrHeight = Hauteur
+EasyOcrOrigin = Origine
+EasyOcrRemoveMark = Retirer la marque EasyOcr

@@ -338,7 +338,7 @@ if ($action == "newInvoice") {
 	}
 
 	// Templates
-	$sql = "SELECT t.rowid, t.name, t.fk_soc, s.nom as supplier_name";
+	$sql = "SELECT t.rowid, t.name, t.fk_soc, t.custom_instructions, s.nom as supplier_name";
 	$sql .= " FROM " . MAIN_DB_PREFIX . "easyocr_template t";
 	$sql .= " LEFT JOIN " . MAIN_DB_PREFIX . "societe s ON t.fk_soc = s.rowid";
 	$sql .= " ORDER BY t.name";
@@ -350,7 +350,8 @@ if ($action == "newInvoice") {
 				'rowid' => $obj->rowid,
 				'name' => $obj->name,
 				'fk_soc' => $obj->fk_soc,
-				'supplier_name' => $obj->supplier_name
+				'supplier_name' => $obj->supplier_name,
+				'has_custom_instructions' => !empty($obj->custom_instructions) ? 1 : 0
 			);
 		}
 	}
@@ -414,11 +415,12 @@ if ($action == "newInvoice") {
 
 	$template_id = GETPOST("template_id", "int");
 
-	$sql = "SELECT fk_soc, scale FROM " . MAIN_DB_PREFIX . "easyocr_template WHERE rowid = " . ((int) $template_id);
+	$sql = "SELECT fk_soc, scale, custom_instructions FROM " . MAIN_DB_PREFIX . "easyocr_template WHERE rowid = " . ((int) $template_id);
 	$resql = $db->query($sql);
 	$tpl_data = $db->fetch_object($resql);
 	$fk_soc = $tpl_data ? $tpl_data->fk_soc : null;
 	$tpl_scale = $tpl_data && $tpl_data->scale ? floatval($tpl_data->scale) : 1.5;
+	$custom_instructions = $tpl_data && !empty($tpl_data->custom_instructions) ? $tpl_data->custom_instructions : '';
 
 	$sql = "SELECT objectNum, startX, startY, width, height, color, label";
 	$sql .= " FROM " . MAIN_DB_PREFIX . "easyocr_template_details";
@@ -439,7 +441,7 @@ if ($action == "newInvoice") {
 		}
 	}
 
-	print json_encode(["details" => $result, "fk_soc" => $fk_soc, "scale" => $tpl_scale]);
+	print json_encode(["details" => $result, "fk_soc" => $fk_soc, "scale" => $tpl_scale, "custom_instructions" => $custom_instructions]);
 
 
 	// ============================================================
@@ -456,12 +458,13 @@ if ($action == "newInvoice") {
 	$fk_soc = GETPOST("fk_soc", "int");
 	$tpl_scale = GETPOST("scale", "alpha");
 	$tpl_scale = $tpl_scale ? floatval($tpl_scale) : 1.5;
+	$custom_instructions = GETPOST("custom_instructions", "restricthtml");
 	$selections = json_decode(GETPOST("selections", "restricthtml"), true);
 
 	$db->begin();
 
-	$sql = "INSERT INTO " . MAIN_DB_PREFIX . "easyocr_template (name, fk_soc, scale, date_creation)";
-	$sql .= " VALUES ('" . $db->escape($name) . "', " . ($fk_soc > 0 ? ((int) $fk_soc) : "NULL") . ", " . $tpl_scale . ", NOW())";
+	$sql = "INSERT INTO " . MAIN_DB_PREFIX . "easyocr_template (name, fk_soc, scale, custom_instructions, date_creation)";
+	$sql .= " VALUES ('" . $db->escape($name) . "', " . ($fk_soc > 0 ? ((int) $fk_soc) : "NULL") . ", " . $tpl_scale . ", " . (!empty($custom_instructions) ? "'" . $db->escape($custom_instructions) . "'" : "NULL") . ", NOW())";
 
 	if (!$db->query($sql)) {
 		$db->rollback();
@@ -507,11 +510,13 @@ if ($action == "newInvoice") {
 	$fk_soc = GETPOST("fk_soc", "int");
 	$tpl_scale = GETPOST("scale", "alpha");
 	$tpl_scale = $tpl_scale ? floatval($tpl_scale) : 1.5;
+	$custom_instructions = GETPOST("custom_instructions", "restricthtml");
 	$selections = json_decode(GETPOST("selections", "restricthtml"), true);
 
 	$db->begin();
 
 	$sql = "UPDATE " . MAIN_DB_PREFIX . "easyocr_template SET fk_soc = " . ($fk_soc > 0 ? ((int) $fk_soc) : "NULL") . ", scale = " . $tpl_scale;
+	$sql .= ", custom_instructions = " . (!empty($custom_instructions) ? "'" . $db->escape($custom_instructions) . "'" : "NULL");
 	$sql .= " WHERE rowid = " . ((int) $template_id);
 	$db->query($sql);
 
@@ -643,8 +648,9 @@ if ($action == "newInvoice") {
 					$newSoc->tva_intra = $cif;
 					$newSoc->country_code = substr($cifUpper, 0, 2);
 				}
-				// Store in siren (CIF/NIF field in Spain/France, Tax ID elsewhere)
-				$newSoc->siren = $cif;
+				// Store in idprof1 (maps to DB column 'siren' - CIF/NIF in Spain, SIREN in France)
+				// Note: Societe::create() reads from idprof1, NOT from the legacy alias 'siren'
+				$newSoc->idprof1 = $cif;
 
 				if (!empty($supplierAddress)) $newSoc->address = $supplierAddress;
 				if (!empty($supplierCity))    $newSoc->town    = $supplierCity;
@@ -1251,13 +1257,14 @@ if ($action == "newInvoice") {
 
 	// Accept base64 data from frontend
 	$base64Data = GETPOST("base64_data", "restricthtml");
+	$customInstructions = GETPOST("custom_instructions", "restricthtml");
 
 	if (empty($base64Data)) {
 		print json_encode(["status" => "error", "message" => "No PDF data provided"]);
 		exit;
 	}
 
-	$result = $aiService->processBase64($base64Data);
+	$result = $aiService->processBase64($base64Data, $customInstructions);
 
 	if ($result === false) {
 		print json_encode(["status" => "error", "message" => $aiService->error]);
@@ -1289,6 +1296,7 @@ if ($action == "newInvoice") {
 	// Get base64 data â€” use $_POST directly to avoid Dolibarr sanitization on large payloads
 	$base64Data = isset($_POST['base64_data']) ? $_POST['base64_data'] : '';
 	$filename   = GETPOST('filename', 'alpha') ?: 'document.pdf';
+	$customInstructions = GETPOST('custom_instructions', 'restricthtml');
 
 	if (empty($base64Data)) {
 		header('Content-Type: text/event-stream');
@@ -1322,11 +1330,12 @@ if ($action == "newInvoice") {
 			'X-API-Key: ' . $apiKey,
 			'Accept: text/event-stream'
 		],
-		CURLOPT_POSTFIELDS     => json_encode([
+		CURLOPT_POSTFIELDS     => json_encode(array_filter([
 			'base64_data'  => $base64Data,
 			'filename'     => $filename,
-			'include_text' => false
-		]),
+			'include_text' => false,
+			'custom_instructions' => !empty($customInstructions) ? $customInstructions : null
+		], function($v) { return $v !== null; })),
 		CURLOPT_RETURNTRANSFER => false,
 		CURLOPT_TIMEOUT        => 120,
 		CURLOPT_WRITEFUNCTION  => function ($ch, $chunk) {

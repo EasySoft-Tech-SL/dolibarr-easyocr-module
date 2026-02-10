@@ -354,3 +354,19 @@ EasyOcrTypeSurcharge = Zuschlag
 EasyOcrTypeFee = Gebühr
 EasyOcrTypeDiscount = Rabatt
 EasyOcrTypeOther = Sonstiges
+
+# --- Custom Instructions (AI) ---
+EasyOcrCustomInstructions = KI-Anweisungen
+EasyOcrCustomInstructionsHint = Zusätzliche Anweisungen für die KI bei der Verarbeitung von Rechnungen dieses Lieferanten.
+EasyOcrCustomInstructionsPlaceholder = Z.B.: Dieser Lieferant schließt immer Versandkosten in der letzten Zeile ein. Die MwSt. beträgt immer 21%%...
+EasyOcrCustomInstructionsSaveHint = Diese Anweisungen werden bei jeder Verwendung dieser Vorlage an die KI gesendet.
+
+# --- Templates & Invoices list ---
+EasyOcrNumFields = Anz. Felder
+EasyOcrScale = Maßstab
+EasyOcrTemplateFields = Vorlagenfelder
+EasyOcrFieldLabel = Bezeichnung
+EasyOcrWidth = Breite
+EasyOcrHeight = Höhe
+EasyOcrOrigin = Ursprung
+EasyOcrRemoveMark = EasyOcr-Markierung entfernen

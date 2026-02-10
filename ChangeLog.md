@@ -5,6 +5,22 @@ Todos los cambios notables de EasyOcr se documentarán en este archivo.
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/),
 y este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 
+## [2.2.0] - 2026-02-10
+
+### Añadido
+- **Proveedor editable en plantillas**: El campo proveedor en `templates_view.php` ahora se puede cambiar desde el modo edición mediante un desplegable filtrado a proveedores (`select_company`)
+- **Instrucciones personalizadas en plantillas**: Campo `custom_instructions` editable en `templates_view.php` (visible solo cuando IA está habilitada)
+- **8 nuevas claves de traducción** en 8 idiomas (es, en, fr, de, it, pt, ca, gl): `EasyOcrNumFields`, `EasyOcrScale`, `EasyOcrTemplateFields`, `EasyOcrFieldLabel`, `EasyOcrWidth`, `EasyOcrHeight`, `EasyOcrOrigin`, `EasyOcrRemoveMark`
+
+### Mejorado
+- **Rediseño de `templates.php`**: Reescrito siguiendo el patrón estándar de listados Dolibarr (`print_barre_liste`, `print_liste_field_titre`, columnas ordenables, filtros en cabecera, acciones masivas con `selectMassAction`, paginación nativa)
+- **Rediseño de `invoices.php`**: Reescrito con el mismo patrón estándar Dolibarr; incluye fila de totales HT/TTC, badges de origen (OCR/IA OCR), enlaces a factura y tercero
+- **Rediseño de `templates_view.php`**: Reescrito como ficha Dolibarr (`load_fiche_titre`, `BackToList`, `formconfirm`, modo vista/edición separados, tabla de detalle de campos de plantilla)
+
+### Corregido
+- **Error regex `preg_replace()`**: Patrón inválido `'/^SELECT[^]*FROM/Ui'` con clase de carácter `[^]` vacía cambiado a `'/^SELECT[\s\S]*FROM/Ui'` en `templates.php` e `invoices.php`
+- **Duplicación de proveedores en facturas AI**: `$newSoc->siren = $cif;` no funcionaba porque `Societe::create()` lee de `$this->idprof1`, no del alias legacy `$this->siren`. Corregido a `$newSoc->idprof1 = $cif;` en `ajax_easyocr.php` para que el CIF se guarde correctamente en la columna `siren` de la base de datos y la búsqueda posterior encuentre al proveedor existente
+
 ## [2.1.1] - 2026-02-09
 
 ### Corregido

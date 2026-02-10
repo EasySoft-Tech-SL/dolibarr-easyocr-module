@@ -158,6 +158,21 @@ llxHeader("", "EasyOcr", '', '', 0, 0, $arrayofjs, $arrayofcss);
       </div>
     </div>
 
+    <!-- Instrucciones IA personalizadas -->
+    <?php if ($aiEnabled) { ?>
+    <div class="eo-section" id="eo-ci-section">
+      <div class="eo-section-title eo-collapsible eo-collapsed" onclick="this.classList.toggle('eo-collapsed');this.nextElementSibling.classList.toggle('eo-hidden')">
+        <?php echo $langs->trans('EasyOcrCustomInstructions'); ?>
+        <span id="eo-ci-badge" class="eo-badge eo-badge-ai" style="display:none;font-size:9px;padding:1px 5px">AI</span>
+        <svg class="eo-collapse-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+      <div class="eo-hidden">
+        <p class="eo-hint"><?php echo $langs->trans('EasyOcrCustomInstructionsHint'); ?></p>
+        <textarea id="eo-custom-instructions" class="eo-input" rows="3" placeholder="<?php echo $langs->trans('EasyOcrCustomInstructionsPlaceholder'); ?>"></textarea>
+      </div>
+    </div>
+    <?php } ?>
+
     <!-- Metadatos PDF -->
     <div class="eo-section" id="eo-metadata-section" style="display:none">
       <div class="eo-section-title eo-collapsible" onclick="this.classList.toggle('eo-collapsed');this.nextElementSibling.classList.toggle('eo-hidden')">
@@ -247,6 +262,13 @@ llxHeader("", "EasyOcr", '', '', 0, 0, $arrayofjs, $arrayofcss);
         </select>
         <small style="color:#888;font-size:11px;margin-top:4px;display:block"><?php echo $langs->trans('EasyOcrAutoSelectSupplierHint'); ?></small>
       </div>
+      <?php if ($aiEnabled) { ?>
+      <div class="eo-field">
+        <label class="eo-label"><?php echo $langs->trans('EasyOcrCustomInstructions'); ?> <span class="eo-badge eo-badge-ai" style="font-size:9px;padding:1px 5px">AI</span></label>
+        <textarea id="eo-template-instructions" class="eo-input" rows="3" placeholder="<?php echo $langs->trans('EasyOcrCustomInstructionsPlaceholder'); ?>"></textarea>
+        <small style="color:#888;font-size:11px;margin-top:4px;display:block"><?php echo $langs->trans('EasyOcrCustomInstructionsSaveHint'); ?></small>
+      </div>
+      <?php } ?>
       <button class="eo-btn eo-btn-primary" onclick="EasyOcr.saveTemplate()" style="width:100%;margin-top:12px"><?php echo $langs->trans('EasyOcrSave'); ?></button>
     </div>
   </div>

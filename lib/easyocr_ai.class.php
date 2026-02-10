@@ -124,10 +124,11 @@ class EasyOcrAI
 	/**
 	 * Process a PDF via the /api/v1/ocr/base64 endpoint.
 	 *
-	 * @param  string $base64Data Base64-encoded PDF content
-	 * @return array|false         Parsed response array, or false on error
+	 * @param  string $base64Data          Base64-encoded PDF content
+	 * @param  string $customInstructions  Optional custom instructions for the AI model
+	 * @return array|false                 Parsed response array, or false on error
 	 */
-	public function processBase64($base64Data)
+	public function processBase64($base64Data, $customInstructions = '')
 	{
 		if (!$this->isEnabled()) {
 			$this->error = 'AI OCR service is not enabled or not configured';
@@ -136,10 +137,16 @@ class EasyOcrAI
 
 		$url = $this->baseUrl . '/api/v1/ocr/base64';
 
-		$jsonPayload = json_encode(array(
+		$payload = array(
 			'base64_data'  => $base64Data,
 			'include_text' => false
-		));
+		);
+
+		if (!empty($customInstructions)) {
+			$payload['custom_instructions'] = $customInstructions;
+		}
+
+		$jsonPayload = json_encode($payload);
 
 		return $this->doRequest($url, $jsonPayload, false);
 	}

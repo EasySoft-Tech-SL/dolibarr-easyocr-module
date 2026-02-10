@@ -352,3 +352,19 @@ EasyOcrTypeSurcharge = Recàrrec
 EasyOcrTypeFee = Taxa
 EasyOcrTypeDiscount = Descompte
 EasyOcrTypeOther = Altre
+
+# --- Custom Instructions (AI) ---
+EasyOcrCustomInstructions = Instruccions IA
+EasyOcrCustomInstructionsHint = Instruccions addicionals per a la IA en processar factures d'aquest proveïdor.
+EasyOcrCustomInstructionsPlaceholder = Ex: Aquest proveïdor sempre inclou ports a l'última línia. L'IVA és sempre el 21%%...
+EasyOcrCustomInstructionsSaveHint = Aquestes instruccions s'enviaran a la IA cada vegada que s'utilitzi aquesta plantilla.
+
+# --- Templates & Invoices list ---
+EasyOcrNumFields = Núm. Camps
+EasyOcrScale = Escala
+EasyOcrTemplateFields = Camps de la plantilla
+EasyOcrFieldLabel = Etiqueta
+EasyOcrWidth = Amplada
+EasyOcrHeight = Alçada
+EasyOcrOrigin = Origen
+EasyOcrRemoveMark = Treure marca EasyOcr

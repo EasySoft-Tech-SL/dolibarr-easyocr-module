@@ -354,3 +354,19 @@ EasyOcrTypeSurcharge = Recarga
 EasyOcrTypeFee = Taxa
 EasyOcrTypeDiscount = Desconto
 EasyOcrTypeOther = Outro
+
+# --- Custom Instructions (AI) ---
+EasyOcrCustomInstructions = Instrucións IA
+EasyOcrCustomInstructionsHint = Instrucións adicionais para a IA ao procesar facturas deste provedor.
+EasyOcrCustomInstructionsPlaceholder = Ex: Este provedor sempre inclúe portes na última liña. O IVE é sempre o 21%%...
+EasyOcrCustomInstructionsSaveHint = Estas instrucións enviaranse á IA cada vez que se use este modelo.
+
+# --- Templates & Invoices list ---
+EasyOcrNumFields = Núm. Campos
+EasyOcrScale = Escala
+EasyOcrTemplateFields = Campos do modelo
+EasyOcrFieldLabel = Etiqueta
+EasyOcrWidth = Ancho
+EasyOcrHeight = Alto
+EasyOcrOrigin = Orixe
+EasyOcrRemoveMark = Quitar marca EasyOcr

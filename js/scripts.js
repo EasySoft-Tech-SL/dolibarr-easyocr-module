@@ -32,7 +32,8 @@ const EasyOcr = (function () {
         pdfArrayBuffer: null, // Para re-render en zoom
         aiEnabled: false,     // AI OCR habilitado
         aiResult: null,       // Último resultado AI OCR
-        defaultTaxRate: 0     // Tasa IVA por defecto del documento (de totals.taxes)
+        defaultTaxRate: 0,    // Tasa IVA por defecto del documento (de totals.taxes)
+        customInstructions: '' // Instrucciones personalizadas para IA (por plantilla/proveedor)
     };
 
     // Historial para undo
@@ -991,6 +992,10 @@ const EasyOcr = (function () {
                     $('#eo-supplier').val(data.fk_soc).trigger('change.select2');
                 }
 
+                // Load custom instructions from template
+                state.customInstructions = data.custom_instructions || '';
+                updateCustomInstructionsUI();
+
                 if (data.details && data.details.length > 0) {
                     state.pages.forEach(p => p.selections = []);
                     let pending = data.details.length;
@@ -1042,6 +1047,8 @@ const EasyOcr = (function () {
     function clearTemplate() {
         pushHistory();
         state.templateId = null;
+        state.customInstructions = '';
+        updateCustomInstructionsUI();
         $('#eo-template-select').val('').trigger('change');
         state.pages.forEach((p, i) => {
             p.selections = [];
@@ -1068,10 +1075,40 @@ const EasyOcr = (function () {
         }
     }
 
+    /**
+     * Update the custom instructions UI elements:
+     * - Sidebar textarea (always visible when AI enabled)
+     * - Badge indicator on AI section
+     * - Modal textarea (when saving template)
+     */
+    function updateCustomInstructionsUI() {
+        // Update sidebar textarea
+        var sidebarTA = document.getElementById('eo-custom-instructions');
+        if (sidebarTA) {
+            sidebarTA.value = state.customInstructions || '';
+        }
+        // Update badge/indicator
+        var badge = document.getElementById('eo-ci-badge');
+        if (badge) {
+            badge.style.display = state.customInstructions ? '' : 'none';
+        }
+        // Update modal textarea
+        var modalTA = document.getElementById('eo-template-instructions');
+        if (modalTA) {
+            modalTA.value = state.customInstructions || '';
+        }
+    }
+
     function showSaveTemplate() {
         document.getElementById('eo-template-name').value = '';
         const currentSupplier = $('#eo-supplier').val();
         $('#eo-template-supplier').val(currentSupplier).trigger('change');
+        // Sync custom instructions from sidebar to modal
+        var sidebarTA = document.getElementById('eo-custom-instructions');
+        var modalTA = document.getElementById('eo-template-instructions');
+        if (modalTA) {
+            modalTA.value = sidebarTA ? sidebarTA.value : (state.customInstructions || '');
+        }
         showModal('eo-modal-template');
     }
 
@@ -1087,8 +1124,13 @@ const EasyOcr = (function () {
         }
 
         const supplier = $('#eo-template-supplier').val();
+        const customInstr = document.getElementById('eo-template-instructions') ? document.getElementById('eo-template-instructions').value.trim() : '';
         showLoader();
         const details = getAllSelections();
+
+        // Update state
+        state.customInstructions = customInstr;
+        updateCustomInstructionsUI();
 
         $.ajax({
             url: "ajax/ajax_easyocr.php",
@@ -1099,6 +1141,7 @@ const EasyOcr = (function () {
                 name: name,
                 fk_soc: supplier,
                 scale: state.scale,
+                custom_instructions: customInstr,
                 selections: JSON.stringify(details)
             },
             success: function (data) {
@@ -1122,6 +1165,11 @@ const EasyOcr = (function () {
         showLoader();
         const details = getAllSelections();
         const supplier = $('#eo-supplier').val();
+        // Sync custom instructions from sidebar textarea
+        var instrEl = document.getElementById('eo-custom-instructions');
+        if (instrEl) {
+            state.customInstructions = instrEl.value.trim();
+        }
 
         $.ajax({
             url: "ajax/ajax_easyocr.php",
@@ -1132,6 +1180,7 @@ const EasyOcr = (function () {
                 template_id: state.templateId,
                 fk_soc: supplier,
                 scale: state.scale,
+                custom_instructions: state.customInstructions,
                 selections: JSON.stringify(details)
             },
             success: function (data) {
@@ -1608,6 +1657,12 @@ const EasyOcr = (function () {
             return;
         }
 
+        // Sync custom instructions from sidebar textarea before sending
+        var instrEl = document.getElementById('eo-custom-instructions');
+        if (instrEl) {
+            state.customInstructions = instrEl.value.trim();
+        }
+
         // Convert ArrayBuffer to base64
         var bytes = new Uint8Array(state.pdfArrayBuffer);
         var binary = '';
@@ -1647,6 +1702,9 @@ const EasyOcr = (function () {
         formData.append('action', 'aiOcrStream');
         formData.append('base64_data', base64);
         formData.append('filename', state.file ? state.file.name : 'document.pdf');
+        if (state.customInstructions) {
+            formData.append('custom_instructions', state.customInstructions);
+        }
 
         fetch('ajax/ajax_easyocr.php', {
             method: 'POST',
@@ -1752,7 +1810,7 @@ const EasyOcr = (function () {
             url: "ajax/ajax_easyocr.php",
             type: 'POST',
             dataType: 'json',
-            data: { action: "aiOcr", base64_data: base64 },
+            data: { action: "aiOcr", base64_data: base64, custom_instructions: state.customInstructions || '' },
             success: function (response) {
                 stopSimulatedProgress();
                 if (fillEl) fillEl.style.width = '100%';
