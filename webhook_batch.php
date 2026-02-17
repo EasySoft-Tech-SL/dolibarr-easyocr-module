@@ -53,9 +53,9 @@ if (!defined('NOTOKENRENEWAL'))    define('NOTOKENRENEWAL', 1);
 if (!defined('NOREQUIREMENU'))     define('NOREQUIREMENU', '1');
 if (!defined('NOREQUIREHTML'))     define('NOREQUIREHTML', '1');
 if (!defined('NOREQUIREAJAX'))     define('NOREQUIREAJAX', '1');
-if (!defined('NOREQUIRESOC'))      define('NOREQUIRESOC', '1');
+// NOTE: Do NOT define NOREQUIRESOC — we need Societe class + $mysoc for invoice creation
+// NOTE: Do NOT define NOREQUIREDB — we need $db for database operations
 if (!defined('NOCSRFCHECK'))       define('NOCSRFCHECK', '1');
-if (!defined('NOREQUIREDB'))       define('NOREQUIREDB', '0');   // we need DB
 if (!defined('NOLOGIN'))           define('NOLOGIN', '1');       // webhook has no user session
 
 $res = 0;
@@ -83,8 +83,8 @@ if (!$res) {
 
 // ─── Debug: Save ALL input data to JSON file ─────────────────────────────
 $debugDir = DOL_DATA_ROOT . '/easyocr/webhook_debug';
-if (!is_dir($debugDir)) {
-	dol_mkdir($debugDir);
+if (!@is_dir($debugDir)) {
+	@mkdir($debugDir, 0755, true); // Use native mkdir to avoid dol_mkdir open_basedir issue
 }
 
 // Read raw body
@@ -199,8 +199,8 @@ if (json_last_error() !== JSON_ERROR_NONE) {
 
 // ─── Log webhook to file for debugging ───────────────────────────────────
 $logDir = DOL_DATA_ROOT . '/easyocr/webhook_logs';
-if (!is_dir($logDir)) {
-	dol_mkdir($logDir);
+if (!@is_dir($logDir)) {
+	@mkdir($logDir, 0755, true); // Use native mkdir to avoid dol_mkdir open_basedir issue
 }
 
 $logEntry = array(

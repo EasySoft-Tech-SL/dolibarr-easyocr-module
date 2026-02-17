@@ -743,8 +743,8 @@ function easyocrCreateInvoiceFromOCR($params, $userObj = null)
 		$reldir = 'fournisseur/facture/' . get_exdir($newId, 2, 0, 0, $facture, 'invoice_supplier') . $ref_clean;
 		$upload_dir = DOL_DATA_ROOT . '/' . $reldir;
 
-		if (!dol_is_dir($upload_dir)) {
-			dol_mkdir($upload_dir);
+		if (!@is_dir($upload_dir)) {
+			@mkdir($upload_dir, 0755, true); // Native mkdir avoids dol_mkdir open_basedir issue
 		}
 
 		$fileName = dol_sanitizeFileName(basename($file_name));
