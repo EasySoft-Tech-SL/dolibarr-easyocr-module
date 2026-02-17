@@ -128,7 +128,12 @@ $debugFile = $debugDir . '/webhook_' . date('Y-m-d_His') . '_' . uniqid() . '.js
 
 // ─── Global error handler to catch fatal errors ─────────────────────────
 // This ensures we always return a JSON response even on PHP fatal errors
+// IMPORTANT: Respect @ error suppression — on PHP 8.0+ the @ operator
+// no longer sets error_reporting() to 0, so we must check the bitmask.
 set_error_handler(function ($severity, $message, $file, $line) {
+	if (!(error_reporting() & $severity)) {
+		return false; // Respect @ suppression and current error_reporting level
+	}
 	throw new ErrorException($message, 0, $severity, $file, $line);
 });
 
@@ -136,7 +141,11 @@ try {
 
 // ─── Validate instance_id ────────────────────────────────────────────────
 $receivedInstanceId = isset($_GET['instance_id']) ? $_GET['instance_id'] : '';
+// Try raw conf.php variable first, then $conf object fallback
 $expectedInstanceId = !empty($dolibarr_main_instance_unique_id) ? $dolibarr_main_instance_unique_id : '';
+if (empty($expectedInstanceId) && isset($conf) && is_object($conf) && !empty($conf->file->instance_unique_id)) {
+	$expectedInstanceId = $conf->file->instance_unique_id;
+}
 
 if (empty($receivedInstanceId)) {
 	http_response_code(400);
