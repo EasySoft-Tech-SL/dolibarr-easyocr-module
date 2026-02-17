@@ -1363,6 +1363,58 @@ const EasyOcr = (function () {
         return '';
     }
 
+    // ---- Check batch invoice data from localStorage ----
+    function checkBatchInvoiceData() {
+        // Check if we have fromBatch URL parameter
+        var urlParams = new URLSearchParams(window.location.search);
+        if (!urlParams.has('fromBatch')) return;
+
+        // Try to read data from localStorage
+        try {
+            var dataStr = localStorage.getItem('eoBatchInvoiceData');
+            var timestamp = localStorage.getItem('eoBatchInvoiceTimestamp');
+            
+            if (!dataStr) return;
+            
+            // Check if data is not too old (max 5 minutes)
+            if (timestamp) {
+                var age = Date.now() - parseInt(timestamp);
+                if (age > 300000) { // 5 minutes
+                    localStorage.removeItem('eoBatchInvoiceData');
+                    localStorage.removeItem('eoBatchInvoiceTimestamp');
+                    return;
+                }
+            }
+            
+            var data = JSON.parse(dataStr);
+            
+            // Clean up localStorage
+            localStorage.removeItem('eoBatchInvoiceData');
+            localStorage.removeItem('eoBatchInvoiceTimestamp');
+            
+            // Open AI modal with this data
+            setTimeout(function() {
+                openAIModal(data);
+            }, 500); // Wait for DOM to be fully ready
+            
+        } catch (e) {
+            console.error('Error reading batch invoice data:', e);
+            localStorage.removeItem('eoBatchInvoiceData');
+            localStorage.removeItem('eoBatchInvoiceTimestamp');
+        }
+    }
+
+    // ---- Open AI modal with provided data (used for batch invoice creation) ----
+    function openAIModal(data) {
+        if (!data) return;
+        
+        // Store in state
+        state.aiResult = data;
+        
+        // Display in modal
+        displayAIResult(data);
+    }
+
     // ---- Inicialización ----
     function init() {
         // Upload
@@ -1488,6 +1540,9 @@ const EasyOcr = (function () {
         // AI enabled state from PHP data attribute
         var aiSection = document.getElementById('eo-ai-section');
         state.aiEnabled = aiSection && aiSection.getAttribute('data-ai-enabled') === '1';
+
+        // Check if redirected from batch with invoice data
+        checkBatchInvoiceData();
     }
 
     // ---- Select2 ----
@@ -2063,7 +2118,47 @@ const EasyOcr = (function () {
             input.setAttribute('data-ai-key', f.key);
 
             fg.appendChild(lbl);
-            fg.appendChild(input);
+
+            // Special handling for supplier tax_id field
+            if (containerId === 'eo-ai-supplier-fields' && f.key === 'tax_id') {
+                var wrapper = document.createElement('div');
+                wrapper.style.position = 'relative';
+                wrapper.style.display = 'flex';
+                wrapper.style.alignItems = 'center';
+                wrapper.style.gap = '6px';
+
+                // Status indicator
+                var indicator = document.createElement('span');
+                indicator.id = 'eo-supplier-status-indicator';
+                indicator.className = 'eo-supplier-indicator';
+                indicator.style.display = 'none';
+                indicator.style.fontSize = '16px';
+
+                wrapper.appendChild(input);
+                wrapper.appendChild(indicator);
+                fg.appendChild(wrapper);
+
+                // Selector container for multiple suppliers
+                var selectorDiv = document.createElement('div');
+                selectorDiv.id = 'eo-supplier-selector-container';
+                selectorDiv.style.display = 'none';
+                selectorDiv.style.marginTop = '6px';
+                fg.appendChild(selectorDiv);
+
+                // Auto-search on blur
+                input.addEventListener('blur', function() {
+                    var cif = this.value.trim();
+                    if (cif) checkSupplierByCIF(cif);
+                });
+
+                // Initial check if value exists
+                if (val) {
+                    setTimeout(function() { checkSupplierByCIF(val); }, 300);
+                }
+            } else {
+                fg.appendChild(input);
+            }
+
             container.appendChild(fg);
         });
 
@@ -2358,8 +2453,8 @@ const EasyOcr = (function () {
             if (!payTypeId) { toast(L.selectPaymentType, 'error'); return; }
         }
 
-        // Supplier: use selected or let backend resolve by CIF
-        var supplierId = $('#eo-supplier').val() || '';
+        // Supplier: use manually selected ID from multi-select, or selector, or let backend resolve by CIF
+        var supplierId = state.selectedSupplierID || $('#eo-supplier').val() || '';
 
         showLoader();
         doCreateAIInvoice(editedData, supplierId, subtotal, totalTax, totalFinal, doPayment);

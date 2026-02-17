@@ -86,6 +86,17 @@ EasyOcrConfirmAndGenerate = Bestätigen und Erstellen
 EasyOcrInvoiceCreated = Rechnung erstellt
 EasyOcrOpenNewTab = In neuem Tab öffnen
 EasyOcrOpen = Öffnen ↗
+
+# --- Subscription Widget (tool.php) ---
+EasyOcrQuotaPages = Verarbeitete Seiten
+EasyOcrQuotaRemaining = Verbleibend
+EasyOcrQuotaReset = Erneuerung
+EasyOcrWalletBalance = Geldbörse
+EasyOcrQuotaExceeded = ⚠️ Sie haben Ihr monatliches Kontingent überschritten. Einige Funktionen können eingeschränkt sein.
+EasyOcrQuotaNearLimit = ⚠️ Sie nähern sich dem Limit Ihres monatlichen Kontingents.
+EasyOcrViewFullPlan = Vollständigen Plan anzeigen
+
+# --- templates.php ---
 EasyOcrTemplatesTitle = Vorlagen
 EasyOcrDeleteTemplate = Vorlage löschen
 EasyOcrConfirmDeleteTemplate = Löschung dieser Vorlage bestätigen?
@@ -209,6 +220,9 @@ EasyOcrDueDate = Fälligkeitsdatum
 EasyOcrDescription = Beschreibung
 
 # --- AI OCR ---
+EasyOcrGeneralConfig = Allgemeine Konfiguration
+EasyOcrInvoiceDraft = Rechnungen als Entwurf erstellen
+EasyOcrInvoiceDraftDesc = Wenn aktiviert, werden erstellte Rechnungen im Entwurfsstatus belassen, anstatt automatisch validiert zu werden
 EasyOcrAIConfiguration = KI-OCR Konfiguration
 EasyOcrAIEnabled = KI-OCR aktivieren
 EasyOcrAIUrl = OCR-Service URL
@@ -394,3 +408,225 @@ EasyOcrWidth = Breite
 EasyOcrHeight = Höhe
 EasyOcrOrigin = Ursprung
 EasyOcrRemoveMark = EasyOcr-Markierung entfernen
+
+# --- Service Plan (admin/plan.php) ---
+EasyOcrPlan = Service-Plan
+EasyOcrPlanNotConfigured = Der KI-OCR-Dienst ist nicht konfiguriert. Konfigurieren Sie Ihren API-Schlüssel im Setup-Tab, um Ihre Planinformationen anzuzeigen.
+EasyOcrPlanGoToSetup = Zur Konfiguration
+EasyOcrPlanErrorAuth = Authentifizierungsfehler
+EasyOcrPlanErrorAPI = Fehler beim Verbinden mit der API
+EasyOcrPlanNoData = Keine Daten verfügbar
+
+# Account Section
+EasyOcrPlanAccount = Kontoinformationen
+EasyOcrPlanAccountName = Name
+EasyOcrPlanAccountEmail = E-Mail
+EasyOcrPlanAccountStatus = Kontostatus
+EasyOcrPlanAccountActive = Aktiv
+EasyOcrPlanAccountInactive = Inaktiv
+EasyOcrPlanBillingMode = Abrechnungsmodus
+EasyOcrPlanCreatedAt = Registrierungsdatum
+
+# Subscription Section
+EasyOcrPlanSubscription = Abonnement
+EasyOcrPlanBillingCycle = Abrechnungszeitraum
+EasyOcrPlanMonthly = monatlich
+EasyOcrPlanYearly = jährlich
+EasyOcrPlanPeriodStart = Periodenbeginn
+EasyOcrPlanPeriodEnd = Periodenende
+EasyOcrPlanTrialEnds = Ende der Testphase
+EasyOcrPlanCancelledAt = Gekündigt am
+EasyOcrPlanStatusActive = Aktiv
+EasyOcrPlanStatusInactive = Inaktiv
+EasyOcrPlanStatusTrial = Testversion
+EasyOcrPlanStatusCancelled = Gekündigt
+EasyOcrPlanStatusExpired = Abgelaufen
+EasyOcrPlanStatusPastDue = Zahlung fehlgeschlagen
+EasyOcrPlanStatusPaused = Pausiert
+
+# Subscription status descriptions
+EasyOcrSubscriptionStatusActive = Aktives Abonnement, Zahlungen auf dem neuesten Stand
+EasyOcrSubscriptionStatusTrialing = In der Testphase
+EasyOcrSubscriptionStatusPastDue = Zahlung fehlgeschlagen, Wiederholungsversuch ausstehend
+EasyOcrSubscriptionStatusCancelled = Vom Benutzer oder System gekündigt
+EasyOcrSubscriptionStatusExpired = Zeitraum ohne Verlängerung beendet
+EasyOcrSubscriptionStatusPaused = Vorübergehend pausiert
+
+# Plan Section
+EasyOcrPlanCurrent = Aktueller Plan
+EasyOcrPlanName = Planname
+EasyOcrPlanType = Plantyp
+EasyOcrPlanTypeSubscription = Abonnement
+EasyOcrPlanTypePrepaid = Prepaid
+EasyOcrPlanPrice = Preis
+EasyOcrPlanSlug = Kennung
+EasyOcrPlanFree = Kostenlos
+EasyOcrPlanPriceMonthly = Monatspreis
+EasyOcrPlanPriceYearly = Jahrespreis
+EasyOcrPlanMonth = Monat
+EasyOcrPlanYear = Jahr
+
+# Quota Section
+EasyOcrPlanQuota = Nutzungskontingent
+EasyOcrPlanPeriod = Aktueller Zeitraum
+EasyOcrPlanQuotaPages = Verarbeitete Seiten
+EasyOcrPlanQuotaDocs = Verarbeitete Dokumente
+EasyOcrPlanPagesRemaining = Verbleibende Seiten
+EasyOcrPlanDocsRemaining = Verbleibende Dokumente
+EasyOcrPlanPages = Seiten
+EasyOcrPlanDocuments = Dokumente
+EasyOcrPlanQuotaUnlimited = Unbegrenzt
+EasyOcrPlanQuotaRemaining = Verbleibende Anfragen
+EasyOcrPlanQuotaReset = Kontingenterneuerung
+
+# Usage Stats Section
+EasyOcrPlanUsageStats = Nutzungsstatistiken
+EasyOcrPlanTokensInput = Eingabe-Tokens
+EasyOcrPlanTokensOutput = Ausgabe-Tokens
+EasyOcrPlanTokensTotal = Tokens gesamt
+EasyOcrPlanRequestsTotal = Anfragen gesamt
+EasyOcrPlanRequestsFailed = Fehlgeschlagene Anfragen
+EasyOcrPlanSuccessRate = Erfolgsrate
+
+# Limits Section
+EasyOcrPlanLimits = Plan-Limits
+EasyOcrPlanLimitPagesMonth = Maximale Seiten pro Monat
+EasyOcrPlanLimitDocsMonth = Maximale Dokumente pro Monat
+EasyOcrPlanLimitPagesDoc = Maximale Seiten pro Dokument
+EasyOcrPlanLimitFileSize = Maximale Dateigröße
+EasyOcrPlanLimitBatch = Maximale Stapelgröße
+EasyOcrPlanLimitApiKeys = Maximale API-Schlüssel
+EasyOcrPlanLimitRate = Anfragelimit
+EasyOcrPlanLimitConcurrent = Maximale gleichzeitige Anfragen
+EasyOcrPlanLimitRetention = Dokumentenaufbewahrung
+EasyOcrPlanPerMin = pro Minute
+
+# Features Section
+EasyOcrPlanFeatures = Plan-Funktionen
+EasyOcrPlanFeatureApi = API-Zugang
+EasyOcrPlanFeatureStreaming = Echtzeit-Streaming
+EasyOcrPlanFeatureBatch = Stapelverarbeitung
+EasyOcrPlanFeatureInstructions = Benutzerdefinierte Anweisungen
+EasyOcrPlanFeatureWebhooks = Webhooks
+EasyOcrPlanFeaturePriority = Prioritätswarteschlange
+EasyOcrPlanFeatureStorage = Dokumentenspeicherung
+EasyOcrPlanFeatureText = Extrahierten Text einschließen
+EasyOcrPlanFeatureAutoCorrect = Textautokorrektur
+EasyOcrPlanFeatureVision = Bildanalyse (Vision)
+
+# API Key Section
+EasyOcrPlanApiKey = Aktueller API-Schlüssel
+EasyOcrPlanKeyName = Schlüsselname
+EasyOcrPlanKeyPrefix = Präfix
+EasyOcrPlanKeyEnv = Umgebung
+EasyOcrPlanEnvLive = Produktion
+EasyOcrPlanEnvSandbox = Test
+EasyOcrPlanKeyCreated = Erstellungsdatum
+EasyOcrPlanKeyLastUsed = Zuletzt verwendet
+EasyOcrPlanKeyExpires = Ablaufdatum
+EasyOcrPlanNoExpiration = Kein Ablauf
+
+# Wallet Section
+EasyOcrPlanWallet = Prepaid-Guthaben
+EasyOcrPlanWalletBalance = Verfügbares Guthaben
+EasyOcrPlanWalletPurchased = Gekaufte Seiten
+EasyOcrPlanWalletConsumed = Verbrauchte Seiten
+EasyOcrPlanWalletCanProcess = Kann verarbeiten
+
+# --- Batch processing (batch.php) ---
+EasyOcrMenuBatch = Stapelverarbeitung
+EasyOcrBatchHistory = Stapelverlauf
+EasyOcrBatchTitle = Stapelverarbeitung
+EasyOcrBatchSubtitle = Laden Sie mehrere Dokumente hoch und verarbeiten Sie diese im Stapel
+EasyOcrBatchNoApiKey = Der API-Schlüssel ist nicht konfiguriert. Konfigurieren Sie ihn in den Moduleinstellungen.
+EasyOcrBatchNotAvailable = Die Stapelverarbeitung ist in Ihrem aktuellen Plan nicht verfügbar.
+EasyOcrBatchNoQuota = Keine Seiten verfügbar. Laden Sie Ihr Guthaben auf oder erweitern Sie Ihren Plan.
+EasyOcrBatchApiError = API-Kommunikationsfehler
+EasyOcrBatchLocked = Stapelverarbeitung nicht verfügbar
+EasyOcrBatchNoFiles = Sie müssen mindestens eine Datei auswählen.
+EasyOcrBatchMaxFiles = Die maximale Anzahl von Dateien pro Stapel beträgt %s.
+EasyOcrBatchUploadError = Fehler beim Hochladen der Datei %s.
+EasyOcrBatchInvalidType = Dateityp nicht erlaubt: %s.
+EasyOcrBatchFileTooLarge = Die Datei %s überschreitet die maximale Größe von %s.
+EasyOcrBatchMoveError = Fehler beim Verschieben der Datei %s.
+EasyOcrBatchInvalidToken = Ungültiges Sicherheitstoken. Bitte laden Sie die Seite neu.
+EasyOcrBatchSuccess = Stapel erfolgreich gesendet!
+EasyOcrBatchSuccessDesc = Ihr Stapel wird verarbeitet. Sie erhalten die Ergebnisse, wenn sie bereit sind.
+EasyOcrBatchFiles = Datei(en)
+EasyOcrBatchName = Stapelname
+EasyOcrBatchNamePlaceholder = Z.B.: Rechnungen Januar 2026
+EasyOcrBatchConfig = Konfiguration
+EasyOcrBatchIncludeText = Extrahierten Text einbeziehen
+EasyOcrBatchIncludeTextDesc = Fügt das Feld extracted_text im Webhook hinzu. Erhöht den Token-Verbrauch.
+EasyOcrBatchAutoCorrect = Auto-Korrektur
+EasyOcrBatchAutoCorrectDesc = Korrigiert automatisch Fehler in strukturierten Daten (Beträge, Daten usw.).
+EasyOcrBatchWebhookHint = Sie erhalten eine POST-Benachrichtigung, wenn der Stapel abgeschlossen ist.
+EasyOcrBatchWebhookAutoHint = Automatisch generierte URL. Zeigt auf den Webhook-Empfänger des Moduls.
+EasyOcrBatchUpgradePlan = Funktion in Ihrem aktuellen Plan nicht verfügbar
+EasyOcrBatchQuotaInfo = Nutzung & Kontingent
+EasyOcrBatchFromPlan = Vom Plan
+EasyOcrBatchMaxPerBatch = Max. pro Stapel
+EasyOcrBatchMaxSize = max. %s
+EasyOcrBatchMaxFilesHint = bis zu %s Dateien
+EasyOcrBatchHowItWorks = Wie funktioniert es?
+EasyOcrBatchStep1 = Laden Sie Ihre Dokumente hoch (bis zu 200 pro Stapel)
+EasyOcrBatchStep2 = Konfigurieren Sie die Verarbeitungsoptionen
+EasyOcrBatchStep3 = Erhalten Sie die extrahierten Daten automatisch
+EasyOcrBatchDropFiles = Dateien hierher ziehen oder 
+EasyOcrBatchClickSelect = klicken Sie zur Auswahl
+EasyOcrBatchClearAll = Alle entfernen
+EasyOcrBatchProcess = Stapel verarbeiten
+EasyOcrBatchProcessN = %s Datei(en) verarbeiten
+EasyOcrBatchProcessing = Verarbeitung läuft...
+EasyOcrBatchUploading = Datei wird hochgeladen
+
+# --- Batch list/detail ---
+EasyOcrBatchTabNew = Neuer Stapel
+EasyOcrBatchTabList = Stapelverlauf
+EasyOcrBatchAllStatuses = Alle Status
+EasyOcrBatchStatusPending = Ausstehend
+EasyOcrBatchStatusProcessing = In Bearbeitung
+EasyOcrBatchStatusCompleted = Abgeschlossen
+EasyOcrBatchStatusFailed = Fehlgeschlagen
+EasyOcrBatchStatusCancelled = Abgebrochen
+EasyOcrBatchNoResults = Keine Stapel gefunden
+EasyOcrBatchCancelConfirm = Diesen Stapel abbrechen? Diese Aktion kann nicht rückgängig gemacht werden.
+EasyOcrBatchTotalDocs = Gesamtdokumente
+EasyOcrBatchProcessed = Verarbeitet
+EasyOcrBatchCompletedAt = Abgeschlossen am
+EasyOcrBatchPages = Seiten
+EasyOcrBatchDocInfo = Dokumentinformationen
+EasyOcrBatchNoDocResults = Keine Ergebnisse für dieses Dokument verfügbar
+EasyOcrBatchResultsTitle = Ergebnisse anzeigen
+EasyOcrBatchStatusPartial = Teilweise
+EasyOcrBatchSearchName = Nach Name suchen...
+EasyOcrBatchProgress = Fortschritt
+EasyOcrBatchFailedDocs = Fehlgeschlagene Dokumente
+EasyOcrBatchCompletedDocs = Abgeschlossene Dokumente
+EasyOcrClear = Löschen
+EasyOcrBatchCustomer = Kunde
+EasyOcrBatchTaxId = USt-IdNr.
+EasyOcrBatchItems = Positionen
+EasyOcrBatchTotals = Summen
+EasyOcrBatchTotalPayable = Zahlbetrag
+EasyOcrBatchWithholdings = Einbehalte
+EasyOcrBatchSurcharges = Zuschläge
+EasyOcrBatchDiscountTotal = Rabatt gesamt
+EasyOcrBatchPayment = Zahlung
+EasyOcrBatchPayMethod = Zahlungsart
+EasyOcrBatchPayStatus = Zahlungsstatus
+EasyOcrBatchPayTerms = Zahlungsbedingungen
+EasyOcrBatchPayRef = Zahlungsreferenz
+EasyOcrBatchBankAccount = Bankkonto
+EasyOcrBatchMetadata = Zusatzinformationen
+EasyOcrBatchProcessingTime = Verarbeitungszeit
+EasyOcrBatchStartedAt = Gestartet am
+EasyOcrBatchLogo = Logo
+EasyOcrBatchStamp = Stempel
+EasyOcrBatchSignature = Unterschrift
+EasyOcrBatchNotes = Anmerkungen
+EasyOcrBatchCheckingInvoice = Rechnung prüfen
+EasyOcrBatchInvoiceExists = Rechnung bereits erstellt
+EasyOcrBatchCreateInvoice = Rechnung erstellen
+EasyOcrBatchViewInvoice = Rechnung anzeigen
+EasyOcrBatchInvoiceNotCreated = Nicht erstellt

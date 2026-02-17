@@ -83,6 +83,10 @@ $error = 0;
 if ($action == 'update') {
 	$error = 0;
 
+	// General settings
+	$res = dolibarr_set_const($db, 'EASYOCR_INVOICE_DRAFT', GETPOST('EASYOCR_INVOICE_DRAFT', 'int'), 'chaine', 0, '', $conf->entity);
+	if (!($res > 0)) $error++;
+
 	// AI OCR settings
 	$res = dolibarr_set_const($db, 'EASYOCR_AI_ENABLED', GETPOST('EASYOCR_AI_ENABLED', 'int'), 'chaine', 0, '', $conf->entity);
 	if (!($res > 0)) $error++;
@@ -144,10 +148,33 @@ print '</div>';
 
 print '<br>';
 
-// --- AI OCR Configuration form ---
+// --- General configuration form ---
 print '<form method="POST" action="'.$_SERVER["PHP_SELF"].'">';
 print '<input type="hidden" name="token" value="'.newToken().'">';
 print '<input type="hidden" name="action" value="update">';
+
+print '<div class="div-table-responsive-no-min">';
+print '<table class="noborder centpercent">';
+
+print '<tr class="liste_titre">';
+print '<td colspan="2">'.$langs->trans("EasyOcrGeneralConfig").'</td>';
+print '</tr>';
+
+// Invoice as draft
+print '<tr class="oddeven">';
+print '<td>'.$langs->trans("EasyOcrInvoiceDraft").'</td>';
+print '<td>';
+print $form->selectyesno('EASYOCR_INVOICE_DRAFT', !empty($conf->global->EASYOCR_INVOICE_DRAFT) ? $conf->global->EASYOCR_INVOICE_DRAFT : 0, 1);
+print '<br><span class="opacitymedium small">'.$langs->trans("EasyOcrInvoiceDraftDesc").'</span>';
+print '</td>';
+print '</tr>';
+
+print '</table>';
+print '</div>';
+
+print '<br>';
+
+// --- AI OCR Configuration ---
 
 print '<div class="div-table-responsive-no-min">';
 print '<table class="noborder centpercent">';

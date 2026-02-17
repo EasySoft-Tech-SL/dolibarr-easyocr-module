@@ -1543,6 +1543,811 @@ svg.eo-spin {
 .eo-modal-ai-body::-webkit-scrollbar { width: 5px; }
 .eo-modal-ai-body::-webkit-scrollbar-thumb { background: #ddd; border-radius: 3px; }
 
+/* ============================================
+   SUBSCRIPTION COMPACT WIDGET (ACCORDION)
+   ============================================ */
+
+.eo-quota-compact {
+  margin: 10px 0 0;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid rgba(155, 89, 182, 0.2);
+  background: linear-gradient(135deg, rgba(142, 68, 173, 0.03), rgba(155, 89, 182, 0.05));
+  transition: all 0.3s ease;
+}
+
+.eo-quota-compact:hover {
+  border-color: rgba(155, 89, 182, 0.35);
+  box-shadow: 0 2px 8px rgba(155, 89, 182, 0.12);
+}
+
+/* Toggle Button */
+.eo-quota-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 9px 13px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 12.5px;
+  color: #2c3e50;
+  transition: background 0.2s ease;
+  gap: 10px;
+}
+
+.eo-quota-toggle:hover {
+  background: rgba(155, 89, 182, 0.04);
+}
+
+.eo-quota-toggle-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.eo-quota-toggle-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.eo-quota-status-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  font-size: 11px;
+  flex-shrink: 0;
+}
+
+.eo-quota-status-icon.eo-status-ok {
+  background: rgba(39, 174, 96, 0.12);
+  color: #27ae60;
+}
+
+.eo-quota-status-icon.eo-status-warning {
+  background: rgba(243, 156, 60, 0.12);
+  color: #f39c12;
+  animation: eo-pulse-warning 2s ease-in-out infinite;
+}
+
+.eo-quota-status-icon.eo-status-danger {
+  background: rgba(231, 76, 60, 0.12);
+  color: #e74c3c;
+  animation: eo-pulse-danger 1.5s ease-in-out infinite;
+}
+
+@keyframes eo-pulse-warning {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.75; transform: scale(1.08); }
+}
+
+@keyframes eo-pulse-danger {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.7; transform: scale(1.12); }
+}
+
+.eo-quota-compact-text {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.eo-quota-compact-text strong {
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+.eo-quota-remaining {
+  font-size: 11px;
+  color: #7f8c8d;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.eo-quota-chevron {
+  color: #9b59b6;
+  transition: transform 0.3s ease;
+  flex-shrink: 0;
+}
+
+.eo-quota-toggle.eo-active .eo-quota-chevron {
+  transform: rotate(180deg);
+}
+
+/* Expanded Details */
+.eo-quota-details {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  background: rgba(255, 255, 255, 0.3);
+  border-top: 1px solid transparent;
+}
+
+.eo-quota-details.eo-visible {
+  max-height: 600px;
+  border-top-color: rgba(155, 89, 182, 0.1);
+}
+
+.eo-quota-detail-header {
+  padding: 10px 13px 8px;
+  border-bottom: 1px solid rgba(155, 89, 182, 0.08);
+}
+
+.eo-quota-plan-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 9px;
+  background: linear-gradient(135deg, rgba(155, 89, 182, 0.08), rgba(142, 68, 173, 0.12));
+  border-radius: 5px;
+  color: #8e44ad;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.eo-quota-plan-badge svg {
+  flex-shrink: 0;
+}
+
+.eo-mini-badge {
+  display: inline-block;
+  padding: 1px 5px;
+  margin-left: 3px;
+  background: linear-gradient(135deg, #27ae60, #2ecc71);
+  color: white;
+  font-size: 9px;
+  font-weight: 600;
+  border-radius: 3px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+/* Progress Bar */
+.eo-quota-progress-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 13px 8px;
+}
+
+.eo-quota-progress-bar {
+  flex: 1;
+  height: 7px;
+  background: rgba(52, 73, 94, 0.1);
+  border-radius: 10px;
+  overflow: hidden;
+  position: relative;
+}
+
+.eo-quota-progress-fill {
+  height: 100%;
+  border-radius: 10px;
+  transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.eo-quota-progress-fill::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, 
+    rgba(255, 255, 255, 0) 0%, 
+    rgba(255, 255, 255, 0.3) 50%, 
+    rgba(255, 255, 255, 0) 100%);
+  animation: eo-shimmer 2s infinite;
+}
+
+@keyframes eo-shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.eo-quota-progress-fill.eo-status-ok {
+  background: linear-gradient(90deg, #27ae60, #2ecc71);
+}
+
+.eo-quota-progress-fill.eo-status-warning {
+  background: linear-gradient(90deg, #f39c12, #f1c40f);
+}
+
+.eo-quota-progress-fill.eo-status-danger {
+  background: linear-gradient(90deg, #e74c3c, #c0392b);
+}
+
+.eo-quota-percentage {
+  font-size: 11px;
+  font-weight: 600;
+  color: #7f8c8d;
+  min-width: 38px;
+  text-align: right;
+}
+
+/* Stats Grid */
+.eo-quota-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: 8px;
+  padding: 8px 13px;
+}
+
+.eo-quota-stat-item {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 7px 9px;
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 6px;
+  border: 1px solid rgba(155, 89, 182, 0.08);
+}
+
+.eo-quota-stat-item.eo-wallet-stat {
+  background: rgba(39, 174, 96, 0.06);
+  border-color: rgba(39, 174, 96, 0.15);
+}
+
+.eo-quota-stat-label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10.5px;
+  color: #7f8c8d;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.eo-wallet-stat .eo-quota-stat-label {
+  color: #27ae60;
+}
+
+.eo-wallet-stat .eo-quota-stat-label svg {
+  color: #27ae60;
+}
+
+.eo-quota-stat-value {
+  font-size: 13px;
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+.eo-quota-stat-value.eo-depleted {
+  color: #e74c3c;
+}
+
+.eo-wallet-stat .eo-quota-stat-value {
+  color: #229954;
+}
+
+/* Alert */
+.eo-quota-alert {
+  margin: 8px 13px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  font-size: 11.5px;
+  line-height: 1.4;
+  font-weight: 500;
+}
+
+.eo-quota-alert.eo-status-warning {
+  background: rgba(243, 156, 60, 0.1);
+  color: #d68910;
+  border: 1px solid rgba(243, 156, 60, 0.25);
+}
+
+.eo-quota-alert.eo-status-danger {
+  background: rgba(231, 76, 60, 0.1);
+  color: #c0392b;
+  border: 1px solid rgba(231, 76, 60, 0.25);
+}
+
+/* Link */
+.eo-quota-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin: 0 13px 10px;
+  padding: 6px 10px;
+  background: rgba(155, 89, 182, 0.08);
+  color: #9b59b6;
+  font-size: 11.5px;
+  font-weight: 500;
+  text-decoration: none;
+  border-radius: 5px;
+  transition: all 0.2s ease;
+}
+
+.eo-quota-link:hover {
+  background: rgba(155, 89, 182, 0.15);
+  gap: 7px;
+  transform: translateX(-1px);
+}
+
+.eo-quota-link svg {
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+}
+
+.eo-quota-link:hover svg {
+  transform: translate(1px, -1px);
+}
+
+/* ============================================
+   BATCH PROCESSING PAGE
+   ============================================ */
+
+/* ── Quota summary cards ── */
+.eo-batch-quota-cards {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.eo-batch-qcard {
+  flex: 1;
+  min-width: 130px;
+  background: #fff;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  padding: 14px 16px;
+  text-align: center;
+}
+
+.eo-batch-qcard-main {
+  border-left: 3px solid var(--colorbackhmm1, #263c5c);
+}
+
+.eo-batch-qcard-wallet {
+  border-left: 3px solid #0a7a48;
+}
+
+.eo-batch-qcard-value {
+  font-size: 22px;
+  font-weight: 700;
+  color: #333;
+  line-height: 1.2;
+}
+
+.eo-batch-qcard-main .eo-batch-qcard-value {
+  color: var(--colorbackhmm1, #263c5c);
+}
+
+.eo-batch-qcard-wallet .eo-batch-qcard-value {
+  color: #0a7a48;
+}
+
+.eo-batch-qcard-label {
+  font-size: 11px;
+  color: #777;
+  margin-top: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.eo-batch-qcard-sub {
+  margin-top: 8px;
+}
+
+/* ── Drop zone ── */
+.eo-batch-dropzone {
+  border: 2px dashed #c0c8d0;
+  border-radius: 6px;
+  padding: 32px 20px;
+  text-align: center;
+  cursor: pointer;
+  background: #f8f9fb;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.eo-batch-dropzone:hover,
+.eo-batch-dropzone.eo-dragover {
+  border-color: var(--colorbackhmm1, #263c5c);
+  background: #f0f4f8;
+}
+
+.eo-batch-dropzone-icon {
+  color: #8899aa;
+  margin: 0 auto 10px;
+}
+
+.eo-batch-dropzone-text {
+  font-size: 13px;
+  color: #444;
+  margin: 0 0 4px;
+}
+
+.eo-batch-dropzone-link {
+  color: var(--colorbackhmm1, #263c5c);
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+.eo-batch-dropzone-hint {
+  font-size: 11px;
+  color: #888;
+  margin: 0;
+}
+
+/* ── File list ── */
+.eo-batch-file-list {
+  margin-top: 8px;
+}
+
+.eo-batch-file-list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 0;
+  font-size: 12px;
+  color: #666;
+  border-bottom: 1px solid #ddd;
+  margin-bottom: 4px;
+}
+
+.eo-batch-file-list-header a {
+  color: #bc0000;
+  font-size: 12px;
+}
+
+.eo-batch-file-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 4px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.eo-batch-file-row:last-child {
+  border-bottom: none;
+}
+
+.eo-batch-file-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 4px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  flex-shrink: 0;
+}
+
+.eo-batch-file-pdf {
+  background: #fce4e4;
+  color: #bc0000;
+}
+
+.eo-batch-file-img {
+  background: #e0ecff;
+  color: #1a5276;
+}
+
+.eo-batch-file-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.eo-batch-file-name {
+  font-size: 12px;
+  color: #333;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+}
+
+.eo-batch-file-size {
+  font-size: 11px;
+  color: #999;
+  display: block;
+}
+
+.eo-batch-file-remove {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: transparent;
+  color: #999;
+  font-size: 16px;
+  cursor: pointer;
+  flex-shrink: 0;
+  border-radius: 3px;
+  transition: background 0.15s, color 0.15s;
+}
+
+.eo-batch-file-remove:hover {
+  color: #bc0000;
+  background: #fce4e4;
+}
+
+/* ── Loading state ── */
+#eo-batch-submit.eo-loading {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+@keyframes eo-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+#eo-batch-submit.eo-loading svg,
+#eo-batch-submit.eo-loading img {
+  animation: eo-spin 1s linear infinite;
+}
+
+/* ── Usage bar ── */
+.eo-batch-usage-bar {
+  height: 6px;
+  background: #e8e8e8;
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 4px;
+}
+
+.eo-batch-usage-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.eo-batch-usage-fill.eo-status-ok { background: #0a7a48; }
+.eo-batch-usage-fill.eo-status-warning { background: #d4930d; }
+.eo-batch-usage-fill.eo-status-danger { background: #bc0000; }
+
+/* ── Help steps ── */
+.eo-batch-steps {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  counter-reset: step;
+}
+
+.eo-batch-steps li {
+  counter-increment: step;
+  padding: 6px 0;
+  font-size: 12px;
+  color: #444;
+  line-height: 1.5;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.eo-batch-steps li:last-child {
+  border-bottom: none;
+}
+
+.eo-batch-steps li::before {
+  content: counter(step) ". ";
+  font-weight: 700;
+  color: var(--colorbackhmm1, #263c5c);
+}
+
+/* ── Batch list ── */
+.eo-batch-list-name {
+  font-weight: 600;
+  color: var(--colorbackhmm1, #263c5c);
+}
+
+.eo-batch-list-name:hover {
+  text-decoration: underline;
+}
+
+/* ── Batch detail overlay ── */
+.eo-batch-detail-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 1100;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 3vh;
+}
+
+.eo-batch-detail-panel {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.22);
+  width: 80%;
+  max-width: 1100px;
+  max-height: 92vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.eo-batch-detail-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  border-bottom: 1px solid #e5e7eb;
+  background: #f9fafb;
+  flex-shrink: 0;
+}
+
+.eo-batch-detail-title {
+  font-weight: 700;
+  font-size: 16px;
+  color: #333;
+}
+
+.eo-batch-detail-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  font-size: 20px;
+  color: #999;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background 0.15s, color 0.15s;
+}
+
+.eo-batch-detail-close:hover {
+  background: #fce4e4;
+  color: #bc0000;
+}
+
+.eo-batch-detail-body {
+  padding: 20px 24px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+/* Batch info summary grid */
+.eo-batch-detail-body > .border.tableforfield {
+  font-size: 13px;
+}
+
+.eo-batch-detail-body > .border.tableforfield td.titlefield {
+  width: 200px;
+  color: #666;
+}
+
+.eo-batch-doc-detail {
+  padding: 12px 0;
+}
+
+.eo-batch-doc-detail .border {
+  font-size: 13px;
+}
+
+.eo-batch-doc-detail .border td.titlefield {
+  width: 180px;
+  color: #555;
+}
+
+/* Progress bar */
+.eo-batch-progress-bar {
+  display: inline-block;
+  width: 80px;
+  height: 8px;
+  background: #e9ecef;
+  border-radius: 4px;
+  overflow: hidden;
+  vertical-align: middle;
+}
+
+.eo-batch-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #4dabf7, #228be6);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+/* Document detail sections */
+.eo-batch-section {
+  margin: 16px 0;
+}
+
+.eo-batch-section-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #3a3f51;
+  padding: 8px 12px;
+  background: #f4f6f9;
+  border-left: 3px solid #7c8db5;
+  border-radius: 0 4px 4px 0;
+  margin-bottom: 8px;
+}
+
+.eo-batch-parties {
+  display: flex;
+  gap: 16px;
+  margin: 16px 0;
+}
+
+.eo-batch-party {
+  flex: 1;
+  min-width: 0;
+  background: #fafbfc;
+  border: 1px solid #e9ecef;
+  border-radius: 6px;
+  padding: 4px;
+}
+
+.eo-batch-party .eo-batch-section-title {
+  margin: 0 0 4px;
+  border-radius: 4px 4px 0 0;
+}
+
+.eo-batch-party .border.tableforfield {
+  border: none;
+}
+
+.eo-batch-item-discount td {
+  color: #e67700 !important;
+  font-style: italic;
+}
+
+.eo-batch-doc-detail .liste_total td {
+  border-top: 2px solid #888;
+  padding-top: 6px;
+}
+
+/* Items table inside detail */
+.eo-batch-doc-detail .tagtable.liste {
+  font-size: 12px;
+}
+
+.eo-batch-doc-detail .tagtable.liste th {
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+@media (max-width: 768px) {
+  .eo-batch-parties {
+    flex-direction: column;
+  }
+}
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+  .eo-batch-detail-panel {
+    width: 98%;
+    max-height: 94vh;
+  }
+  .eo-batch-quota-cards {
+    flex-direction: column;
+  }
+  .eo-batch-qcard {
+    min-width: unset;
+  }
+}
+
+@media (min-width: 1400px) {
+  .eo-batch-detail-panel {
+    max-width: 1200px;
+  }
+}
+
 /* === CARDS === */
 .eo-ai-card {
   background: #fff;
@@ -1883,6 +2688,18 @@ textarea.eo-ai-field-input {
   padding: 9px 20px;
   font-size: 13px;
   border-radius: 7px;
+}
+
+/* Supplier indicator styles */
+.eo-supplier-indicator {
+  flex-shrink: 0;
+  transition: opacity 0.2s ease;
+}
+
+#eo-supplier-multi-select {
+  cursor: pointer;
+  border: 1px solid #ffaa00;
+  background: #fff8e5;
 }
 
 /* Responsive */

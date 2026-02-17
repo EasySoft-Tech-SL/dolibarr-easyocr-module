@@ -238,16 +238,23 @@ if ($action == "newInvoice") {
 	$sql = "UPDATE " . MAIN_DB_PREFIX . "facture_fourn SET import_key = 'easyocr' WHERE rowid = " . ((int) $newId);
 	$db->query($sql);
 
-	// AÃ±adir lÃ­nea de detalle
+	// Load supplier for localtax calculation (RE / IRPF)
+	$supplier = new Societe($db);
+	$supplier->fetch($fk_soc);
+
+	// Add invoice line with proper localtax resolution
 	$line_desc = !empty($ocr_description) ? $ocr_description : $langs->trans('EasyOcrInvoiceLineDesc');
 	$tva_tx = calculateIVA($total_ht, $total_tva);
+	$localtax1_tx = get_localtax($tva_tx, 1, $mysoc, $supplier);
+	$localtax2_tx = get_localtax($tva_tx, 2, $mysoc, $supplier);
+
 	$result = $facture->addline(
-		$line_desc,   // description
-		$total_ht,    // pu (precio unitario HT)
-		$tva_tx,      // txtva
-		0,            // txlocaltax1
-		0,            // txlocaltax2
-		1             // qty
+		$line_desc,       // description
+		$total_ht,        // pu (precio unitario HT)
+		$tva_tx,          // txtva
+		$localtax1_tx,    // txlocaltax1 (RE)
+		$localtax2_tx,    // txlocaltax2 (IRPF)
+		1                 // qty
 	);
 
 	if ($result <= 0) {
@@ -255,16 +262,21 @@ if ($action == "newInvoice") {
 		exit;
 	}
 
-	// Validar la factura para generar la referencia definitiva
-	$result = $facture->validate($user);
-	if ($result <= 0) {
-		print json_encode(["status" => "error", "message" => $langs->trans('EasyOcrErrorValidating') . ': ' . $facture->error]);
-		exit;
-	}
+	// Validate or leave as draft based on config
+	$ref = '(PROV' . $newId . ')';
+	$is_draft = !empty($conf->global->EASYOCR_INVOICE_DRAFT);
 
-	// Re-fetch para obtener la ref generada
-	$facture->fetch($newId);
-	$ref = $facture->ref;
+	if (!$is_draft) {
+		$result = $facture->validate($user);
+		if ($result <= 0) {
+			print json_encode(["status" => "error", "message" => $langs->trans('EasyOcrErrorValidating') . ': ' . $facture->error]);
+			exit;
+		}
+		$facture->fetch($newId);
+		$ref = $facture->ref;
+	} else {
+		$facture->fetch($newId);
+	}
 
 	// Subir archivo PDF
 	if (isset($_FILES['file']) && $_FILES['file']['error'] === UPLOAD_ERR_OK) {
@@ -295,9 +307,9 @@ if ($action == "newInvoice") {
 		}
 	}
 
-	// Crear pago asociado si se solicitÃ³
+	// Create payment only for validated invoices
 	$create_payment = GETPOST('create_payment', 'alpha');
-	if ($create_payment == '1' && GETPOST('payment_bank_id', 'int') > 0) {
+	if ($create_payment == '1' && GETPOST('payment_bank_id', 'int') > 0 && !$is_draft) {
 
 		$payment_bank_id = GETPOST('payment_bank_id', 'int');
 		$payment_type_id = GETPOST('payment_type_id', 'int') > 0 ? GETPOST('payment_type_id', 'int') : 6;
@@ -319,7 +331,7 @@ if ($action == "newInvoice") {
 		}
 	}
 
-	print json_encode(["status" => "ok", "id" => $newId, "ref" => $ref]);
+	print json_encode(["status" => "ok", "id" => $newId, "ref" => $ref, "is_draft" => $is_draft]);
 
 
 	// ============================================================
@@ -560,7 +572,7 @@ if ($action == "newInvoice") {
 	// Clean the CIF - remove spaces, dashes
 	$cif_clean = preg_replace('/[\s\-\.]/', '', trim($cif));
 
-	// Search in societe table by siren, siret, ape, idprof4-6, tva_intra
+	// Search ALL suppliers with this CIF (no LIMIT) - support multiple suppliers with same tax ID
 	$sql = "SELECT s.rowid, s.nom FROM " . MAIN_DB_PREFIX . "societe s";
 	$sql .= " WHERE s.fournisseur = 1";
 	$sql .= " AND s.status = 1";
@@ -574,12 +586,38 @@ if ($action == "newInvoice") {
 	$sql .= " OR REPLACE(REPLACE(REPLACE(s.idprof6, ' ', ''), '-', ''), '.', '') = '" . $db->escape($cif_clean) . "'";
 	$sql .= " OR REPLACE(REPLACE(REPLACE(s.tva_intra, ' ', ''), '-', ''), '.', '') = '" . $db->escape($cif_clean) . "'";
 	$sql .= ")";
-	$sql .= " LIMIT 1";
+	$sql .= " ORDER BY s.nom";
 
 	$resql = $db->query($sql);
-	if ($resql && $db->num_rows($resql) > 0) {
-		$obj = $db->fetch_object($resql);
-		print json_encode(["status" => "ok", "fk_soc" => $obj->rowid, "name" => $obj->nom, "created" => false]);
+	$supplierCount = $resql ? $db->num_rows($resql) : 0;
+
+	if ($supplierCount > 0) {
+		$suppliers = array();
+		while ($obj = $db->fetch_object($resql)) {
+			$suppliers[] = array(
+				"id" => $obj->rowid,
+				"name" => $obj->nom
+			);
+		}
+
+		// Return array of suppliers if multiple found, or single supplier data for backwards compatibility
+		if (count($suppliers) > 1) {
+			print json_encode([
+				"status" => "ok",
+				"found_count" => count($suppliers),
+				"suppliers" => $suppliers,
+				"created" => false
+			]);
+		} else {
+			// Single supplier - keep existing format
+			print json_encode([
+				"status" => "ok",
+				"fk_soc" => $suppliers[0]['id'],
+				"name" => $suppliers[0]['name'],
+				"found_count" => 1,
+				"created" => false
+			]);
+		}
 	} else {
 		// Search also non-suppliers â€” maybe exists as client, upgrade to supplier
 		$sql2 = "SELECT s.rowid, s.nom FROM " . MAIN_DB_PREFIX . "societe s";
@@ -601,14 +639,14 @@ if ($action == "newInvoice") {
 			$obj2 = $db->fetch_object($resql2);
 			$existingSoc = new Societe($db);
 			$existingSoc->fetch($obj2->rowid);
-			
+
 			// Generate supplier code if needed
 			$newCodeFournisseur = $existingSoc->code_fournisseur;
 			if (empty($newCodeFournisseur) || $newCodeFournisseur == '-1') {
 				$existingSoc->get_codefournisseur();
 				$newCodeFournisseur = $existingSoc->code_fournisseur;
 			}
-			
+
 			// Update only fournisseur flag and code using SQL (preserves country and other fields)
 			$sqlUpgrade = "UPDATE " . MAIN_DB_PREFIX . "societe SET fournisseur = 1";
 			if (!empty($newCodeFournisseur) && $newCodeFournisseur != '-1') {
@@ -616,7 +654,7 @@ if ($action == "newInvoice") {
 			}
 			$sqlUpgrade .= " WHERE rowid = " . ((int) $obj2->rowid);
 			$db->query($sqlUpgrade);
-			
+
 			print json_encode(["status" => "ok", "fk_soc" => $existingSoc->id, "name" => $existingSoc->nom, "created" => false, "upgraded" => true]);
 		} else {
 			// Not found at all â€” auto-create if requested
@@ -785,14 +823,14 @@ if ($action == "newInvoice") {
 				$objNS = $db->fetch_object($resNS);
 				$existingSoc = new Societe($db);
 				$existingSoc->fetch($objNS->rowid);
-				
+
 				// Generate supplier code if needed
 				$newCodeFournisseur = $existingSoc->code_fournisseur;
 				if (empty($newCodeFournisseur) || $newCodeFournisseur == '-1') {
 					$existingSoc->get_codefournisseur();
 					$newCodeFournisseur = $existingSoc->code_fournisseur;
 				}
-				
+
 				// Update only fournisseur flag and code using SQL (preserves country and other fields)
 				$sqlUpgrade = "UPDATE " . MAIN_DB_PREFIX . "societe SET fournisseur = 1";
 				if (!empty($newCodeFournisseur) && $newCodeFournisseur != '-1') {
@@ -800,13 +838,37 @@ if ($action == "newInvoice") {
 				}
 				$sqlUpgrade .= " WHERE rowid = " . ((int) $objNS->rowid);
 				$db->query($sqlUpgrade);
-				
+
 				$fk_soc = $existingSoc->id;
 			}
 		}
 
 		// 3) Create new supplier
 		if (empty($fk_soc) && !empty($supplier_name)) {
+			// Pre-analyze items to detect localtax (RE/IRPF) requirements
+			$items_temp = !empty($items_json) ? json_decode($items_json, true) : array();
+			$has_recargo = false;
+			$has_irpf = false;
+			$irpf_value = 0;
+			
+			if (is_array($items_temp)) {
+				foreach ($items_temp as $item) {
+					if (!empty($item['taxes']) && is_array($item['taxes'])) {
+						foreach ($item['taxes'] as $tax) {
+							$taxType = strtolower($tax['tax_type'] ?? '');
+							$taxRate = floatval($tax['tax_rate'] ?? 0);
+							if (in_array($taxType, ['re', 'recargo', 'recargo_equivalencia'])) {
+								$has_recargo = true;
+							}
+							if (in_array($taxType, ['irpf', 'retencion', 'withholding'])) {
+								$has_irpf = true;
+								$irpf_value = $taxRate;
+							}
+						}
+					}
+				}
+			}
+
 			$newSoc = new Societe($db);
 			$newSoc->name        = $supplier_name;
 			$newSoc->client      = 0;
@@ -825,6 +887,16 @@ if ($action == "newInvoice") {
 			if (!empty($supplier_zip))     $newSoc->zip     = $supplier_zip;
 			if (!empty($supplier_phone))   $newSoc->phone   = $supplier_phone;
 			if (!empty($supplier_email))   $newSoc->email   = $supplier_email;
+
+			// Configure localtax based on detected taxes in invoice
+			if ($has_recargo) {
+				$newSoc->localtax1_assuj = 1;
+				$newSoc->localtax1_value = 0; // Let Dolibarr calculate from tax tables
+			}
+			if ($has_irpf && $irpf_value > 0) {
+				$newSoc->localtax2_assuj = 1;
+				$newSoc->localtax2_value = -abs($irpf_value); // Negative for IRPF
+			}
 
 			// Resolve country
 			if (!empty($supplier_country)) {
@@ -905,12 +977,16 @@ if ($action == "newInvoice") {
 		exit;
 	}
 
+	// Load supplier object (needed for payment info and localtax calculation)
+	$socTmp = new Societe($db);
+	if (!empty($fk_soc)) {
+		$socTmp->fetch($fk_soc);
+	}
+
 	// Auto-fill payment mode/conditions from supplier
 	$supplier_payment_mode = 0;
 	$supplier_payment_cond = 0;
-	if (!empty($fk_soc)) {
-		$socTmp = new Societe($db);
-		$socTmp->fetch($fk_soc);
+	if (!empty($socTmp->id)) {
 		if (!empty($socTmp->mode_reglement_supplier_id)) {
 			$supplier_payment_mode = $socTmp->mode_reglement_supplier_id;
 		}
@@ -986,10 +1062,8 @@ if ($action == "newInvoice") {
 			$discount = !empty($item['discount_percent']) ? floatval($item['discount_percent']) : 0;
 			$itemType = isset($item['item_type']) ? strtolower(trim($item['item_type'])) : '';
 
-			// Tax handling — parse taxes array from new API format
+			// Tax handling — parse IVA rate from AI data
 			$tva_rate = 0;
-			$localtax1_rate = 0; // RE (Recargo de Equivalencia)
-			$localtax2_rate = 0; // IRPF (retención)
 
 			if (!empty($item['taxes']) && is_array($item['taxes'])) {
 				foreach ($item['taxes'] as $tax) {
@@ -997,23 +1071,13 @@ if ($action == "newInvoice") {
 					$taxRate = floatval($tax['tax_rate'] ?? 0);
 					if (in_array($taxType, ['tva', 'iva', 'vat'])) {
 						$tva_rate = $taxRate;
-					} elseif ($taxType === 're') {
-						$localtax1_rate = $taxRate;
-					} elseif ($taxType === 'irpf') {
-						$localtax2_rate = -abs($taxRate); // IRPF is negative (withholding)
 					}
 				}
 			}
 
-			// Fallback: if taxes array didn't yield a rate, check flat fields
+			// Fallback: if taxes array didn't yield an IVA rate, check flat fields
 			if ($tva_rate == 0 && !empty($item['tax_rate'])) {
 				$tva_rate = floatval($item['tax_rate']);
-			}
-			if ($localtax1_rate == 0 && !empty($item['re_rate'])) {
-				$localtax1_rate = floatval($item['re_rate']);
-			}
-			if ($localtax2_rate == 0 && !empty($item['irpf_rate'])) {
-				$localtax2_rate = -abs(floatval($item['irpf_rate']));
 			}
 
 			// Final fallback: use document's default tax rate if line has no IVA
@@ -1021,6 +1085,10 @@ if ($action == "newInvoice") {
 				$tva_rate = $default_tax_rate;
 				dol_syslog("EasyOCR: Line #$lineIndex using default_tax_rate=$default_tax_rate (line had empty taxes)", LOG_DEBUG);
 			}
+
+			// Resolve localtax from Dolibarr tax tables (RE / IRPF based on fiscal regime)
+			$localtax1_rate = get_localtax($tva_rate, 1, $mysoc, $socTmp);
+			$localtax2_rate = get_localtax($tva_rate, 2, $mysoc, $socTmp);
 
 			// Calculate unit_price from net_amount or total if missing
 			if ($unit_price == 0 && !empty($item['net_amount'])) {
@@ -1110,12 +1178,14 @@ if ($action == "newInvoice") {
 	} else {
 		// Fallback: single line with totals
 		$tva_tx = calculateIVA($total_ht, $total_tva);
+		$localtax1_tx = get_localtax($tva_tx, 1, $mysoc, $socTmp);
+		$localtax2_tx = get_localtax($tva_tx, 2, $mysoc, $socTmp);
 		$facture->addline(
 			$langs->trans('EasyOcrInvoiceLineDesc'),
 			$total_ht,       // pu
 			$tva_tx,         // txtva
-			0,               // txlocaltax1
-			0,               // txlocaltax2
+			$localtax1_tx,   // txlocaltax1 (RE)
+			$localtax2_tx,   // txlocaltax2 (IRPF)
 			1,               // qty
 			0,               // fk_product
 			0,               // remise_percent
@@ -1152,8 +1222,11 @@ if ($action == "newInvoice") {
 
 	dol_syslog("EasyOCR AI: Updated invoice totals - HT: $ocr_total_ht, TVA: $ocr_total_tva, TTC: $ocr_total_ttc, LTX1: $ocr_localtax1, LTX2: $ocr_localtax2", LOG_DEBUG);
 
-	// Validate or leave as draft
+	// Validate or leave as draft — use config default when no explicit status from frontend
 	$ref = '(PROV' . $newId . ')';
+	if (empty($invoice_status)) {
+		$invoice_status = !empty($conf->global->EASYOCR_INVOICE_DRAFT) ? 'draft' : 'validated';
+	}
 	if ($invoice_status !== 'draft') {
 		$result = $facture->validate($user);
 		if ($result <= 0) {
@@ -1335,7 +1408,9 @@ if ($action == "newInvoice") {
 			'filename'     => $filename,
 			'include_text' => false,
 			'custom_instructions' => !empty($customInstructions) ? $customInstructions : null
-		], function($v) { return $v !== null; })),
+		], function ($v) {
+			return $v !== null;
+		})),
 		CURLOPT_RETURNTRANSFER => false,
 		CURLOPT_TIMEOUT        => 120,
 		CURLOPT_WRITEFUNCTION  => function ($ch, $chunk) {
@@ -1369,9 +1444,9 @@ if ($action == "newInvoice") {
 	]);
 
 
-// ============================================================
-// GET SUPPLIER PAYMENT INFO (mode + conditions)
-// ============================================================
+	// ============================================================
+	// GET SUPPLIER PAYMENT INFO (mode + conditions)
+	// ============================================================
 } else if ($action == "getSupplierPaymentInfo") {
 
 	$fk_soc = GETPOST("fk_soc", "int");
@@ -1417,9 +1492,9 @@ if ($action == "newInvoice") {
 	]);
 
 
-// ============================================================
-// SEARCH PRODUCTS BY REF/LABEL
-// ============================================================
+	// ============================================================
+	// SEARCH PRODUCTS BY REF/LABEL
+	// ============================================================
 } else if ($action == "searchProducts") {
 
 	$term = GETPOST("term", "alphanohtml");
@@ -1454,4 +1529,409 @@ if ($action == "newInvoice") {
 
 	print json_encode($result);
 
+
+	// ============================================================
+	// BATCH — LIST ALL BATCHES
+	// ============================================================
+} else if ($action == "batchList") {
+
+	if (!easyocrCheckRight($user, 'easyocr', 'read')) {
+		print json_encode(["status" => "error", "message" => $langs->trans('EasyOcrAccessDenied')]);
+		exit;
+	}
+
+	require_once __DIR__ . '/../lib/easyocr_autoload.php';
+
+	$apiKey = !empty($conf->global->EASYOCR_AI_APIKEY) ? $conf->global->EASYOCR_AI_APIKEY : '';
+	$apiUrl = !empty($conf->global->EASYOCR_AI_URL) ? $conf->global->EASYOCR_AI_URL : 'https://app.easyocr.es';
+
+	if (empty($apiKey)) {
+		print json_encode(["status" => "error", "message" => $langs->trans('EasyOcrBatchNoApiKey')]);
+		exit;
+	}
+
+	try {
+		$client = new \EasySoft\EasyOCR\EasyOCRClient($apiKey, ['base_url' => $apiUrl]);
+
+		$params = array();
+		$page = GETPOST('page', 'int');
+		$perPage = GETPOST('per_page', 'int');
+		$statusFilter = GETPOST('status', 'aZ09');
+		$nameFilter = GETPOST('name', 'alphanohtml');
+		$fromFilter = GETPOST('from', 'alphanohtml');
+		$toFilter = GETPOST('to', 'alphanohtml');
+
+		if ($page > 0) $params['page'] = $page;
+		if ($perPage > 0) $params['per_page'] = $perPage;
+		if (!empty($statusFilter)) $params['status'] = $statusFilter;
+		if (!empty($nameFilter)) $params['name'] = $nameFilter;
+		if (!empty($fromFilter)) $params['from'] = $fromFilter;
+		if (!empty($toFilter)) $params['to'] = $toFilter;
+		$result = $client->batch()->list($params);
+
+		print json_encode(["status" => "ok", "data" => $result]);
+	} catch (\Exception $e) {
+		print json_encode(["status" => "error", "message" => $e->getMessage()]);
+	}
+
+
+	// ============================================================
+	// BATCH — GET STATUS
+	// ============================================================
+} else if ($action == "batchStatus") {
+
+	if (!easyocrCheckRight($user, 'easyocr', 'read')) {
+		print json_encode(["status" => "error", "message" => $langs->trans('EasyOcrAccessDenied')]);
+		exit;
+	}
+
+	require_once __DIR__ . '/../lib/easyocr_autoload.php';
+
+	$apiKey = !empty($conf->global->EASYOCR_AI_APIKEY) ? $conf->global->EASYOCR_AI_APIKEY : '';
+	$apiUrl = !empty($conf->global->EASYOCR_AI_URL) ? $conf->global->EASYOCR_AI_URL : 'https://app.easyocr.es';
+	$uuid = GETPOST('uuid', 'alphanohtml');
+
+	if (empty($apiKey)) {
+		print json_encode(["status" => "error", "message" => $langs->trans('EasyOcrBatchNoApiKey')]);
+		exit;
+	}
+	if (empty($uuid)) {
+		print json_encode(["status" => "error", "message" => "UUID required"]);
+		exit;
+	}
+
+	try {
+		$client = new \EasySoft\EasyOCR\EasyOCRClient($apiKey, ['base_url' => $apiUrl]);
+		$result = $client->batch()->status($uuid);
+		print json_encode(["status" => "ok", "data" => $result]);
+	} catch (\Exception $e) {
+		print json_encode(["status" => "error", "message" => $e->getMessage()]);
+	}
+
+
+	// ============================================================
+	// BATCH — GET RESULTS
+	// ============================================================
+} else if ($action == "batchResults") {
+
+	if (!easyocrCheckRight($user, 'easyocr', 'read')) {
+		print json_encode(["status" => "error", "message" => $langs->trans('EasyOcrAccessDenied')]);
+		exit;
+	}
+
+	require_once __DIR__ . '/../lib/easyocr_autoload.php';
+
+	$apiKey = !empty($conf->global->EASYOCR_AI_APIKEY) ? $conf->global->EASYOCR_AI_APIKEY : '';
+	$apiUrl = !empty($conf->global->EASYOCR_AI_URL) ? $conf->global->EASYOCR_AI_URL : 'https://app.easyocr.es';
+	$uuid = GETPOST('uuid', 'alphanohtml');
+
+	if (empty($apiKey)) {
+		print json_encode(["status" => "error", "message" => $langs->trans('EasyOcrBatchNoApiKey')]);
+		exit;
+	}
+	if (empty($uuid)) {
+		print json_encode(["status" => "error", "message" => "UUID required"]);
+		exit;
+	}
+
+	try {
+		$client = new \EasySoft\EasyOCR\EasyOCRClient($apiKey, ['base_url' => $apiUrl]);
+		$result = $client->batch()->results($uuid);
+		print json_encode(["status" => "ok", "data" => $result]);
+	} catch (\Exception $e) {
+		print json_encode(["status" => "error", "message" => $e->getMessage()]);
+	}
+
+
+	// ============================================================
+	// BATCH — UPLOAD SINGLE FILE TO TEMP DIR
+	// Bypasses PHP max_file_uploads by sending files one at a time
+	// ============================================================
+} else if ($action == "batchUploadFile") {
+
+	if (!easyocrCheckRight($user, 'easyocr', 'write')) {
+		print json_encode(["status" => "error", "message" => $langs->trans('EasyOcrAccessDenied')]);
+		exit;
+	}
+
+	$sessionId = GETPOST('session_id', 'alphanohtml');
+	if (empty($sessionId) || !preg_match('/^batch_[0-9]+_[a-z0-9]+$/', $sessionId)) {
+		print json_encode(["status" => "error", "message" => "Invalid session ID"]);
+		exit;
+	}
+
+	if (empty($_FILES['file']) || $_FILES['file']['error'] !== UPLOAD_ERR_OK) {
+		$errCode = !empty($_FILES['file']['error']) ? $_FILES['file']['error'] : 'no file';
+		print json_encode(["status" => "error", "message" => $langs->trans('EasyOcrBatchUploadError', '') . ' (code: ' . $errCode . ')']);
+		exit;
+	}
+
+	$allowedMimes = array(
+		'application/pdf',
+		'image/png', 'image/jpeg', 'image/jpg',
+		'image/tiff', 'image/bmp', 'image/webp'
+	);
+	$fileMime = $_FILES['file']['type'];
+	if (!in_array($fileMime, $allowedMimes)) {
+		print json_encode(["status" => "error", "message" => $langs->transnoentities('EasyOcrBatchInvalidType', $_FILES['file']['name'])]);
+		exit;
+	}
+
+	$tempDir = DOL_DATA_ROOT . '/easyocr/temp/' . $sessionId;
+	if (!is_dir($tempDir)) {
+		dol_mkdir($tempDir);
+	}
+
+	$destPath = $tempDir . '/' . dol_sanitizeFileName($_FILES['file']['name']);
+	if (!move_uploaded_file($_FILES['file']['tmp_name'], $destPath)) {
+		print json_encode(["status" => "error", "message" => $langs->transnoentities('EasyOcrBatchMoveError', $_FILES['file']['name'])]);
+		exit;
+	}
+
+	print json_encode(["status" => "ok", "file" => basename($destPath)]);
+
+
+	// ============================================================
+	// BATCH — CREATE FROM PREVIOUSLY UPLOADED FILES
+	// ============================================================
+} else if ($action == "batchCreateFromUploads") {
+
+	if (!easyocrCheckRight($user, 'easyocr', 'write')) {
+		print json_encode(["status" => "error", "message" => $langs->trans('EasyOcrAccessDenied')]);
+		exit;
+	}
+
+	require_once __DIR__ . '/../lib/easyocr_autoload.php';
+
+	$apiKey = !empty($conf->global->EASYOCR_AI_APIKEY) ? $conf->global->EASYOCR_AI_APIKEY : '';
+	$apiUrl = !empty($conf->global->EASYOCR_AI_URL) ? $conf->global->EASYOCR_AI_URL : 'https://app.easyocr.es';
+
+	if (empty($apiKey)) {
+		print json_encode(["status" => "error", "message" => $langs->trans('EasyOcrBatchNoApiKey')]);
+		exit;
+	}
+
+	$sessionId = GETPOST('session_id', 'alphanohtml');
+	if (empty($sessionId) || !preg_match('/^batch_[0-9]+_[a-z0-9]+$/', $sessionId)) {
+		print json_encode(["status" => "error", "message" => "Invalid session ID"]);
+		exit;
+	}
+
+	$tempDir = DOL_DATA_ROOT . '/easyocr/temp/' . $sessionId;
+	if (!is_dir($tempDir)) {
+		print json_encode(["status" => "error", "message" => $langs->trans('EasyOcrBatchNoFiles')]);
+		exit;
+	}
+
+	// Collect all files from temp dir
+	$filePaths = array();
+	$dirHandle = opendir($tempDir);
+	if ($dirHandle) {
+		while (($entry = readdir($dirHandle)) !== false) {
+			if ($entry === '.' || $entry === '..') continue;
+			$fullPath = $tempDir . '/' . $entry;
+			if (is_file($fullPath)) {
+				$filePaths[] = $fullPath;
+			}
+		}
+		closedir($dirHandle);
+	}
+
+	if (empty($filePaths)) {
+		print json_encode(["status" => "error", "message" => $langs->trans('EasyOcrBatchNoFiles')]);
+		exit;
+	}
+
+	// Build options
+	$options = array();
+	$batchName = GETPOST('batch_name', 'alphanohtml');
+	if (!empty($batchName)) $options['name'] = $batchName;
+
+	$includeText = GETPOST('include_extracted_text', 'int');
+	if ($includeText) $options['include_extracted_text'] = true;
+
+	$autoCorrect = GETPOST('auto_correct', 'int');
+	if ($autoCorrect) $options['auto_correct'] = true;
+
+	$webhookUrl = GETPOST('webhook_url', 'alpha');
+	if (!empty($webhookUrl)) $options['webhook_url'] = $webhookUrl;
+
+	try {
+		$client = new \EasySoft\EasyOCR\EasyOCRClient($apiKey, ['base_url' => $apiUrl]);
+		$result = $client->batch()->create($filePaths, $options);
+
+		// Cleanup temp files
+		foreach ($filePaths as $fp) {
+			@unlink($fp);
+		}
+		@rmdir($tempDir);
+
+		print json_encode(["status" => "ok", "data" => $result]);
+	} catch (\EasySoft\EasyOCR\Exceptions\EasyOCRException $e) {
+		// Cleanup on error too
+		foreach ($filePaths as $fp) {
+			@unlink($fp);
+		}
+		@rmdir($tempDir);
+		print json_encode(["status" => "error", "message" => $e->getMessage()]);
+	} catch (\Exception $e) {
+		foreach ($filePaths as $fp) {
+			@unlink($fp);
+		}
+		@rmdir($tempDir);
+		print json_encode(["status" => "error", "message" => $langs->trans('EasyOcrBatchApiError') . ': ' . $e->getMessage()]);
+	}
+
+
+	// ============================================================
+	// BATCH — CANCEL
+	// ============================================================
+} else if ($action == "batchCancel") {
+
+	if (!easyocrCheckRight($user, 'easyocr', 'write')) {
+		print json_encode(["status" => "error", "message" => $langs->trans('EasyOcrAccessDenied')]);
+		exit;
+	}
+
+	require_once __DIR__ . '/../lib/easyocr_autoload.php';
+
+	$apiKey = !empty($conf->global->EASYOCR_AI_APIKEY) ? $conf->global->EASYOCR_AI_APIKEY : '';
+	$apiUrl = !empty($conf->global->EASYOCR_AI_URL) ? $conf->global->EASYOCR_AI_URL : 'https://app.easyocr.es';
+	$uuid = GETPOST('uuid', 'alphanohtml');
+
+	if (empty($apiKey)) {
+		print json_encode(["status" => "error", "message" => $langs->trans('EasyOcrBatchNoApiKey')]);
+		exit;
+	}
+	if (empty($uuid)) {
+		print json_encode(["status" => "error", "message" => "UUID required"]);
+		exit;
+	}
+
+	try {
+		$client = new \EasySoft\EasyOCR\EasyOCRClient($apiKey, ['base_url' => $apiUrl]);
+		$result = $client->batch()->cancel($uuid);
+		print json_encode(["status" => "ok", "data" => $result]);
+	} catch (\Exception $e) {
+		print json_encode(["status" => "error", "message" => $e->getMessage()]);
+	}
+
+	// ============================================================
+	// CHECK IF INVOICE EXISTS BY REF_SUPPLIER
+	// ============================================================
+} else if ($action == "checkInvoiceExists") {
+
+	$ref_supplier = GETPOST('ref_supplier', 'alphanohtml');
+	$fk_soc = GETPOST('fk_soc', 'int');
+
+	if (empty($ref_supplier)) {
+		print json_encode(["status" => "error", "message" => "Invoice reference required"]);
+		exit;
+	}
+
+	$sql = "SELECT f.rowid, f.ref, f.fk_soc, s.nom as supplier_name";
+	$sql .= " FROM " . MAIN_DB_PREFIX . "facture_fourn as f";
+	$sql .= " LEFT JOIN " . MAIN_DB_PREFIX . "societe as s ON f.fk_soc = s.rowid";
+	$sql .= " WHERE f.ref_supplier = '" . $db->escape($ref_supplier) . "'";
+	$sql .= " AND f.entity IN (" . getEntity('supplier_invoice') . ")";
+	
+	if (!empty($fk_soc)) {
+		$sql .= " AND f.fk_soc = " . ((int) $fk_soc);
+	}
+	
+	$sql .= " LIMIT 1";
+
+	$resql = $db->query($sql);
+	if ($resql && $db->num_rows($resql) > 0) {
+		$obj = $db->fetch_object($resql);
+		print json_encode([
+			"status" => "ok",
+			"exists" => true,
+			"invoice_id" => $obj->rowid,
+			"invoice_ref" => $obj->ref,
+			"supplier_id" => $obj->fk_soc,
+			"supplier_name" => $obj->supplier_name
+		]);
+	} else {
+		print json_encode([
+			"status" => "ok",
+			"exists" => false
+		]);
+	}
+
+// ============================================================
+// GET SUBSCRIPTION INFO (for polling)
+// ============================================================
+} else if ($action == "getSubscriptionInfo") {
+
+	require_once __DIR__ . '/../lib/easyocr_autoload.php';
+
+	$aiService = new EasyOcrAI($db);
+	if (!$aiService->isEnabled()) {
+		print json_encode(["status" => "error", "message" => "AI not enabled"]);
+		exit;
+	}
+
+	$apiKey = !empty($conf->global->EASYOCR_AI_APIKEY) ? $conf->global->EASYOCR_AI_APIKEY : '';
+	$apiUrl = !empty($conf->global->EASYOCR_AI_URL) ? $conf->global->EASYOCR_AI_URL : 'https://app.easyocr.es';
+
+	if (empty($apiKey)) {
+		print json_encode(["status" => "error", "message" => "API key not configured"]);
+		exit;
+	}
+
+	try {
+		$client = new \EasySoft\EasyOCR\EasyOCRClient($apiKey, ['base_url' => $apiUrl]);
+		$accountData = $client->account()->me();
+		$data = $accountData['data'] ?? null;
+
+		if (empty($data)) {
+			print json_encode(["status" => "error", "message" => "No subscription data"]);
+			exit;
+		}
+
+		$plan = $data['plan'] ?? [];
+		$quota = $data['quota'] ?? [];
+		$wallet = $data['wallet'] ?? [];
+
+		$pagesUsed = $quota['pages_used'] ?? 0;
+		$pagesLimit = $quota['pages_limit'] ?? 0;
+		$pagesRemaining = $quota['pages_remaining'] ?? 0;
+		$usagePercentage = $quota['usage_percentage'] ?? 0;
+		$resetDate = $quota['reset_date'] ?? '';
+		$planName = $plan['name'] ?? '';
+		$isFree = !empty($plan['is_free']);
+		$hasWallet = !empty($wallet['exists']);
+		$walletBalance = $wallet['balance_pages'] ?? 0;
+		$percentage = $pagesLimit > 0 ? min(round(($pagesUsed / $pagesLimit) * 100, 1), 100) : 0;
+
+		// Determine status
+		$statusClass = 'ok';
+		$statusText = '';
+		if ($usagePercentage >= 100) {
+			$statusClass = 'danger';
+			$statusText = $langs->trans('EasyOcrQuotaExceeded');
+		} elseif ($usagePercentage >= 80) {
+			$statusClass = 'warning';
+			$statusText = $langs->trans('EasyOcrQuotaNearLimit');
+		}
+
+		print json_encode([
+			"status" => "ok",
+			"pages_used" => $pagesUsed,
+			"pages_limit" => $pagesLimit,
+			"pages_remaining" => $pagesRemaining,
+			"usage_percentage" => $usagePercentage,
+			"percentage" => $percentage,
+			"reset_date" => $resetDate ? dol_print_date(strtotime($resetDate), 'day') : '',
+			"plan_name" => $planName,
+			"is_free" => $isFree,
+			"has_wallet" => $hasWallet,
+			"wallet_balance" => $walletBalance,
+			"status_class" => $statusClass,
+			"status_text" => $statusText
+		]);
+	} catch (\Exception $e) {
+		print json_encode(["status" => "error", "message" => $e->getMessage()]);
+	}
 }

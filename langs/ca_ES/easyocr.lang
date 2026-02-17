@@ -84,6 +84,17 @@ EasyOcrConfirmAndGenerate = Confirmar i generar
 EasyOcrInvoiceCreated = Factura creada
 EasyOcrOpenNewTab = Obrir en nova pestanya
 EasyOcrOpen = Obrir ↗
+
+# --- Subscription Widget (tool.php) ---
+EasyOcrQuotaPages = Pàgines processades
+EasyOcrQuotaRemaining = Restants
+EasyOcrQuotaReset = Renovació
+EasyOcrWalletBalance = Cartera
+EasyOcrQuotaExceeded = ⚠️ Heu excedit la vostra quota mensual. Algunes funcions poden estar limitades.
+EasyOcrQuotaNearLimit = ⚠️ Us esteu acostant al límit de la vostra quota mensual.
+EasyOcrViewFullPlan = Veure el pla complet
+
+# --- templates.php ---
 EasyOcrTemplatesTitle = Plantilles
 EasyOcrDeleteTemplate = Eliminar plantilla
 EasyOcrConfirmDeleteTemplate = Confirmeu l'eliminació d'aquesta plantilla?
@@ -207,6 +218,9 @@ EasyOcrDueDate = Venciment
 EasyOcrDescription = Descripció
 
 # --- AI OCR ---
+EasyOcrGeneralConfig = Configuració general
+EasyOcrInvoiceDraft = Crear factures com a esborrany
+EasyOcrInvoiceDraftDesc = Si s'activa, les factures creades es deixaran en estat esborrany en lloc de validar-se automàticament
 EasyOcrAIConfiguration = Configuració IA OCR
 EasyOcrAIEnabled = Habilitar IA OCR
 EasyOcrAIUrl = URL del servei OCR
@@ -392,3 +406,225 @@ EasyOcrWidth = Amplada
 EasyOcrHeight = Alçada
 EasyOcrOrigin = Origen
 EasyOcrRemoveMark = Treure marca EasyOcr
+
+# --- Service Plan (admin/plan.php) ---
+EasyOcrPlan = Pla de Servei
+EasyOcrPlanNotConfigured = El servei d'IA OCR no està configurat. Configureu la vostra clau API a la pestanya de Configuració per veure la informació del vostre pla.
+EasyOcrPlanGoToSetup = Anar a Configuració
+EasyOcrPlanErrorAuth = Error d'autenticació
+EasyOcrPlanErrorAPI = Error en connectar amb l'API
+EasyOcrPlanNoData = No hi ha dades disponibles
+
+# Account Section
+EasyOcrPlanAccount = Informació del compte
+EasyOcrPlanAccountName = Nom
+EasyOcrPlanAccountEmail = Correu electrònic
+EasyOcrPlanAccountStatus = Estat del compte
+EasyOcrPlanAccountActive = Actiu
+EasyOcrPlanAccountInactive = Inactiu
+EasyOcrPlanBillingMode = Mode de facturació
+EasyOcrPlanCreatedAt = Data de registre
+
+# Subscription Section
+EasyOcrPlanSubscription = Subscripció
+EasyOcrPlanBillingCycle = Cicle de facturació
+EasyOcrPlanMonthly = mensual
+EasyOcrPlanYearly = anual
+EasyOcrPlanPeriodStart = Inici del període
+EasyOcrPlanPeriodEnd = Fi del període
+EasyOcrPlanTrialEnds = Fi del període de prova
+EasyOcrPlanCancelledAt = Cancel·lada el
+EasyOcrPlanStatusActive = Activa
+EasyOcrPlanStatusInactive = Inactiva
+EasyOcrPlanStatusTrial = Prova
+EasyOcrPlanStatusCancelled = Cancel·lada
+EasyOcrPlanStatusExpired = Expirada
+EasyOcrPlanStatusPastDue = Cobrament fallit
+EasyOcrPlanStatusPaused = Pausada
+
+# Subscription status descriptions
+EasyOcrSubscriptionStatusActive = Subscripció activa i al corrent
+EasyOcrSubscriptionStatusTrialing = En període de prova
+EasyOcrSubscriptionStatusPastDue = Cobrament fallit, pendent de reintent
+EasyOcrSubscriptionStatusCancelled = Cancel·lada per l'usuari o el sistema
+EasyOcrSubscriptionStatusExpired = Període finalitzat sense renovació
+EasyOcrSubscriptionStatusPaused = Pausada temporalment
+
+# Plan Section
+EasyOcrPlanCurrent = Pla actual
+EasyOcrPlanName = Nom del pla
+EasyOcrPlanType = Tipus de pla
+EasyOcrPlanTypeSubscription = Subscripció
+EasyOcrPlanTypePrepaid = Prepagament
+EasyOcrPlanPrice = Preu
+EasyOcrPlanSlug = Identificador
+EasyOcrPlanFree = Gratuït
+EasyOcrPlanPriceMonthly = Preu mensual
+EasyOcrPlanPriceYearly = Preu anual
+EasyOcrPlanMonth = mes
+EasyOcrPlanYear = any
+
+# Quota Section
+EasyOcrPlanQuota = Quota d'ús
+EasyOcrPlanPeriod = Període actual
+EasyOcrPlanQuotaPages = Pàgines processades
+EasyOcrPlanQuotaDocs = Documents processats
+EasyOcrPlanPagesRemaining = Pàgines restants
+EasyOcrPlanDocsRemaining = Documents restants
+EasyOcrPlanPages = pàgines
+EasyOcrPlanDocuments = documents
+EasyOcrPlanQuotaUnlimited = Il·limitat
+EasyOcrPlanQuotaRemaining = Peticions restants
+EasyOcrPlanQuotaReset = Renovació de quota
+
+# Usage Stats Section
+EasyOcrPlanUsageStats = Estadístiques d'ús
+EasyOcrPlanTokensInput = Tokens d'entrada
+EasyOcrPlanTokensOutput = Tokens de sortida
+EasyOcrPlanTokensTotal = Tokens totals
+EasyOcrPlanRequestsTotal = Total de peticions
+EasyOcrPlanRequestsFailed = Peticions fallides
+EasyOcrPlanSuccessRate = Taxa d'èxit
+
+# Limits Section
+EasyOcrPlanLimits = Límits del pla
+EasyOcrPlanLimitPagesMonth = Pàgines màximes per mes
+EasyOcrPlanLimitDocsMonth = Documents màxims per mes
+EasyOcrPlanLimitPagesDoc = Pàgines màximes per document
+EasyOcrPlanLimitFileSize = Mida màxima de fitxer
+EasyOcrPlanLimitBatch = Mida màxima de lot
+EasyOcrPlanLimitApiKeys = Claus API màximes
+EasyOcrPlanLimitRate = Límit de peticions
+EasyOcrPlanLimitConcurrent = Peticions concurrents màximes
+EasyOcrPlanLimitRetention = Retenció de documents
+EasyOcrPlanPerMin = per minut
+
+# Features Section
+EasyOcrPlanFeatures = Característiques del pla
+EasyOcrPlanFeatureApi = Accés a l'API
+EasyOcrPlanFeatureStreaming = Streaming en temps real
+EasyOcrPlanFeatureBatch = Processament per lots
+EasyOcrPlanFeatureInstructions = Instruccions personalitzades
+EasyOcrPlanFeatureWebhooks = Webhooks
+EasyOcrPlanFeaturePriority = Cua de prioritat
+EasyOcrPlanFeatureStorage = Emmagatzematge de documents
+EasyOcrPlanFeatureText = Incloure text extret
+EasyOcrPlanFeatureAutoCorrect = Autocorrecció de text
+EasyOcrPlanFeatureVision = Anàlisi d'imatges (Vision)
+
+# API Key Section
+EasyOcrPlanApiKey = Clau API actual
+EasyOcrPlanKeyName = Nom de la clau
+EasyOcrPlanKeyPrefix = Prefix
+EasyOcrPlanKeyEnv = Entorn
+EasyOcrPlanEnvLive = Producció
+EasyOcrPlanEnvSandbox = Proves
+EasyOcrPlanKeyCreated = Data de creació
+EasyOcrPlanKeyLastUsed = Últim ús
+EasyOcrPlanKeyExpires = Data d'expiració
+EasyOcrPlanNoExpiration = Sense expiració
+
+# Wallet Section
+EasyOcrPlanWallet = Moneder prepagament
+EasyOcrPlanWalletBalance = Saldo disponible
+EasyOcrPlanWalletPurchased = Pàgines comprades
+EasyOcrPlanWalletConsumed = Pàgines consumides
+EasyOcrPlanWalletCanProcess = Pot processar
+
+# --- Batch processing (batch.php) ---
+EasyOcrMenuBatch = Enviament per lots
+EasyOcrBatchHistory = Historial de lots
+EasyOcrBatchTitle = Enviament per lots
+EasyOcrBatchSubtitle = Puja diversos documents i processa'ls de forma massiva
+EasyOcrBatchNoApiKey = La clau API no està configurada. Configureu-la als Ajustos del mòdul.
+EasyOcrBatchNotAvailable = El processament per lots no està disponible al vostre pla actual.
+EasyOcrBatchNoQuota = No tens pàgines disponibles. Recarrega el moneder o amplia el pla.
+EasyOcrBatchApiError = Error de comunicació amb l'API
+EasyOcrBatchLocked = Enviament per lots no disponible
+EasyOcrBatchNoFiles = Has de seleccionar com a mínim un fitxer.
+EasyOcrBatchMaxFiles = El màxim de fitxers per lot és %s.
+EasyOcrBatchUploadError = Error en pujar el fitxer %s.
+EasyOcrBatchInvalidType = El tipus de fitxer no està permès: %s.
+EasyOcrBatchFileTooLarge = El fitxer %s supera la mida màxima de %s.
+EasyOcrBatchMoveError = Error en moure el fitxer %s.
+EasyOcrBatchInvalidToken = Token de seguretat invàlid. Recarrega la pàgina.
+EasyOcrBatchSuccess = Lot enviat correctament!
+EasyOcrBatchSuccessDesc = El teu lot s'està processant. Rebràs els resultats quan estiguin llestos.
+EasyOcrBatchFiles = fitxer(s)
+EasyOcrBatchName = Nom del lot
+EasyOcrBatchNamePlaceholder = Ex: Factures Gener 2026
+EasyOcrBatchConfig = Configuració
+EasyOcrBatchIncludeText = Incloure text extraït
+EasyOcrBatchIncludeTextDesc = Afegeix el camp extracted_text al webhook. Augmenta el consum de tokens.
+EasyOcrBatchAutoCorrect = Auto-correcció
+EasyOcrBatchAutoCorrectDesc = Corregeix automàticament errors en dades estructurades (imports, dates, etc.).
+EasyOcrBatchWebhookHint = Rebràs una notificació POST quan el lot es completi.
+EasyOcrBatchWebhookAutoHint = URL auto-generada. Apunta al receptor de webhooks del mòdul.
+EasyOcrBatchUpgradePlan = Funció no disponible al vostre pla actual
+EasyOcrBatchQuotaInfo = Ús i quota
+EasyOcrBatchFromPlan = Del pla
+EasyOcrBatchMaxPerBatch = Màx. per lot
+EasyOcrBatchMaxSize = màx. %s
+EasyOcrBatchMaxFilesHint = fins a %s fitxers
+EasyOcrBatchHowItWorks = Com funciona?
+EasyOcrBatchStep1 = Puja els teus documents (fins a 200 per lot)
+EasyOcrBatchStep2 = Configura les opcions de processament
+EasyOcrBatchStep3 = Rep les dades extretes automàticament
+EasyOcrBatchDropFiles = Arrossega fitxers aquí o 
+EasyOcrBatchClickSelect = fes clic per seleccionar
+EasyOcrBatchClearAll = Eliminar tots
+EasyOcrBatchProcess = Processar lot
+EasyOcrBatchProcessN = Processar %s fitxer(s)
+EasyOcrBatchProcessing = Processant...
+EasyOcrBatchUploading = Pujant fitxer
+
+# --- Batch list/detail ---
+EasyOcrBatchTabNew = Nou lot
+EasyOcrBatchTabList = Historial de lots
+EasyOcrBatchAllStatuses = Tots els estats
+EasyOcrBatchStatusPending = Pendent
+EasyOcrBatchStatusProcessing = Processant
+EasyOcrBatchStatusCompleted = Completat
+EasyOcrBatchStatusFailed = Fallat
+EasyOcrBatchStatusCancelled = Cancel·lat
+EasyOcrBatchNoResults = No s'han trobat lots
+EasyOcrBatchCancelConfirm = Cancel·lar aquest lot? Aquesta acció no es pot desfer.
+EasyOcrBatchTotalDocs = Documents totals
+EasyOcrBatchProcessed = Processats
+EasyOcrBatchCompletedAt = Completat el
+EasyOcrBatchPages = Pàgines
+EasyOcrBatchDocInfo = Informació del document
+EasyOcrBatchNoDocResults = No hi ha resultats disponibles per a aquest document
+EasyOcrBatchResultsTitle = Veure resultats
+EasyOcrBatchStatusPartial = Parcial
+EasyOcrBatchSearchName = Cercar per nom...
+EasyOcrBatchProgress = Progrés
+EasyOcrBatchFailedDocs = Documents fallits
+EasyOcrBatchCompletedDocs = Documents completats
+EasyOcrClear = Netejar
+EasyOcrBatchCustomer = Client
+EasyOcrBatchTaxId = NIF/CIF
+EasyOcrBatchItems = Línies
+EasyOcrBatchTotals = Totals
+EasyOcrBatchTotalPayable = Total a pagar
+EasyOcrBatchWithholdings = Retencions
+EasyOcrBatchSurcharges = Recàrrecs
+EasyOcrBatchDiscountTotal = Descompte total
+EasyOcrBatchPayment = Pagament
+EasyOcrBatchPayMethod = Mètode de pagament
+EasyOcrBatchPayStatus = Estat del pagament
+EasyOcrBatchPayTerms = Condicions de pagament
+EasyOcrBatchPayRef = Referència de pagament
+EasyOcrBatchBankAccount = Compte bancari
+EasyOcrBatchMetadata = Informació addicional
+EasyOcrBatchProcessingTime = Temps de processament
+EasyOcrBatchStartedAt = Iniciat el
+EasyOcrBatchLogo = Logo
+EasyOcrBatchStamp = Segell
+EasyOcrBatchSignature = Signatura
+EasyOcrBatchNotes = Notes
+EasyOcrBatchCheckingInvoice = Comprovant factura
+EasyOcrBatchInvoiceExists = Factura ja creada
+EasyOcrBatchCreateInvoice = Crear factura
+EasyOcrBatchViewInvoice = Veure factura
+EasyOcrBatchInvoiceNotCreated = No creada

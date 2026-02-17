@@ -24,6 +24,7 @@ require_once DOL_DOCUMENT_ROOT . '/core/class/html.formother.class.php';
 require_once DOL_DOCUMENT_ROOT . '/core/class/html.form.class.php';
 require_once __DIR__ . '/lib/easyocr.lib.php';
 require_once __DIR__ . '/lib/easyocr_ai.class.php';
+require_once __DIR__ . '/lib/easyocr_autoload.php';
 
 // Security check - require write permission to process invoices
 if (!easyocrCheckRight($user, 'easyocr', 'write')) {
@@ -34,16 +35,33 @@ if (!easyocrCheckRight($user, 'easyocr', 'write')) {
 $aiService = new EasyOcrAI($db);
 $aiEnabled = $aiService->isEnabled();
 
+// Fetch subscription info if API is enabled
+$subscriptionData = null;
+if ($aiEnabled) {
+	try {
+		$apiKey = !empty($conf->global->EASYOCR_AI_APIKEY) ? $conf->global->EASYOCR_AI_APIKEY : '';
+		$apiUrl = !empty($conf->global->EASYOCR_AI_URL) ? $conf->global->EASYOCR_AI_URL : 'https://app.easyocr.es';
+		if (!empty($apiKey)) {
+			$client = new \EasySoft\EasyOCR\EasyOCRClient($apiKey, ['base_url' => $apiUrl]);
+			$accountData = $client->account()->me();
+			$subscriptionData = $accountData['data'] ?? null;
+		}
+	} catch (\Exception $e) {
+		// Silently fail - subscription widget will not show
+		$subscriptionData = null;
+	}
+}
+
 $form = new Form($db);
 $langs->load('easyocr@easyocr');
 
 $arrayofjs = array(
-	dol_buildpath('/custom/easyocr/js/pdf.min.js', 1),
-	dol_buildpath('/custom/easyocr/libraries/notify.min.js', 1),
-	dol_buildpath('/custom/easyocr/js/scripts.js.php', 1),
+	dol_buildpath('/easyocr/js/pdf.min.js', 1),
+	dol_buildpath('/easyocr/libraries/notify.min.js', 1),
+	dol_buildpath('/easyocr/js/scripts.js.php', 1),
 );
 $arrayofcss = array(
-	dol_buildpath('/custom/easyocr/css/easyocr.css', 1),
+	dol_buildpath('/easyocr/css/easyocr.css', 1),
 );
 
 llxHeader("", "EasyOcr", '', '', 0, 0, $arrayofjs, $arrayofcss);
@@ -113,6 +131,110 @@ llxHeader("", "EasyOcr", '', '', 0, 0, $arrayofjs, $arrayofcss);
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a4 4 0 014 4v1a2 2 0 012 2v1a2 2 0 01-2 2H8a2 2 0 01-2-2V9a2 2 0 012-2V6a4 4 0 014-4z"/><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 14v4"/></svg>
           <?php echo $langs->trans('EasyOcrAIExtract'); ?>
         </button>
+
+        <?php if (!empty($subscriptionData)) {
+          $plan = $subscriptionData['plan'] ?? [];
+          $quota = $subscriptionData['quota'] ?? [];
+          $wallet = $subscriptionData['wallet'] ?? [];
+          
+          $pagesUsed = $quota['pages_used'] ?? 0;
+          $pagesLimit = $quota['pages_limit'] ?? 0;
+          $pagesRemaining = $quota['pages_remaining'] ?? 0;
+          $usagePercentage = $quota['usage_percentage'] ?? 0;
+          $resetDate = $quota['reset_date'] ?? '';
+          $planName = $plan['name'] ?? '';
+          $isFree = !empty($plan['is_free']);
+          
+          // Wallet info
+          $hasWallet = !empty($wallet['exists']);
+          $walletBalance = $wallet['balance_pages'] ?? 0;
+          
+          // Determinar estado
+          $statusClass = '';
+          $statusIcon = '';
+          $statusText = '';
+          if ($usagePercentage >= 100) {
+            $statusClass = 'danger';
+            $statusIcon = '⚠️';
+            $statusText = $langs->trans('EasyOcrQuotaExceeded');
+          } elseif ($usagePercentage >= 80) {
+            $statusClass = 'warning';
+            $statusIcon = '⚠️';
+            $statusText = $langs->trans('EasyOcrQuotaNearLimit');
+          } else {
+            $statusClass = 'ok';
+            $statusIcon = '✓';
+            $statusText = '';
+          }
+          
+          $percentage = $pagesLimit > 0 ? min(round(($pagesUsed / $pagesLimit) * 100, 1), 100) : 0;
+        ?>
+        <!-- Subscription Status -->
+        <div class="eo-quota-compact" id="eo-quota-compact">
+          <button class="eo-quota-toggle" onclick="this.classList.toggle('eo-active'); this.nextElementSibling.classList.toggle('eo-visible')" title="<?php echo $langs->trans('EasyOcrViewFullPlan'); ?>">
+            <div class="eo-quota-toggle-left">
+              <span class="eo-quota-status-icon eo-status-<?php echo $statusClass; ?>" id="eo-quota-status-icon"><?php echo $statusIcon; ?></span>
+              <span class="eo-quota-compact-text" id="eo-quota-compact-text">
+                <strong><?php echo number_format($pagesUsed, 0, ',', '.'); ?></strong> / <?php echo number_format($pagesLimit, 0, ',', '.'); ?> <?php echo $langs->trans('EasyOcrPlanPages'); ?>
+              </span>
+            </div>
+            <div class="eo-quota-toggle-right">
+              <span class="eo-quota-remaining" id="eo-quota-remaining"><?php echo number_format($pagesRemaining, 0, ',', '.'); ?> <?php echo $langs->trans('EasyOcrQuotaRemaining'); ?></span>
+              <svg class="eo-quota-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+            </div>
+          </button>
+          
+          <div class="eo-quota-details">
+            <div class="eo-quota-detail-header">
+              <span class="eo-quota-plan-badge" id="eo-quota-plan-badge">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                <span id="eo-quota-plan-name"><?php echo dol_escape_htmltag($planName); ?></span>
+                <?php if ($isFree) { ?>
+                  <span class="eo-mini-badge" id="eo-quota-free-badge">FREE</span>
+                <?php } ?>
+              </span>
+            </div>
+            
+            <div class="eo-quota-progress-wrapper">
+              <div class="eo-quota-progress-bar">
+                <div class="eo-quota-progress-fill eo-status-<?php echo $statusClass; ?>" id="eo-quota-progress-fill" style="width: <?php echo $percentage; ?>%"></div>
+              </div>
+              <span class="eo-quota-percentage" id="eo-quota-percentage"><?php echo $percentage; ?>%</span>
+            </div>
+            
+            <div class="eo-quota-stats-grid" id="eo-quota-stats-grid">
+              <div class="eo-quota-stat-item">
+                <span class="eo-quota-stat-label"><?php echo $langs->trans('EasyOcrQuotaPages'); ?></span>
+                <span class="eo-quota-stat-value" id="eo-quota-pages-val"><?php echo number_format($pagesUsed, 0, ',', '.'); ?> / <?php echo number_format($pagesLimit, 0, ',', '.'); ?></span>
+              </div>
+              <div class="eo-quota-stat-item">
+                <span class="eo-quota-stat-label"><?php echo $langs->trans('EasyOcrQuotaRemaining'); ?></span>
+                <span class="eo-quota-stat-value" id="eo-quota-remaining-val"><?php echo number_format($pagesRemaining, 0, ',', '.'); ?></span>
+              </div>
+              <div class="eo-quota-stat-item" id="eo-quota-reset-item" <?php if (empty($resetDate)) echo 'style="display:none"'; ?>>
+                <span class="eo-quota-stat-label"><?php echo $langs->trans('EasyOcrQuotaReset'); ?></span>
+                <span class="eo-quota-stat-value" id="eo-quota-reset-val"><?php echo !empty($resetDate) ? dol_print_date(strtotime($resetDate), 'day') : ''; ?></span>
+              </div>
+              <div class="eo-quota-stat-item eo-wallet-stat" id="eo-quota-wallet-item" <?php if (!$hasWallet || $walletBalance <= 0) echo 'style="display:none"'; ?>>
+                <span class="eo-quota-stat-label">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+                  <?php echo $langs->trans('EasyOcrWalletBalance'); ?>
+                </span>
+                <span class="eo-quota-stat-value" id="eo-quota-wallet-val"><?php echo number_format($walletBalance, 0, ',', '.'); ?></span>
+              </div>
+            </div>
+            
+            <div class="eo-quota-alert" id="eo-quota-alert" <?php if (empty($statusText)) echo 'style="display:none"'; ?> <?php if (!empty($statusText)) echo 'class="eo-quota-alert eo-status-'.$statusClass.'"'; ?>>
+              <span id="eo-quota-alert-text"><?php echo $statusText; ?></span>
+            </div>
+            
+            <a href="<?php echo dol_buildpath('/easyocr/admin/plan.php', 1); ?>" class="eo-quota-link" target="_blank">
+              <?php echo $langs->trans('EasyOcrViewFullPlan'); ?>
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>
+            </a>
+          </div>
+        </div>
+        <?php } ?>
       </div>
       <!-- Estado desactivado (promo) -->
       <div class="eo-ai-disabled-content" id="eo-ai-disabled"<?php if ($aiEnabled) echo ' style="display:none"'; ?>>
@@ -535,6 +657,107 @@ llxHeader("", "EasyOcr", '', '', 0, 0, $arrayofjs, $arrayofcss);
     </div>
   </div>
 </div>
+
+<?php if (!empty($subscriptionData)) { ?>
+<script>
+(function() {
+  var eoQuotaAjaxUrl = '<?php echo dol_buildpath('/easyocr/ajax/ajax_easyocr.php', 1); ?>';
+  var eoQuotaLabels = {
+    pages: '<?php echo addslashes($langs->trans('EasyOcrPlanPages')); ?>',
+    remaining: '<?php echo addslashes($langs->trans('EasyOcrQuotaRemaining')); ?>'
+  };
+
+  function eoFmtNum(n) {
+    return Number(n).toLocaleString('es-ES', { maximumFractionDigits: 0 });
+  }
+
+  function eoRefreshQuota() {
+    jQuery.ajax({
+      url: eoQuotaAjaxUrl,
+      type: 'POST',
+      data: { action: 'getSubscriptionInfo' },
+      dataType: 'json',
+      success: function(res) {
+        if (!res || res.status !== 'ok') return;
+
+        // Compact header
+        var compactText = document.getElementById('eo-quota-compact-text');
+        if (compactText) compactText.innerHTML = '<strong>' + eoFmtNum(res.pages_used) + '</strong> / ' + eoFmtNum(res.pages_limit) + ' ' + eoQuotaLabels.pages;
+
+        var remainEl = document.getElementById('eo-quota-remaining');
+        if (remainEl) remainEl.textContent = eoFmtNum(res.pages_remaining) + ' ' + eoQuotaLabels.remaining;
+
+        // Status icon
+        var statusIcon = document.getElementById('eo-quota-status-icon');
+        if (statusIcon) {
+          statusIcon.className = 'eo-quota-status-icon eo-status-' + res.status_class;
+          statusIcon.textContent = (res.status_class === 'ok') ? '✓' : '⚠️';
+        }
+
+        // Progress bar
+        var progressFill = document.getElementById('eo-quota-progress-fill');
+        if (progressFill) {
+          progressFill.style.width = res.percentage + '%';
+          progressFill.className = 'eo-quota-progress-fill eo-status-' + res.status_class;
+        }
+        var percentEl = document.getElementById('eo-quota-percentage');
+        if (percentEl) percentEl.textContent = res.percentage + '%';
+
+        // Stats grid values
+        var pagesVal = document.getElementById('eo-quota-pages-val');
+        if (pagesVal) pagesVal.textContent = eoFmtNum(res.pages_used) + ' / ' + eoFmtNum(res.pages_limit);
+
+        var remainVal = document.getElementById('eo-quota-remaining-val');
+        if (remainVal) {
+          remainVal.textContent = eoFmtNum(res.pages_remaining);
+          remainVal.className = 'eo-quota-stat-value' + (res.pages_remaining <= 0 ? ' eo-depleted' : '');
+        }
+
+        // Reset date
+        var resetItem = document.getElementById('eo-quota-reset-item');
+        var resetVal = document.getElementById('eo-quota-reset-val');
+        if (resetItem && resetVal) {
+          if (res.reset_date) { resetItem.style.display = ''; resetVal.textContent = res.reset_date; }
+          else { resetItem.style.display = 'none'; }
+        }
+
+        // Wallet
+        var walletItem = document.getElementById('eo-quota-wallet-item');
+        var walletVal = document.getElementById('eo-quota-wallet-val');
+        if (walletItem && walletVal) {
+          if (res.has_wallet && res.wallet_balance > 0) { walletItem.style.display = ''; walletVal.textContent = eoFmtNum(res.wallet_balance); }
+          else { walletItem.style.display = 'none'; }
+        }
+
+        // Plan name
+        var planName = document.getElementById('eo-quota-plan-name');
+        if (planName) planName.textContent = res.plan_name;
+
+        // Free badge
+        var freeBadge = document.getElementById('eo-quota-free-badge');
+        if (freeBadge) freeBadge.style.display = res.is_free ? '' : 'none';
+
+        // Alert
+        var alertEl = document.getElementById('eo-quota-alert');
+        var alertText = document.getElementById('eo-quota-alert-text');
+        if (alertEl && alertText) {
+          if (res.status_text) {
+            alertEl.style.display = '';
+            alertEl.className = 'eo-quota-alert eo-status-' + res.status_class;
+            alertText.textContent = res.status_text;
+          } else {
+            alertEl.style.display = 'none';
+          }
+        }
+      }
+    });
+  }
+
+  // Poll every 5 seconds
+  setInterval(eoRefreshQuota, 5000);
+})();
+</script>
+<?php } ?>
 
 <?php
 llxFooter();

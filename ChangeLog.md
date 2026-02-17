@@ -5,6 +5,70 @@ Todos los cambios notables de EasyOcr se documentarán en este archivo.
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/),
 y este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 
+## [2.3.1] - 2026-02-16
+
+### Añadido
+- **Librería PHP EasyOCR SDK** (`lib/easyocr/`): Cliente PHP completo con Guzzle HTTP para la API EasyOCR
+  - `EasyOCRClient`: Cliente principal con patrón flyweight para recursos lazy-loaded
+  - 9 Resources: `OcrResource`, `BatchResource`, `DocumentResource`, `AccountResource`, `UsageResource`, `KeyResource`, `PlansResource`, `WalletResource`, `BaseResource`
+  - 5 Exceptions tipadas: `AuthenticationException`, `NotFoundException`, `RateLimitException`, `ValidationException`, `EasyOCRException`
+  - Autoloader PSR-4 (`easyocr_autoload.php`) + Composer autoload para Guzzle 7.x
+- **Página de procesamiento Batch** (`batch.php`): Nueva página completa con sistema de pestañas (Nuevo Lote / Historial)
+  - Formulario de subida con drag & drop, vista previa de archivos, y opciones de configuración (texto extraído, autocorrección, webhook)
+  - **Subida AJAX por archivo individual**: Los archivos se suben uno a uno al servidor (acción `batchUploadFile`) para evitar el límite PHP `max_file_uploads`, y después se crea el batch (acción `batchCreateFromUploads`)
+  - Historial de lotes con filtros (estado, nombre, fecha), paginación configurable (10/20/50/100), y detalle expandible por documento
+  - Visualización de resultados con 6 secciones: info documento, proveedor/cliente, líneas/items, totales con desglose de impuestos, pago, metadatos
+  - Barra de progreso para lotes en procesamiento, badges de estado, cancelación de lotes
+  - Selector de elementos por página (10, 20, 50, 100) con valor por defecto 20
+- **Widget de suscripción** en `tool.php`: Indicador compacto desplegable con uso de cuota, plan activo, wallet y barra de progreso
+- **Página de plan de servicio** (`admin/plan.php`): Nueva pestaña administrativa con detalles del plan contratado
+- **Receptor de webhook** (`webhook_batch.php`): Endpoint en raíz del módulo para recibir notificaciones de la API al completar lotes
+  - **Seguridad por instance_id**: URL incluye parámetro `instance_id={dolibarr_main_instance_unique_id}` para validar que el webhook es enviado al servidor correcto
+  - **Debug completo**: Guarda todos los datos de entrada (GET, POST, headers, raw body) en archivos JSON individuales en `documents/easyocr/webhook_debug/`
+  - **Logs estructurados**: Registro diario en `documents/easyocr/webhook_logs/webhook_YYYY-MM-DD.log` con formato JSON línea por línea
+- **Tabla SQL de webhook** (`sql/llx_easyocr_webhook_log.sql`): Registro de eventos webhook recibidos
+- **Configuración "Factura como borrador"**: Nueva opción `EASYOCR_INVOICE_DRAFT` en `admin/setup.php` para crear facturas en estado borrador
+- **2 acciones AJAX** en `ajax_easyocr.php`:
+  - `batchUploadFile`: Sube un archivo individual a directorio temporal con validación MIME y session_id
+  - `batchCreateFromUploads`: Crea lote batch desde archivos previamente subidos, con limpieza automática de temporales
+- **5 acciones AJAX batch** en `ajax_easyocr.php`: `batchList`, `batchStatus`, `batchResults`, `batchCancel`
+- **200+ claves de traducción** en 8 idiomas (es, en, fr, de, it, pt, ca, gl) para batch, suscripción, plan, webhook y configuración
+- **Configuración automática de localtax al crear proveedor**: Pre-análisis de líneas de factura AI para detectar recargo de equivalencia (RE) o IRPF y configurar `localtax1_assuj`/`localtax2_assuj`/`localtax2_value` en el tercero creado
+- **Estados de suscripción completos**: Añadidos estados `past_due` (cobro fallido) y `paused` (pausada) + descripciones detalladas en 8 idiomas (14 nuevas claves de traducción)
+- **Soporte múltiples proveedores con mismo CIF**: La acción AJAX `findSupplierByCIF` ahora busca todos los proveedores con el mismo tax ID y devuelve array con `found_count` y `suppliers[]` si hay más de uno
+- **Botón "Crear factura" en detalle de documento batch**: Sistema automático de verificación de existencia de factura por `ref_supplier` con botón condicional:
+  - Nueva acción AJAX `checkInvoiceExists` que consulta `llx_facture_fourn` por ref_supplier (opcional filtro por fk_soc)
+  - Barra de acción superior en `eoBatchRenderDocDetail()` con indicadores visuales (✓ verde si existe / ℹ️ gris si no)
+  - Botón "Crear factura" que abre modal AI pre-llenado con datos del documento batch
+  - Enlace directo "Ver factura" si ya existe en Dolibarr (card.php?facid=X)
+  - 4 nuevas claves i18n en 8 idiomas: CheckingInvoice, InvoiceExists, CreateInvoice, ViewInvoice
+- **Submenú "Historial de lotes"**: Nuevo submenú bajo "Envío por lotes" que apunta directamente al historial (`batch.php?tab=history&frommenu=1`)
+  - Traducción `EasyOcrBatchHistory` en 8 idiomas
+  - Al acceder desde el menú, las pestañas superiores se ocultan automáticamente para vista simplificada
+- **Traducción de estados batch**: Los badges de estado (Completed, Processing, Failed, etc.) ahora se muestran traducidos mediante claves i18n (`statusPending`, `statusProcessing`, etc.) en lugar del texto en inglés crudo
+- **Icono de factura en fila de documento**: Se añade un icono `fa-file-invoice` directamente en la columna de acciones de cada documento completado del batch:
+  - Verde con enlace: factura ya existe en Dolibarr (abre card.php)
+  - Rojo con clic: factura no creada, permite crear directamente sin expandir el detalle
+  - Verificación asíncrona automática al cargar la lista de documentos
+- **Auto-refresh de suscripción**: El widget de cuota/suscripción en `tool.php` se actualiza automáticamente cada 5 segundos vía polling AJAX
+  - Nueva acción `getSubscriptionInfo` en `ajax_easyocr.php` que devuelve datos de plan, cuota, wallet y estado
+  - Actualización dinámica de todos los elementos del widget (barra de progreso, contadores, estado, wallet) sin recarga de página
+- **Traducción "No creada"**: Añadida clave `EasyOcrBatchInvoiceNotCreated` en 8 idiomas para reemplazar texto hardcoded en español
+
+### Mejorado
+- **Rutas con `dol_buildpath()`**: Sustituidas todas las rutas `DOL_URL_ROOT . '/custom/easyocr/...'` por `dol_buildpath('/easyocr/...', 1)` en menús del módulo, JS (pdf.worker, scripts.js.php) y CSS
+- **CSS del módulo** (`easyocr.css`): +800 líneas nuevas para batch (dropzone, file list, quota cards, progress bar, detail overlay 80%/1100px, party cards, section styles, responsive)
+- **Pestaña "Plan" en administración**: Añadida en `lib/easyocr.lib.php` con icono estrella dorada
+- **Selector visual de múltiples proveedores en modal AI**: Campo CIF/Tax ID ahora incluye indicadores de estado con códigos de color:
+  - ✓ Verde (`fa-check-circle`): 1 proveedor encontrado, auto-selección
+  - ⚠️ Naranja (`fa-exclamation-triangle`): Múltiples proveedores, despliega dropdown selector con fondo ámbar
+  - ✗ Rojo (`fa-times-circle`): CIF no encontrado
+  - Estado almacenado en `state.selectedSupplierID` con prioridad sobre `$('#eo-supplier').val()` en `createAIInvoice()`
+- **Webhook movido a raíz del módulo**: Reubicado de `ajax/webhook_batch.php` → `webhook_batch.php` (raíz) para simplificar la arquitectura y facilitar el acceso externo. El archivo antiguo ha sido eliminado.
+
+### Corregido
+- **Error `max_file_uploads` en batch**: Reescrito el envío de archivos de POST multipart tradicional a subida AJAX secuencial archivo por archivo, evitando el límite PHP que causaba `Maximum number of allowable file uploads has been exceeded`
+
 ## [2.3.0] - 2026-02-10
 
 ### Añadido
@@ -13,7 +77,7 @@ y este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 - **Obligaciones del usuario como operador de IA**: Sección con 4 obligaciones (uso conforme, intervención humana, informar afectados, validar datos)
 - **Base legal ampliada**: Nueva referencia al Reglamento (UE) 2024/1689 en la sección de base legal
 - **20+ claves de traducción** en 8 idiomas (es, en, fr, de, it, pt, ca, gl) para las nuevas secciones de telemetría
-- **Constantes por defecto al activar módulo**: `EASYOCR_AI_ENABLED=1` y `EASYOCR_AI_URL=https://api.easyocr.easysoft.es` se configuran automáticamente en `$this->const`
+- **Constantes por defecto al activar módulo**: `EASYOCR_AI_ENABLED=1` y `EASYOCR_AI_URL=https://app.easyocr.es` se configuran automáticamente en `$this->const`
 
 ## [2.2.0] - 2026-02-10
 

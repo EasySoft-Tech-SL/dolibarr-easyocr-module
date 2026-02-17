@@ -60,6 +60,12 @@ function easyocr_admin_prepare_head()
 	$head[$h][2] = 'settings';
 	$h++;
 
+	// Service Plan tab
+	$head[$h][0] = dol_buildpath('/easyocr/admin/plan.php', 1);
+	$head[$h][1] = '<span class="fas fa-star" style="color: #f39c12;"></span> ' . $langs->trans('EasyOcrPlan');
+	$head[$h][2] = 'plan';
+	$h++;
+
 	// License agreement tab
 	$head[$h][0] = dol_buildpath('/easyocr/admin/copying.php', 1);
 	$head[$h][1] = '<span class="fas fa-file-contract" style="color: #34495e;"></span> ' . $langs->trans('EasyOcrCopying');

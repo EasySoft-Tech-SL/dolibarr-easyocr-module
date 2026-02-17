@@ -41,7 +41,7 @@ include_once DOL_DOCUMENT_ROOT . '/core/modules/DolibarrModules.class.php';
  * @author     EasySoft Tech S.L. <info@easysoft.es>
  * @copyright  2025-2026 EasySoft Tech S.L.
  * @license    GPL-3.0-or-later
- * @version    2.3.0
+ * @version    2.3.1
  */
 class modEasyocr extends DolibarrModules
 {
@@ -84,7 +84,7 @@ class modEasyocr extends DolibarrModules
 		$this->editor_url = 'https://easysoft.es';
 
 		// Possible values for version are: 'development', 'experimental', 'dolibarr' or version
-		$this->version = '2.3.0';
+		$this->version = '2.3.1';
 		$this->url_last_version = 'https://sdl.easysoft.es/getLastModuleVersion?module=easyocr&for_url_last_version=1&version=' . $this->version;
 
 
@@ -143,7 +143,7 @@ class modEasyocr extends DolibarrModules
 		// Constants
 		$this->const = array(
 			array('EASYOCR_AI_ENABLED', 'chaine', '1', 'Enable AI OCR functionality', 0, 'current', 1),
-			array('EASYOCR_AI_URL', 'chaine', 'https://api.easyocr.easysoft.es', 'AI OCR service URL', 0, 'current', 1),
+			array('EASYOCR_AI_URL', 'chaine', 'https://app.easyocr.es', 'AI OCR service URL', 0, 'current', 1),
 		);
 
 		if (!isset($conf->easyocr) || !isset($conf->easyocr->enabled)) {
@@ -208,7 +208,7 @@ class modEasyocr extends DolibarrModules
 			'fk_menu'  => 'fk_mainmenu=easyocr',
 			'type'     => 'left',
 			'titre'    => 'EasyOcrMenuUploadPdf',
-			'prefix'   => '<img src="' . DOL_URL_ROOT . '/custom/easyocr/img/uploadpdf.png" width="40px" height="40px">',
+			'prefix'   => '<img src="' . dol_buildpath('/easyocr/img/uploadpdf.png', 1) . '" width="40px" height="40px">',
 			'mainmenu' => 'easyocr',
 			'leftmenu' => 'easyocr_tool',
 			'url'      => '/easyocr/tool.php',
@@ -223,8 +223,40 @@ class modEasyocr extends DolibarrModules
 		$this->menu[$r++] = array(
 			'fk_menu'  => 'fk_mainmenu=easyocr',
 			'type'     => 'left',
+			'titre'    => 'EasyOcrMenuBatch',
+			'prefix'   => '<img src="' . dol_buildpath('/easyocr/img/batch.png', 1) . '" width="40px" height="40px">',
+			'mainmenu' => 'easyocr',
+			'leftmenu' => 'easyocr_batch',
+			'url'      => '/easyocr/batch.php',
+			'langs'    => 'easyocr@easyocr',
+			'position' => 1000 + $r,
+			'enabled'  => '$conf->easyocr->enabled',
+			'perms'    => '$user->rights->easyocr->write',
+			'target'   => '',
+			'user'     => 2,
+		);
+
+		// Submenú: Historial de lotes
+		$this->menu[$r++] = array(
+			'fk_menu'  => 'fk_mainmenu=easyocr,fk_leftmenu=easyocr_batch',
+			'type'     => 'left',
+			'titre'    => 'EasyOcrBatchHistory',
+			'mainmenu' => 'easyocr',
+			'leftmenu' => 'easyocr_batch_history',
+			'url'      => '/easyocr/batch.php?tab=history&frommenu=1',
+			'langs'    => 'easyocr@easyocr',
+			'position' => 1000 + $r,
+			'enabled'  => '$conf->easyocr->enabled',
+			'perms'    => '$user->rights->easyocr->write',
+			'target'   => '',
+			'user'     => 2,
+		);
+
+		$this->menu[$r++] = array(
+			'fk_menu'  => 'fk_mainmenu=easyocr',
+			'type'     => 'left',
 			'titre'    => 'EasyOcrMenuTemplates',
-			'prefix'   => '<img src="' . DOL_URL_ROOT . '/custom/easyocr/img/templates.png" width="40px" height="40px">',
+			'prefix'   => '<img src="' . dol_buildpath('/easyocr/img/templates.png', 1) . '" width="40px" height="40px">',
 			'mainmenu' => 'easyocr',
 			'leftmenu' => 'easyocr_templates',
 			'url'      => '/easyocr/templates.php',
@@ -240,7 +272,7 @@ class modEasyocr extends DolibarrModules
 			'fk_menu'  => 'fk_mainmenu=easyocr',
 			'type'     => 'left',
 			'titre'    => 'EasyOcrMenuInvoices',
-			'prefix'   => '<img src="' . DOL_URL_ROOT . '/custom/easyocr/img/invoice.png" width="40px" height="40px">',
+			'prefix'   => '<img src="' . dol_buildpath('/easyocr/img/invoice.png', 1) . '" width="40px" height="40px">',
 			'mainmenu' => 'easyocr',
 			'leftmenu' => 'easyocr_invoices',
 			'url'      => '/easyocr/invoices.php',

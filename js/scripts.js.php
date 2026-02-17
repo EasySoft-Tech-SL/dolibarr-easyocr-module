@@ -92,7 +92,7 @@ function transJson($key) {
 }
 ?>
 
-window.EasyOcrWorkerSrc = <?php echo json_encode(dol_buildpath('/custom/easyocr/js/pdf.worker.min.js', 1)); ?>;
+window.EasyOcrWorkerSrc = <?php echo json_encode(dol_buildpath('/easyocr/js/pdf.worker.min.js', 1)); ?>;
 window.EasyOcrLang = {
   labelDate: <?php echo transJson('EasyOcrLabelDate'); ?>,
   labelInvoice: <?php echo transJson('EasyOcrLabelInvoice'); ?>,
