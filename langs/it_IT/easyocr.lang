@@ -13,6 +13,11 @@ EasyOcrModuleDescription = Descrizione del modulo
 EasyOcrModuleActiveInfo = Il modulo EasyOcr è attivo
 EasyOcrSetupInfo = Informazioni di configurazione
 EasyOcrSetupInfoDesc = Accedi agli strumenti del modulo dal menu principale di EasyOcr
+EasyOcrCloudServiceTitle = Servizio cloud EasyOCR
+EasyOcrCloudServiceWebsite = Sito web del servizio
+EasyOcrCloudServiceWebsiteDesc = Informazioni sul servizio di estrazione OCR nel cloud di EasyOCR
+EasyOcrCloudServicePanel = Pannello di gestione
+EasyOcrCloudServicePanelDesc = Accedi al pannello di gestione per gestire il tuo account, abbonamento e utilizzo dell'API
 EasyOcrReadmeFileNotFound = File README non trovato
 EasyOcrChangeLogFileNotFound = File ChangeLog non trovato
 EasyOcrPermRead = Leggere modelli e fatture elaborate
@@ -623,3 +628,9 @@ EasyOcrBatchInvoiceExists = Fattura già creata
 EasyOcrBatchCreateInvoice = Crea fattura
 EasyOcrBatchViewInvoice = Visualizza fattura
 EasyOcrBatchInvoiceNotCreated = Non creata
+
+# --- Batch Trash / Cestino ---
+EasyOcrBatchTrash = Cestino
+EasyOcrBatchTrashConfirm = Spostare questo lotto nel cestino? Verrà annullato e non potrà essere ripristinato.
+EasyOcrBatchTrashEmpty = Il cestino è vuoto
+EasyOcrBatchBackToHistory = Torna alla cronologia

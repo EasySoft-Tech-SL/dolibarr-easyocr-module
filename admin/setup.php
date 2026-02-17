@@ -234,6 +234,39 @@ print '<strong>'.$langs->trans("EasyOcrSetupInfo").'</strong><br>';
 print $langs->trans("EasyOcrSetupInfoDesc");
 print '</div>';
 
+print '<br>';
+
+// --- Cloud service info ---
+print '<div class="div-table-responsive-no-min">';
+print '<table class="noborder centpercent">';
+
+print '<tr class="liste_titre">';
+print '<td colspan="2"><span class="fas fa-cloud" style="margin-right:6px"></span>'.$langs->trans("EasyOcrCloudServiceTitle").'</td>';
+print '</tr>';
+
+print '<tr class="oddeven">';
+print '<td>'.$langs->trans("EasyOcrCloudServiceWebsite").'</td>';
+print '<td>';
+print '<a href="https://easyocr.es" target="_blank" rel="noopener noreferrer">';
+print '<span class="fas fa-external-link-alt" style="margin-right:4px"></span>https://easyocr.es/';
+print '</a>';
+print '<br><span class="opacitymedium small">'.$langs->trans("EasyOcrCloudServiceWebsiteDesc").'</span>';
+print '</td>';
+print '</tr>';
+
+print '<tr class="oddeven">';
+print '<td>'.$langs->trans("EasyOcrCloudServicePanel").'</td>';
+print '<td>';
+print '<a href="https://app.easyocr.es" target="_blank" rel="noopener noreferrer">';
+print '<span class="fas fa-external-link-alt" style="margin-right:4px"></span>https://app.easyocr.es/';
+print '</a>';
+print '<br><span class="opacitymedium small">'.$langs->trans("EasyOcrCloudServicePanelDesc").'</span>';
+print '</td>';
+print '</tr>';
+
+print '</table>';
+print '</div>';
+
 // Page end
 print dol_get_fiche_end();
 

@@ -13,6 +13,11 @@ EasyOcrModuleDescription = Descripció del mòdul
 EasyOcrModuleActiveInfo = El mòdul EasyOcr està actiu
 EasyOcrSetupInfo = Informació de configuració
 EasyOcrSetupInfoDesc = Accedeix a les eines del mòdul des del menú principal d'EasyOcr
+EasyOcrCloudServiceTitle = Servei al núvol EasyOCR
+EasyOcrCloudServiceWebsite = Lloc web del servei
+EasyOcrCloudServiceWebsiteDesc = Informació sobre el servei d'extracció OCR al núvol d'EasyOCR
+EasyOcrCloudServicePanel = Panell de gestió
+EasyOcrCloudServicePanelDesc = Accedeix al panell de gestió per administrar el teu compte, subscripció i ús de l'API
 EasyOcrReadmeFileNotFound = Fitxer README no trobat
 EasyOcrChangeLogFileNotFound = Fitxer ChangeLog no trobat
 EasyOcrPermRead = Llegir plantilles i factures processades
@@ -628,3 +633,9 @@ EasyOcrBatchInvoiceExists = Factura ja creada
 EasyOcrBatchCreateInvoice = Crear factura
 EasyOcrBatchViewInvoice = Veure factura
 EasyOcrBatchInvoiceNotCreated = No creada
+
+# --- Batch Trash / Paperera ---
+EasyOcrBatchTrash = Paperera
+EasyOcrBatchTrashConfirm = Moure aquest lot a la paperera? Es cancel·larà i no es podrà restaurar.
+EasyOcrBatchTrashEmpty = La paperera és buida
+EasyOcrBatchBackToHistory = Tornar a l'historial

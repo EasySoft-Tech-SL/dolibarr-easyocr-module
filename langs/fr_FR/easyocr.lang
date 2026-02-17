@@ -14,6 +14,11 @@ EasyOcrModuleDescription = Description du module
 EasyOcrModuleActiveInfo = Le module EasyOcr est actif
 EasyOcrSetupInfo = Informations de configuration
 EasyOcrSetupInfoDesc = Accédez aux outils du module depuis le menu principal EasyOcr
+EasyOcrCloudServiceTitle = Service cloud EasyOCR
+EasyOcrCloudServiceWebsite = Site web du service
+EasyOcrCloudServiceWebsiteDesc = Informations sur le service d'extraction OCR dans le cloud EasyOCR
+EasyOcrCloudServicePanel = Panneau de gestion
+EasyOcrCloudServicePanelDesc = Accédez au panneau de gestion pour gérer votre compte, abonnement et utilisation de l'API
 EasyOcrReadmeFileNotFound = Fichier README non trouvé
 EasyOcrChangeLogFileNotFound = Fichier ChangeLog non trouvéEasyOcrPermRead = Lire les modèles et factures traitées
 EasyOcrPermWrite = Créer et modifier les modèles, traiter les factures
@@ -645,3 +650,9 @@ EasyOcrBatchInvoiceExists = Facture déjà créée
 EasyOcrBatchCreateInvoice = Créer facture
 EasyOcrBatchViewInvoice = Voir facture
 EasyOcrBatchInvoiceNotCreated = Non créée
+
+# --- Batch Trash / Corbeille ---
+EasyOcrBatchTrash = Corbeille
+EasyOcrBatchTrashConfirm = Déplacer ce lot vers la corbeille ? Il sera annulé et ne pourra pas être restauré.
+EasyOcrBatchTrashEmpty = La corbeille est vide
+EasyOcrBatchBackToHistory = Retour à l'historique

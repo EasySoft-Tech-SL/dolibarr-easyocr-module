@@ -8,6 +8,14 @@ y este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 ## [2.3.1] - 2026-02-16
 
 ### Añadido
+- **Papelera de reciclaje en historial de lotes**: Nuevo sistema de papelera para gestionar lotes eliminados
+  - Botón "Papelera" con badge contador de lotes cancelados en el área de filtros
+  - Modo papelera: filtra automáticamente por estado `cancelled`, bloquea el selector de estado
+  - Botón de eliminar (fa-trash-alt) en todas las filas de lotes no cancelados (incluyendo completados, parciales y fallidos)
+  - Botón de eliminar en el panel de detalle del lote
+  - Filas canceladas se muestran atenuadas con texto tachado en la vista normal
+  - Actualización automática del badge de papelera tras cancelar/eliminar un lote
+  - Traducciones en 8 idiomas (es, en, fr, ca, gl, de, it, pt): Papelera, confirmación, vacía, volver al historial
 - **Librería PHP EasyOCR SDK** (`lib/easyocr/`): Cliente PHP completo con Guzzle HTTP para la API EasyOCR
   - `EasyOCRClient`: Cliente principal con patrón flyweight para recursos lazy-loaded
   - 9 Resources: `OcrResource`, `BatchResource`, `DocumentResource`, `AccountResource`, `UsageResource`, `KeyResource`, `PlansResource`, `WalletResource`, `BaseResource`
@@ -24,9 +32,19 @@ y este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 - **Página de plan de servicio** (`admin/plan.php`): Nueva pestaña administrativa con detalles del plan contratado
 - **Receptor de webhook** (`webhook_batch.php`): Endpoint en raíz del módulo para recibir notificaciones de la API al completar lotes
   - **Seguridad por instance_id**: URL incluye parámetro `instance_id={dolibarr_main_instance_unique_id}` para validar que el webhook es enviado al servidor correcto
+  - **Procesamiento automático**: Al recibir evento `batch.document.completed`, crea automáticamente una factura de proveedor con los datos OCR extraídos
+    - Busca o crea el proveedor basado en datos OCR (nombre, NIF/CIF, datos de contacto)
+    - Crea factura de proveedor con estado validado
+    - Agrega líneas de factura desde items OCR con impuestos correctos
+    - Guarda URL de documentos (PDF) si están disponibles
+    - Manejo automático de duplicados: verifica si la factura ya existe por ref_supplier
   - **Debug completo**: Guarda todos los datos de entrada (GET, POST, headers, raw body) en archivos JSON individuales en `documents/easyocr/webhook_debug/`
   - **Logs estructurados**: Registro diario en `documents/easyocr/webhook_logs/webhook_YYYY-MM-DD.log` con formato JSON línea por línea
-- **Tabla SQL de webhook** (`sql/llx_easyocr_webhook_log.sql`): Registro de eventos webhook recibidos
+  - **Función compartida** (`easyocrCreateInvoiceFromOCR()` en `lib/easyocr.lib.php`): Lógica unificada de creación de factura usada por AJAX (`newInvoiceAI`) y webhook, con helpers `convertFlexibleDate()`, `convertToNumber()`, `calculateIVA()`
+- **Tabla SQL de webhook** (`sql/llx_easyocr_webhook_log.sql`): Registro completo de eventos webhook recibidos con campos de factura creada
+  - Columnas: batch_id, event, document_id, document_filename, document_status, batch_status, batch_progress
+  - Nuevas columnas para rastreo de facturas: invoice_id, invoice_ref, supplier_id, processing_status, processing_message, payload
+  - Script de migración `llx_easyocr_webhook_log.alter.sql` para actualizar tabla existente
 - **Configuración "Factura como borrador"**: Nueva opción `EASYOCR_INVOICE_DRAFT` en `admin/setup.php` para crear facturas en estado borrador
 - **2 acciones AJAX** en `ajax_easyocr.php`:
   - `batchUploadFile`: Sube un archivo individual a directorio temporal con validación MIME y session_id

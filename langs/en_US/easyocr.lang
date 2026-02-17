@@ -14,6 +14,11 @@ EasyOcrModuleDescription = Module description
 EasyOcrModuleActiveInfo = The EasyOcr module is active
 EasyOcrSetupInfo = Setup information
 EasyOcrSetupInfoDesc = Access module tools from the main EasyOcr menu
+EasyOcrCloudServiceTitle = EasyOCR Cloud Service
+EasyOcrCloudServiceWebsite = Service website
+EasyOcrCloudServiceWebsiteDesc = Information about the EasyOCR cloud OCR extraction service
+EasyOcrCloudServicePanel = Management panel
+EasyOcrCloudServicePanelDesc = Access the management panel to manage your account, subscription and API usage
 EasyOcrReadmeFileNotFound = README file not found
 EasyOcrChangeLogFileNotFound = ChangeLog file not foundEasyOcrPermRead = Read templates and processed invoices
 EasyOcrPermWrite = Create and edit templates, process invoices
@@ -644,3 +649,9 @@ EasyOcrBatchInvoiceExists = Invoice already created
 EasyOcrBatchCreateInvoice = Create invoice
 EasyOcrBatchViewInvoice = View invoice
 EasyOcrBatchInvoiceNotCreated = Not created
+
+# --- Batch Trash / Recycle Bin ---
+EasyOcrBatchTrash = Trash
+EasyOcrBatchTrashConfirm = Move this batch to trash? It will be cancelled and cannot be restored.
+EasyOcrBatchTrashEmpty = Trash is empty
+EasyOcrBatchBackToHistory = Back to history

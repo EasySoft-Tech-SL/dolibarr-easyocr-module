@@ -14,6 +14,11 @@ EasyOcrModuleDescription = Modulbeschreibung
 EasyOcrModuleActiveInfo = Das EasyOcr-Modul ist aktiv
 EasyOcrSetupInfo = Konfigurationsinformationen
 EasyOcrSetupInfoDesc = Greifen Sie auf Modultools über das EasyOcr-Hauptmenü zu
+EasyOcrCloudServiceTitle = EasyOCR Cloud-Dienst
+EasyOcrCloudServiceWebsite = Service-Website
+EasyOcrCloudServiceWebsiteDesc = Informationen zum EasyOCR Cloud-OCR-Extraktionsdienst
+EasyOcrCloudServicePanel = Verwaltungspanel
+EasyOcrCloudServicePanelDesc = Greifen Sie auf das Verwaltungspanel zu, um Ihr Konto, Abonnement und die API-Nutzung zu verwalten
 EasyOcrReadmeFileNotFound = README-Datei nicht gefunden
 EasyOcrChangeLogFileNotFound = ChangeLog-Datei nicht gefunden
 
@@ -630,3 +635,9 @@ EasyOcrBatchInvoiceExists = Rechnung bereits erstellt
 EasyOcrBatchCreateInvoice = Rechnung erstellen
 EasyOcrBatchViewInvoice = Rechnung anzeigen
 EasyOcrBatchInvoiceNotCreated = Nicht erstellt
+
+# --- Batch Trash / Papierkorb ---
+EasyOcrBatchTrash = Papierkorb
+EasyOcrBatchTrashConfirm = Diesen Stapel in den Papierkorb verschieben? Er wird storniert und kann nicht wiederhergestellt werden.
+EasyOcrBatchTrashEmpty = Der Papierkorb ist leer
+EasyOcrBatchBackToHistory = Zurück zur Übersicht

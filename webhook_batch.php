@@ -126,6 +126,14 @@ if (!empty($rawBody)) {
 $debugFile = $debugDir . '/webhook_' . date('Y-m-d_His') . '_' . uniqid() . '.json';
 @file_put_contents($debugFile, json_encode($debugData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
 
+// ─── Global error handler to catch fatal errors ─────────────────────────
+// This ensures we always return a JSON response even on PHP fatal errors
+set_error_handler(function ($severity, $message, $file, $line) {
+	throw new ErrorException($message, 0, $severity, $file, $line);
+});
+
+try {
+
 // ─── Validate instance_id ────────────────────────────────────────────────
 $receivedInstanceId = isset($_GET['instance_id']) ? $_GET['instance_id'] : '';
 $expectedInstanceId = !empty($dolibarr_main_instance_unique_id) ? $dolibarr_main_instance_unique_id : '';
@@ -162,7 +170,10 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
 // ─── Optional: verify webhook secret ─────────────────────────────────────
 // If configured, validate the X-Webhook-Secret header against our stored secret
-$webhookSecret = !empty($conf->global->EASYOCR_WEBHOOK_SECRET) ? $conf->global->EASYOCR_WEBHOOK_SECRET : '';
+$webhookSecret = '';
+if (isset($conf) && is_object($conf) && isset($conf->global) && is_object($conf->global) && !empty($conf->global->EASYOCR_WEBHOOK_SECRET)) {
+	$webhookSecret = $conf->global->EASYOCR_WEBHOOK_SECRET;
+}
 if (!empty($webhookSecret)) {
 	$receivedSecret = isset($_SERVER['HTTP_X_WEBHOOK_SECRET']) ? $_SERVER['HTTP_X_WEBHOOK_SECRET'] : '';
 	if (empty($receivedSecret) || !hash_equals($webhookSecret, $receivedSecret)) {
@@ -214,28 +225,164 @@ $batchId  = isset($payload['batch_id']) ? $payload['batch_id'] : (isset($payload
 $document = isset($payload['document']) ? $payload['document'] : null;
 $batch    = isset($payload['batch']) ? $payload['batch'] : null;
 
-// ─── Store in database ──────────────────────────────────────────────────
-// Insert webhook event into llx_easyocr_webhook_log table
-$sql = "INSERT INTO " . MAIN_DB_PREFIX . "easyocr_webhook_log";
-$sql .= " (batch_id, event, document_id, document_filename, document_status,";
-$sql .= " batch_status, batch_progress, payload, datec)";
-$sql .= " VALUES (";
-$sql .= " '" . $db->escape($batchId) . "',";
-$sql .= " '" . $db->escape($event) . "',";
-$sql .= " '" . $db->escape($document ? (isset($document['document_id']) ? $document['document_id'] : '') : '') . "',";
-$sql .= " '" . $db->escape($document ? (isset($document['filename']) ? $document['filename'] : '') : '') . "',";
-$sql .= " '" . $db->escape($document ? (isset($document['status']) ? $document['status'] : '') : '') . "',";
-$sql .= " '" . $db->escape($batch ? (isset($batch['status']) ? $batch['status'] : '') : '') . "',";
-$sql .= " " . ($batch && isset($batch['progress']) ? (int) $batch['progress'] : 0) . ",";
-$sql .= " '" . $db->escape($rawBody) . "',";
-$sql .= " NOW()";
-$sql .= ")";
+// DEBUG: Log extracted fields
+@file_put_contents($logFile, date('H:i:s') . " | DEBUG-FLOW: event='$event', batchId='$batchId', document=" . ($document ? 'present(keys:' . implode(',', array_keys($document)) . ')' : 'NULL') . ", batch=" . ($batch ? 'present' : 'NULL') . "\n", FILE_APPEND | LOCK_EX);
 
-$dbResult = $db->query($sql);
-if (!$dbResult) {
-	// Log DB error but still return 200 to avoid retries
-	$errMsg = 'DB insert failed: ' . $db->lasterror();
-	@file_put_contents($logFile, date('H:i:s') . ' | ERROR: ' . $errMsg . "\n", FILE_APPEND | LOCK_EX);
+// Initialize processing result variables
+$webhookProcessingStatus = null;
+$webhookProcessingMessage = null;
+$webhookInvoiceId = null;
+$webhookInvoiceRef = null;
+$webhookSupplierId = null;
+
+// ─── Process document.completed event ────────────────────────────────────
+// When a document is completed, automatically create an invoice
+$_condEvent = ($event === 'batch.document.completed');
+$_condDoc   = !empty($document);
+$_condStat  = (isset($document['status']) && $document['status'] === 'completed');
+@file_put_contents($logFile, date('H:i:s') . " | DEBUG-FLOW: Conditions: event_match=$_condEvent, doc_present=$_condDoc, status_completed=$_condStat" . ($document ? ', document[status]=' . ($document['status'] ?? 'NOT_SET') : '') . "\n", FILE_APPEND | LOCK_EX);
+
+if ($_condEvent && $_condDoc && $_condStat) {
+	
+	@file_put_contents($logFile, date('H:i:s') . " | DEBUG-FLOW: >>> ENTERED processing block\n", FILE_APPEND | LOCK_EX);
+
+	// Load necessary libraries
+	require_once __DIR__ . '/lib/easyocr.lib.php';
+	
+	// Extract structured data — check both document-level and data-level paths
+	$structuredData = array();
+	$_sdSource = 'none';
+	if (isset($document['structured_data']) && !empty($document['structured_data'])) {
+		$structuredData = $document['structured_data'];
+		$_sdSource = 'document.structured_data';
+	} elseif (isset($payload['data']['structured_data']) && !empty($payload['data']['structured_data'])) {
+		$structuredData = $payload['data']['structured_data'];
+		$_sdSource = 'payload.data.structured_data';
+	} elseif (isset($payload['data']) && is_array($payload['data'])) {
+		// The entire 'data' may BE the structured_data
+		$structuredData = $payload['data'];
+		$_sdSource = 'payload.data (whole)';
+	}
+
+	@file_put_contents($logFile, date('H:i:s') . " | DEBUG-FLOW: structured_data source='$_sdSource', empty=" . (empty($structuredData) ? 'YES' : 'NO') . ', keys=' . (is_array($structuredData) ? implode(',', array_keys($structuredData)) : 'NOT_ARRAY') . "\n", FILE_APPEND | LOCK_EX);
+
+	if (!empty($structuredData)) {
+		// Log that we're processing the document
+		@file_put_contents($logFile, date('H:i:s') . ' | INFO: Processing completed document: ' . (isset($document['filename']) ? $document['filename'] : 'unknown') . "\n", FILE_APPEND | LOCK_EX);
+		
+		try {
+			// Map structured_data to params format expected by easyocrCreateInvoiceFromOCR
+			$supplier = isset($structuredData['supplier']) ? $structuredData['supplier'] : array();
+			$totals   = isset($structuredData['totals']) ? $structuredData['totals'] : array();
+			$payment  = isset($structuredData['payment']) ? $structuredData['payment'] : array();
+
+			$params = array(
+				'fk_soc'           => 0, // Auto-detect from tax_id
+				'ref_supplier'     => isset($structuredData['document_number']) ? $structuredData['document_number'] : '',
+				'datef'            => isset($structuredData['issue_date']) ? $structuredData['issue_date'] : date('Y-m-d'),
+				'total_ttc'        => isset($totals['total_payable']) ? $totals['total_payable'] : (isset($totals['total']) ? $totals['total'] : '0'),
+				'total_ht'         => isset($totals['net_subtotal']) ? $totals['net_subtotal'] : (isset($totals['subtotal']) ? $totals['subtotal'] : '0'),
+				'total_tva'        => isset($totals['tax_total']) ? $totals['tax_total'] : '',
+				'total_localtax1'  => isset($totals['localtax1']) ? $totals['localtax1'] : '0',
+				'total_localtax2'  => isset($totals['localtax2']) ? $totals['localtax2'] : '0',
+				'date_echeance'    => isset($structuredData['due_date']) ? $structuredData['due_date'] : (isset($payment['due_date']) ? $payment['due_date'] : ''),
+				'notes'            => isset($structuredData['notes']) ? $structuredData['notes'] : ('Webhook batch: ' . $batchId),
+				'items'            => isset($structuredData['items']) ? $structuredData['items'] : array(),
+				'default_tax_rate' => 0,
+				'supplier_name'    => isset($supplier['name']) ? $supplier['name'] : '',
+				'supplier_tax_id'  => isset($supplier['tax_id']) ? $supplier['tax_id'] : '',
+				'supplier_address' => isset($supplier['address']) ? $supplier['address'] : '',
+				'supplier_city'    => isset($supplier['city']) ? $supplier['city'] : '',
+				'supplier_zip'     => isset($supplier['zip']) ? $supplier['zip'] : (isset($supplier['postal_code']) ? $supplier['postal_code'] : ''),
+				'supplier_country' => isset($supplier['country']) ? $supplier['country'] : '',
+				'supplier_phone'   => isset($supplier['phone']) ? $supplier['phone'] : '',
+				'supplier_email'   => isset($supplier['email']) ? $supplier['email'] : '',
+				'invoice_status'   => '', // Use module config default
+				'invoice_type'     => 0,
+				'journal_code'     => '',
+				'import_key'       => 'easyocr-webhook',
+				'create_payment'   => '',
+				'payment_bank_id'  => 0,
+				'payment_type_id'  => 0,
+			);
+
+			// Log params for debugging
+			@file_put_contents($logFile, date('H:i:s') . ' | DEBUG-PARAMS: ' . json_encode(array(
+				'ref_supplier' => $params['ref_supplier'],
+				'datef' => $params['datef'],
+				'supplier_name' => $params['supplier_name'],
+				'supplier_tax_id' => $params['supplier_tax_id'],
+				'total_ht' => $params['total_ht'],
+				'total_ttc' => $params['total_ttc'],
+				'total_tva' => $params['total_tva'],
+				'items_count' => count($params['items']),
+				'items_sample' => !empty($params['items']) ? array_slice($params['items'], 0, 2) : [],
+			), JSON_UNESCAPED_UNICODE) . "\n", FILE_APPEND | LOCK_EX);
+
+			// Check globals before calling
+			@file_put_contents($logFile, date('H:i:s') . ' | DEBUG-GLOBALS: $db=' . (isset($GLOBALS['db']) && is_object($GLOBALS['db']) ? 'OK(class=' . get_class($GLOBALS['db']) . ')' : 'NULL') . ', $conf=' . (isset($GLOBALS['conf']) ? 'OK' : 'NULL') . ', $mysoc=' . (isset($GLOBALS['mysoc']) ? 'OK' : 'NULL') . ', $langs=' . (isset($GLOBALS['langs']) ? 'OK' : 'NULL') . "\n", FILE_APPEND | LOCK_EX);
+
+			// Call shared invoice creation function (same logic as AJAX newInvoiceAI)
+			@file_put_contents($logFile, date('H:i:s') . " | DEBUG-FLOW: >>> Calling easyocrCreateInvoiceFromOCR()...\n", FILE_APPEND | LOCK_EX);
+			$webhookResult = easyocrCreateInvoiceFromOCR($params);
+			@file_put_contents($logFile, date('H:i:s') . ' | DEBUG-FLOW: <<< Result: ' . json_encode($webhookResult, JSON_UNESCAPED_UNICODE) . "\n", FILE_APPEND | LOCK_EX);
+			
+			// Store processing result
+			$webhookProcessingStatus = $webhookResult['status'];
+			$webhookProcessingMessage = isset($webhookResult['message']) ? $webhookResult['message'] : '';
+			$webhookInvoiceId = isset($webhookResult['invoice_id']) ? $webhookResult['invoice_id'] : null;
+			$webhookInvoiceRef = isset($webhookResult['invoice_ref']) ? $webhookResult['invoice_ref'] : null;
+			$webhookSupplierId = isset($webhookResult['supplier_id']) ? $webhookResult['supplier_id'] : null;
+			
+			if ($webhookProcessingStatus === 'ok') {
+				@file_put_contents($logFile, date('H:i:s') . ' | SUCCESS: Invoice created: ' . $webhookInvoiceId . ' (' . $webhookInvoiceRef . ")\n", FILE_APPEND | LOCK_EX);
+			} else {
+				@file_put_contents($logFile, date('H:i:s') . ' | ERROR: Processing failed: ' . $webhookProcessingMessage . "\n", FILE_APPEND | LOCK_EX);
+			}
+		} catch (Throwable $e) {
+			$webhookProcessingStatus = 'error';
+			$webhookProcessingMessage = get_class($e) . ': ' . $e->getMessage();
+			@file_put_contents($logFile, date('H:i:s') . ' | EXCEPTION [' . get_class($e) . ']: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine() . "\n", FILE_APPEND | LOCK_EX);
+		}
+	} else {
+		@file_put_contents($logFile, date('H:i:s') . " | WARNING: No structured_data found in webhook payload\n", FILE_APPEND | LOCK_EX);
+	}
+}
+
+// ─── Store in database ──────────────────────────────────────────────────
+// Verify $db is available before attempting DB operations
+if (!isset($db) || !is_object($db)) {
+	// No database connection - log to file and return OK anyway
+	@file_put_contents($logFile, date('H:i:s') . " | WARNING: \$db not available, skipping DB insert\n", FILE_APPEND | LOCK_EX);
+} else {
+	// Insert webhook event into llx_easyocr_webhook_log table
+	$sql = "INSERT INTO " . MAIN_DB_PREFIX . "easyocr_webhook_log";
+	$sql .= " (batch_id, event, document_id, document_filename, document_status,";
+	$sql .= " batch_status, batch_progress, invoice_id, invoice_ref, supplier_id,";
+	$sql .= " processing_status, processing_message, payload, datec)";
+	$sql .= " VALUES (";
+	$sql .= " '" . $db->escape($batchId) . "',";
+	$sql .= " '" . $db->escape($event) . "',";
+	$sql .= " '" . $db->escape($document ? (isset($document['document_id']) ? $document['document_id'] : '') : '') . "',";
+	$sql .= " '" . $db->escape($document ? (isset($document['filename']) ? $document['filename'] : '') : '') . "',";
+	$sql .= " '" . $db->escape($document ? (isset($document['status']) ? $document['status'] : '') : '') . "',";
+	$sql .= " '" . $db->escape($batch ? (isset($batch['status']) ? $batch['status'] : '') : '') . "',";
+	$sql .= " " . ($batch && isset($batch['progress']) ? (int) $batch['progress'] : 0) . ",";
+	$sql .= " " . (!empty($webhookInvoiceId) ? (int) $webhookInvoiceId : 'NULL') . ",";
+	$sql .= " " . (!empty($webhookInvoiceRef) ? "'" . $db->escape($webhookInvoiceRef) . "'" : 'NULL') . ",";
+	$sql .= " " . (!empty($webhookSupplierId) ? (int) $webhookSupplierId : 'NULL') . ",";
+	$sql .= " " . (!empty($webhookProcessingStatus) ? "'" . $db->escape($webhookProcessingStatus) . "'" : 'NULL') . ",";
+	$sql .= " " . (!empty($webhookProcessingMessage) ? "'" . $db->escape($webhookProcessingMessage) . "'" : 'NULL') . ",";
+	$sql .= " '" . $db->escape($rawBody) . "',";
+	$sql .= " NOW()";
+	$sql .= ")";
+
+	$dbResult = $db->query($sql);
+	if (!$dbResult) {
+		// Log DB error but still return 200 to avoid retries
+		$errMsg = 'DB insert failed: ' . $db->lasterror();
+		@file_put_contents($logFile, date('H:i:s') . ' | ERROR: ' . $errMsg . "\n", FILE_APPEND | LOCK_EX);
+	}
 }
 
 // ─── Respond OK ──────────────────────────────────────────────────────────
@@ -248,3 +395,22 @@ echo json_encode([
 	'event'    => $event,
 	'instance_id_validated' => !empty($expectedInstanceId),
 ]);
+
+} catch (Throwable $e) {
+	// ─── Catch ANY error (including fatal) and return informative JSON ────
+	$errorInfo = [
+		'error'   => 'Internal server error in webhook_batch.php',
+		'message' => $e->getMessage(),
+		'file'    => basename($e->getFile()),
+		'line'    => $e->getLine(),
+		'type'    => get_class($e),
+	];
+
+	// Try to log the error
+	$crashFile = (defined('DOL_DATA_ROOT') ? DOL_DATA_ROOT : '/tmp') . '/easyocr/webhook_debug/crash_' . date('Y-m-d_His') . '.json';
+	@file_put_contents($crashFile, json_encode($errorInfo, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+
+	http_response_code(500);
+	header('Content-Type: application/json');
+	echo json_encode($errorInfo);
+}

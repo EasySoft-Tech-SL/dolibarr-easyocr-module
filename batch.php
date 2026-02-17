@@ -332,6 +332,8 @@ if (!$canBatch) {
 		global $dolibarr_main_instance_unique_id;
 		$instanceId = !empty($dolibarr_main_instance_unique_id) ? $dolibarr_main_instance_unique_id : '';
 		$webhookDefault = dol_buildpath('/easyocr/webhook_batch.php', 2);
+		// Always force HTTPS for webhook URLs (external callbacks must be secure)
+		$webhookDefault = preg_replace('/^http:\/\//i', 'https://', $webhookDefault);
 		if (!empty($instanceId)) {
 			$webhookDefault .= '?instance_id=' . urlencode($instanceId);
 		}
@@ -421,6 +423,12 @@ if (!$canBatch) {
 	print ' <button type="button" class="button small" onclick="eoBatchClearFilters()">';
 	print img_picto('', 'eraser', 'class="pictofixedwidth"') . $langs->trans('EasyOcrClear');
 	print '</button>';
+	print ' <span style="margin-left:12px; border-left:1px solid #ccc; padding-left:12px">';
+	print '<button type="button" class="button small" id="eo-batch-trash-toggle" onclick="eoBatchToggleTrash()" title="' . dol_escape_htmltag($langs->trans('EasyOcrBatchTrash')) . '">';
+	print '<span class="fas fa-trash-alt pictofixedwidth" style="color:#fff"></span>' . $langs->trans('EasyOcrBatchTrash');
+	print ' <span id="eo-batch-trash-badge" class="badge badge-status badge-status9" style="display:none; margin-left:4px; font-size:9px">0</span>';
+	print '</button>';
+	print '</span>';
 	print '</td>';
 	print '</tr>';
 
@@ -801,10 +809,16 @@ var eoBatchI18n = {
   statusCompleted: '<?php echo addslashes($langs->trans('EasyOcrBatchStatusCompleted')); ?>',
   statusFailed: '<?php echo addslashes($langs->trans('EasyOcrBatchStatusFailed')); ?>',
   statusCancelled: '<?php echo addslashes($langs->trans('EasyOcrBatchStatusCancelled')); ?>',
-  statusPartial: '<?php echo addslashes($langs->trans('EasyOcrBatchStatusPartial')); ?>'
+  statusPartial: '<?php echo addslashes($langs->trans('EasyOcrBatchStatusPartial')); ?>',
+  // Trash / Papelera
+  trash: '<?php echo addslashes($langs->trans('EasyOcrBatchTrash')); ?>',
+  trashConfirm: '<?php echo addslashes($langs->trans('EasyOcrBatchTrashConfirm')); ?>',
+  trashEmpty: '<?php echo addslashes($langs->trans('EasyOcrBatchTrashEmpty')); ?>',
+  backToHistory: '<?php echo addslashes($langs->trans('EasyOcrBatchBackToHistory')); ?>'
 };
 
 var eoBatchCurrentPage = 1;
+var eoBatchTrashMode = false;
 
 function eoBatchStatusBadge(status) {
   var map = {
@@ -847,6 +861,10 @@ function eoBatchLoadList(page) {
   var toFilter = '';
   var sel = document.getElementById('eo-batch-filter-status');
   if (sel) statusFilter = sel.value;
+  // Trash mode overrides status filter
+  if (eoBatchTrashMode) {
+    statusFilter = 'cancelled';
+  }
   var nameEl = document.getElementById('eo-batch-filter-name');
   if (nameEl) nameFilter = nameEl.value.trim();
   var fromEl = document.getElementById('eo-batch-filter-from');
@@ -911,6 +929,8 @@ function eoBatchLoadList(page) {
         var bStatus = b.status || 'pending';
         var bCreated = b.created_at || '';
         var canCancel = (bStatus === 'pending' || bStatus === 'processing');
+        var isCancelled = (bStatus === 'cancelled');
+        var canTrash = !isCancelled; // All non-cancelled batches can be sent to trash
 
         // Progress display
         var progressHtml = '';
@@ -931,7 +951,11 @@ function eoBatchLoadList(page) {
           docsHtml += ' <span class="badge badge-status badge-status8" style="font-size:9px" title="' + eoBatchI18n.failedDocs + '">' + failedDocs + ' <span class="fas fa-times"></span></span>';
         }
 
-        html += '<tr class="oddeven">';
+        // Row class: dimmed for cancelled batches in normal view
+        var rowClass = 'oddeven';
+        if (isCancelled && !eoBatchTrashMode) rowClass += ' eo-batch-row-cancelled';
+
+        html += '<tr class="' + rowClass + '">';
         html += '<td><a href="#" onclick="eoBatchShowDetail(\'' + batchId + '\'); return false;" class="eo-batch-list-name">';
         html += '<span class="fas fa-layer-group" style="margin-right:6px; color:#8899aa"></span>';
         html += eoBatchEscHtml(bName) + '</a>';
@@ -944,9 +968,15 @@ function eoBatchLoadList(page) {
         html += '<td class="center nowraponall">';
         html += '<a class="button reposition smallpaddingimp" onclick="eoBatchShowDetail(\'' + batchId + '\'); return false;" title="' + eoBatchI18n.view + '">';
         html += '<span class="fas fa-eye"></span></a> ';
-        if (canCancel) {
-          html += '<a class="button reposition smallpaddingimp" onclick="eoBatchCancelBatch(\'' + batchId + '\'); return false;" title="' + eoBatchI18n.cancel + '">';
-          html += '<span class="fas fa-ban" style="color:#bc0000"></span></a>';
+        if (canTrash) {
+          if (canCancel) {
+            // Pending/processing: cancel icon
+            html += '<a class="button reposition smallpaddingimp" onclick="eoBatchCancelBatch(\'' + batchId + '\'); return false;" title="' + eoBatchI18n.cancel + '">';
+            html += '<span class="fas fa-ban" style="color:#bc0000"></span></a> ';
+          }
+          // All non-cancelled: trash icon to send to papelera
+          html += '<a class="button reposition smallpaddingimp" onclick="eoBatchTrashBatch(\'' + batchId + '\'); return false;" title="' + eoBatchI18n.trash + '">';
+          html += '<span class="fas fa-trash-alt" style="color:#fff"></span></a>';
         }
         html += '</td>';
         html += '</tr>';
@@ -1057,6 +1087,8 @@ function eoBatchShowDetail(uuid) {
 
       // Action buttons
       var canCancel = (bStatus === 'pending' || bStatus === 'processing');
+      var isCancelled = (bStatus === 'cancelled');
+      var canTrash = !isCancelled;
       var hasResults = (bStatus === 'completed' || bStatus === 'partial');
       html += '<div class="center" style="margin:12px 0 8px">';
       if (hasResults) {
@@ -1066,6 +1098,10 @@ function eoBatchShowDetail(uuid) {
       if (canCancel) {
         html += '<a class="button" onclick="eoBatchCancelBatch(\'' + batchId + '\'); return false;">';
         html += '<span class="fas fa-ban" style="margin-right:6px; color:#bc0000"></span>' + eoBatchI18n.cancel + '</a> ';
+      }
+      if (canTrash) {
+        html += '<a class="button" onclick="eoBatchTrashBatch(\'' + batchId + '\'); return false;">';
+        html += '<span class="fas fa-trash-alt" style="margin-right:6px; color:#fff"></span>' + eoBatchI18n.trash + '</a> ';
       }
       html += '<a class="button" onclick="eoBatchCloseDetail(); return false;">';
       html += '<span class="fas fa-times" style="margin-right:6px"></span>' + eoBatchI18n.close + '</a>';
@@ -1623,6 +1659,7 @@ function eoBatchCancelBatch(uuid) {
         // Reload list
         eoBatchLoadList(eoBatchCurrentPage);
         eoBatchCloseDetail();
+        eoBatchUpdateTrashBadge();
       } else {
         alert(res.message || eoBatchI18n.errorLoading);
       }
@@ -1638,10 +1675,88 @@ function eoBatchCloseDetail() {
   if (overlay) overlay.style.display = 'none';
 }
 
+// ─── Trash / Papelera functions ─────────────────────────────────────────
+
+function eoBatchTrashBatch(uuid) {
+  if (!confirm(eoBatchI18n.trashConfirm)) return;
+
+  jQuery.ajax({
+    url: eoBatchAjaxUrl,
+    type: 'POST',
+    data: { action: 'batchCancel', uuid: uuid },
+    dataType: 'json',
+    success: function(res) {
+      if (res.status === 'ok') {
+        eoBatchLoadList(eoBatchCurrentPage);
+        eoBatchCloseDetail();
+        eoBatchUpdateTrashBadge();
+      } else {
+        alert(res.message || eoBatchI18n.errorLoading);
+      }
+    },
+    error: function() {
+      alert(eoBatchI18n.errorLoading);
+    }
+  });
+}
+
+function eoBatchToggleTrash() {
+  eoBatchTrashMode = !eoBatchTrashMode;
+  var btn = document.getElementById('eo-batch-trash-toggle');
+  var sel = document.getElementById('eo-batch-filter-status');
+
+  if (eoBatchTrashMode) {
+    // Activate trash mode
+    if (btn) {
+      btn.classList.add('butActionDelete');
+      btn.classList.remove('button');
+    }
+    if (sel) {
+      sel.value = 'cancelled';
+      sel.disabled = true;
+    }
+  } else {
+    // Deactivate trash mode
+    if (btn) {
+      btn.classList.remove('butActionDelete');
+      btn.classList.add('button');
+    }
+    if (sel) {
+      sel.value = '';
+      sel.disabled = false;
+    }
+  }
+
+  eoBatchLoadList(1);
+}
+
+function eoBatchUpdateTrashBadge() {
+  jQuery.ajax({
+    url: eoBatchAjaxUrl,
+    type: 'POST',
+    data: { action: 'batchList', page: 1, per_page: 1, status: 'cancelled' },
+    dataType: 'json',
+    success: function(res) {
+      var badge = document.getElementById('eo-batch-trash-badge');
+      if (!badge) return;
+      if (res.status === 'ok' && res.data) {
+        var total = res.data.total || 0;
+        if (total > 0) {
+          badge.textContent = total;
+          badge.style.display = 'inline';
+        } else {
+          badge.style.display = 'none';
+        }
+      }
+    }
+  });
+}
+
 // Auto-load batch list on page load if on list tab
 <?php if ($activeTab == 'list' && $canBatch) { ?>
 jQuery(document).ready(function() {
   eoBatchLoadList(1);
+  eoBatchUpdateTrashBadge();
 });
 <?php } ?>
 

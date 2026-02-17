@@ -12,6 +12,11 @@ CREATE TABLE llx_easyocr_webhook_log (
     document_status VARCHAR(32)  DEFAULT NULL,
     batch_status    VARCHAR(32)  DEFAULT NULL,
     batch_progress  INTEGER      DEFAULT 0,
+    invoice_id      INTEGER      DEFAULT NULL,
+    invoice_ref     VARCHAR(128) DEFAULT NULL,
+    supplier_id     INTEGER      DEFAULT NULL,
+    processing_status VARCHAR(32) DEFAULT NULL,
+    processing_message TEXT       DEFAULT NULL,
     payload         MEDIUMTEXT,
     datec           DATETIME     DEFAULT NULL
 ) ENGINE=InnoDB;

@@ -2713,3 +2713,20 @@ textarea.eo-ai-field-input {
   .eo-ai-footer-btns .eo-btn { width: 100%; justify-content: center; }
   .eo-ai-payment-opts { flex-direction: column; }
 }
+
+/* ─── Batch Trash / Papelera ─── */
+.eo-batch-row-cancelled {
+  opacity: 0.5;
+}
+.eo-batch-row-cancelled td a.eo-batch-list-name {
+  text-decoration: line-through;
+  color: #888 !important;
+}
+#eo-batch-trash-toggle.butActionDelete {
+  background: #bc0000;
+  color: #fff !important;
+  border-color: #a00;
+}
+#eo-batch-trash-toggle.butActionDelete .fas {
+  color: #fff !important;
+}

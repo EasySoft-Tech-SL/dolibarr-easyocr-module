@@ -1752,6 +1752,10 @@ const EasyOcr = (function () {
         if (fillEl) fillEl.style.width = '0%';
         if (textEl) textEl.textContent = L.aiStarting || 'Iniciando...';
 
+        // Start simulated progress immediately as fallback
+        // (will be replaced by real SSE events if streaming works)
+        startSimulatedProgress(fillEl, textEl);
+
         // POST to PHP SSE proxy — same origin, no CORS issues
         var formData = new FormData();
         formData.append('action', 'aiOcrStream');
@@ -1761,6 +1765,8 @@ const EasyOcr = (function () {
             formData.append('custom_instructions', state.customInstructions);
         }
 
+        var gotRealEvent = false;
+
         fetch('ajax/ajax_easyocr.php', {
             method: 'POST',
             body: formData
@@ -1768,8 +1774,15 @@ const EasyOcr = (function () {
             if (!response.ok) {
                 throw new Error('HTTP ' + response.status);
             }
-            return readSSEStream(response, fillEl, textEl);
+            return readSSEStream(response, fillEl, textEl, function() {
+                // Called on first real SSE event — stop simulated progress
+                if (!gotRealEvent) {
+                    gotRealEvent = true;
+                    stopSimulatedProgress();
+                }
+            });
         }).then(function (resultData) {
+            stopSimulatedProgress();
             resetAIProgress();
             if (resultData) {
                 state.aiResult = resultData;
@@ -1780,13 +1793,14 @@ const EasyOcr = (function () {
             }
         }).catch(function (err) {
             console.warn('SSE stream error, falling back to classic:', err.message);
+            stopSimulatedProgress();
             resetAIProgress();
             runAIOcrClassic(base64);
         });
     }
 
     /* ---------- SSE parser — handles both "event: x" and "event:x" ---------- */
-    function readSSEStream(response, fillEl, textEl) {
+    function readSSEStream(response, fillEl, textEl, onFirstEvent) {
         return new Promise(function (resolve, reject) {
             var reader = response.body.getReader();
             var decoder = new TextDecoder();
@@ -1812,6 +1826,8 @@ const EasyOcr = (function () {
                         var eventType = '', dataLines = [];
                         for (var j = 0; j < lines.length; j++) {
                             var line = lines[j];
+                            // Skip SSE comments (lines starting with ':')
+                            if (line.indexOf(':') === 0 && line.indexOf('data:') !== 0) continue;
                             // Handle "event: x" or "event:x"
                             if (line.indexOf('event:') === 0) {
                                 eventType = line.substring(6).trim();
@@ -1824,6 +1840,9 @@ const EasyOcr = (function () {
 
                         try { var data = JSON.parse(eventData); }
                         catch (e) { continue; }
+
+                        // Notify caller on first real event (stops simulated progress)
+                        if (onFirstEvent) { onFirstEvent(); onFirstEvent = null; }
 
                         if (eventType === 'progress') {
                             if (fillEl) fillEl.style.width = (data.percent || 0) + '%';
@@ -1889,15 +1908,19 @@ const EasyOcr = (function () {
 
     /* ---------- Simulated progress for classic AJAX ---------- */
     function startSimulatedProgress(fillEl, textEl) {
+        // Simulated steps aligned with typical OCR processing times (~12-15s)
         var steps = [
-            { pct: 5,  msg: L.aiStarting || 'Enviando archivo...', delay: 500  },
-            { pct: 15, msg: 'Validando documento...',              delay: 2000 },
-            { pct: 25, msg: 'Extrayendo texto (OCR)...',           delay: 4000 },
-            { pct: 40, msg: 'Procesando páginas...',               delay: 7000 },
-            { pct: 55, msg: 'OCR completado...',                   delay: 10000 },
-            { pct: 65, msg: 'Estructurando datos con IA...',       delay: 13000 },
-            { pct: 80, msg: 'Finalizando análisis...',             delay: 18000 },
-            { pct: 90, msg: 'Casi listo...',                       delay: 25000 }
+            { pct: 5,  msg: L.aiStarting || 'Enviando archivo...',      delay: 300   },
+            { pct: 10, msg: 'Validando documento...',                    delay: 1500  },
+            { pct: 20, msg: 'Extrayendo texto (OCR)...',                 delay: 2500  },
+            { pct: 35, msg: 'Procesando páginas...',                     delay: 4000  },
+            { pct: 50, msg: 'OCR completado...',                         delay: 6000  },
+            { pct: 65, msg: 'Estructurando datos con IA...',             delay: 7500  },
+            { pct: 75, msg: 'Analizando campos...',                      delay: 10000 },
+            { pct: 85, msg: 'Finalizando análisis...',                   delay: 13000 },
+            { pct: 90, msg: 'Casi listo...',                             delay: 17000 },
+            { pct: 93, msg: 'Verificando resultados...',                 delay: 22000 },
+            { pct: 95, msg: 'Un momento más...',                         delay: 30000 }
         ];
         state._simTimers = [];
         for (var i = 0; i < steps.length; i++) {
