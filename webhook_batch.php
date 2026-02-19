@@ -20,41 +20,39 @@
  * URL format: webhook_batch.php?instance_id={unique_id}
  * - instance_id: Dolibarr instance unique identifier for security validation
  *
- * Expected payload format (JSON POST body):
+ * Real payload format sent by EasyOCR API (JSON POST body):
  * {
  *   "event": "batch.document.completed" | "batch.completed" | "batch.document.failed",
- *   "batch_id": "uuid-string",
- *   "document": {                          // (present on document events)
+ *   "timestamp": "2026-02-19T09:18:18+01:00",
+ *   "data": {                              // document info is inside 'data', not 'document'
  *     "document_id": "uuid",
  *     "filename": "factura.pdf",
  *     "status": "completed" | "failed",
- *     "pages": 2,
- *     "structured_data": { ... },
- *     "extracted_text": "..."
- *   },
- *   "batch": {
- *     "batch_id": "uuid",
- *     "name": "Facturas Enero",
- *     "status": "processing" | "completed" | "partial" | "failed",
- *     "total_documents": 10,
- *     "completed_documents": 5,
- *     "failed_documents": 0,
- *     "progress": 50
- *   },
- *   "timestamp": "2026-02-16T12:00:00Z"
+ *     "page_count": 2,
+ *     "ocr_confidence": 1,
+ *     "processing_time_ms": 11004,
+ *     "structured_data": {
+ *       "document_type": "invoice",
+ *       "document_number": "B3186006",
+ *       "issue_date": "2026-01-31",
+ *       "due_date": null,
+ *       "currency": "EUR",
+ *       "supplier": { "name": "...", "tax_id": "...", "address": "...", ... },
+ *       "customer": { ... },
+ *       "items": [ ... ],
+ *       "totals": { "net_subtotal": 0, "tax_total": 0, "total_payable": 0, ... }
+ *     },
+ *     "original_document": {               // optional, when enabled on the batch
+ *       "filename": "factura.pdf",
+ *       "mime_type": "application/pdf",
+ *       "size_bytes": 123456,
+ *       "base64": "JVBERi0x..."            // decoded and attached to the invoice
+ *     }
+ *   }
  * }
  *
- * Optional fields (when include_original_document is enabled on the batch):
- *   document.original_document: {
- *     filename: "factura.pdf",
- *     mime_type: "application/pdf",
- *     size_bytes: 123456,
- *     base64: "JVBERi0x..."   <- decoded and attached to the created invoice
- *   }
- *
+ * NOTE: $payload['data'] is mapped to $document for backwards compatibility.
  * NOTE: base64 content is stripped from logs/DB storage to avoid bloating.
- * NOTE: The exact payload structure depends on the EasyOCR API implementation.
- * This receiver is designed to be flexible and will store whatever it receives.
  */
 
 // Dolibarr context — no session, no menu, no CSRF
@@ -268,8 +266,14 @@ $logLine = date('H:i:s') . ' | ' . json_encode($logEntry, JSON_UNESCAPED_UNICODE
 
 // ─── Extract key data from payload ───────────────────────────────────────
 $event    = isset($payload['event']) ? $payload['event'] : '';
-$batchId  = isset($payload['batch_id']) ? $payload['batch_id'] : (isset($payload['batch']['batch_id']) ? $payload['batch']['batch_id'] : '');
+$batchId  = isset($payload['batch_id']) ? $payload['batch_id']
+		  : (isset($payload['batch']['batch_id']) ? $payload['batch']['batch_id']
+		  : (isset($payload['data']['batch_id']) ? $payload['data']['batch_id'] : ''));
 $document = isset($payload['document']) ? $payload['document'] : null;
+// Fallback: API sends document info inside 'data', not 'document'
+if (empty($document) && isset($payload['data']) && is_array($payload['data'])) {
+	$document = $payload['data'];
+}
 $batch    = isset($payload['batch']) ? $payload['batch'] : null;
 
 // DEBUG: Log extracted fields
@@ -348,7 +352,7 @@ if ($_condEvent && $_condDoc && $_condStat) {
 				'invoice_status'   => '', // Use module config default
 				'invoice_type'     => 0,
 				'journal_code'     => '',
-				'import_key'       => 'easyocr-webhook',
+				'import_key'       => 'easyocr-wh',
 				'create_payment'   => '',
 				'payment_bank_id'  => 0,
 				'payment_type_id'  => 0,
@@ -360,6 +364,9 @@ if ($_condEvent && $_condDoc && $_condStat) {
 			$originalDoc = null;
 			if (isset($document['original_document']) && !empty($document['original_document']['base64'])) {
 				$originalDoc = $document['original_document'];
+			} elseif (isset($payload['data']['original_document']) && !empty($payload['data']['original_document']['base64'])) {
+				// API sends original_document inside data{}, not inside document{}
+				$originalDoc = $payload['data']['original_document'];
 			} elseif (isset($payload['original_document']) && !empty($payload['original_document']['base64'])) {
 				$originalDoc = $payload['original_document'];
 			}

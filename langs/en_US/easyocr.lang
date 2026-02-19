@@ -583,7 +583,14 @@ EasyOcrBatchIncludeText = Include extracted text
 EasyOcrBatchIncludeTextDesc = Adds the extracted_text field in the webhook. Increases token consumption.
 EasyOcrBatchAutoCorrect = Auto-correction
 EasyOcrBatchAutoCorrectDesc = Automatically corrects errors in structured data (amounts, dates, etc.).
-EasyOcrBatchWebhookHint = You will receive a POST notification when the batch is complete.EasyOcrBatchWebhookAutoHint = Auto-generated URL. Points to the module webhook receiver.EasyOcrBatchUpgradePlan = Feature not available on your current plan
+EasyOcrBatchWebhookHint = You will receive a POST notification when the batch is complete.
+EasyOcrBatchWebhookAutoHint = Auto-generated URL. Points to the module webhook receiver.
+EasyOcrBatchLanguage = Document language
+EasyOcrBatchLanguagePlaceholder = es, en, fr...
+EasyOcrBatchLanguageHint = ISO code of the document's primary language (optional).
+EasyOcrBatchTemplateSelect = Supplier template
+EasyOcrBatchTemplateSelectHint = — Select template —
+EasyOcrBatchUpgradePlan = Feature not available on your current plan
 EasyOcrBatchQuotaInfo = Usage & quota
 EasyOcrBatchFromPlan = From plan
 EasyOcrBatchMaxPerBatch = Max per batch

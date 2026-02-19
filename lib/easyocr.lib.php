@@ -313,6 +313,34 @@ function easyocrCreateInvoiceFromOCR($params, $userObj = null)
 
 	dol_syslog('EasyOCR-CREATE: Params — fk_soc=' . $fk_soc . ', ref_supplier=' . $ref_supplier . ', supplier_name=' . $supplier_name . ', supplier_tax_id=' . $supplier_tax_id . ', datef=' . $datef_str . ', total_ht=' . $total_ht_str . ', total_ttc=' . $total_ttc_str . ', items=' . (is_array($items) ? count($items) : 'N/A'), LOG_INFO);
 
+	// ── Advisory lock to prevent race condition on concurrent webhooks ──
+	// Serializes BOTH supplier search/creation AND invoice duplicate check.
+	// When a batch sends multiple webhooks simultaneously, without this lock
+	// two requests could both (a) create the same supplier and/or (b) pass
+	// the duplicate invoice check before either commits.
+	$lockKey = '';
+	if (!empty($supplier_tax_id)) {
+		$lockKey = strtoupper(preg_replace('/[\s\-\.]/', '', trim($supplier_tax_id)));
+	} elseif (!empty($fk_soc)) {
+		$lockKey = 'soc_' . ((int) $fk_soc);
+	}
+	$lockName = 'eo_' . ($lockKey !== '' ? substr(md5($lockKey), 0, 30) : 'global');
+	$lockTimeout = 30; // seconds
+	$lockAcquired = false;
+	if (!empty($lockKey)) {
+		$sqlLock = "SELECT GET_LOCK('" . $db->escape($lockName) . "', " . ((int) $lockTimeout) . ")";
+		$resLock = $db->query($sqlLock);
+		if ($resLock) {
+			$objLock = $db->fetch_array($resLock);
+			if (isset($objLock[0]) && $objLock[0] == 1) {
+				$lockAcquired = true;
+			}
+		}
+		if (!$lockAcquired) {
+			dol_syslog('EasyOCR-CREATE: WARNING — Could not acquire advisory lock "' . $lockName . '", proceeding without lock', LOG_WARNING);
+		}
+	}
+
 	// ── Resolve supplier if fk_soc not provided ─────────────────────────
 	if (empty($fk_soc) && !empty($supplier_tax_id)) {
 		$cif_clean = preg_replace('/[\s\-\.]/', '', trim($supplier_tax_id));
@@ -400,7 +428,7 @@ function easyocrCreateInvoiceFromOCR($params, $userObj = null)
 			$newSoc->client      = 0;
 			$newSoc->fournisseur = 1;
 			$newSoc->status      = 1;
-			$newSoc->siren       = $supplier_tax_id;
+			$newSoc->idprof1     = $supplier_tax_id;
 
 			$cifUpper = strtoupper($cif_clean);
 			if (preg_match('/^[A-Z]{2}/', $cifUpper)) {
@@ -454,6 +482,7 @@ function easyocrCreateInvoiceFromOCR($params, $userObj = null)
 				if (!empty($db->lasterror())) {
 					$errorDetails[] = "DB: " . $db->lasterror();
 				}
+				if ($lockAcquired) $db->query("SELECT RELEASE_LOCK('" . $db->escape($lockName) . "')");
 				return ['status' => 'error', 'message' => 'Error creating supplier. ' . implode(' | ', $errorDetails)];
 			}
 		}
@@ -463,6 +492,7 @@ function easyocrCreateInvoiceFromOCR($params, $userObj = null)
 	if (empty($fk_soc)) {
 		$msg = is_object($langs) ? $langs->trans('EasyOcrAISupplierRequired') : 'Supplier required';
 		dol_syslog('EasyOCR-CREATE: ERROR — No supplier resolved. tax_id=' . $supplier_tax_id . ', name=' . $supplier_name, LOG_ERR);
+		if ($lockAcquired) $db->query("SELECT RELEASE_LOCK('" . $db->escape($lockName) . "')");
 		return ['status' => 'error', 'message' => $msg];
 	}
 	dol_syslog('EasyOCR-CREATE: Supplier resolved — fk_soc=' . $fk_soc . ', created=' . ($supplier_created ? 'YES' : 'NO'), LOG_INFO);
@@ -485,6 +515,7 @@ function easyocrCreateInvoiceFromOCR($params, $userObj = null)
 			$existingObj = $db->fetch_object($resql_check);
 			$msg = is_object($langs) ? $langs->trans('EasyOcrDuplicateRefSupplier', $ref_supplier, $existingObj->ref) : 'Duplicate ref_supplier: ' . $ref_supplier . ' (existing: ' . $existingObj->ref . ')';
 			dol_syslog('EasyOCR-CREATE: DUPLICATE ref_supplier=' . $ref_supplier . ' for fk_soc=' . $fk_soc . ' => existing id=' . $existingObj->rowid . ' ref=' . $existingObj->ref, LOG_WARNING);
+			if ($lockAcquired) $db->query("SELECT RELEASE_LOCK('" . $db->escape($lockName) . "')");
 			return [
 				'status' => 'repeat',
 				'message' => $msg,
@@ -505,13 +536,14 @@ function easyocrCreateInvoiceFromOCR($params, $userObj = null)
 		$sql_dup2 .= " WHERE fk_soc = " . ((int) $fk_soc);
 		$sql_dup2 .= " AND total_ttc = " . ((float) $total_ttc);
 		$sql_dup2 .= " AND datef = '" . $db->escape($datef_str) . "'";
-		$sql_dup2 .= " AND import_key IN ('easyocr-ai', 'easyocr-webhook')";
+		$sql_dup2 .= " AND import_key IN ('easyocr-ai', 'easyocr-wh')";
 		$sql_dup2 .= " AND entity IN (" . getEntity('supplier_invoice') . ")";
 		$resql_dup2 = $db->query($sql_dup2);
 		if ($resql_dup2 && $db->num_rows($resql_dup2) > 0) {
 			$existingObj2 = $db->fetch_object($resql_dup2);
 			$msg = is_object($langs) ? $langs->trans('EasyOcrDuplicateAmountDate', $existingObj2->ref) : 'Probable duplicate (same supplier + amount + date): ' . $existingObj2->ref;
 			dol_syslog('EasyOCR-CREATE: PROBABLE DUPLICATE by amount+date — fk_soc=' . $fk_soc . ', total_ttc=' . $total_ttc . ', datef=' . $datef_str . ' => existing id=' . $existingObj2->rowid, LOG_WARNING);
+			if ($lockAcquired) $db->query("SELECT RELEASE_LOCK('" . $db->escape($lockName) . "')");
 			return [
 				'status' => 'repeat',
 				'message' => $msg,
@@ -579,6 +611,7 @@ function easyocrCreateInvoiceFromOCR($params, $userObj = null)
 	if ($newId <= 0) {
 		$msg = is_object($langs) ? $langs->trans('EasyOcrErrorCreatingInvoice') : 'Error creating invoice';
 		dol_syslog('EasyOCR-CREATE: ERROR creating invoice: ' . $facture->error . ' | errors: ' . implode(', ', $facture->errors ?? []), LOG_ERR);
+		if ($lockAcquired) $db->query("SELECT RELEASE_LOCK('" . $db->escape($lockName) . "')");
 		return ['status' => 'error', 'message' => $msg . ': ' . $facture->error];
 	}
 	dol_syslog('EasyOCR-CREATE: Invoice created OK — id=' . $newId, LOG_INFO);
@@ -764,6 +797,7 @@ function easyocrCreateInvoiceFromOCR($params, $userObj = null)
 				$errMsg .= ' | Line errors: ' . implode('; ', $lineErrors);
 			}
 			dol_syslog('EasyOCR-CREATE: ERROR validating: ' . $errMsg, LOG_ERR);
+			if ($lockAcquired) $db->query("SELECT RELEASE_LOCK('" . $db->escape($lockName) . "')");
 			return ['status' => 'error', 'message' => $errMsg];
 		}
 		$facture->fetch($newId);
@@ -821,6 +855,9 @@ function easyocrCreateInvoiceFromOCR($params, $userObj = null)
 			$paiement->addPaymentToBank($userObj, 'payment_supplier', '(SupplierInvoicePayment)', $payment_bank_id, '', '');
 		}
 	}
+
+	// ── Release advisory lock ────────────────────────────────────────────
+	if ($lockAcquired) $db->query("SELECT RELEASE_LOCK('" . $db->escape($lockName) . "')");
 
 	// ── Return result ────────────────────────────────────────────────────
 	dol_syslog('EasyOCR-CREATE: SUCCESS — id=' . $newId . ', ref=' . $ref . ', fk_soc=' . $fk_soc . ', draft=' . ($invoice_status === 'draft' ? 'YES' : 'NO') . ', line_errors=' . count($lineErrors), LOG_INFO);

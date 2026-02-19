@@ -5,6 +5,25 @@ Todos los cambios notables de EasyOcr se documentarán en este archivo.
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/),
 y este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 
+## [2.3.2] - 2026-02-19
+
+### Añadido
+- **Campo `language` en creación de lotes batch**: Nuevo campo opcional en el sidebar de configuración para especificar el idioma principal del documento (código ISO, ej.: `es`, `en`, `fr`). Se envía a la API en el campo `language` de las opciones del batch.
+- **Campo `custom_instructions` en creación de lotes batch**: Textarea opcional para incluir instrucciones libres a la IA al procesar el lote. Reutiliza las claves de traducción ya existentes del sistema de plantillas.
+- **Selector de plantilla de proveedor en batch**: Si existen plantillas con instrucciones guardadas en BD, aparece un selector desplegable (proveedor — nombre de plantilla) que autorellena el textarea de instrucciones al cambiar la selección. Datos inyectados como JSON en la página para autocompletado sin petición AJAX adicional.
+- **Feature flag `custom_instructions`**: Los campos de idioma e instrucciones se muestran deshabilitados con icono de aviso si el plan activo no incluye la característica `custom_instructions`.
+
+### Corregido
+- **Bug crítico: creación de proveedores duplicados en webhook** (`lib/easyocr.lib.php`): El campo `siren` de la societe se asignaba con `->siren` en lugar de `->idprof1`, lo que impedía que el NIF/CIF se guardara en BD y causaba que cada webhook creara un proveedor nuevo en vez de reutilizar el existente.
+- **Advisory lock reposicionado** (`lib/easyocr.lib.php`): El `GET_LOCK()` por CIF se movída después de la búsqueda del proveedor; ahora se adquiere antes, eliminando la condición de carrera en procesamiento concurrente de facturas del mismo proveedor.
+- **`import_key` truncada** (`lib/easyocr.lib.php`, `webhook_batch.php`): El valor `'easyocr-webhook'` (16 chars) superaba el límite `VARCHAR(14)` de la columna, silenciando la comprobación de duplicados. Cambiado a `'easyocr-wh'` (10 chars).
+- **`$document` null en webhook** (`webhook_batch.php`): La API envía el payload en `data{}` y no en `document{}`. Añadido fallback: si `$payload['document']` está vacío se usa `$payload['data']`.
+- **`;` faltante** (`batch.php`): Punto y coma ausente en `print '</td></tr>'` que habría causado un fatal error PHP en la carga de la página.
+
+### Traducciones
+- Añadidas claves `EasyOcrBatchLanguage`, `EasyOcrBatchLanguagePlaceholder`, `EasyOcrBatchLanguageHint`, `EasyOcrBatchTemplateSelect` y `EasyOcrBatchTemplateSelectHint` en los 8 idiomas (es, en, fr, de, ca, gl, pt, it).
+- Corregido formato de líneas fusionadas en `en_US/easyocr.lang` e `it_IT/easyocr.lang`.
+
 ## [2.3.1] - 2026-02-16
 
 ### Añadido

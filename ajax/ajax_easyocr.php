@@ -1210,6 +1210,12 @@ if ($action == "newInvoice") {
 
 	$webhookUrl = GETPOST('webhook_url', 'alpha');
 	if (!empty($webhookUrl)) $options['webhook_url'] = $webhookUrl;
+
+	$language = GETPOST('language', 'atohtml');
+	if (!empty($language)) $options['language'] = $language;
+
+	$customInstructions = GETPOST('custom_instructions', 'restricthtml');
+	if (!empty($customInstructions)) $options['custom_instructions'] = $customInstructions;
 	/* var_dump($options);
 	die(); */
 	try {
