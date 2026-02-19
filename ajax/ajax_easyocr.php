@@ -119,21 +119,25 @@ if ($action == "newInvoice") {
 	// Optional: due date from OCR
 	$date_echeance_str = GETPOST("date_echeance", "alphanohtml");
 
-	// Verificar duplicado por ref_supplier + proveedor
-	$sql_check = "SELECT rowid, ref FROM " . MAIN_DB_PREFIX . "facture_fourn";
-	$sql_check .= " WHERE ref_supplier = '" . $db->escape($ref_supplier) . "'";
-	$sql_check .= " AND fk_soc = " . ((int) $fk_soc);
-	$sql_check .= " AND entity IN (" . getEntity('supplier_invoice') . ")";
-	$resql_check = $db->query($sql_check);
-	if ($resql_check && $db->num_rows($resql_check) > 0) {
-		$existingObj = $db->fetch_object($resql_check);
-		print json_encode([
-			"status" => "repeat",
-			"existing_id" => $existingObj->rowid,
-			"existing_ref" => $existingObj->ref,
-			"existing_ref_supplier" => $ref_supplier
-		]);
-		exit;
+	// Verificar duplicado por ref_supplier + proveedor (normalizado: trim + case-insensitive)
+	if (!empty($ref_supplier)) {
+		$ref_clean_check = trim($ref_supplier);
+		$sql_check = "SELECT rowid, ref, ref_supplier FROM " . MAIN_DB_PREFIX . "facture_fourn";
+		$sql_check .= " WHERE UPPER(TRIM(ref_supplier)) = UPPER('" . $db->escape($ref_clean_check) . "')";
+		$sql_check .= " AND fk_soc = " . ((int) $fk_soc);
+		$sql_check .= " AND entity IN (" . getEntity('supplier_invoice') . ")";
+		$resql_check = $db->query($sql_check);
+		if ($resql_check && $db->num_rows($resql_check) > 0) {
+			$existingObj = $db->fetch_object($resql_check);
+			print json_encode([
+				"status" => "repeat",
+				"message" => $langs->trans('EasyOcrDuplicateRefSupplier', $ref_supplier, $existingObj->ref),
+				"existing_id" => $existingObj->rowid,
+				"existing_ref" => $existingObj->ref,
+				"existing_ref_supplier" => $existingObj->ref_supplier
+			]);
+			exit;
+		}
 	}
 
 	// Crear factura usando el objeto nativo

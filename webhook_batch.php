@@ -44,6 +44,15 @@
  *   "timestamp": "2026-02-16T12:00:00Z"
  * }
  *
+ * Optional fields (when include_original_document is enabled on the batch):
+ *   document.original_document: {
+ *     filename: "factura.pdf",
+ *     mime_type: "application/pdf",
+ *     size_bytes: 123456,
+ *     base64: "JVBERi0x..."   <- decoded and attached to the created invoice
+ *   }
+ *
+ * NOTE: base64 content is stripped from logs/DB storage to avoid bloating.
  * NOTE: The exact payload structure depends on the EasyOCR API implementation.
  * This receiver is designed to be flexible and will store whatever it receives.
  */
@@ -90,6 +99,29 @@ if (!@is_dir($debugDir)) {
 // Read raw body
 $rawBody = file_get_contents('php://input');
 
+/**
+ * Strip large base64 blobs from a payload array (recursive).
+ * Replaces 'base64' keys and strings over 65000 chars with placeholders,
+ * to avoid bloating logs, debug files and DB storage.
+ */
+function easyocrSanitizePayloadForStorage($data, $depth = 0)
+{
+	if ($depth > 8 || !is_array($data)) return $data;
+	$clean = array();
+	foreach ($data as $key => $value) {
+		if ($key === 'base64' && is_string($value) && strlen($value) > 100) {
+			$clean[$key] = '[base64 stripped, ' . strlen($value) . ' chars ~' . round(strlen($value) * 3 / 4 / 1024) . 'KB]';
+		} elseif (is_array($value)) {
+			$clean[$key] = easyocrSanitizePayloadForStorage($value, $depth + 1);
+		} elseif (is_string($value) && strlen($value) > 65000) {
+			$clean[$key] = substr($value, 0, 500) . '... [truncated, total ' . strlen($value) . ' chars]';
+		} else {
+			$clean[$key] = $value;
+		}
+	}
+	return $clean;
+}
+
 // Collect all input data
 $debugData = array(
 	'timestamp'        => date('Y-m-d H:i:s'),
@@ -106,8 +138,7 @@ $debugData = array(
 		'webhook_secret'  => isset($_SERVER['HTTP_X_WEBHOOK_SECRET']) ? '***present***' : 'not-set',
 		'authorization'   => isset($_SERVER['HTTP_AUTHORIZATION']) ? '***present***' : 'not-set',
 	),
-	'raw_body'         => $rawBody,
-	'raw_body_length'  => strlen($rawBody),
+	// raw_body and raw_body_length are set below after sanitization
 	'parsed_json'      => null,
 	'json_parse_error' => null,
 );
@@ -116,11 +147,17 @@ $debugData = array(
 if (!empty($rawBody)) {
 	$parsedJson = json_decode($rawBody, true);
 	if (json_last_error() === JSON_ERROR_NONE) {
-		$debugData['parsed_json'] = $parsedJson;
+		// Strip base64 blobs from debug storage to avoid huge files
+		$debugData['parsed_json'] = easyocrSanitizePayloadForStorage($parsedJson);
 	} else {
 		$debugData['json_parse_error'] = json_last_error_msg();
 	}
 }
+// Strip base64 from raw_body preview too (PDFs can be several MB)
+$debugData['raw_body'] = (strlen($rawBody) > 2000)
+	? substr($rawBody, 0, 500) . '... [body truncated for debug, total ' . strlen($rawBody) . ' bytes]'
+	: $rawBody;
+$debugData['raw_body_length'] = strlen($rawBody);
 
 // Save debug file with timestamp
 $debugFile = $debugDir . '/webhook_' . date('Y-m-d_His') . '_' . uniqid() . '.json';
@@ -221,7 +258,8 @@ $logEntry = array(
 		'user_agent'      => isset($_SERVER['HTTP_USER_AGENT']) ? $_SERVER['HTTP_USER_AGENT'] : '',
 		'webhook_secret'  => !empty($_SERVER['HTTP_X_WEBHOOK_SECRET']) ? '***set***' : 'not-set',
 	),
-	'payload' => $payload,
+	// Strip base64 blobs — PDFs in base64 can be several MB
+	'payload' => easyocrSanitizePayloadForStorage($payload),
 );
 
 $logFile = $logDir . '/webhook_' . date('Y-m-d') . '.log';
@@ -279,6 +317,7 @@ if ($_condEvent && $_condDoc && $_condStat) {
 		// Log that we're processing the document
 		@file_put_contents($logFile, date('H:i:s') . ' | INFO: Processing completed document: ' . (isset($document['filename']) ? $document['filename'] : 'unknown') . "\n", FILE_APPEND | LOCK_EX);
 		
+		$webhookTempFile = ''; // must be initialized before try so cleanup always works
 		try {
 			// Map structured_data to params format expected by easyocrCreateInvoiceFromOCR
 			$supplier = isset($structuredData['supplier']) ? $structuredData['supplier'] : array();
@@ -315,6 +354,39 @@ if ($_condEvent && $_condDoc && $_condStat) {
 				'payment_type_id'  => 0,
 			);
 
+			// ── Extract original PDF from base64 if present ─────────────────
+			// The API can include the original document encoded in base64
+			// Check both document-level and payload-level paths
+			$originalDoc = null;
+			if (isset($document['original_document']) && !empty($document['original_document']['base64'])) {
+				$originalDoc = $document['original_document'];
+			} elseif (isset($payload['original_document']) && !empty($payload['original_document']['base64'])) {
+				$originalDoc = $payload['original_document'];
+			}
+
+			if (!empty($originalDoc)) {
+				$pdfData = base64_decode($originalDoc['base64'], true);
+				if ($pdfData !== false && strlen($pdfData) > 0) {
+					// Save to temp file
+					$tempDir = DOL_DATA_ROOT . '/easyocr/temp';
+					if (!@is_dir($tempDir)) {
+						@mkdir($tempDir, 0755, true);
+					}
+					$origFilename = !empty($originalDoc['filename']) ? $originalDoc['filename'] : (!empty($document['filename']) ? $document['filename'] : 'document.pdf');
+					$webhookTempFile = $tempDir . '/webhook_' . date('Ymd_His') . '_' . uniqid() . '_' . dol_sanitizeFileName($origFilename);
+					if (@file_put_contents($webhookTempFile, $pdfData) !== false) {
+						$params['file_tmp_path'] = $webhookTempFile;
+						$params['file_name'] = $origFilename;
+						@file_put_contents($logFile, date('H:i:s') . ' | INFO: Decoded original PDF from base64 (' . strlen($pdfData) . " bytes) => $webhookTempFile\n", FILE_APPEND | LOCK_EX);
+					} else {
+						@file_put_contents($logFile, date('H:i:s') . " | WARNING: Failed to write decoded PDF to temp file\n", FILE_APPEND | LOCK_EX);
+					}
+					unset($pdfData); // Free memory
+				} else {
+					@file_put_contents($logFile, date('H:i:s') . " | WARNING: base64_decode failed for original_document\n", FILE_APPEND | LOCK_EX);
+				}
+			}
+
 			// Log params for debugging
 			@file_put_contents($logFile, date('H:i:s') . ' | DEBUG-PARAMS: ' . json_encode(array(
 				'ref_supplier' => $params['ref_supplier'],
@@ -326,6 +398,8 @@ if ($_condEvent && $_condDoc && $_condStat) {
 				'total_tva' => $params['total_tva'],
 				'items_count' => count($params['items']),
 				'items_sample' => !empty($params['items']) ? array_slice($params['items'], 0, 2) : [],
+				'has_pdf' => !empty($params['file_tmp_path']),
+				'pdf_filename' => isset($params['file_name']) ? $params['file_name'] : '',
 			), JSON_UNESCAPED_UNICODE) . "\n", FILE_APPEND | LOCK_EX);
 
 			// Check globals before calling
@@ -345,6 +419,13 @@ if ($_condEvent && $_condDoc && $_condStat) {
 			
 			if ($webhookProcessingStatus === 'ok') {
 				@file_put_contents($logFile, date('H:i:s') . ' | SUCCESS: Invoice created: ' . $webhookInvoiceId . ' (' . $webhookInvoiceRef . ")\n", FILE_APPEND | LOCK_EX);
+			} elseif ($webhookProcessingStatus === 'repeat') {
+				// Duplicate detected — not an error, just a skip
+				$webhookInvoiceId = isset($webhookResult['existing_id']) ? $webhookResult['existing_id'] : null;
+				$webhookInvoiceRef = isset($webhookResult['existing_ref']) ? $webhookResult['existing_ref'] : null;
+				$webhookSupplierId = isset($webhookResult['supplier_id']) ? $webhookResult['supplier_id'] : null;
+				$webhookProcessingMessage = isset($webhookResult['message']) ? $webhookResult['message'] : 'Duplicate invoice';
+				@file_put_contents($logFile, date('H:i:s') . ' | SKIP-DUPLICATE: ' . $webhookProcessingMessage . ' (existing: ' . $webhookInvoiceRef . ", id=" . $webhookInvoiceId . ")\n", FILE_APPEND | LOCK_EX);
 			} else {
 				@file_put_contents($logFile, date('H:i:s') . ' | ERROR: Processing failed: ' . $webhookProcessingMessage . "\n", FILE_APPEND | LOCK_EX);
 			}
@@ -352,6 +433,11 @@ if ($_condEvent && $_condDoc && $_condStat) {
 			$webhookProcessingStatus = 'error';
 			$webhookProcessingMessage = get_class($e) . ': ' . $e->getMessage();
 			@file_put_contents($logFile, date('H:i:s') . ' | EXCEPTION [' . get_class($e) . ']: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine() . "\n", FILE_APPEND | LOCK_EX);
+		}
+
+		// Clean up temp PDF file (already copied to invoice dir by the lib)
+		if (!empty($webhookTempFile) && file_exists($webhookTempFile)) {
+			@unlink($webhookTempFile);
 		}
 	} else {
 		@file_put_contents($logFile, date('H:i:s') . " | WARNING: No structured_data found in webhook payload\n", FILE_APPEND | LOCK_EX);
@@ -382,7 +468,9 @@ if (!isset($db) || !is_object($db)) {
 	$sql .= " " . (!empty($webhookSupplierId) ? (int) $webhookSupplierId : 'NULL') . ",";
 	$sql .= " " . (!empty($webhookProcessingStatus) ? "'" . $db->escape($webhookProcessingStatus) . "'" : 'NULL') . ",";
 	$sql .= " " . (!empty($webhookProcessingMessage) ? "'" . $db->escape($webhookProcessingMessage) . "'" : 'NULL') . ",";
-	$sql .= " '" . $db->escape($rawBody) . "',";
+	// Strip base64 from stored payload — TEXT columns max ~65KB, PDFs in base64 are much larger
+	$payloadForDb = json_encode(easyocrSanitizePayloadForStorage($payload), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+	$sql .= " '" . $db->escape($payloadForDb) . "',";
 	$sql .= " NOW()";
 	$sql .= ")";
 
