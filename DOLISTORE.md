@@ -69,7 +69,7 @@ Herramienta para extracción de datos de facturas PDF y generación automática 
 
 <h3>🤖 Modo IA — Impulsado por <a href="https://easyocr.es" target="_blank">easyocr.es</a></h3>
 
-<blockquote><strong>🆓 El Modo IA incluye un plan gratuito de <strong>10 páginas/mes</strong> — sin registro de tarjeta de crédito, para que puedas probarlo sin coste.</strong> Para volúmenes mayores existen planes de pago desde uso puntual hasta procesamiento masivo. La suscripción se gestiona 100% desde el propio módulo en Dolibarr. <a href="https://easyocr.es" target="_blank">Ver todos los planes en easyocr.es →</a></blockquote>
+<blockquote><strong>🆓 El Modo IA incluye un plan gratuito de <strong>10 páginas/mes</strong> — sin registro de tarjeta de crédito, para que puedas probarlo sin coste.</strong> Para volúmenes mayores existen planes de pago desde uso puntual hasta procesamiento masivo. Regístrate en <a href="https://easyocr.es" target="_blank">easyocr.es</a>, obtén tu clave API y configúrala en el módulo de Dolibarr para empezar. <a href="https://easyocr.es" target="_blank">Ver todos los planes en easyocr.es →</a></blockquote>
 
 <ul>
     <li>🚀 <strong>Procesamiento en lotes</strong>: Sube hasta 200 facturas PDF de una sola vez y procésalas con un clic. Ideal para cierres de mes o altos volúmenes de proveedores.</li>
@@ -177,7 +177,7 @@ Tool for extracting data from PDF invoices and automatically generating supplier
 
 <h3>🤖 AI Mode — Powered by <a href="https://easyocr.es" target="_blank">easyocr.es</a></h3>
 
-<blockquote><strong>🆓 AI Mode includes a free plan with <strong>10 pages/month</strong> — no credit card required, so you can try it at no cost.</strong> For higher volumes, paid plans are available from occasional use to high-volume enterprise processing. The subscription is managed entirely from within the Dolibarr module. <a href="https://easyocr.es" target="_blank">View all plans at easyocr.es →</a></blockquote>
+<blockquote><strong>🆓 AI Mode includes a free plan with <strong>10 pages/month</strong> — no credit card required, so you can try it at no cost.</strong> For higher volumes, paid plans are available from occasional use to high-volume enterprise processing. Register at <a href="https://easyocr.es" target="_blank">easyocr.es</a>, get your API key and configure it in the Dolibarr module to get started. <a href="https://easyocr.es" target="_blank">View all plans at easyocr.es →</a></blockquote>
 
 <ul>
     <li>🚀 <strong>Batch processing</strong>: Upload up to 200 PDF invoices at once and process them in a single click. Perfect for month-end closing or high supplier volumes.</li>
@@ -285,7 +285,7 @@ Automatisez le traitement des factures fournisseur dans Dolibarr grâce à l'OCR
 
 <h3>🤖 Mode IA — Propulsé par <a href="https://easyocr.es" target="_blank">easyocr.es</a></h3>
 
-<blockquote><strong>🆓 Le Mode IA inclut un plan gratuit de <strong>10 pages/mois</strong> — sans carte de crédit, pour tester sans frais.</strong> Pour les volumes plus importants, des plans payants sont disponibles de l'usage ponctuel au traitement massif en entreprise. L'abonnement se gère à 100% depuis le module dans Dolibarr. <a href="https://easyocr.es" target="_blank">Voir tous les plans sur easyocr.es →</a></blockquote>
+<blockquote><strong>🆓 Le Mode IA inclut un plan gratuit de <strong>10 pages/mois</strong> — sans carte de crédit, pour tester sans frais.</strong> Pour les volumes plus importants, des plans payants sont disponibles de l'usage ponctuel au traitement massif en entreprise. Inscrivez-vous sur <a href="https://easyocr.es" target="_blank">easyocr.es</a>, obtenez votre clé API et configurez-la dans le module Dolibarr pour commencer. <a href="https://easyocr.es" target="_blank">Voir tous les plans sur easyocr.es →</a></blockquote>
 
 <ul>
     <li>🚀 <strong>Traitement en lots</strong> : Envoyez jusqu'à 200 factures PDF d'un seul clic. Parfait pour les clôtures mensuelles ou les volumes élevés de fournisseurs.</li>
@@ -394,7 +394,7 @@ Verarbeitung von Lieferantenrechnungen in Dolibarr mit KI-OCR. Kostenloser klass
 
 <h3>🤖 KI-Modus — Betrieben von <a href="https://easyocr.es" target="_blank">easyocr.es</a></h3>
 
-<blockquote><strong>🆓 Der KI-Modus beinhaltet einen kostenlosen Plan mit <strong>10 Seiten/Monat</strong> — ohne Kreditkarte, zum kostenlosen Ausprobieren.</strong> Für höhere Volumen stehen kostenpflichtige Pläne von der gelegentlichen Nutzung bis zur Massenverarbeitung zur Verfügung. Das Abonnement wird vollständig innerhalb des Dolibarr-Moduls verwaltet. <a href="https://easyocr.es" target="_blank">Alle Pläne auf easyocr.es ansehen →</a></blockquote>
+<blockquote><strong>🆓 Der KI-Modus beinhaltet einen kostenlosen Plan mit <strong>10 Seiten/Monat</strong> — ohne Kreditkarte, zum kostenlosen Ausprobieren.</strong> Für höhere Volumen stehen kostenpflichtige Pläne von der gelegentlichen Nutzung bis zur Massenverarbeitung zur Verfügung. Registrieren Sie sich auf <a href="https://easyocr.es" target="_blank">easyocr.es</a>, erhalten Sie Ihren API-Schlüssel und konfigurieren Sie ihn im Dolibarr-Modul. <a href="https://easyocr.es" target="_blank">Alle Pläne auf easyocr.es ansehen →</a></blockquote>
 
 <ul>
     <li>🚀 <strong>Batch-Verarbeitung</strong>: Laden Sie bis zu 200 PDF-Rechnungen auf einmal hoch und verarbeiten Sie sie mit einem Klick. Ideal für Monatsabschlüsse oder hohe Lieferantenvolumen.</li>
@@ -503,7 +503,7 @@ Automatizza l'elaborazione delle fatture fornitori in Dolibarr con OCR basato su
 
 <h3>🤖 Modalità IA — Powered by <a href="https://easyocr.es" target="_blank">easyocr.es</a></h3>
 
-<blockquote><strong>🆓 La Modalità IA include un piano gratuito di <strong>10 pagine/mese</strong> — senza carta di credito, per provare senza costi.</strong> Per volumi maggiori sono disponibili piani a pagamento dall'uso occasionale all'elaborazione massiva enterprise. L'abbonamento si gestisce al 100% dall'interno del modulo in Dolibarr. <a href="https://easyocr.es" target="_blank">Vedi tutti i piani su easyocr.es →</a></blockquote>
+<blockquote><strong>🆓 La Modalità IA include un piano gratuito di <strong>10 pagine/mese</strong> — senza carta di credito, per provare senza costi.</strong> Per volumi maggiori sono disponibili piani a pagamento dall'uso occasionale all'elaborazione massiva enterprise. Registrati su <a href="https://easyocr.es" target="_blank">easyocr.es</a>, ottieni la tua chiave API e configurala nel modulo Dolibarr per iniziare. <a href="https://easyocr.es" target="_blank">Vedi tutti i piani su easyocr.es →</a></blockquote>
 
 <ul>
     <li>🚀 <strong>Elaborazione in batch</strong>: Carica fino a 200 fatture PDF in una volta sola e processale con un clic. Ideale per chiusure mensili o alti volumi di fornitori.</li>
