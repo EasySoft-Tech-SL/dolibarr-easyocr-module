@@ -48,7 +48,7 @@ Herramienta para extracción de datos de facturas PDF y generación automática 
 
 <p><strong>EasyOcr</strong> es el módulo Dolibarr que elimina la entrada manual de datos en facturas de proveedor. Sube el PDF, deja que la IA extraiga proveedor, NIF, líneas y totales, y Dolibarr crea la factura validada automáticamente. Sin teclear. Sin errores.</p>
 
-<p>Disponible en <strong>dos modos</strong>: el <strong>Modo Clásico</strong> es completamente gratuito e incluido en el módulo; el <strong>Modo IA</strong> requiere una suscripción activa en <a href="https://easyocr.es" target="_blank"><strong>easyocr.es</strong></a> — consulta los planes disponibles en la web.</p>
+<p>Disponible en <strong>dos modos</strong>: el <strong>Modo Clásico</strong> es completamente gratuito e incluido en el módulo; el <strong>Modo IA</strong> ofrece un <strong>plan gratuito de 10 páginas/mes</strong> para probar sin compromisos, y planes de pago para mayor volumen — consulta todos los planes en <a href="https://easyocr.es" target="_blank"><strong>easyocr.es</strong></a>.</p>
 
 <h3>Comparativa de modos</h3>
 <table>
@@ -69,7 +69,7 @@ Herramienta para extracción de datos de facturas PDF y generación automática 
 
 <h3>🤖 Modo IA — Impulsado por <a href="https://easyocr.es" target="_blank">easyocr.es</a></h3>
 
-<blockquote><strong>⚠️ El Modo IA requiere una suscripción activa en <a href="https://easyocr.es" target="_blank">easyocr.es</a>.</strong> Consulta los planes disponibles — hay opciones desde uso puntual hasta procesamiento masivo. La suscripción se gestiona 100% desde el propio módulo en Dolibarr.</blockquote>
+<blockquote><strong>🆓 El Modo IA incluye un plan gratuito de <strong>10 páginas/mes</strong> — sin registro de tarjeta de crédito, para que puedas probarlo sin coste.</strong> Para volúmenes mayores existen planes de pago desde uso puntual hasta procesamiento masivo. La suscripción se gestiona 100% desde el propio módulo en Dolibarr. <a href="https://easyocr.es" target="_blank">Ver todos los planes en easyocr.es →</a></blockquote>
 
 <ul>
     <li>🚀 <strong>Procesamiento en lotes</strong>: Sube hasta 200 facturas PDF de una sola vez y procésalas con un clic. Ideal para cierres de mes o altos volúmenes de proveedores.</li>
@@ -127,7 +127,7 @@ Herramienta para extracción de datos de facturas PDF y generación automática 
 </ul>
 
 <h3>💰 Precio y licencia</h3>
-<p>El módulo es <strong>gratuito y de código abierto</strong> bajo licencia <strong>GPL v3</strong>. El Modo Clásico no tiene ningún coste adicional. El Modo IA requiere una suscripción en <a href="https://easyocr.es" target="_blank">easyocr.es</a> — hay planes desde uso puntual hasta procesamiento empresarial masivo. <a href="https://easyocr.es" target="_blank">Consulta los planes y precios →</a></p>
+<p>El módulo es <strong>gratuito y de código abierto</strong> bajo licencia <strong>GPL v3</strong>. El Modo Clásico no tiene ningún coste adicional. El Modo IA incluye un <strong>plan gratuito de 10 páginas/mes</strong> para empezar sin coste — no se requiere tarjeta de crédito. Para mayor volumen hay planes de pago desde uso puntual hasta procesamiento empresarial masivo. <a href="https://easyocr.es" target="_blank">Consulta todos los planes y precios en easyocr.es →</a></p>
 
 <h3>✉️ Soporte</h3>
 <p>✉️ <a href="mailto:info@easysoft.es">info@easysoft.es</a>&nbsp;| 🌐 <a href="https://www.easysoft.es" target="_blank">www.easysoft.es</a>&nbsp;| 🤖 <a href="https://easyocr.es" target="_blank">easyocr.es</a></p>
@@ -156,7 +156,7 @@ Tool for extracting data from PDF invoices and automatically generating supplier
 
 <p><strong>EasyOcr</strong> is the Dolibarr module that eliminates manual data entry for supplier invoices. Upload the PDF, let AI extract supplier, VAT number, line items and totals, and Dolibarr automatically creates the validated invoice. No typing. No errors.</p>
 
-<p>Available in <strong>two modes</strong>: <strong>Classic Mode</strong> is completely free and included in the module; <strong>AI Mode</strong> requires an active subscription at <a href="https://easyocr.es" target="_blank"><strong>easyocr.es</strong></a> — check available plans on the website.</p>
+<p>Available in <strong>two modes</strong>: <strong>Classic Mode</strong> is completely free and included in the module; <strong>AI Mode</strong> offers a <strong>free plan with 10 pages/month</strong> to try at no cost, plus paid plans for higher volumes — check all plans at <a href="https://easyocr.es" target="_blank"><strong>easyocr.es</strong></a>.</p>
 
 <h3>Feature Comparison</h3>
 <table>
@@ -177,7 +177,7 @@ Tool for extracting data from PDF invoices and automatically generating supplier
 
 <h3>🤖 AI Mode — Powered by <a href="https://easyocr.es" target="_blank">easyocr.es</a></h3>
 
-<blockquote><strong>⚠️ AI Mode requires an active subscription at <a href="https://easyocr.es" target="_blank">easyocr.es</a>.</strong> Check available plans on the website — options range from occasional use to high-volume enterprise processing. The subscription is managed entirely from within the Dolibarr module.</blockquote>
+<blockquote><strong>🆓 AI Mode includes a free plan with <strong>10 pages/month</strong> — no credit card required, so you can try it at no cost.</strong> For higher volumes, paid plans are available from occasional use to high-volume enterprise processing. The subscription is managed entirely from within the Dolibarr module. <a href="https://easyocr.es" target="_blank">View all plans at easyocr.es →</a></blockquote>
 
 <ul>
     <li>🚀 <strong>Batch processing</strong>: Upload up to 200 PDF invoices at once and process them in a single click. Perfect for month-end closing or high supplier volumes.</li>
@@ -235,7 +235,7 @@ Tool for extracting data from PDF invoices and automatically generating supplier
 </ul>
 
 <h3>💰 Pricing &amp; license</h3>
-<p>The module is <strong>free and open source</strong> under <strong>GPL v3</strong>. Classic Mode has no additional cost. AI Mode requires a subscription at <a href="https://easyocr.es" target="_blank">easyocr.es</a> — plans available from occasional use to high-volume enterprise processing. <a href="https://easyocr.es" target="_blank">Check plans and pricing →</a></p>
+<p>The module is <strong>free and open source</strong> under <strong>GPL v3</strong>. Classic Mode has no additional cost. AI Mode includes a <strong>free plan with 10 pages/month</strong> — no credit card required to get started. For higher volumes, paid plans are available from occasional use to high-volume enterprise processing. <a href="https://easyocr.es" target="_blank">Check all plans and pricing at easyocr.es →</a></p>
 
 <h3>✉️ Support</h3>
 <p>✉️ <a href="mailto:info@easysoft.es">info@easysoft.es</a>&nbsp;| 🌐 <a href="https://www.easysoft.es" target="_blank">www.easysoft.es</a>&nbsp;| 🤖 <a href="https://easyocr.es" target="_blank">easyocr.es</a></p>
@@ -264,7 +264,7 @@ Automatisez le traitement des factures fournisseur dans Dolibarr grâce à l'OCR
 
 <p><strong>EasyOcr</strong> est le module Dolibarr qui supprime la saisie manuelle des données sur les factures fournisseur. Importez le PDF, laissez l'IA extraire fournisseur, numéro TVA, lignes et totaux, et Dolibarr crée automatiquement la facture validée. Sans frappe. Sans erreurs.</p>
 
-<p>Disponible en <strong>deux modes</strong> : le <strong>Mode Classique</strong> est entièrement gratuit et inclus dans le module ; le <strong>Mode IA</strong> nécessite un abonnement actif sur <a href="https://easyocr.es" target="_blank"><strong>easyocr.es</strong></a> — consultez les plans disponibles sur le site.</p>
+<p>Disponible en <strong>deux modes</strong> : le <strong>Mode Classique</strong> est entièrement gratuit et inclus dans le module ; le <strong>Mode IA</strong> propose un <strong>plan gratuit de 10 pages/mois</strong> pour tester sans engagement, plus des plans payants pour les volumes plus importants — consultez tous les plans sur <a href="https://easyocr.es" target="_blank"><strong>easyocr.es</strong></a>.</p>
 
 <h3>Comparatif des modes</h3>
 <table>
@@ -285,7 +285,7 @@ Automatisez le traitement des factures fournisseur dans Dolibarr grâce à l'OCR
 
 <h3>🤖 Mode IA — Propulsé par <a href="https://easyocr.es" target="_blank">easyocr.es</a></h3>
 
-<blockquote><strong>⚠️ Le Mode IA nécessite un abonnement actif sur <a href="https://easyocr.es" target="_blank">easyocr.es</a>.</strong> Consultez les plans disponibles sur le site — des options existent de l'usage ponctuel au traitement massif en entreprise. L'abonnement se gère à 100% depuis le module dans Dolibarr.</blockquote>
+<blockquote><strong>🆓 Le Mode IA inclut un plan gratuit de <strong>10 pages/mois</strong> — sans carte de crédit, pour tester sans frais.</strong> Pour les volumes plus importants, des plans payants sont disponibles de l'usage ponctuel au traitement massif en entreprise. L'abonnement se gère à 100% depuis le module dans Dolibarr. <a href="https://easyocr.es" target="_blank">Voir tous les plans sur easyocr.es →</a></blockquote>
 
 <ul>
     <li>🚀 <strong>Traitement en lots</strong> : Envoyez jusqu'à 200 factures PDF d'un seul clic. Parfait pour les clôtures mensuelles ou les volumes élevés de fournisseurs.</li>
@@ -343,7 +343,7 @@ Automatisez le traitement des factures fournisseur dans Dolibarr grâce à l'OCR
 </ul>
 
 <h3>💰 Prix et licence</h3>
-<p>Le module est <strong>gratuit et open source</strong> sous licence <strong>GPL v3</strong>. Le Mode Classique n'a aucun coût supplémentaire. Le Mode IA nécessite un abonnement sur <a href="https://easyocr.es" target="_blank">easyocr.es</a> — plans disponibles de l'usage ponctuel au traitement massif en entreprise. <a href="https://easyocr.es" target="_blank">Consulter les plans et tarifs →</a></p>
+<p>Le module est <strong>gratuit et open source</strong> sous licence <strong>GPL v3</strong>. Le Mode Classique n'a aucun coût supplémentaire. Le Mode IA inclut un <strong>plan gratuit de 10 pages/mois</strong> — sans carte de crédit pour démarrer. Pour les volumes plus importants, des plans payants sont disponibles de l'usage ponctuel au traitement massif en entreprise. <a href="https://easyocr.es" target="_blank">Consulter tous les plans et tarifs sur easyocr.es →</a></p>
 
 <h3>✉️ Support</h3>
 <p>✉️ <a href="mailto:info@easysoft.es">info@easysoft.es</a>&nbsp;| 🌐 <a href="https://www.easysoft.es" target="_blank">www.easysoft.es</a>&nbsp;| 🤖 <a href="https://easyocr.es" target="_blank">easyocr.es</a></p>
@@ -373,7 +373,7 @@ Verarbeitung von Lieferantenrechnungen in Dolibarr mit KI-OCR. Kostenloser klass
 
 <p><strong>EasyOcr</strong> ist das Dolibarr-Modul, das die manuelle Dateneingabe bei Lieferantenrechnungen eliminiert. Laden Sie das PDF hoch, lassen Sie die KI Lieferant, Steuernummer, Positionen und Summen extrahieren — und Dolibarr erstellt die validierte Rechnung automatisch. Kein Tippen. Keine Fehler.</p>
 
-<p>Verfügbar in <strong>zwei Modi</strong>: Der <strong>Klassische Modus</strong> ist vollständig kostenlos und im Modul enthalten; der <strong>KI-Modus</strong> erfordert ein aktives Abonnement auf <a href="https://easyocr.es" target="_blank"><strong>easyocr.es</strong></a> — verfügbare Pläne auf der Website einsehen.</p>
+<p>Verfügbar in <strong>zwei Modi</strong>: Der <strong>Klassische Modus</strong> ist vollständig kostenlos und im Modul enthalten; der <strong>KI-Modus</strong> bietet einen <strong>kostenlosen Plan mit 10 Seiten/Monat</strong> zum risikofreien Testen, plus kostenpflichtige Pläne für höhere Volumen — alle Pläne auf <a href="https://easyocr.es" target="_blank"><strong>easyocr.es</strong></a> einsehen.</p>
 
 <h3>Funktionsvergleich</h3>
 <table>
@@ -394,7 +394,7 @@ Verarbeitung von Lieferantenrechnungen in Dolibarr mit KI-OCR. Kostenloser klass
 
 <h3>🤖 KI-Modus — Betrieben von <a href="https://easyocr.es" target="_blank">easyocr.es</a></h3>
 
-<blockquote><strong>⚠️ Der KI-Modus erfordert ein aktives Abonnement auf <a href="https://easyocr.es" target="_blank">easyocr.es</a>.</strong> Verfügbare Pläne auf der Website einsehen — Optionen reichen von gelegentlicher Nutzung bis zur unternehmensweiten Massenverarbeitung. Das Abonnement wird vollständig innerhalb des Dolibarr-Moduls verwaltet.</blockquote>
+<blockquote><strong>🆓 Der KI-Modus beinhaltet einen kostenlosen Plan mit <strong>10 Seiten/Monat</strong> — ohne Kreditkarte, zum kostenlosen Ausprobieren.</strong> Für höhere Volumen stehen kostenpflichtige Pläne von der gelegentlichen Nutzung bis zur Massenverarbeitung zur Verfügung. Das Abonnement wird vollständig innerhalb des Dolibarr-Moduls verwaltet. <a href="https://easyocr.es" target="_blank">Alle Pläne auf easyocr.es ansehen →</a></blockquote>
 
 <ul>
     <li>🚀 <strong>Batch-Verarbeitung</strong>: Laden Sie bis zu 200 PDF-Rechnungen auf einmal hoch und verarbeiten Sie sie mit einem Klick. Ideal für Monatsabschlüsse oder hohe Lieferantenvolumen.</li>
@@ -452,7 +452,7 @@ Verarbeitung von Lieferantenrechnungen in Dolibarr mit KI-OCR. Kostenloser klass
 </ul>
 
 <h3>💰 Preis und Lizenz</h3>
-<p>Das Modul ist <strong>kostenlos und Open Source</strong> unter der <strong>GPL v3</strong>-Lizenz. Der Klassische Modus hat keine Zusatzkosten. Der KI-Modus erfordert ein Abonnement auf <a href="https://easyocr.es" target="_blank">easyocr.es</a> — Pläne von der gelegentlichen Nutzung bis zur unternehmensweiten Massenverarbeitung. <a href="https://easyocr.es" target="_blank">Pläne und Preise ansehen →</a></p>
+<p>Das Modul ist <strong>kostenlos und Open Source</strong> unter der <strong>GPL v3</strong>-Lizenz. Der Klassische Modus hat keine Zusatzkosten. Der KI-Modus beinhaltet einen <strong>kostenlosen Plan mit 10 Seiten/Monat</strong> — keine Kreditkarte erforderlich. Für höhere Volumen stehen kostenpflichtige Pläne von der gelegentlichen Nutzung bis zur unternehmensweiten Massenverarbeitung zur Verfügung. <a href="https://easyocr.es" target="_blank">Alle Pläne und Preise auf easyocr.es ansehen →</a></p>
 
 <h3>✉️ Support</h3>
 <p>✉️ <a href="mailto:info@easysoft.es">info@easysoft.es</a>&nbsp;| 🌐 <a href="https://www.easysoft.es" target="_blank">www.easysoft.es</a>&nbsp;| 🤖 <a href="https://easyocr.es" target="_blank">easyocr.es</a></p>
@@ -482,7 +482,7 @@ Automatizza l'elaborazione delle fatture fornitori in Dolibarr con OCR basato su
 
 <p><strong>EasyOcr</strong> è il modulo Dolibarr che elimina l'inserimento manuale dei dati nelle fatture fornitori. Carica il PDF, lascia che l'IA estragga fornitore, partita IVA, righe e totali — e Dolibarr crea automaticamente la fattura validata. Senza digitare. Senza errori.</p>
 
-<p>Disponibile in <strong>due modalità</strong>: la <strong>Modalità Classica</strong> è completamente gratuita e inclusa nel modulo; la <strong>Modalità IA</strong> richiede un abbonamento attivo su <a href="https://easyocr.es" target="_blank"><strong>easyocr.es</strong></a> — consulta i piani disponibili sul sito.</p>
+<p>Disponibile in <strong>due modalità</strong>: la <strong>Modalità Classica</strong> è completamente gratuita e inclusa nel modulo; la <strong>Modalità IA</strong> offre un <strong>piano gratuito di 10 pagine/mese</strong> per provare senza impegno, più piani a pagamento per volumi maggiori — consulta tutti i piani su <a href="https://easyocr.es" target="_blank"><strong>easyocr.es</strong></a>.</p>
 
 <h3>Confronto tra modalità</h3>
 <table>
@@ -503,7 +503,7 @@ Automatizza l'elaborazione delle fatture fornitori in Dolibarr con OCR basato su
 
 <h3>🤖 Modalità IA — Powered by <a href="https://easyocr.es" target="_blank">easyocr.es</a></h3>
 
-<blockquote><strong>⚠️ La Modalità IA richiede un abbonamento attivo su <a href="https://easyocr.es" target="_blank">easyocr.es</a>.</strong> Consulta i piani disponibili sul sito — opzioni dall'uso occasionale all'elaborazione massiva enterprise. L'abbonamento si gestisce al 100% dall'interno del modulo in Dolibarr.</blockquote>
+<blockquote><strong>🆓 La Modalità IA include un piano gratuito di <strong>10 pagine/mese</strong> — senza carta di credito, per provare senza costi.</strong> Per volumi maggiori sono disponibili piani a pagamento dall'uso occasionale all'elaborazione massiva enterprise. L'abbonamento si gestisce al 100% dall'interno del modulo in Dolibarr. <a href="https://easyocr.es" target="_blank">Vedi tutti i piani su easyocr.es →</a></blockquote>
 
 <ul>
     <li>🚀 <strong>Elaborazione in batch</strong>: Carica fino a 200 fatture PDF in una volta sola e processale con un clic. Ideale per chiusure mensili o alti volumi di fornitori.</li>
@@ -561,7 +561,7 @@ Automatizza l'elaborazione delle fatture fornitori in Dolibarr con OCR basato su
 </ul>
 
 <h3>💰 Prezzo e licenza</h3>
-<p>Il modulo è <strong>gratuito e open source</strong> con licenza <strong>GPL v3</strong>. La Modalità Classica non ha costi aggiuntivi. La Modalità IA richiede un abbonamento su <a href="https://easyocr.es" target="_blank">easyocr.es</a> — piani dall'uso occasionale all'elaborazione massiva enterprise. <a href="https://easyocr.es" target="_blank">Consulta piani e prezzi →</a></p>
+<p>Il modulo è <strong>gratuito e open source</strong> con licenza <strong>GPL v3</strong>. La Modalità Classica non ha costi aggiuntivi. La Modalità IA include un <strong>piano gratuito di 10 pagine/mese</strong> — nessuna carta di credito richiesta per iniziare. Per volumi maggiori sono disponibili piani a pagamento dall'uso occasionale all'elaborazione massiva enterprise. <a href="https://easyocr.es" target="_blank">Consulta tutti i piani e prezzi su easyocr.es →</a></p>
 
 <h3>✉️ Supporto</h3>
 <p>✉️ <a href="mailto:info@easysoft.es">info@easysoft.es</a>&nbsp;| 🌐 <a href="https://www.easysoft.es" target="_blank">www.easysoft.es</a>&nbsp;| 🤖 <a href="https://easyocr.es" target="_blank">easyocr.es</a></p>
