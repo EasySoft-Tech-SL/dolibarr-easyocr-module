@@ -83,7 +83,7 @@ if (!easyocrCheckRight($user, 'easyocr', 'read')) {
 	exit;
 }
 
-// --- Helpers are now in lib/easyocr.lib.php (convertFlexibleDate, convertToNumber, calculateIVA) ---
+// --- Helpers in lib/easyocr.lib.php (easyocrParseDate, easyocrParseNumber, easyocrCalcTaxRate) ---
 
 // --- Actions ---
 
@@ -92,7 +92,7 @@ $action = isset($_POST["action"]) ? $_POST["action"] : '';
 // ============================================================
 // CREAR FACTURA DE PROVEEDOR
 // ============================================================
-if ($action == "newInvoice") {
+if ($action == "createSupplierInvoice") {
 
 	if (!easyocrCheckRight($user, 'easyocr', 'write')) {
 		print json_encode(["status" => "error", "message" => "Sin permiso de escritura"]);
@@ -101,14 +101,14 @@ if ($action == "newInvoice") {
 
 	$fk_soc = GETPOST("fk_soc", "int");
 	$ref_supplier = GETPOST("ref_supplier", "alphanohtml");
-	$datef_str = convertFlexibleDate(GETPOST("datef", "alphanohtml"));
-	$total_ttc = convertToNumber(GETPOST("total_ttc", "alphanohtml"));
-	$total_ht = convertToNumber(GETPOST("total_ht", "alphanohtml"));
+	$datef_str = easyocrParseDate(GETPOST("datef", "alphanohtml"));
+	$total_ttc = easyocrParseNumber(GETPOST("total_ttc", "alphanohtml"));
+	$total_ht = easyocrParseNumber(GETPOST("total_ht", "alphanohtml"));
 
 	// Use IVA from OCR if provided, otherwise calculate
 	$total_tva_ocr = GETPOST("total_tva", "alphanohtml");
 	if (!empty($total_tva_ocr)) {
-		$total_tva = convertToNumber($total_tva_ocr);
+		$total_tva = easyocrParseNumber($total_tva_ocr);
 	} else {
 		$total_tva = $total_ttc - $total_ht;
 	}
@@ -157,7 +157,7 @@ if ($action == "newInvoice") {
 
 	// Set due date if provided
 	if (!empty($date_echeance_str)) {
-		$date_ech = convertFlexibleDate($date_echeance_str);
+		$date_ech = easyocrParseDate($date_echeance_str);
 		$facture->date_echeance = dol_mktime(
 			12,
 			0,
@@ -185,7 +185,7 @@ if ($action == "newInvoice") {
 
 	// Add invoice line with proper localtax resolution
 	$line_desc = !empty($ocr_description) ? $ocr_description : $langs->trans('EasyOcrInvoiceLineDesc');
-	$tva_tx = calculateIVA($total_ht, $total_tva);
+	$tva_tx = easyocrCalcTaxRate($total_ht, $total_tva);
 	$localtax1_tx = get_localtax($tva_tx, 1, $mysoc, $supplier);
 	$localtax2_tx = get_localtax($tva_tx, 2, $mysoc, $supplier);
 
@@ -278,7 +278,7 @@ if ($action == "newInvoice") {
 	// ============================================================
 	// OBTENER DATOS PARA EL FORMULARIO (proveedores, templates, bancos, pagos)
 	// ============================================================
-} else if ($action == "getDetails") {
+} else if ($action == "loadFormData") {
 
 	// Proveedores
 	$sql = "SELECT rowid, nom FROM " . MAIN_DB_PREFIX . "societe WHERE fournisseur = 1 AND entity IN (" . getEntity('societe') . ") ORDER BY nom";
@@ -364,7 +364,7 @@ if ($action == "newInvoice") {
 	// ============================================================
 	// OBTENER DETALLES DE UN TEMPLATE
 	// ============================================================
-} else if ($action == "getDetailsTemplate") {
+} else if ($action == "fetchTemplateData") {
 
 	$template_id = GETPOST("template_id", "int");
 
@@ -400,7 +400,7 @@ if ($action == "newInvoice") {
 	// ============================================================
 	// CREAR TEMPLATE
 	// ============================================================
-} else if ($action == "addTemplate") {
+} else if ($action == "saveNewTemplate") {
 
 	if (!easyocrCheckRight($user, 'easyocr', 'write')) {
 		print json_encode(["status" => "error", "message" => "Sin permiso de escritura"]);
@@ -452,7 +452,7 @@ if ($action == "newInvoice") {
 	// ============================================================
 	// EDITAR TEMPLATE
 	// ============================================================
-} else if ($action == "editTemplate") {
+} else if ($action == "updateTemplate") {
 
 	if (!easyocrCheckRight($user, 'easyocr', 'write')) {
 		print json_encode(["status" => "error", "message" => "Sin permiso de escritura"]);

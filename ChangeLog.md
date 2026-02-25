@@ -5,6 +5,18 @@ Todos los cambios notables de EasyOcr se documentarán en este archivo.
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/),
 y este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 
+## [2.4.0] - 2026-02-25
+
+### Añadido
+- **Dashboard principal** (`index.php`): Nueva página de inicio del módulo con tarjetas de acceso rápido, contadores de facturas/plantillas y diseño Material Design con iconos Font Awesome
+
+### Mejorado
+- **Rediseño visual de cabeceras**: Estilo de página unificado en todas las vistas del módulo (batch, facturas, plantillas) con cabecera consistente, iconografía y paleta de colores por sección
+- **Navegación simplificada**: El menú superior dirige al nuevo dashboard; los accesos laterales se reemplazan por tarjetas visuales con permisos integrados
+
+### Cambiado
+- Renombrado `tool.php` → `extract.php` para mayor claridad semántica
+
 ## [2.3.2] - 2026-02-19
 
 ### Añadido
@@ -47,7 +59,7 @@ y este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
   - Visualización de resultados con 6 secciones: info documento, proveedor/cliente, líneas/items, totales con desglose de impuestos, pago, metadatos
   - Barra de progreso para lotes en procesamiento, badges de estado, cancelación de lotes
   - Selector de elementos por página (10, 20, 50, 100) con valor por defecto 20
-- **Widget de suscripción** en `tool.php`: Indicador compacto desplegable con uso de cuota, plan activo, wallet y barra de progreso
+- **Widget de suscripción** en `extract.php`: Indicador compacto desplegable con uso de cuota, plan activo, wallet y barra de progreso
 - **Página de plan de servicio** (`admin/plan.php`): Nueva pestaña administrativa con detalles del plan contratado
 - **Receptor de webhook** (`webhook_batch.php`): Endpoint en raíz del módulo para recibir notificaciones de la API al completar lotes
   - **Seguridad por instance_id**: URL incluye parámetro `instance_id={dolibarr_main_instance_unique_id}` para validar que el webhook es enviado al servidor correcto
@@ -87,7 +99,7 @@ y este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
   - Verde con enlace: factura ya existe en Dolibarr (abre card.php)
   - Rojo con clic: factura no creada, permite crear directamente sin expandir el detalle
   - Verificación asíncrona automática al cargar la lista de documentos
-- **Auto-refresh de suscripción**: El widget de cuota/suscripción en `tool.php` se actualiza automáticamente cada 5 segundos vía polling AJAX
+- **Auto-refresh de suscripción**: El widget de cuota/suscripción en `extract.php` se actualiza automáticamente cada 5 segundos vía polling AJAX
   - Nueva acción `getSubscriptionInfo` en `ajax_easyocr.php` que devuelve datos de plan, cuota, wallet y estado
   - Actualización dinámica de todos los elementos del widget (barra de progreso, contadores, estado, wallet) sin recarga de página
 - **Traducción "No creada"**: Añadida clave `EasyOcrBatchInvoiceNotCreated` en 8 idiomas para reemplazar texto hardcoded en español

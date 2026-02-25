@@ -51,7 +51,7 @@ easyocr/
 │   ├── llx_easyocr_template.sql           # Tabla de plantillas (con fk_soc)
 │   ├── llx_easyocr_template_details.sql   # Detalle de selecciones por plantilla
 │   └── llx_easyocr_template_details.key.sql # FK → llx_easyocr_template
-├── tool.php                               # Página principal: visor PDF + sidebar
+├── extract.php                            # Página principal: visor PDF + sidebar
 ├── templates.php                          # Listado de plantillas
 ├── templates_view.php                     # Edición de plantilla
 ├── invoices.php                           # Listado de facturas procesadas

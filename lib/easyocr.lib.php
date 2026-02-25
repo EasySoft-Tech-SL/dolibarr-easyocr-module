@@ -104,72 +104,82 @@ function easyocr_admin_prepare_head()
 // ============================================================
 
 /**
- * Convert flexible date formats to Y-m-d
+ * Parse a date string in multiple common formats and return Y-m-d.
+ * Supports European (d/m/Y), ISO (Y-m-d), US (m/d/Y) and dotted (d.m.Y) formats.
+ * Two-digit years are expanded using the current century.
  *
- * @param  string $fecha Date string in various formats
- * @return string        Date in Y-m-d format
+ * @param  string $input  Date string to parse
+ * @return string         Normalised date in Y-m-d format, or today if unparseable
  */
-function convertFlexibleDate($fecha)
+function easyocrParseDate($input)
 {
-	$formatosPosibles = [
-		'd/m/Y', 'd/m/y', 'Y-m-d', 'm-d-Y', 'd-m-Y', 'Y/m/d', 'd.m.Y', 'm/d/Y'
+	$dateFormats = [
+		'd/m/Y', 'd-m-Y', 'd.m.Y',   // European day-first
+		'Y-m-d', 'Y/m/d',             // ISO
+		'm/d/Y', 'm-d-Y',             // US month-first
+		'd/m/y',                       // European short year
 	];
-	foreach ($formatosPosibles as $formato) {
-		$fechaObj = DateTime::createFromFormat($formato, $fecha);
-		if ($fechaObj) {
-			$anio = $fechaObj->format('y');
-			if (strlen($fecha) <= 8 && $anio < 100) {
-				$sigloActual = (int) date('Y') - (int) date('y');
-				$anioCompleto = $sigloActual + (int) $anio;
-				$fechaObj->setDate($anioCompleto, $fechaObj->format('m'), $fechaObj->format('d'));
+	foreach ($dateFormats as $fmt) {
+		$dateObj = DateTime::createFromFormat($fmt, trim($input));
+		if ($dateObj !== false) {
+			$shortYear = (int) $dateObj->format('y');
+			if (strlen(trim($input)) <= 8 && $shortYear < 100) {
+				$currentCentury = (int) date('Y') - (int) date('y');
+				$fullYear = $currentCentury + $shortYear;
+				$dateObj->setDate($fullYear, (int) $dateObj->format('m'), (int) $dateObj->format('d'));
 			}
-			return $fechaObj->format('Y-m-d');
+			return $dateObj->format('Y-m-d');
 		}
 	}
 	return date('Y-m-d');
 }
 
 /**
- * Convert formatted number string to float.
- * Handles European (1.234,56) and US (1,234.56) formats.
+ * Parse a formatted number string into a float value.
+ * Automatically detects European format (1.234,56) vs US format (1,234.56)
+ * by analysing separator positions. Strips currency symbols and whitespace.
  *
- * @param  string $numeroFormateado Formatted number string
- * @return float
+ * @param  string $value  Formatted number string (e.g. "1.234,56" or "1,234.56")
+ * @return float          Parsed numeric value
  */
-function convertToNumber($numeroFormateado)
+function easyocrParseNumber($value)
 {
-	$numero = trim($numeroFormateado);
-	if (empty($numero)) return 0;
-	$numero = preg_replace('/[^\d.,-]/', '', $numero);
-	$puntos = substr_count($numero, '.');
-	$comas  = substr_count($numero, ',');
+	$clean = trim($value);
+	if (empty($clean)) return 0;
+	// Strip everything except digits, dots, commas and minus sign
+	$clean = preg_replace('/[^\d.,-]/', '', $clean);
 
-	if ($puntos == 0 && $comas == 0) return floatval($numero);
-	if ($puntos == 0 && $comas == 1) return floatval(str_replace(',', '.', $numero));
-	if ($comas == 0 && $puntos == 1) return floatval($numero);
+	$dots   = substr_count($clean, '.');
+	$commas = substr_count($clean, ',');
 
-	$ultimoPunto = strrpos($numero, '.');
-	$ultimaComa  = strrpos($numero, ',');
-	if ($ultimaComa > $ultimoPunto) {
-		$numero = str_replace('.', '', $numero);
-		$numero = str_replace(',', '.', $numero);
+	// Simple cases: no ambiguity
+	if ($dots == 0 && $commas == 0) return floatval($clean);
+	if ($dots == 0 && $commas == 1) return floatval(str_replace(',', '.', $clean));
+	if ($commas == 0 && $dots == 1) return floatval($clean);
+
+	// Mixed separators: the last one is the decimal separator
+	$lastDot   = strrpos($clean, '.');
+	$lastComma = strrpos($clean, ',');
+	if ($lastComma > $lastDot) {
+		$clean = str_replace('.', '', $clean);
+		$clean = str_replace(',', '.', $clean);
 	} else {
-		$numero = str_replace(',', '', $numero);
+		$clean = str_replace(',', '', $clean);
 	}
-	return floatval($numero);
+	return floatval($clean);
 }
 
 /**
- * Calculate IVA percentage from totals
+ * Derive the tax rate percentage from the net amount and the tax amount.
  *
- * @param  float $montoTotal Total HT amount
- * @param  float $montoIVA   IVA amount
- * @return float             IVA percentage
+ * @param  float $netAmount  Total excluding tax (HT)
+ * @param  float $taxAmount  Tax amount (TVA/IVA)
+ * @return float             Tax rate as a percentage (e.g. 21.000)
  */
-function calculateIVA($montoTotal, $montoIVA)
+function easyocrCalcTaxRate($netAmount, $taxAmount)
 {
-	if (empty($montoTotal) || $montoTotal == 0) return 0;
-	return round(($montoIVA / $montoTotal) * 100, 3);
+	if (empty($netAmount) || floatval($netAmount) == 0) return 0;
+	return round(($taxAmount / $netAmount) * 100, 3);
 }
 
 
@@ -266,7 +276,7 @@ function easyocrCreateInvoiceFromOCR($params, $userObj = null)
 	// ── Extract parameters with defaults ─────────────────────────────────
 	$fk_soc            = isset($params['fk_soc']) ? (int) $params['fk_soc'] : 0;
 	$ref_supplier      = isset($params['ref_supplier']) ? trim($params['ref_supplier']) : '';
-	$datef_str         = !empty($params['datef']) ? convertFlexibleDate($params['datef']) : date('Y-m-d');
+	$datef_str         = !empty($params['datef']) ? easyocrParseDate($params['datef']) : date('Y-m-d');
 	$total_ttc_str     = isset($params['total_ttc']) ? $params['total_ttc'] : '0';
 	$total_ht_str      = isset($params['total_ht']) ? $params['total_ht'] : '0';
 	$total_tva_str     = isset($params['total_tva']) ? $params['total_tva'] : '';
@@ -498,9 +508,9 @@ function easyocrCreateInvoiceFromOCR($params, $userObj = null)
 	dol_syslog('EasyOCR-CREATE: Supplier resolved — fk_soc=' . $fk_soc . ', created=' . ($supplier_created ? 'YES' : 'NO'), LOG_INFO);
 
 	// ── Parse totals ─────────────────────────────────────────────────────
-	$total_ht  = convertToNumber($total_ht_str);
-	$total_ttc = convertToNumber($total_ttc_str);
-	$total_tva = !empty($total_tva_str) ? convertToNumber($total_tva_str) : ($total_ttc - $total_ht);
+	$total_ht  = easyocrParseNumber($total_ht_str);
+	$total_ttc = easyocrParseNumber($total_ttc_str);
+	$total_tva = !empty($total_tva_str) ? easyocrParseNumber($total_tva_str) : ($total_ttc - $total_ht);
 
 	// ── Duplicate check ──────────────────────────────────────────────────
 	// 1) Primary: by ref_supplier + supplier (normalized: trimmed, case-insensitive)
@@ -597,7 +607,7 @@ function easyocrCreateInvoiceFromOCR($params, $userObj = null)
 		$facture->note_private = $notes;
 	}
 	if (!empty($date_echeance_str)) {
-		$date_ech = convertFlexibleDate($date_echeance_str);
+		$date_ech = easyocrParseDate($date_echeance_str);
 		$facture->date_echeance = dol_mktime(
 			12, 0, 0,
 			date('m', strtotime($date_ech)),
@@ -632,7 +642,7 @@ function easyocrCreateInvoiceFromOCR($params, $userObj = null)
 			$lineIndex++;
 			$desc = !empty($item['description']) ? $item['description'] : 'Línea';
 			$qty = !empty($item['quantity']) ? floatval($item['quantity']) : 1;
-			$unit_price = isset($item['unit_price']) && $item['unit_price'] !== '' ? convertToNumber($item['unit_price']) : 0;
+			$unit_price = isset($item['unit_price']) && $item['unit_price'] !== '' ? easyocrParseNumber($item['unit_price']) : 0;
 			$discount = !empty($item['discount_percent']) ? floatval($item['discount_percent']) : 0;
 			$itemType = isset($item['item_type']) ? strtolower(trim($item['item_type'])) : '';
 
@@ -664,21 +674,21 @@ function easyocrCreateInvoiceFromOCR($params, $userObj = null)
 
 			// Calculate unit_price from net_amount or total if missing
 			if ($unit_price == 0 && !empty($item['net_amount'])) {
-				$net = convertToNumber($item['net_amount']);
+				$net = easyocrParseNumber($item['net_amount']);
 				$unit_price = $net / ($qty > 0 ? $qty : 1);
 				if ($discount > 0) {
 					$unit_price = $unit_price / (1 - $discount / 100);
 				}
 			}
 			if ($unit_price == 0 && !empty($item['total'])) {
-				$lineTotal = convertToNumber($item['total']);
+				$lineTotal = easyocrParseNumber($item['total']);
 				$lineTaxAmt = 0;
 				if (!empty($item['taxes']) && is_array($item['taxes'])) {
 					foreach ($item['taxes'] as $tax) {
 						$lineTaxAmt += floatval($tax['tax_amount'] ?? 0);
 					}
 				} elseif (!empty($item['tax_amount'])) {
-					$lineTaxAmt = convertToNumber($item['tax_amount']);
+					$lineTaxAmt = easyocrParseNumber($item['tax_amount']);
 				}
 				$unit_price = ($lineTotal - $lineTaxAmt) / ($qty > 0 ? $qty : 1);
 			}
@@ -749,7 +759,7 @@ function easyocrCreateInvoiceFromOCR($params, $userObj = null)
 		}
 	} else {
 		// Fallback: single line with totals
-		$tva_tx = calculateIVA($total_ht, $total_tva);
+		$tva_tx = easyocrCalcTaxRate($total_ht, $total_tva);
 		$localtax1_tx = get_localtax($tva_tx, 1, $mysoc, $socTmp);
 		$localtax2_tx = get_localtax($tva_tx, 2, $mysoc, $socTmp);
 		$lineDesc = is_object($langs) ? $langs->trans('EasyOcrInvoiceLineDesc') : 'Invoice total';
@@ -764,8 +774,8 @@ function easyocrCreateInvoiceFromOCR($params, $userObj = null)
 	$ocr_total_ht  = $total_ht;
 	$ocr_total_tva = $total_tva;
 	$ocr_total_ttc = $total_ttc;
-	$ocr_localtax1 = convertToNumber($total_localtax1);
-	$ocr_localtax2 = convertToNumber($total_localtax2);
+	$ocr_localtax1 = easyocrParseNumber($total_localtax1);
+	$ocr_localtax2 = easyocrParseNumber($total_localtax2);
 
 	$sql_totals = "UPDATE " . MAIN_DB_PREFIX . "facture_fourn SET";
 	$sql_totals .= " total_ht = " . ((float) $ocr_total_ht);

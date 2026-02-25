@@ -271,6 +271,15 @@ if (GETPOST('nomassaction', 'int') || in_array($massaction, array('presend', 'pr
 }
 $massactionbutton = $form->selectMassAction('', $arrayofmassactions);
 
+// ─── Page header (consistent EasyOcr style) ─────────────────────────────
+print '<div class="eo-page-header">';
+print '  <div class="eo-page-header-icon eo-page-header-icon--inv"><i class="fas fa-file-invoice-dollar"></i></div>';
+print '  <div class="eo-page-header-text">';
+print '    <h1>' . dol_escape_htmltag($title) . '</h1>';
+print '    <p>' . dol_escape_htmltag($langs->trans('EasyOcrIndexDescInvoices')) . '</p>';
+print '  </div>';
+print '</div>';
+
 // Confirm dialog
 if ($action == 'delete') {
 	print $form->formconfirm(
@@ -298,7 +307,7 @@ print '<input type="hidden" name="contextpage" value="'.$contextpage.'">';
 
 $selectedfields = $form->showCheckAddButtons('checkforselect', 1);
 
-print_barre_liste($title, $page, $_SERVER["PHP_SELF"], $param, $sortfield, $sortorder, $massactionbutton, $num, $nbtotalofrecords, 'supplier_invoice', 0, '', '', $limit, 0, 0, 1);
+print_barre_liste('', $page, $_SERVER["PHP_SELF"], $param, $sortfield, $sortorder, $massactionbutton, $num, $nbtotalofrecords, '', 0, '', '', $limit, 0, 0, 1);
 
 // Add code for pre mass action
 $topicmail = "";

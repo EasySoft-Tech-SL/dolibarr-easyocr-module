@@ -342,7 +342,7 @@ llxHeader("", "EasyOcr", '', '', 0, 0, $arrayofjs, $arrayofcss);
     <!-- Acciones -->
     <div class="eo-actions">
       <button class="eo-btn eo-btn-outline" onclick="EasyOcr.showSaveTemplate()" id="eo-btn-save-tpl" title="Ctrl+S"><?php echo $langs->trans('EasyOcrSaveTemplate'); ?></button>
-      <button class="eo-btn eo-btn-outline" onclick="EasyOcr.editTemplate()" id="eo-btn-edit-tpl" style="display:none" title="Ctrl+S"><?php echo $langs->trans('EasyOcrEditTemplate'); ?></button>
+      <button class="eo-btn eo-btn-outline" onclick="EasyOcr.updateCurrentTemplate()" id="eo-btn-edit-tpl" style="display:none" title="Ctrl+S"><?php echo $langs->trans('EasyOcrEditTemplate'); ?></button>
       <button class="eo-btn eo-btn-success" onclick="EasyOcr.generateInvoice()" id="eo-btn-generate" disabled title="Ctrl+Enter"><?php echo $langs->trans('EasyOcrGenerateInvoice'); ?></button>
     </div>
     <div class="eo-help-bar">

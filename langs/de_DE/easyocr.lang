@@ -28,6 +28,15 @@ EasyOcrPermDelete = Vorlagen und Rechnungsdatensätze löschen
 EasyOcrMenuUploadPdf = PDF laden
 EasyOcrMenuTemplates = Vorlagen
 EasyOcrMenuInvoices = Rechnungen
+
+# --- index.php (Kachel-Dashboard) ---
+EasyOcrIndexSections = Schnellzugriff
+EasyOcrIndexOpen = Öffnen
+EasyOcrIndexDescTool = PDF importieren und Lieferantenrechnungsdaten visuell extrahieren.
+EasyOcrIndexDescBatch = Mehrere PDFs auf einmal mit KI-gestützter automatischer Extraktion verarbeiten.
+EasyOcrIndexDescTemplates = Zonenauswahl-Vorlagen für Lieferanten verwalten.
+EasyOcrIndexDescInvoices = Den Verlauf der aus importierten PDFs generierten Rechnungen anzeigen.
+EasyOcrIndexDescSetup = API-Schlüssel, Cloud-Dienst und Moduloptionen konfigurieren.
 EasyOcrImportPdf = PDF importieren
 EasyOcrNoFileSelected = Keine Datei ausgewählt
 EasyOcrZoomOut = Verkleinern (-)
@@ -92,7 +101,7 @@ EasyOcrInvoiceCreated = Rechnung erstellt
 EasyOcrOpenNewTab = In neuem Tab öffnen
 EasyOcrOpen = Öffnen ↗
 
-# --- Subscription Widget (tool.php) ---
+# --- Subscription Widget (extract.php) ---
 EasyOcrQuotaPages = Verarbeitete Seiten
 EasyOcrQuotaRemaining = Verbleibend
 EasyOcrQuotaReset = Erneuerung

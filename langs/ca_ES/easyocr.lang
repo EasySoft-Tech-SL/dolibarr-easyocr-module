@@ -26,6 +26,15 @@ EasyOcrPermDelete = Eliminar plantilles i registres de factures
 EasyOcrMenuUploadPdf = Carregar PDF
 EasyOcrMenuTemplates = Plantilles
 EasyOcrMenuInvoices = Factures
+
+# --- index.php (tauler de targetes) ---
+EasyOcrIndexSections = Accés ràpid
+EasyOcrIndexOpen = Obrir
+EasyOcrIndexDescTool = Importeu un PDF i extraieu visualment dades de factures de proveïdor.
+EasyOcrIndexDescBatch = Processeu múltiples PDFs alhora amb extracció automàtica per IA.
+EasyOcrIndexDescTemplates = Gestioneu les plantilles de selecció de zones associades a proveïdors.
+EasyOcrIndexDescInvoices = Consulteu l'historial de factures generades des dels PDFs importats.
+EasyOcrIndexDescSetup = Configureu la clau API, el servei al núvol i les opcions del mòdul.
 EasyOcrImportPdf = Importar PDF
 EasyOcrNoFileSelected = Cap fitxer seleccionat
 EasyOcrZoomOut = Reduir (-)
@@ -90,7 +99,7 @@ EasyOcrInvoiceCreated = Factura creada
 EasyOcrOpenNewTab = Obrir en nova pestanya
 EasyOcrOpen = Obrir ↗
 
-# --- Subscription Widget (tool.php) ---
+# --- Subscription Widget (extract.php) ---
 EasyOcrQuotaPages = Pàgines processades
 EasyOcrQuotaRemaining = Restants
 EasyOcrQuotaReset = Renovació

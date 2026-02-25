@@ -29,7 +29,16 @@ EasyOcrMenuUploadPdf = Upload PDF
 EasyOcrMenuTemplates = Templates
 EasyOcrMenuInvoices = Invoices
 
-# --- tool.php (PDF viewer) ---
+# --- index.php (card dashboard) ---
+EasyOcrIndexSections = Quick access
+EasyOcrIndexOpen = Open
+EasyOcrIndexDescTool = Import a PDF and visually extract supplier invoice data.
+EasyOcrIndexDescBatch = Process multiple PDFs at once with AI-powered automatic extraction.
+EasyOcrIndexDescTemplates = Manage zone selection templates linked to suppliers.
+EasyOcrIndexDescInvoices = View the history of invoices generated from imported PDFs.
+EasyOcrIndexDescSetup = Configure the API key, cloud service and module options.
+
+# --- extract.php (PDF viewer) ---
 EasyOcrImportPdf = Import PDF
 EasyOcrNoFileSelected = No file selected
 EasyOcrZoomOut = Zoom out (-)
@@ -100,7 +109,7 @@ EasyOcrInvoiceCreated = Invoice created
 EasyOcrOpenNewTab = Open in new tab
 EasyOcrOpen = Open ↗
 
-# --- Subscription Widget (tool.php) ---
+# --- Subscription Widget (extract.php) ---
 EasyOcrQuotaPages = Processed pages
 EasyOcrQuotaRemaining = Remaining
 EasyOcrQuotaReset = Renewal

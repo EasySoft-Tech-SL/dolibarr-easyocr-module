@@ -29,7 +29,16 @@ EasyOcrMenuUploadPdf = Charger PDF
 EasyOcrMenuTemplates = Modèles
 EasyOcrMenuInvoices = Factures
 
-# --- tool.php (visionneuse PDF) ---
+# --- index.php (tableau de bord) ---
+EasyOcrIndexSections = Accès rapide
+EasyOcrIndexOpen = Ouvrir
+EasyOcrIndexDescTool = Importez un PDF et extrayez visuellement les données des factures fournisseur.
+EasyOcrIndexDescBatch = Traitez plusieurs PDFs à la fois avec extraction automatique par IA.
+EasyOcrIndexDescTemplates = Gérez les modèles de sélection de zones associés aux fournisseurs.
+EasyOcrIndexDescInvoices = Consultez l'historique des factures générées depuis les PDFs importés.
+EasyOcrIndexDescSetup = Configurez la clé API, le service cloud et les options du module.
+
+# --- extract.php (visionneuse PDF) ---
 EasyOcrImportPdf = Importer PDF
 EasyOcrNoFileSelected = Aucun fichier sélectionné
 EasyOcrZoomOut = Dézoomer (-)
@@ -100,7 +109,7 @@ EasyOcrInvoiceCreated = Facture créée
 EasyOcrOpenNewTab = Ouvrir dans un nouvel onglet
 EasyOcrOpen = Ouvrir ↗
 
-# --- Subscription Widget (tool.php) ---
+# --- Subscription Widget (extract.php) ---
 EasyOcrQuotaPages = Pages traitées
 EasyOcrQuotaRemaining = Restantes
 EasyOcrQuotaReset = Renouvellement

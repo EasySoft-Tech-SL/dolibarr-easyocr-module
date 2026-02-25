@@ -891,7 +891,7 @@ const EasyOcr = (function () {
             url: "ajax/ajax_easyocr.php",
             type: 'POST',
             dataType: 'json',
-            data: { action: "getDetails" },
+            data: { action: "loadFormData" },
             success: function (data) {
                 state.suppliersData = data.suppliers || [];
                 state.templatesData = data.templates || [];
@@ -986,7 +986,7 @@ const EasyOcr = (function () {
             url: "ajax/ajax_easyocr.php",
             type: 'POST',
             dataType: 'json',
-            data: { action: "getDetailsTemplate", template_id: tplId },
+            data: { action: "fetchTemplateData", template_id: tplId },
             success: function (data) {
                 if (data.fk_soc) {
                     $('#eo-supplier').val(data.fk_soc).trigger('change.select2');
@@ -1137,7 +1137,7 @@ const EasyOcr = (function () {
             type: 'POST',
             dataType: 'json',
             data: {
-                action: "addTemplate",
+                action: "saveNewTemplate",
                 name: name,
                 fk_soc: supplier,
                 scale: state.scale,
@@ -1159,7 +1159,7 @@ const EasyOcr = (function () {
         });
     }
 
-    function editTemplate() {
+    function updateCurrentTemplate() {
         if (!state.templateId) return;
 
         showLoader();
@@ -1176,7 +1176,7 @@ const EasyOcr = (function () {
             type: 'POST',
             dataType: 'json',
             data: {
-                action: "editTemplate",
+                action: "updateTemplate",
                 template_id: state.templateId,
                 fk_soc: supplier,
                 scale: state.scale,
@@ -1271,7 +1271,7 @@ const EasyOcr = (function () {
         showLoader();
 
         const formData = new FormData();
-        formData.append('action', 'newInvoice');
+        formData.append('action', 'createSupplierInvoice');
         formData.append('file', state.file);
         formData.append('fk_soc', $('#eo-supplier').val());
         formData.append('ref_supplier', getSelectionValue(L.labelInvoice));
@@ -1511,7 +1511,7 @@ const EasyOcr = (function () {
                 if (state.pages.length > 0 && getAllSelections().length > 0) {
                     e.preventDefault();
                     if (state.templateId) {
-                        editTemplate();
+                        updateCurrentTemplate();
                     } else {
                         showSaveTemplate();
                     }
@@ -2689,7 +2689,7 @@ const EasyOcr = (function () {
         showSaveTemplate,
         hideSaveTemplate,
         saveTemplate,
-        editTemplate,
+        updateCurrentTemplate,
         generateInvoice,
         confirmGenerateInvoice,
         closeInvoicePreview,

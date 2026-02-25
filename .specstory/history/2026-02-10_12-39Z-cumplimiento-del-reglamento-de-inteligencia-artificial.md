@@ -4045,7 +4045,7 @@ Las traducciones se actualizaron en **8 idiomas**: es_ES, en_US, fr_FR, ca_ES, d
 
 _**User (2026-02-16 12:32Z)**_
 
-custom/easyocr/tool.php Es posible que aqui muestres informacion de la suscripción basica para saber si podemos seguir usandola? SI nos quedan paginas por procesar etc?
+custom/easyocr/extract.php Es posible que aqui muestres informacion de la suscripción basica para saber si podemos seguir usandola? SI nos quedan paginas por procesar etc?
 
 ---
 
@@ -4053,22 +4053,10 @@ _**Agent (model copilot/claude-sonnet-4.5)**_
 
 <tool-use data-tool-type="read" data-tool-name="copilot_readFile">
 <details>
-<summary>Tool use: **copilot_readFile** • Leyendo [](file:///d%3A/laragon/www/erp-v16/public/custom/easyocr/tool.php#1-1), líneas 1 a 150</summary>
+<summary>Tool use: **copilot_readFile** • Leyendo [](file:///d%3A/laragon/www/erp-v16/public/custom/easyocr/extract.php#1-1), líneas 1 a 150</summary>
 
 
-Leer [](file:///d%3A/laragon/www/erp-v16/public/custom/easyocr/tool.php#1-1), líneas 1 a 150
-
-</details>
-</tool-use>
-
----
-
-<tool-use data-tool-type="read" data-tool-name="copilot_readFile">
-<details>
-<summary>Tool use: **copilot_readFile** • Leyendo [](file:///d%3A/laragon/www/erp-v16/public/custom/easyocr/tool.php#85-85), líneas 85 a 200</summary>
-
-
-Leer [](file:///d%3A/laragon/www/erp-v16/public/custom/easyocr/tool.php#85-85), líneas 85 a 200
+Leer [](file:///d%3A/laragon/www/erp-v16/public/custom/easyocr/extract.php#1-1), líneas 1 a 150
 
 </details>
 </tool-use>
@@ -4077,10 +4065,22 @@ Leer [](file:///d%3A/laragon/www/erp-v16/public/custom/easyocr/tool.php#85-85), 
 
 <tool-use data-tool-type="read" data-tool-name="copilot_readFile">
 <details>
-<summary>Tool use: **copilot_readFile** • Leyendo [](file:///d%3A/laragon/www/erp-v16/public/custom/easyocr/tool.php#20-20), líneas 20 a 30</summary>
+<summary>Tool use: **copilot_readFile** • Leyendo [](file:///d%3A/laragon/www/erp-v16/public/custom/easyocr/extract.php#85-85), líneas 85 a 200</summary>
 
 
-Leer [](file:///d%3A/laragon/www/erp-v16/public/custom/easyocr/tool.php#20-20), líneas 20 a 30
+Leer [](file:///d%3A/laragon/www/erp-v16/public/custom/easyocr/extract.php#85-85), líneas 85 a 200
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="copilot_readFile">
+<details>
+<summary>Tool use: **copilot_readFile** • Leyendo [](file:///d%3A/laragon/www/erp-v16/public/custom/easyocr/extract.php#20-20), líneas 20 a 30</summary>
+
+
+Leer [](file:///d%3A/laragon/www/erp-v16/public/custom/easyocr/extract.php#20-20), líneas 20 a 30
 
 </details>
 </tool-use>
@@ -4096,8 +4096,8 @@ Parameters:
 
 ```json
 {
-  "file_path": "d%3A/laragon/www/erp-v16/public/custom/easyocr/tool.php",
-  "relativeWorkspacePath": "tool.php"
+  "file_path": "d%3A/laragon/www/erp-v16/public/custom/easyocr/extract.php",
+  "relativeWorkspacePath": "extract.php"
 }
 ```
 Additional data:
@@ -4112,7 +4112,7 @@ Result:
 
 ```json
 {
-  "invocationMessage": "Reemplazando 9 líneas por 10 líneas en [](file:///d%3A/laragon/www/erp-v16/public/custom/easyocr/tool.php)",
+  "invocationMessage": "Reemplazando 9 líneas por 10 líneas en [](file:///d%3A/laragon/www/erp-v16/public/custom/easyocr/extract.php)",
   "isConfirmed": {
     "type": 3,
     "scope": "profile"
@@ -4142,7 +4142,7 @@ Result:
           {
             "type": 2,
             "priority": 9007199254740991,
-            "text": "d:\\laragon\\www\\erp-v16\\public\\custom\\easyocr\\tool.php",
+            "text": "d:\\laragon\\www\\erp-v16\\public\\custom\\easyocr\\extract.php",
             "lineBreakBefore": false
           },
           {
@@ -4176,8 +4176,8 @@ Parameters:
 
 ```json
 {
-  "file_path": "d%3A/laragon/www/erp-v16/public/custom/easyocr/tool.php",
-  "relativeWorkspacePath": "tool.php"
+  "file_path": "d%3A/laragon/www/erp-v16/public/custom/easyocr/extract.php",
+  "relativeWorkspacePath": "extract.php"
 }
 ```
 Additional data:
@@ -4192,7 +4192,7 @@ Result:
 
 ```json
 {
-  "invocationMessage": "Reemplazando 6 líneas por 23 líneas en [](file:///d%3A/laragon/www/erp-v16/public/custom/easyocr/tool.php)",
+  "invocationMessage": "Reemplazando 6 líneas por 23 líneas en [](file:///d%3A/laragon/www/erp-v16/public/custom/easyocr/extract.php)",
   "isConfirmed": {
     "type": 3,
     "scope": "profile"
@@ -4222,7 +4222,7 @@ Result:
           {
             "type": 2,
             "priority": 9007199254740991,
-            "text": "d:\\laragon\\www\\erp-v16\\public\\custom\\easyocr\\tool.php",
+            "text": "d:\\laragon\\www\\erp-v16\\public\\custom\\easyocr\\extract.php",
             "lineBreakBefore": false
           },
           {
@@ -4249,10 +4249,10 @@ Status: **completed**
 
 <tool-use data-tool-type="read" data-tool-name="copilot_readFile">
 <details>
-<summary>Tool use: **copilot_readFile** • Leyendo [](file:///d%3A/laragon/www/erp-v16/public/custom/easyocr/tool.php#140-140), líneas 140 a 165</summary>
+<summary>Tool use: **copilot_readFile** • Leyendo [](file:///d%3A/laragon/www/erp-v16/public/custom/easyocr/extract.php#140-140), líneas 140 a 165</summary>
 
 
-Leer [](file:///d%3A/laragon/www/erp-v16/public/custom/easyocr/tool.php#140-140), líneas 140 a 165
+Leer [](file:///d%3A/laragon/www/erp-v16/public/custom/easyocr/extract.php#140-140), líneas 140 a 165
 
 </details>
 </tool-use>
@@ -4268,8 +4268,8 @@ Parameters:
 
 ```json
 {
-  "file_path": "d%3A/laragon/www/erp-v16/public/custom/easyocr/tool.php",
-  "relativeWorkspacePath": "tool.php"
+  "file_path": "d%3A/laragon/www/erp-v16/public/custom/easyocr/extract.php",
+  "relativeWorkspacePath": "extract.php"
 }
 ```
 Additional data:
@@ -4284,7 +4284,7 @@ Result:
 
 ```json
 {
-  "invocationMessage": "Reemplazando 10 líneas por 110 líneas en [](file:///d%3A/laragon/www/erp-v16/public/custom/easyocr/tool.php)",
+  "invocationMessage": "Reemplazando 10 líneas por 110 líneas en [](file:///d%3A/laragon/www/erp-v16/public/custom/easyocr/extract.php)",
   "isConfirmed": {
     "type": 3,
     "scope": "profile"
@@ -4314,7 +4314,7 @@ Result:
           {
             "type": 2,
             "priority": 9007199254740991,
-            "text": "d:\\laragon\\www\\erp-v16\\public\\custom\\easyocr\\tool.php",
+            "text": "d:\\laragon\\www\\erp-v16\\public\\custom\\easyocr\\extract.php",
             "lineBreakBefore": false
           },
           {
@@ -4393,8 +4393,8 @@ Result:
     "type": 3,
     "scope": "profile"
   },
-  "content": "&#96;&#96;&#96;lang\nSubscription Widget (tool.php) ---\r\nEasyOcrQuotaPages = Páginas procesadas\r\nEasyOcrQuotaRemaining = Restantes\r\nEasyOcrQuotaReset = Renovación\r\nEasyOcrWalletBalance = Monedero\r\nEasyOcrQuotaExceeded = ⚠️ Has excedido tu cuota mensual. Algunas funciones pueden estar limitadas.\r\nEasyOcrQuotaNearLimit = ⚠️ Te estás acercando al límite de tu cuota mensual.\r\nEasyOcrViewFullPlan = Ver plan completo\r\n\r\n# --- \n&#96;&#96;&#96;\n\n",
-  "textEditContent": "Subscription Widget (tool.php) ---\r\nEasyOcrQuotaPages = Páginas procesadas\r\nEasyOcrQuotaRemaining = Restantes\r\nEasyOcrQuotaReset = Renovación\r\nEasyOcrWalletBalance = Monedero\r\nEasyOcrQuotaExceeded = ⚠️ Has excedido tu cuota mensual. Algunas funciones pueden estar limitadas.\r\nEasyOcrQuotaNearLimit = ⚠️ Te estás acercando al límite de tu cuota mensual.\r\nEasyOcrViewFullPlan = Ver plan completo\r\n\r\n# --- ",
+  "content": "&#96;&#96;&#96;lang\nSubscription Widget (extract.php) ---\r\nEasyOcrQuotaPages = Páginas procesadas\r\nEasyOcrQuotaRemaining = Restantes\r\nEasyOcrQuotaReset = Renovación\r\nEasyOcrWalletBalance = Monedero\r\nEasyOcrQuotaExceeded = ⚠️ Has excedido tu cuota mensual. Algunas funciones pueden estar limitadas.\r\nEasyOcrQuotaNearLimit = ⚠️ Te estás acercando al límite de tu cuota mensual.\r\nEasyOcrViewFullPlan = Ver plan completo\r\n\r\n# --- \n&#96;&#96;&#96;\n\n",
+  "textEditContent": "Subscription Widget (extract.php) ---\r\nEasyOcrQuotaPages = Páginas procesadas\r\nEasyOcrQuotaRemaining = Restantes\r\nEasyOcrQuotaReset = Renovación\r\nEasyOcrWalletBalance = Monedero\r\nEasyOcrQuotaExceeded = ⚠️ Has excedido tu cuota mensual. Algunas funciones pueden estar limitadas.\r\nEasyOcrQuotaNearLimit = ⚠️ Te estás acercando al límite de tu cuota mensual.\r\nEasyOcrViewFullPlan = Ver plan completo\r\n\r\n# --- ",
   "toolCallResult": {
     "$mid": 23,
     "value": {
@@ -4454,9 +4454,9 @@ Parameters:
 {
   "kind": "subagent",
   "description": "Añadir traducciones widget",
-  "prompt": "Necesito que añadas estas 7 nuevas claves de traducción a los archivos de idiomas en d:\\laragon\\www\\erp-v16\\public\\custom\\easyocr\\langs\\\n\nAñade estas claves justo antes de la sección \"# --- templates.php ---\" en cada archivo:\n\n&#96;&#96;&#96;\n# --- Subscription Widget (tool.php) ---\nEasyOcrQuotaPages = [traducción]\nEasyOcrQuotaRemaining = [traducción]\nEasyOcrQuotaReset = [traducción]\nEasyOcrWalletBalance = [traducción]\nEasyOcrQuotaExceeded = [traducción de: \"⚠️ Has excedido tu cuota mensual. Algunas funciones pueden estar limitadas.\"]\nEasyOcrQuotaNearLimit = [traducción de: \"⚠️ Te estás acercando al límite de tu cuota mensual.\"]\nEasyOcrViewFullPlan = [traducción de: \"Ver plan completo\"]\n&#96;&#96;&#96;\n\nLos archivos son:\n- langs/en_US/easyocr.lang (inglés)\n- langs/fr_FR/easyocr.lang (francés)\n- langs/ca_ES/easyocr.lang (catalán)\n- langs/de_DE/easyocr.lang (alemán)\n- langs/gl_ES/easyocr.lang (gallego)\n- langs/it_IT/easyocr.lang (italiano)\n- langs/pt_PT/easyocr.lang (portugués)\n\nDevuélveme un resumen de qué archivos actualizaste.",
+  "prompt": "Necesito que añadas estas 7 nuevas claves de traducción a los archivos de idiomas en d:\\laragon\\www\\erp-v16\\public\\custom\\easyocr\\langs\\\n\nAñade estas claves justo antes de la sección \"# --- templates.php ---\" en cada archivo:\n\n&#96;&#96;&#96;\n# --- Subscription Widget (extract.php) ---\nEasyOcrQuotaPages = [traducción]\nEasyOcrQuotaRemaining = [traducción]\nEasyOcrQuotaReset = [traducción]\nEasyOcrWalletBalance = [traducción]\nEasyOcrQuotaExceeded = [traducción de: \"⚠️ Has excedido tu cuota mensual. Algunas funciones pueden estar limitadas.\"]\nEasyOcrQuotaNearLimit = [traducción de: \"⚠️ Te estás acercando al límite de tu cuota mensual.\"]\nEasyOcrViewFullPlan = [traducción de: \"Ver plan completo\"]\n&#96;&#96;&#96;\n\nLos archivos son:\n- langs/en_US/easyocr.lang (inglés)\n- langs/fr_FR/easyocr.lang (francés)\n- langs/ca_ES/easyocr.lang (catalán)\n- langs/de_DE/easyocr.lang (alemán)\n- langs/gl_ES/easyocr.lang (gallego)\n- langs/it_IT/easyocr.lang (italiano)\n- langs/pt_PT/easyocr.lang (portugués)\n\nDevuélveme un resumen de qué archivos actualizaste.",
   "modelName": "Claude Sonnet 4.5",
-  "result": "&#96;&#96;&#96;\n\n&#96;&#96;&#96;\n\n&#96;&#96;&#96;\n\n&#96;&#96;&#96;\n\n&#96;&#96;&#96;\n\n&#96;&#96;&#96;\n\n&#96;&#96;&#96;\n\n&#96;&#96;&#96;\n\n&#96;&#96;&#96;\n\n&#96;&#96;&#96;\n\n&#96;&#96;&#96;\n\n&#96;&#96;&#96;\n## ✅ Archivos actualizados\n\nHe añadido las 7 nuevas claves de traducción del **Subscription Widget** a todos los archivos de idiomas:\n\n1. **[langs/en_US/easyocr.lang](langs/en_US/easyocr.lang)** (Inglés)\n2. **[langs/fr_FR/easyocr.lang](langs/fr_FR/easyocr.lang)** (Francés)\n3. **[langs/ca_ES/easyocr.lang](langs/ca_ES/easyocr.lang)** (Catalán)\n4. **[langs/de_DE/easyocr.lang](langs/de_DE/easyocr.lang)** (Alemán)\n5. **[langs/gl_ES/easyocr.lang](langs/gl_ES/easyocr.lang)** (Gallego)\n6. **[langs/it_IT/easyocr.lang](langs/it_IT/easyocr.lang)** (Italiano)\n7. **[langs/pt_PT/easyocr.lang](langs/pt_PT/easyocr.lang)** (Portugués)\n\nLas claves añadidas están insertadas correctamente en la sección &#96;# --- Subscription Widget (tool.php) ---&#96; justo antes de &#96;# --- templates.php ---&#96; en cada archivo, con las traducciones apropiadas para cada idioma."
+  "result": "&#96;&#96;&#96;\n\n&#96;&#96;&#96;\n\n&#96;&#96;&#96;\n\n&#96;&#96;&#96;\n\n&#96;&#96;&#96;\n\n&#96;&#96;&#96;\n\n&#96;&#96;&#96;\n\n&#96;&#96;&#96;\n\n&#96;&#96;&#96;\n\n&#96;&#96;&#96;\n\n&#96;&#96;&#96;\n\n&#96;&#96;&#96;\n## ✅ Archivos actualizados\n\nHe añadido las 7 nuevas claves de traducción del **Subscription Widget** a todos los archivos de idiomas:\n\n1. **[langs/en_US/easyocr.lang](langs/en_US/easyocr.lang)** (Inglés)\n2. **[langs/fr_FR/easyocr.lang](langs/fr_FR/easyocr.lang)** (Francés)\n3. **[langs/ca_ES/easyocr.lang](langs/ca_ES/easyocr.lang)** (Catalán)\n4. **[langs/de_DE/easyocr.lang](langs/de_DE/easyocr.lang)** (Alemán)\n5. **[langs/gl_ES/easyocr.lang](langs/gl_ES/easyocr.lang)** (Gallego)\n6. **[langs/it_IT/easyocr.lang](langs/it_IT/easyocr.lang)** (Italiano)\n7. **[langs/pt_PT/easyocr.lang](langs/pt_PT/easyocr.lang)** (Portugués)\n\nLas claves añadidas están insertadas correctamente en la sección &#96;# --- Subscription Widget (extract.php) ---&#96; justo antes de &#96;# --- templates.php ---&#96; en cada archivo, con las traducciones apropiadas para cada idioma."
 }
 ```
 Additional data:
@@ -4686,7 +4686,7 @@ Leer [](file:///d%3A/laragon/www/erp-v16/public/custom/easyocr/langs/it_IT/easyo
 ```
 ```lang
 
-# --- Subscription Widget (tool.php) ---
+# --- Subscription Widget (extract.php) ---
 EasyOcrQuotaPages = Páginas processadas
 EasyOcrQuotaRemaining = Restantes
 EasyOcrQuotaReset = Renovação
@@ -4705,12 +4705,12 @@ EasyOcrViewFullPlan = Ver plano completo
 
 ---
 
-El usuario quiere mostrar información básica de la suscripción en tool.php para que el usuario sepa si puede seguir usando el servicio, cuántas páginas le quedan, etc.
+El usuario quiere mostrar información básica de la suscripción en extract.php para que el usuario sepa si puede seguir usando el servicio, cuántas páginas le quedan, etc.
 
-Voy a revisar primero el archivo tool.php para ver su estructura actual y luego añadir un pequeño widget/panel que muestre información resumida de la cuota.
+Voy a revisar primero el archivo extract.php para ver su estructura actual y luego añadir un pequeño widget/panel que muestre información resumida de la cuota.
 
 Debo:
-1. Leer tool.php para entender su estructura
+1. Leer extract.php para entender su estructura
 2. Añadir un pequeño bloque que llame a la API y muestre información básica como:
    - Plan actual
    - Páginas usadas / límite
@@ -4718,7 +4718,7 @@ Debo:
    - Fecha de renovación
    - Balance del wallet si existe
 
-Voy a hacerlo de forma que no interfiera con la funcionalidad principal del visor PDF.Voy a revisar el archivo `tool.php` para añadir un widget de información de suscripción. Veo que tool.php tiene una estructura con dos paneles. Voy a añadir un widget pequeño justo después del banner IA OCR que muestre información básica de la suscripción. Necesito leer más para ver dónde sería el mejor lugar y luego añadir el código.Perfecto, veo que justo después del banner IA OCR (que termina en `</div>`) viene la sección de Etiquetas. Voy a añadir justo después del banner IA OCR un widget que muestre información de la suscripción. 
+Voy a hacerlo de forma que no interfiera con la funcionalidad principal del visor PDF.Voy a revisar el archivo `extract.php` para añadir un widget de información de suscripción. Veo que extract.php tiene una estructura con dos paneles. Voy a añadir un widget pequeño justo después del banner IA OCR que muestre información básica de la suscripción. Necesito leer más para ver dónde sería el mejor lugar y luego añadir el código.Perfecto, veo que justo después del banner IA OCR (que termina en `</div>`) viene la sección de Etiquetas. Voy a añadir justo después del banner IA OCR un widget que muestre información de la suscripción. 
 
 Necesito:
 1. Cargar la librería de autoload al inicio del archivo
@@ -4734,7 +4734,7 @@ Voy a hacerlo de forma no intrusiva, como un widget colapsable o pequeño banner
 2. Añadir código PHP para obtener los datos de cuenta si la API está habilitada
 3. Insertar el widget justo después del banner de IA OCR
 
-Voy a hacer esto en múltiples pasos:Ahora voy a añadir código PHP que obtenga los datos de la cuenta justo después de inicializar el servicio AI:Ahora tengo que insertar el widget justo después del banner de IA OCR. Voy a leer un poco más para ver exactamente dónde termina ese banner y añadir el nuevo widget.Perfecto, veo que justo después de `</div>` (que cierra el banner de IA OCR), empieza la sección de Etiquetas. Voy a insertar el widget de suscripción justo ahí.Ahora necesito añadir las traducciones necesarias y los estilos CSS para el nuevo widget. Primero las traducciones:Ahora añado las traducciones necesarias para el widget: Voy a añadir las nuevas claves de traducción al final de la sección de tool.php, justo antes de templates.php.Voy a añadir las nuevas claves de traducción justo antes de "# --- templates.php ---":Ahora necesito añadir las mismas traducciones a los otros idiomas. Voy a usar el subagente para que lo haga rápido en paralelo:
+Voy a hacer esto en múltiples pasos:Ahora voy a añadir código PHP que obtenga los datos de la cuenta justo después de inicializar el servicio AI:Ahora tengo que insertar el widget justo después del banner de IA OCR. Voy a leer un poco más para ver exactamente dónde termina ese banner y añadir el nuevo widget.Perfecto, veo que justo después de `</div>` (que cierra el banner de IA OCR), empieza la sección de Etiquetas. Voy a insertar el widget de suscripción justo ahí.Ahora necesito añadir las traducciones necesarias y los estilos CSS para el nuevo widget. Primero las traducciones:Ahora añado las traducciones necesarias para el widget: Voy a añadir las nuevas claves de traducción al final de la sección de extract.php, justo antes de templates.php.Voy a añadir las nuevas claves de traducción justo antes de "# --- templates.php ---":Ahora necesito añadir las mismas traducciones a los otros idiomas. Voy a usar el subagente para que lo haga rápido en paralelo:
 
 ---
 
@@ -4748,10 +4748,10 @@ _**Agent (model copilot/claude-sonnet-4.5)**_
 
 <tool-use data-tool-type="read" data-tool-name="copilot_readFile">
 <details>
-<summary>Tool use: **copilot_readFile** • Leyendo [](file:///d%3A/laragon/www/erp-v16/public/custom/easyocr/tool.php#95-95), líneas 95 a 170</summary>
+<summary>Tool use: **copilot_readFile** • Leyendo [](file:///d%3A/laragon/www/erp-v16/public/custom/easyocr/extract.php#95-95), líneas 95 a 170</summary>
 
 
-Leer [](file:///d%3A/laragon/www/erp-v16/public/custom/easyocr/tool.php#95-95), líneas 95 a 170
+Leer [](file:///d%3A/laragon/www/erp-v16/public/custom/easyocr/extract.php#95-95), líneas 95 a 170
 
 </details>
 </tool-use>
@@ -4760,10 +4760,10 @@ Leer [](file:///d%3A/laragon/www/erp-v16/public/custom/easyocr/tool.php#95-95), 
 
 <tool-use data-tool-type="read" data-tool-name="copilot_readFile">
 <details>
-<summary>Tool use: **copilot_readFile** • Leyendo [](file:///d%3A/laragon/www/erp-v16/public/custom/easyocr/tool.php#130-130), líneas 130 a 260</summary>
+<summary>Tool use: **copilot_readFile** • Leyendo [](file:///d%3A/laragon/www/erp-v16/public/custom/easyocr/extract.php#130-130), líneas 130 a 260</summary>
 
 
-Leer [](file:///d%3A/laragon/www/erp-v16/public/custom/easyocr/tool.php#130-130), líneas 130 a 260
+Leer [](file:///d%3A/laragon/www/erp-v16/public/custom/easyocr/extract.php#130-130), líneas 130 a 260
 
 </details>
 </tool-use>
@@ -4779,8 +4779,8 @@ Parameters:
 
 ```json
 {
-  "file_path": "d%3A/laragon/www/erp-v16/public/custom/easyocr/tool.php",
-  "relativeWorkspacePath": "tool.php"
+  "file_path": "d%3A/laragon/www/erp-v16/public/custom/easyocr/extract.php",
+  "relativeWorkspacePath": "extract.php"
 }
 ```
 Additional data:
@@ -4795,7 +4795,7 @@ Result:
 
 ```json
 {
-  "invocationMessage": "Reemplazando 131 líneas por 130 líneas en [](file:///d%3A/laragon/www/erp-v16/public/custom/easyocr/tool.php)",
+  "invocationMessage": "Reemplazando 131 líneas por 130 líneas en [](file:///d%3A/laragon/www/erp-v16/public/custom/easyocr/extract.php)",
   "isConfirmed": {
     "type": 3,
     "scope": "profile"
@@ -4825,7 +4825,7 @@ Result:
           {
             "type": 2,
             "priority": 9007199254740991,
-            "text": "d:\\laragon\\www\\erp-v16\\public\\custom\\easyocr\\tool.php",
+            "text": "d:\\laragon\\www\\erp-v16\\public\\custom\\easyocr\\extract.php",
             "lineBreakBefore": false
           },
           {
@@ -5001,7 +5001,7 @@ El widget debe ir después del botón `eo-btn-ai-ocr` pero antes del cierre del 
 1. Añadir los estilos CSS para el widget de suscripción
 2. El CSS debe estar en easyocr.css
 
-Voy a revisar el archivo CSS para añadir los estilos necesarios.Ahora necesito añadir los estilos CSS para el widget de suscripción: Voy a leer el archivo CSS para ver dónde añadir los estilos del widget de suscripción. Deberían ir después de los estilos de IA OCR.Voy a buscar el final de los estilos de IA OCR para añadir los estilos del widget de suscripción ahí.Voy a leer alrededor de la línea 1540 para ver dónde termina la sección de IA OCR modal y añadir los estilos del widget de suscripción ahí.Voy a añadir los estilos del widget de suscripción justo antes de la sección "/* === CARDS === */". Esto sería después de la línea 1545 aproximadamente.Perfecto! He añadido los estilos CSS para el widget de suscripción. Ahora el widget está completamente integrado dentro del bloque de IA OCR con estilos bonitos.Dejame verificar que todo esté correcto revisando el resultado final del tool.php.Perfecto! He integrado el widget de suscripción dentro del bloque de IA OCR en `tool.php`. Ahora el widget:
+Voy a revisar el archivo CSS para añadir los estilos necesarios.Ahora necesito añadir los estilos CSS para el widget de suscripción: Voy a leer el archivo CSS para ver dónde añadir los estilos del widget de suscripción. Deberían ir después de los estilos de IA OCR.Voy a buscar el final de los estilos de IA OCR para añadir los estilos del widget de suscripción ahí.Voy a leer alrededor de la línea 1540 para ver dónde termina la sección de IA OCR modal y añadir los estilos del widget de suscripción ahí.Voy a añadir los estilos del widget de suscripción justo antes de la sección "/* === CARDS === */". Esto sería después de la línea 1545 aproximadamente.Perfecto! He añadido los estilos CSS para el widget de suscripción. Ahora el widget está completamente integrado dentro del bloque de IA OCR con estilos bonitos.Dejame verificar que todo esté correcto revisando el resultado final del extract.php.Perfecto! He integrado el widget de suscripción dentro del bloque de IA OCR en `extract.php`. Ahora el widget:
 
 ✅ **Se muestra DENTRO del div de IA OCR** (cuando está activo y hay datos)
 ✅ **Aparece justo después** del botón "Extraer con IA"
@@ -5033,10 +5033,10 @@ _**Agent (model copilot/claude-sonnet-4.5)**_
 
 <tool-use data-tool-type="read" data-tool-name="copilot_readFile">
 <details>
-<summary>Tool use: **copilot_readFile** • Leyendo [](file:///d%3A/laragon/www/erp-v16/public/custom/easyocr/tool.php#130-130), líneas 130 a 145</summary>
+<summary>Tool use: **copilot_readFile** • Leyendo [](file:///d%3A/laragon/www/erp-v16/public/custom/easyocr/extract.php#130-130), líneas 130 a 145</summary>
 
 
-Leer [](file:///d%3A/laragon/www/erp-v16/public/custom/easyocr/tool.php#130-130), líneas 130 a 145
+Leer [](file:///d%3A/laragon/www/erp-v16/public/custom/easyocr/extract.php#130-130), líneas 130 a 145
 
 </details>
 </tool-use>
@@ -5052,8 +5052,8 @@ Parameters:
 
 ```json
 {
-  "file_path": "d%3A/laragon/www/erp-v16/public/custom/easyocr/tool.php",
-  "relativeWorkspacePath": "tool.php"
+  "file_path": "d%3A/laragon/www/erp-v16/public/custom/easyocr/extract.php",
+  "relativeWorkspacePath": "extract.php"
 }
 ```
 Additional data:
@@ -5068,7 +5068,7 @@ Result:
 
 ```json
 {
-  "invocationMessage": "Reemplazando 105 líneas por 116 líneas en [](file:///d%3A/laragon/www/erp-v16/public/custom/easyocr/tool.php)",
+  "invocationMessage": "Reemplazando 105 líneas por 116 líneas en [](file:///d%3A/laragon/www/erp-v16/public/custom/easyocr/extract.php)",
   "isConfirmed": {
     "type": 3,
     "scope": "profile"
@@ -5098,7 +5098,7 @@ Result:
           {
             "type": 2,
             "priority": 9007199254740991,
-            "text": "d:\\laragon\\www\\erp-v16\\public\\custom\\easyocr\\tool.php",
+            "text": "d:\\laragon\\www\\erp-v16\\public\\custom\\easyocr\\extract.php",
             "lineBreakBefore": false
           },
           {
@@ -5310,8 +5310,8 @@ Parameters:
 
 ```json
 {
-  "file_path": "d%3A/laragon/www/erp-v16/public/custom/easyocr/tool.php",
-  "relativeWorkspacePath": "tool.php"
+  "file_path": "d%3A/laragon/www/erp-v16/public/custom/easyocr/extract.php",
+  "relativeWorkspacePath": "extract.php"
 }
 ```
 Additional data:
@@ -5326,8 +5326,8 @@ Result:
 
 ```json
 {
-  "invocationMessage": "Comprobando [](file:///d%3A/laragon/www/erp-v16/public/custom/easyocr/tool.php), [](file:///d%3A/laragon/www/erp-v16/public/custom/easyocr/css/easyocr.css)",
-  "pastTenseMessage": "Se comprobaron [](file:///d%3A/laragon/www/erp-v16/public/custom/easyocr/tool.php), [](file:///d%3A/laragon/www/erp-v16/public/custom/easyocr/css/easyocr.css), 26 encontraron problemas",
+  "invocationMessage": "Comprobando [](file:///d%3A/laragon/www/erp-v16/public/custom/easyocr/extract.php), [](file:///d%3A/laragon/www/erp-v16/public/custom/easyocr/css/easyocr.css)",
+  "pastTenseMessage": "Se comprobaron [](file:///d%3A/laragon/www/erp-v16/public/custom/easyocr/extract.php), [](file:///d%3A/laragon/www/erp-v16/public/custom/easyocr/css/easyocr.css), 26 encontraron problemas",
   "isConfirmed": {
     "type": 1
   },
@@ -5362,7 +5362,7 @@ Voy a:
 4. Usar un diseño más compacto y eleganteVoy a rediseñar el widget de suscripción para que sea más elegante, compacto y cohesionado con el banner de IA OCR. Lo haré colapsable y con mejor diseño: Voy a rediseñar completamente el widget. En lugar de un bloque grande, haré:
 1. Un resumen compacto siempre visible (una línea con info clave)
 2. Al hacer click, se expande mostrando más detalles 
-3. Diseño más cohesionado con gradientes y estilos similares al banner IAAhora necesito reemplazar el CSS completo del widget para el diseño accordion. Voy a crear un diseño mucho más compacto y cohesionado con el banner IA superior.Necesito buscar primero el CSS actual del widget de suscripción para reemplazarlo correctamente.Ahora voy a leer el CSS alrededor de esa línea para ver exactamente el formato.Necesito ver hasta donde termina la sección de SUBSCRIPTION WIDGET para poder reemplazarla completamente.Perfecto, ahora puedo hacer el reemplazo completo desde la línea 1547 hasta la línea 1738 (justo antes de /* === CARDS ===*/).Ya he actualizado tanto el HTML en tool.php como los estilos CSS. El nuevo diseño:
+3. Diseño más cohesionado con gradientes y estilos similares al banner IAAhora necesito reemplazar el CSS completo del widget para el diseño accordion. Voy a crear un diseño mucho más compacto y cohesionado con el banner IA superior.Necesito buscar primero el CSS actual del widget de suscripción para reemplazarlo correctamente.Ahora voy a leer el CSS alrededor de esa línea para ver exactamente el formato.Necesito ver hasta donde termina la sección de SUBSCRIPTION WIDGET para poder reemplazarla completamente.Perfecto, ahora puedo hacer el reemplazo completo desde la línea 1547 hasta la línea 1738 (justo antes de /* === CARDS ===*/).Ya he actualizado tanto el HTML en extract.php como los estilos CSS. El nuevo diseño:
 
 1. **Estado colapsado (por defecto)**: Muestra un botón con indicador de estado (✓, ⚠️), páginas usadas/límite, páginas restantes, y un chevron.
 
@@ -5436,7 +5436,7 @@ Ahora necestio que a nivel de menu despues de este tengamos una utilidad que sea
             'prefix'   => '<img src="' . DOL_URL_ROOT . '/custom/easyocr/img/uploadpdf.png" width="40px" height="40px">',
             'mainmenu' => 'easyocr',
             'leftmenu' => 'easyocr_tool',
-            'url'      => '/easyocr/tool.php',
+            'url'      => '/easyocr/extract.php',
             'langs'    => 'easyocr@easyocr',
             'position' => 1000 + $r,
             'enabled'  => '$conf->easyocr->enabled',
@@ -7298,10 +7298,10 @@ Leer [](file:///d%3A/laragon/www/erp-v16/public/custom/easyocr/lib/easyocr/src/R
 
 <tool-use data-tool-type="read" data-tool-name="copilot_readFile">
 <details>
-<summary>Tool use: **copilot_readFile** • Leyendo [](file:///d%3A/laragon/www/erp-v16/public/custom/easyocr/tool.php#1-1), líneas 1 a 70</summary>
+<summary>Tool use: **copilot_readFile** • Leyendo [](file:///d%3A/laragon/www/erp-v16/public/custom/easyocr/extract.php#1-1), líneas 1 a 70</summary>
 
 
-Leer [](file:///d%3A/laragon/www/erp-v16/public/custom/easyocr/tool.php#1-1), líneas 1 a 70
+Leer [](file:///d%3A/laragon/www/erp-v16/public/custom/easyocr/extract.php#1-1), líneas 1 a 70
 
 </details>
 </tool-use>
@@ -8249,7 +8249,7 @@ Status: **completed**
    - Allows drag-and-drop file upload (PDF, PNG, JPG, TIFF, BMP, WEBP)
    - Processes files in batch via the API
    
-Now I need to explore the existing API client to understand what batch endpoints are available, then I'll add the menu entry, create the batch page, handle translations and styling, and add an icon for the menu item. Now let me look at how `tool.php` initializes the API client and the existing page structure: Now let me look at the lib files and existing translations: Now let me check the existing translations to understand the format: Now let me check file count and last translations in the file:  Now let me also check the existing images in the img directory: Let me look at the BaseResource to understand error handling, and also check the existing lang files for en_US to understand the full pattern: Now let me check the `plan.php` to understand how subscription features are checked:  Now I have a clear picture. Let me build the batch page. Let me read the en_US translations too for reference:  Now let me look at the CSS section headers in `easyocr.css` for proper placement:  Now I have everything needed. Let me create all the files. First, let me add the menu entry in modEasyocr: Now let me create the batch.php page. This is the main page. Let me also review the `setup.php` admin page to understand how Dolibarr constants are stored:  Good. Now let me create the batch.php page: Now let me add translations. Let me check the tail of each language file and add batch translations: Now let me define all batch translations in one batch for all 8 languages:  Now let me get the tails of the remaining 5 language files:  Now let me add the CSS for the batch page. Let me find the right insertion point:   I'll insert batch styles before the CARDS section:  Ahora creo el icono SVG para el menú batch como PNG. Dado que los otros iconos del menú son archivos PNG de 40x40, voy a crear un SVG inline como imagen PNG. Usaré un enfoque diferente: puedo generar un PNG pequeño directamente. Dado que no tengo herramientas de generación de imágenes, crearé un SVG que se pueda usar:   The menu uses PNG files. Let me update the menu entry to use SVG instead, or better yet, convert the approach. The menus use `<img>` tags, and SVGs work fine in those. Let me update the menu entry to point to the SVG:   
+Now I need to explore the existing API client to understand what batch endpoints are available, then I'll add the menu entry, create the batch page, handle translations and styling, and add an icon for the menu item. Now let me look at how `extract.php` initializes the API client and the existing page structure: Now let me look at the lib files and existing translations: Now let me check the existing translations to understand the format: Now let me check file count and last translations in the file:  Now let me also check the existing images in the img directory: Let me look at the BaseResource to understand error handling, and also check the existing lang files for en_US to understand the full pattern: Now let me check the `plan.php` to understand how subscription features are checked:  Now I have a clear picture. Let me build the batch page. Let me read the en_US translations too for reference:  Now let me look at the CSS section headers in `easyocr.css` for proper placement:  Now I have everything needed. Let me create all the files. First, let me add the menu entry in modEasyocr: Now let me create the batch.php page. This is the main page. Let me also review the `setup.php` admin page to understand how Dolibarr constants are stored:  Good. Now let me create the batch.php page: Now let me add translations. Let me check the tail of each language file and add batch translations: Now let me define all batch translations in one batch for all 8 languages:  Now let me get the tails of the remaining 5 language files:  Now let me add the CSS for the batch page. Let me find the right insertion point:   I'll insert batch styles before the CARDS section:  Ahora creo el icono SVG para el menú batch como PNG. Dado que los otros iconos del menú son archivos PNG de 40x40, voy a crear un SVG inline como imagen PNG. Usaré un enfoque diferente: puedo generar un PNG pequeño directamente. Dado que no tengo herramientas de generación de imágenes, crearé un SVG que se pueda usar:   The menu uses PNG files. Let me update the menu entry to use SVG instead, or better yet, convert the approach. The menus use `<img>` tags, and SVGs work fine in those. Let me update the menu entry to point to the SVG:   
 
 ---
 
@@ -19986,10 +19986,10 @@ Leer [](file:///d%3A/laragon/www/erp-v16/public/custom/easyocr/batch.php#620-620
 
 <tool-use data-tool-type="search" data-tool-name="copilot_findTextInFiles">
 <details>
-<summary>Tool use: **copilot_findTextInFiles** • Buscando la expresión regular `notify|notification|toast|setEventMessage` (`**/tool.php`)</summary>
+<summary>Tool use: **copilot_findTextInFiles** • Buscando la expresión regular `notify|notification|toast|setEventMessage` (`**/extract.php`)</summary>
 
 
-Se ha buscado la expresión regular `notify|notification|toast|setEventMessage` (`**/tool.php`), 1 resultado
+Se ha buscado la expresión regular `notify|notification|toast|setEventMessage` (`**/extract.php`), 1 resultado
 
 </details>
 </tool-use>
@@ -20443,7 +20443,7 @@ Parameters:
     "duration": 97
   },
   "terminalCommandOutput": {
-    "text": "\u001b[36merp-v16\\public\\custom\\easyocr\"\u001b[37m; \u001b[93mgit \u001b[37mstatus \u001b[90m--short \u001b[37m2&gt;&amp;1\r\n\u001b[0m \u001b[31mM \u001b[0mChangeLog.md\r\n \u001b[31mM \u001b[0madmin/setup.php\r\n \u001b[31mM \u001b[0majax/ajax_easyocr.php\r\n \u001b[31mM \u001b[0mcore/modules/modEasyocr.class.php\r\n \u001b[31mM \u001b[0mcss/easyocr.css\r\n \u001b[31mM \u001b[0mjs/scripts.js.php\r\n \u001b[31mM \u001b[0mlangs/ca_ES/easyocr.lang\r\n \u001b[31mM \u001b[0mlangs/de_DE/easyocr.lang\r\n \u001b[31mM \u001b[0mlangs/en_US/easyocr.lang\r\n \u001b[31mM \u001b[0mlangs/es_ES/easyocr.lang\r\n \u001b[31mM \u001b[0mlangs/fr_FR/easyocr.lang\r\n \u001b[31mM \u001b[0mlangs/gl_ES/easyocr.lang\r\n \u001b[31mM \u001b[0mlangs/it_IT/easyocr.lang\r\n \u001b[31mM \u001b[0mlangs/pt_PT/easyocr.lang\r\n \u001b[31mM \u001b[0mlib/easyocr.lib.php\r\n \u001b[31mM \u001b[0mtool.php\r\n\u001b[31m?? \u001b[0m.specstory/\r\n\u001b[31m?? \u001b[0madmin/plan.php\r\n\u001b[31m?? \u001b[0majax/webhook_batch.php\r\n\u001b[31m?? \u001b[0mbatch.php\r\n\u001b[31m?? \u001b[0mimg/batch.png\r\n\u001b[31m?? \u001b[0mimg/batch.svg\r\n\u001b[31m?? \u001b[0mlib/easyocr/\r\n\u001b[31m?? \u001b[0mlib/easyocr_autoload.php\r\n\u001b[31m?? \u001b[0msql/llx_easyocr_webhook_log.sql\u001b[?1004h",
+    "text": "\u001b[36merp-v16\\public\\custom\\easyocr\"\u001b[37m; \u001b[93mgit \u001b[37mstatus \u001b[90m--short \u001b[37m2&gt;&amp;1\r\n\u001b[0m \u001b[31mM \u001b[0mChangeLog.md\r\n \u001b[31mM \u001b[0madmin/setup.php\r\n \u001b[31mM \u001b[0majax/ajax_easyocr.php\r\n \u001b[31mM \u001b[0mcore/modules/modEasyocr.class.php\r\n \u001b[31mM \u001b[0mcss/easyocr.css\r\n \u001b[31mM \u001b[0mjs/scripts.js.php\r\n \u001b[31mM \u001b[0mlangs/ca_ES/easyocr.lang\r\n \u001b[31mM \u001b[0mlangs/de_DE/easyocr.lang\r\n \u001b[31mM \u001b[0mlangs/en_US/easyocr.lang\r\n \u001b[31mM \u001b[0mlangs/es_ES/easyocr.lang\r\n \u001b[31mM \u001b[0mlangs/fr_FR/easyocr.lang\r\n \u001b[31mM \u001b[0mlangs/gl_ES/easyocr.lang\r\n \u001b[31mM \u001b[0mlangs/it_IT/easyocr.lang\r\n \u001b[31mM \u001b[0mlangs/pt_PT/easyocr.lang\r\n \u001b[31mM \u001b[0mlib/easyocr.lib.php\r\n \u001b[31mM \u001b[0mextract.php\r\n\u001b[31m?? \u001b[0m.specstory/\r\n\u001b[31m?? \u001b[0madmin/plan.php\r\n\u001b[31m?? \u001b[0majax/webhook_batch.php\r\n\u001b[31m?? \u001b[0mbatch.php\r\n\u001b[31m?? \u001b[0mimg/batch.png\r\n\u001b[31m?? \u001b[0mimg/batch.svg\r\n\u001b[31m?? \u001b[0mlib/easyocr/\r\n\u001b[31m?? \u001b[0mlib/easyocr_autoload.php\r\n\u001b[31m?? \u001b[0msql/llx_easyocr_webhook_log.sql\u001b[?1004h",
     "lineCount": 26
   },
   "terminalTheme": {
@@ -20532,7 +20532,7 @@ Parameters:
     "duration": 106
   },
   "terminalCommandOutput": {
-    "text": "\u001b[91mgit : warning: in the working copy of 'admin/setup.php', LF will be replaced \r\nby CRLF the next time Git touches it\r\nEn línea: 1 Carácter: 1\r\n+ git diff --stat HEAD 2&gt;&amp;1\r\n+ ~~~~~~~~~~~~~~~~~~~~~~~~~\r\n    + CategoryInfo          : NotSpecified: (warning: in the... Git touches it  \r\n   :String) [], RemoteException\r\n    + FullyQualifiedErrorId : NativeCommandError\r\n\r\n ChangeLog.md                      |   2 \u001b[32m+\u001b[31m-\r\n\u001b[91m warning: in the working copy of 'tool.php', LF will be replaced by CRLF the admin/setup.php                   |  29 \u001b[32m+\u001b[31m-\r\n\u001b[0m ajax/ajax_easyocr.php             | 405 \u001b[32m++++++++++++++++\u001b[31m---\r\n\r\n\u001b[0mcore/modules/modEasyocr.class.php |  24 \u001b[32m+\u001b[31m-\r\n\u001b[0m css/easyocr.css                   | 805 \u001b[32m++++++++++++++++++++++++++++++++++++++ \r\n\u001b[0m js/scripts.js.php                 |   2 \u001b[32m+\u001b[31m-\r\n\u001b[91m langs/ca_ES/easyocr.lang          | 220 \u001b[32m+++++++++++\r\n\u001b[91m next time Git touches itlangs/de_DE/easyocr.lang          | 220 \u001b[32m+++++++++++    \r\n\u001b[0m langs/en_US/easyocr.lang          | 216 \u001b[32m++++++++++\r\n\u001b[0m langs/es_ES/easyocr.lang          | 218 \u001b[32m+++++++++++\r\n\r\n\u001b[0m langs/fr_FR/easyocr.lang          | 218 \u001b[32m+++++++++++\r\n\u001b[0m langs/gl_ES/easyocr.lang          | 220 \u001b[32m+++++++++++\r\n\u001b[0m langs/it_IT/easyocr.lang          | 218 \u001b[32m+++++++++++\r\n\u001b[0m langs/pt_PT/easyocr.lang          | 220 \u001b[32m+++++++++++\r\n\u001b[0m lib/easyocr.lib.php               |   6 \u001b[32m+\r\n\u001b[0m tool.php                          | 136 \u001b[32m++++++\u001b[31m-\r\n\u001b[0m 16 files changed, 3096 insertions(+), 63 deletions(-)\u001b[?1004h",
+    "text": "\u001b[91mgit : warning: in the working copy of 'admin/setup.php', LF will be replaced \r\nby CRLF the next time Git touches it\r\nEn línea: 1 Carácter: 1\r\n+ git diff --stat HEAD 2&gt;&amp;1\r\n+ ~~~~~~~~~~~~~~~~~~~~~~~~~\r\n    + CategoryInfo          : NotSpecified: (warning: in the... Git touches it  \r\n   :String) [], RemoteException\r\n    + FullyQualifiedErrorId : NativeCommandError\r\n\r\n ChangeLog.md                      |   2 \u001b[32m+\u001b[31m-\r\n\u001b[91m warning: in the working copy of 'extract.php', LF will be replaced by CRLF the admin/setup.php                   |  29 \u001b[32m+\u001b[31m-\r\n\u001b[0m ajax/ajax_easyocr.php             | 405 \u001b[32m++++++++++++++++\u001b[31m---\r\n\r\n\u001b[0mcore/modules/modEasyocr.class.php |  24 \u001b[32m+\u001b[31m-\r\n\u001b[0m css/easyocr.css                   | 805 \u001b[32m++++++++++++++++++++++++++++++++++++++ \r\n\u001b[0m js/scripts.js.php                 |   2 \u001b[32m+\u001b[31m-\r\n\u001b[91m langs/ca_ES/easyocr.lang          | 220 \u001b[32m+++++++++++\r\n\u001b[91m next time Git touches itlangs/de_DE/easyocr.lang          | 220 \u001b[32m+++++++++++    \r\n\u001b[0m langs/en_US/easyocr.lang          | 216 \u001b[32m++++++++++\r\n\u001b[0m langs/es_ES/easyocr.lang          | 218 \u001b[32m+++++++++++\r\n\r\n\u001b[0m langs/fr_FR/easyocr.lang          | 218 \u001b[32m+++++++++++\r\n\u001b[0m langs/gl_ES/easyocr.lang          | 220 \u001b[32m+++++++++++\r\n\u001b[0m langs/it_IT/easyocr.lang          | 218 \u001b[32m+++++++++++\r\n\u001b[0m langs/pt_PT/easyocr.lang          | 220 \u001b[32m+++++++++++\r\n\u001b[0m lib/easyocr.lib.php               |   6 \u001b[32m+\r\n\u001b[0m extract.php                          | 136 \u001b[32m++++++\u001b[31m-\r\n\u001b[0m 16 files changed, 3096 insertions(+), 63 deletions(-)\u001b[?1004h",
     "lineCount": 29
   },
   "terminalTheme": {
@@ -20560,7 +20560,7 @@ Result:
       {
         "type": "embed",
         "isText": true,
-        "value": "git : warning: in the working copy of 'admin/setup.php', LF will be replaced \nby CRLF the next time Git touches it\nEn línea: 1 Carácter: 1\n+ git diff --stat HEAD 2&gt;&amp;1\n+ ~~~~~~~~~~~~~~~~~~~~~~~~~\n    + CategoryInfo          : NotSpecified: (warning: in the... Git touches it  \n   :String) [], RemoteException\n    + FullyQualifiedErrorId : NativeCommandError\n\n ChangeLog.md                      |   2 +-\n warning: in the working copy of 'tool.php', LF will be replaced by CRLF the adm\nin/setup.php                   |  29 +-                                          ajax/ajax_easyocr.php             | 405 ++++++++++++++++---\n\ncore/modules/modEasyocr.class.php |  24 +-\n css/easyocr.css                   | 805 ++++++++++++++++++++++++++++++++++++++ \n js/scripts.js.php                 |   2 +-\n langs/ca_ES/easyocr.lang          | 220 +++++++++++\n next time Git touches itlangs/de_DE/easyocr.lang          | 220 +++++++++++    \n langs/en_US/easyocr.lang          | 216 ++++++++++\n langs/es_ES/easyocr.lang          | 218 +++++++++++\n\n langs/fr_FR/easyocr.lang          | 218 +++++++++++\n langs/gl_ES/easyocr.lang          | 220 +++++++++++\n langs/it_IT/easyocr.lang          | 218 +++++++++++\n langs/pt_PT/easyocr.lang          | 220 +++++++++++\n lib/easyocr.lib.php               |   6 +\n tool.php                          | 136 ++++++-\n 16 files changed, 3096 insertions(+), 63 deletions(-)\n\n\nCommand exited with code 1"
+        "value": "git : warning: in the working copy of 'admin/setup.php', LF will be replaced \nby CRLF the next time Git touches it\nEn línea: 1 Carácter: 1\n+ git diff --stat HEAD 2&gt;&amp;1\n+ ~~~~~~~~~~~~~~~~~~~~~~~~~\n    + CategoryInfo          : NotSpecified: (warning: in the... Git touches it  \n   :String) [], RemoteException\n    + FullyQualifiedErrorId : NativeCommandError\n\n ChangeLog.md                      |   2 +-\n warning: in the working copy of 'extract.php', LF will be replaced by CRLF the adm\nin/setup.php                   |  29 +-                                          ajax/ajax_easyocr.php             | 405 ++++++++++++++++---\n\ncore/modules/modEasyocr.class.php |  24 +-\n css/easyocr.css                   | 805 ++++++++++++++++++++++++++++++++++++++ \n js/scripts.js.php                 |   2 +-\n langs/ca_ES/easyocr.lang          | 220 +++++++++++\n next time Git touches itlangs/de_DE/easyocr.lang          | 220 +++++++++++    \n langs/en_US/easyocr.lang          | 216 ++++++++++\n langs/es_ES/easyocr.lang          | 218 +++++++++++\n\n langs/fr_FR/easyocr.lang          | 218 +++++++++++\n langs/gl_ES/easyocr.lang          | 220 +++++++++++\n langs/it_IT/easyocr.lang          | 218 +++++++++++\n langs/pt_PT/easyocr.lang          | 220 +++++++++++\n lib/easyocr.lib.php               |   6 +\n extract.php                          | 136 ++++++-\n 16 files changed, 3096 insertions(+), 63 deletions(-)\n\n\nCommand exited with code 1"
       }
     ],
     "isError": true
@@ -20772,8 +20772,8 @@ Parameters:
   "terminalToolSessionId": "4e5e4892-8295-48b2-9fa7-d6a902809b90",
   "terminalCommandId": "tool-ac54fa62-b22d-4b61-878a-256a405d3ee5",
   "commandLine": {
-    "original": "cd \"d:\\laragon\\www\\erp-v16\\public\\custom\\easyocr\"; git diff HEAD -- tool.php | Select-Object -First 100 | Out-String",
-    "toolEdited": "git diff HEAD -- tool.php | Select-Object -First 100 | Out-String"
+    "original": "cd \"d:\\laragon\\www\\erp-v16\\public\\custom\\easyocr\"; git diff HEAD -- extract.php | Select-Object -First 100 | Out-String",
+    "toolEdited": "git diff HEAD -- extract.php | Select-Object -First 100 | Out-String"
   },
   "cwd": {
     "$mid": 1,
@@ -20796,7 +20796,7 @@ Parameters:
     "supportAlertSyntax": false
   },
   "confirmation": {
-    "commandLine": "git diff HEAD -- tool.php | Select-Object -First 100 | Out-String"
+    "commandLine": "git diff HEAD -- extract.php | Select-Object -First 100 | Out-String"
   },
   "terminalCommandUri": {
     "$mid": 1,
@@ -20810,7 +20810,7 @@ Parameters:
     "duration": 95
   },
   "terminalCommandOutput": {
-    "text": "warning: in the working copy of 'tool.php', LF will be replaced by CRLF the next time Git touches it\r\ndiff --git a/tool.php b/tool.php\r\nindex 88adb6e..3e3c11c 100644\r\n--- a/tool.php\r\n+++ b/tool.php\r\n@@ -24,6 +24,7 @@ require_once DOL_DOCUMENT_ROOT . '/core/class/html.formother.class.php';\r\n require_once DOL_DOCUMENT_ROOT . '/core/class/html.form.class.php';\r\n require_once __DIR__ . '/lib/easyocr.lib.php';\r\n require_once __DIR__ . '/lib/easyocr_ai.class.php';\r\n+require_once __DIR__ . '/lib/easyocr_autoload.php';\r\n\r\n // Security check - require write permission to process invoices\r\n if (!easyocrCheckRight($user, 'easyocr', 'write')) {\r\n@@ -34,16 +35,33 @@ if (!easyocrCheckRight($user, 'easyocr', 'write')) {        \r\n $aiService = new EasyOcrAI($db);\r\n $aiEnabled = $aiService-&gt;isEnabled();\r\n\r\n+// Fetch subscription info if API is enabled\r\n+$subscriptionData = null;\r\n+if ($aiEnabled) {\r\n+       try {\r\n+               $apiKey = !empty($conf-&gt;global-&gt;EASYOCR_AI_APIKEY) ? $conf-&gt;global-&gt;EASYOCR_AI_APIKEY : '';\r\n+               $apiUrl = !empty($conf-&gt;global-&gt;EASYOCR_AI_URL) ? $conf-&gt;global-&gt;EASYOCR_AI_URL : 'https://app.easyocr.es';\r\n+               if (!empty($apiKey)) {\r\n+                       $client = new \\EasySoft\\EasyOCR\\EasyOCRClient($apiKey, ['base_url' =&gt; $apiUrl]);\r\n+                       $accountData = $client-&gt;account()-&gt;me();\r\n+                       $subscriptionData = $accountData['data'] ?? null;       \r\n+               }\r\n+       } catch (\\Exception $e) {\r\n+               // Silently fail - subscription widget will not show\r\n+               $subscriptionData = null;\r\n+       }\r\n+}\r\n+\r\n $form = new Form($db);\r\n $langs-&gt;load('easyocr@easyocr');\r\n\r\n $arrayofjs = array(\r\n-       dol_buildpath('/custom/easyocr/js/pdf.min.js', 1),\r\n-       dol_buildpath('/custom/easyocr/libraries/notify.min.js', 1),\r\n-       dol_buildpath('/custom/easyocr/js/scripts.js.php', 1),\r\n+       dol_buildpath('/easyocr/js/pdf.min.js', 1),\r\n+       dol_buildpath('/easyocr/libraries/notify.min.js', 1),\r\n+       dol_buildpath('/easyocr/js/scripts.js.php', 1),\r\n );\r\n $arrayofcss = array(\r\n-       dol_buildpath('/custom/easyocr/css/easyocr.css', 1),\r\n+       dol_buildpath('/easyocr/css/easyocr.css', 1),\r\n );\r\n\r\n llxHeader(\"\", \"EasyOcr\", '', '', 0, 0, $arrayofjs, $arrayofcss);\r\n@@ -113,6 +131,116 @@ llxHeader(\"\", \"EasyOcr\", '', '', 0, 0, $arrayofjs, $arrayofcss);\r\n           &lt;svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"&gt;&lt;path d=\"M12 2a4 4 0 014 4v1a2 2 0 012 2v1a2 2 0 01-2 2H8a2 2 0 01-2-2V9a2 2 0 012-2V6a4 4 0 014-4z\"/&gt;&lt;path d=\"M9 18h6\"/&gt;&lt;path d=\"M10 22h4\"/&gt;&lt;path d=\"M12 14v4\"/&gt;&lt;/svg&gt;\r\n           &lt;?php echo $langs-&gt;trans('EasyOcrAIExtract'); ?&gt;\r\n         &lt;/button&gt;\r\n+\r\n+        &lt;?php if (!empty($subscriptionData)) {\r\n+          $plan = $subscriptionData['plan'] ?? [];\r\n+          $quota = $subscriptionData['quota'] ?? [];\r\n+          $wallet = $subscriptionData['wallet'] ?? [];\r\n+\r\n+          $pagesUsed = $quota['pages_used'] ?? 0;\r\n+          $pagesLimit = $quota['pages_limit'] ?? 0;\r\n+          $pagesRemaining = $quota['pages_remaining'] ?? 0;\r\n+          $usagePercentage = $quota['usage_percentage'] ?? 0;\r\n+          $resetDate = $quota['reset_date'] ?? '';\r\n+          $planName = $plan['name'] ?? '';\r\n+          $isFree = !empty($plan['is_free']);\r\n+\r\n+          // Wallet info\r\n+          $hasWallet = !empty($wallet['exists']);\r\n+          $walletBalance = $wallet['balance_pages'] ?? 0;\r\n+\r\n+          // Determinar estado\r\n+          $statusClass = '';\r\n+          $statusIcon = '';\r\n+          $statusText = '';\r\n+          if ($usagePercentage &gt;= 100) {\r\n+            $statusClass = 'danger';\r\n+            $statusIcon = 'ÔÜá´©Å';\r\n+            $statusText = $langs-&gt;trans('EasyOcrQuotaExceeded');\r\n+          } elseif ($usagePercentage &gt;= 80) {\r\n+            $statusClass = 'warning';\r\n+            $statusIcon = 'ÔÜá´©Å';\r\n+            $statusText = $langs-&gt;trans('EasyOcrQuotaNearLimit');\r\n+          } else {\r\n+            $statusClass = 'ok';\r\n+            $statusIcon = 'Ô£ô';\r\n+            $statusText = '';\r\n+          }\r\n+\r\n+          $percentage = $pagesLimit &gt; 0 ? min(round(($pagesUsed / $pagesLimit) * 100, 1), 100) : 0;\r\n+        ?&gt;\r\n+        &lt;!-- Subscription Status --&gt;\r\n+        &lt;div class=\"eo-quota-compact\"&gt;\r\n+          &lt;button class=\"eo-quota-toggle\" onclick=\"this.classList.toggle('eo-active'); this.nextElementSibling.classList.toggle('eo-visible')\" title=\"&lt;?php echo $langs-&gt;trans('EasyOcrViewFullPlan'); ?&gt;\"&gt;\r\n+            &lt;div class=\"eo-quota-toggle-left\"&gt;\r\n+              &lt;span class=\"eo-quota-status-icon eo-status-&lt;?php echo $statusClass; ?&gt;\"&gt;&lt;?php echo $statusIcon; ?&gt;&lt;/span&gt;\r\n+              &lt;span class=\"eo-quota-compact-text\"&gt;\r\n+                &lt;strong&gt;&lt;?php echo number_format($pagesUsed, 0, ',', '.'); ?&gt;&lt;/strong&gt; / &lt;?php echo number_format($pagesLimit, 0, ',', '.'); ?&gt; &lt;?php echo $langs-&gt;trans('EasyOcrPlanPages'); ?&gt;\r\n+              &lt;/span&gt;\r\n\u001b[?1004h",
+    "text": "warning: in the working copy of 'extract.php', LF will be replaced by CRLF the next time Git touches it\r\ndiff --git a/extract.php b/extract.php\r\nindex 88adb6e..3e3c11c 100644\r\n--- a/extract.php\r\n+++ b/extract.php\r\n@@ -24,6 +24,7 @@ require_once DOL_DOCUMENT_ROOT . '/core/class/html.formother.class.php';\r\n require_once DOL_DOCUMENT_ROOT . '/core/class/html.form.class.php';\r\n require_once __DIR__ . '/lib/easyocr.lib.php';\r\n require_once __DIR__ . '/lib/easyocr_ai.class.php';\r\n+require_once __DIR__ . '/lib/easyocr_autoload.php';\r\n\r\n // Security check - require write permission to process invoices\r\n if (!easyocrCheckRight($user, 'easyocr', 'write')) {\r\n@@ -34,16 +35,33 @@ if (!easyocrCheckRight($user, 'easyocr', 'write')) {        \r\n $aiService = new EasyOcrAI($db);\r\n $aiEnabled = $aiService-&gt;isEnabled();\r\n\r\n+// Fetch subscription info if API is enabled\r\n+$subscriptionData = null;\r\n+if ($aiEnabled) {\r\n+       try {\r\n+               $apiKey = !empty($conf-&gt;global-&gt;EASYOCR_AI_APIKEY) ? $conf-&gt;global-&gt;EASYOCR_AI_APIKEY : '';\r\n+               $apiUrl = !empty($conf-&gt;global-&gt;EASYOCR_AI_URL) ? $conf-&gt;global-&gt;EASYOCR_AI_URL : 'https://app.easyocr.es';\r\n+               if (!empty($apiKey)) {\r\n+                       $client = new \\EasySoft\\EasyOCR\\EasyOCRClient($apiKey, ['base_url' =&gt; $apiUrl]);\r\n+                       $accountData = $client-&gt;account()-&gt;me();\r\n+                       $subscriptionData = $accountData['data'] ?? null;       \r\n+               }\r\n+       } catch (\\Exception $e) {\r\n+               // Silently fail - subscription widget will not show\r\n+               $subscriptionData = null;\r\n+       }\r\n+}\r\n+\r\n $form = new Form($db);\r\n $langs-&gt;load('easyocr@easyocr');\r\n\r\n $arrayofjs = array(\r\n-       dol_buildpath('/custom/easyocr/js/pdf.min.js', 1),\r\n-       dol_buildpath('/custom/easyocr/libraries/notify.min.js', 1),\r\n-       dol_buildpath('/custom/easyocr/js/scripts.js.php', 1),\r\n+       dol_buildpath('/easyocr/js/pdf.min.js', 1),\r\n+       dol_buildpath('/easyocr/libraries/notify.min.js', 1),\r\n+       dol_buildpath('/easyocr/js/scripts.js.php', 1),\r\n );\r\n $arrayofcss = array(\r\n-       dol_buildpath('/custom/easyocr/css/easyocr.css', 1),\r\n+       dol_buildpath('/easyocr/css/easyocr.css', 1),\r\n );\r\n\r\n llxHeader(\"\", \"EasyOcr\", '', '', 0, 0, $arrayofjs, $arrayofcss);\r\n@@ -113,6 +131,116 @@ llxHeader(\"\", \"EasyOcr\", '', '', 0, 0, $arrayofjs, $arrayofcss);\r\n           &lt;svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"&gt;&lt;path d=\"M12 2a4 4 0 014 4v1a2 2 0 012 2v1a2 2 0 01-2 2H8a2 2 0 01-2-2V9a2 2 0 012-2V6a4 4 0 014-4z\"/&gt;&lt;path d=\"M9 18h6\"/&gt;&lt;path d=\"M10 22h4\"/&gt;&lt;path d=\"M12 14v4\"/&gt;&lt;/svg&gt;\r\n           &lt;?php echo $langs-&gt;trans('EasyOcrAIExtract'); ?&gt;\r\n         &lt;/button&gt;\r\n+\r\n+        &lt;?php if (!empty($subscriptionData)) {\r\n+          $plan = $subscriptionData['plan'] ?? [];\r\n+          $quota = $subscriptionData['quota'] ?? [];\r\n+          $wallet = $subscriptionData['wallet'] ?? [];\r\n+\r\n+          $pagesUsed = $quota['pages_used'] ?? 0;\r\n+          $pagesLimit = $quota['pages_limit'] ?? 0;\r\n+          $pagesRemaining = $quota['pages_remaining'] ?? 0;\r\n+          $usagePercentage = $quota['usage_percentage'] ?? 0;\r\n+          $resetDate = $quota['reset_date'] ?? '';\r\n+          $planName = $plan['name'] ?? '';\r\n+          $isFree = !empty($plan['is_free']);\r\n+\r\n+          // Wallet info\r\n+          $hasWallet = !empty($wallet['exists']);\r\n+          $walletBalance = $wallet['balance_pages'] ?? 0;\r\n+\r\n+          // Determinar estado\r\n+          $statusClass = '';\r\n+          $statusIcon = '';\r\n+          $statusText = '';\r\n+          if ($usagePercentage &gt;= 100) {\r\n+            $statusClass = 'danger';\r\n+            $statusIcon = 'ÔÜá´©Å';\r\n+            $statusText = $langs-&gt;trans('EasyOcrQuotaExceeded');\r\n+          } elseif ($usagePercentage &gt;= 80) {\r\n+            $statusClass = 'warning';\r\n+            $statusIcon = 'ÔÜá´©Å';\r\n+            $statusText = $langs-&gt;trans('EasyOcrQuotaNearLimit');\r\n+          } else {\r\n+            $statusClass = 'ok';\r\n+            $statusIcon = 'Ô£ô';\r\n+            $statusText = '';\r\n+          }\r\n+\r\n+          $percentage = $pagesLimit &gt; 0 ? min(round(($pagesUsed / $pagesLimit) * 100, 1), 100) : 0;\r\n+        ?&gt;\r\n+        &lt;!-- Subscription Status --&gt;\r\n+        &lt;div class=\"eo-quota-compact\"&gt;\r\n+          &lt;button class=\"eo-quota-toggle\" onclick=\"this.classList.toggle('eo-active'); this.nextElementSibling.classList.toggle('eo-visible')\" title=\"&lt;?php echo $langs-&gt;trans('EasyOcrViewFullPlan'); ?&gt;\"&gt;\r\n+            &lt;div class=\"eo-quota-toggle-left\"&gt;\r\n+              &lt;span class=\"eo-quota-status-icon eo-status-&lt;?php echo $statusClass; ?&gt;\"&gt;&lt;?php echo $statusIcon; ?&gt;&lt;/span&gt;\r\n+              &lt;span class=\"eo-quota-compact-text\"&gt;\r\n+                &lt;strong&gt;&lt;?php echo number_format($pagesUsed, 0, ',', '.'); ?&gt;&lt;/strong&gt; / &lt;?php echo number_format($pagesLimit, 0, ',', '.'); ?&gt; &lt;?php echo $langs-&gt;trans('EasyOcrPlanPages'); ?&gt;\r\n+              &lt;/span&gt;\r\n\u001b[?1004h",
     "lineCount": 117
   },
   "terminalTheme": {
@@ -22253,10 +22253,10 @@ Se ha buscado la expresión regular `eo-supplier-select|supplier.*tax_id|checkSu
 
 <tool-use data-tool-type="search" data-tool-name="copilot_findTextInFiles">
 <details>
-<summary>Tool use: **copilot_findTextInFiles** • Buscando la expresión regular `eo-modal-ai|ai.*supplier|eo-ai-card-supplier` (`**/tool.php`)</summary>
+<summary>Tool use: **copilot_findTextInFiles** • Buscando la expresión regular `eo-modal-ai|ai.*supplier|eo-ai-card-supplier` (`**/extract.php`)</summary>
 
 
-Se ha buscado la expresión regular `eo-modal-ai|ai.*supplier|eo-ai-card-supplier` (`**/tool.php`), 12 resultados
+Se ha buscado la expresión regular `eo-modal-ai|ai.*supplier|eo-ai-card-supplier` (`**/extract.php`), 12 resultados
 
 </details>
 </tool-use>
@@ -22265,10 +22265,10 @@ Se ha buscado la expresión regular `eo-modal-ai|ai.*supplier|eo-ai-card-supplie
 
 <tool-use data-tool-type="read" data-tool-name="copilot_readFile">
 <details>
-<summary>Tool use: **copilot_readFile** • Leyendo [](file:///d%3A/laragon/www/erp-v16/public/custom/easyocr/tool.php#610-610), líneas 610 a 640</summary>
+<summary>Tool use: **copilot_readFile** • Leyendo [](file:///d%3A/laragon/www/erp-v16/public/custom/easyocr/extract.php#610-610), líneas 610 a 640</summary>
 
 
-Leer [](file:///d%3A/laragon/www/erp-v16/public/custom/easyocr/tool.php#610-610), líneas 610 a 640
+Leer [](file:///d%3A/laragon/www/erp-v16/public/custom/easyocr/extract.php#610-610), líneas 610 a 640
 
 </details>
 </tool-use>
@@ -24940,8 +24940,8 @@ Result:
     "type": 3,
     "scope": "profile"
   },
-  "content": "&#96;&#96;&#96;php\nStore data in localStorage and redirect to tool.php where AI modal exists\r\n  try {\r\n    localStorage.setItem('eoBatchInvoiceData', JSON.stringify(data));\r\n    localStorage.setItem('eoBatchInvoiceTimestamp', Date.now().toString());\r\n    // Redirect to tool.php which will auto-open modal with this data\r\n    window.location.href = '&lt;?php echo dol_buildpath('/easyocr/tool.php', 1); ?&gt;?fromBatch=1';\r\n  } catch (e) {\r\n    alert('Error al preparar datos. Por favor, intenta desde la herramienta principal.');\r\n    console.error('localStorage error:', e);\n&#96;&#96;&#96;\n\n",
-  "textEditContent": "Store data in localStorage and redirect to tool.php where AI modal exists\r\n  try {\r\n    localStorage.setItem('eoBatchInvoiceData', JSON.stringify(data));\r\n    localStorage.setItem('eoBatchInvoiceTimestamp', Date.now().toString());\r\n    // Redirect to tool.php which will auto-open modal with this data\r\n    window.location.href = '&lt;?php echo dol_buildpath('/easyocr/tool.php', 1); ?&gt;?fromBatch=1';\r\n  } catch (e) {\r\n    alert('Error al preparar datos. Por favor, intenta desde la herramienta principal.');\r\n    console.error('localStorage error:', e);",
+  "content": "&#96;&#96;&#96;php\nStore data in localStorage and redirect to extract.php where AI modal exists\r\n  try {\r\n    localStorage.setItem('eoBatchInvoiceData', JSON.stringify(data));\r\n    localStorage.setItem('eoBatchInvoiceTimestamp', Date.now().toString());\r\n    // Redirect to extract.php which will auto-open modal with this data\r\n    window.location.href = '&lt;?php echo dol_buildpath('/easyocr/extract.php', 1); ?&gt;?fromBatch=1';\r\n  } catch (e) {\r\n    alert('Error al preparar datos. Por favor, intenta desde la herramienta principal.');\r\n    console.error('localStorage error:', e);\n&#96;&#96;&#96;\n\n",
+  "textEditContent": "Store data in localStorage and redirect to extract.php where AI modal exists\r\n  try {\r\n    localStorage.setItem('eoBatchInvoiceData', JSON.stringify(data));\r\n    localStorage.setItem('eoBatchInvoiceTimestamp', Date.now().toString());\r\n    // Redirect to extract.php which will auto-open modal with this data\r\n    window.location.href = '&lt;?php echo dol_buildpath('/easyocr/extract.php', 1); ?&gt;?fromBatch=1';\r\n  } catch (e) {\r\n    alert('Error al preparar datos. Por favor, intenta desde la herramienta principal.');\r\n    console.error('localStorage error:', e);",
   "toolCallResult": {
     "$mid": 23,
     "value": {
@@ -25580,30 +25580,30 @@ Y luego en la función `eoBatchCreateInvoiceFromDoc(btnEvent)`, espero recibir e
 
 Déjame corregir estos problemas.Bien, ahora déjame verificar si hay otros problemas. Déjame revisar si el modal AI existe realmente en scripts.js y si hay una función `EasyOcr.openAIModal`.No existe `EasyOcr.openAIModal` en scripts.js. El código de `eoBatchCreateInvoiceFromDoc` tiene un fallback manual que intenta abrir el modal, pero esto probablemente no funcionará correctamente porque:
 
-1. El modal AI (`#eo-modal-ai`) existe en tool.php, no en batch.php
+1. El modal AI (`#eo-modal-ai`) existe en extract.php, no en batch.php
 2. Los campos tienen IDs diferentes (prefijos `eo-ai-*`)
 3. La estructura completa del modal no está disponible desde batch.php
 
-Lo mejor sería crear una función específica para esto o redirigir al usuario a tool.php con los datos. Pero primero déjame verificar si el modal existe en batch.php o si necesitamos otro enfoque.El modal no existe en batch.php, solo estoy intentando acceder a él. Esto significa que el fallback no funcionará. Necesito cambiar el enfoque. 
+Lo mejor sería crear una función específica para esto o redirigir al usuario a extract.php con los datos. Pero primero déjame verificar si el modal existe en batch.php o si necesitamos otro enfoque.El modal no existe en batch.php, solo estoy intentando acceder a él. Esto significa que el fallback no funcionará. Necesito cambiar el enfoque. 
 
 Las opciones son:
-1. Redirigir a tool.php con parámetros GET (más simple pero pierde el contexto de batch)
+1. Redirigir a extract.php con parámetros GET (más simple pero pierde el contexto de batch)
 2. Usar localStorage para pasar los datos y luego redirigir (mejor opción)
 3. Incluir el modal AI en batch.php (muy complejo, muchos cambios)
 
-La opción 2 es la mejor: guardar los datos del documento en localStorage y redirigir a tool.php, donde scripts.js puede leer los datos y abrir el modal AI automáticamente.
+La opción 2 es la mejor: guardar los datos del documento en localStorage y redirigir a extract.php, donde scripts.js puede leer los datos y abrir el modal AI automáticamente.
 
-Déjame modificar la función `eoBatchCreateInvoiceFromDoc` para usar este enfoque.El código actual tiene un fallback que intenta usar el modal AI, pero como confirmé, el modal no existe en batch.php. Necesito reemplazar este enfoque con uno que use localStorage para pasar los datos a tool.php.
+Déjame modificar la función `eoBatchCreateInvoiceFromDoc` para usar este enfoque.El código actual tiene un fallback que intenta usar el modal AI, pero como confirmé, el modal no existe en batch.php. Necesito reemplazar este enfoque con uno que use localStorage para pasar los datos a extract.php.
 
 El nuevo enfoque será:
 1. Guardar los datos del documento en localStorage con una clave específica (ej: 'eoBatchInvoiceData')
-2. Redirigir a tool.php
-3. En tool.php/scripts.js, verificar si existe esa clave en localStorage al cargar
+2. Redirigir a extract.php
+3. En extract.php/scripts.js, verificar si existe esa clave en localStorage al cargar
 4. Si existe, abrir el modal AI con esos datos y limpiar localStorage
 
-Pero... esto requeriría modificar scripts.js también para leer de localStorage. Como alternativa más simple, puedo usar window.open() para abrir tool.php en una nueva pestaña/ventana, pero esto no es ideal.
+Pero... esto requeriría modificar scripts.js también para leer de localStorage. Como alternativa más simple, puedo usar window.open() para abrir extract.php en una nueva pestaña/ventana, pero esto no es ideal.
 
-La mejor opción es simplemente guardar en localStorage y redirigir. Si el usuario está en batch.php, lo llevamos a tool.php donde sí existe el modal AI completo. Déjame implementar esto.Ahora necesito agregar código en scripts.js (o tool.php) para leer de localStorage cuando se carga la página con el parámetro ?fromBatch=1 y abrir el modal AI automáticamente.
+La mejor opción es simplemente guardar en localStorage y redirigir. Si el usuario está en batch.php, lo llevamos a extract.php donde sí existe el modal AI completo. Déjame implementar esto.Ahora necesito agregar código en scripts.js (o extract.php) para leer de localStorage cuando se carga la página con el parámetro ?fromBatch=1 y abrir el modal AI automáticamente.
 
 Déjame buscar dónde se inicializa scripts.js para agregar esta lógica.Bien, hay un event listener para DOMContentLoaded que llama a `init()`. Déjame ver la función init y agregar la lógica para leer localStorage.Déjame leer la función init completa para ver dónde puedo agregar la lógica de batch.Déjame buscar el final de la función init para ver dónde termina y agregar la lógica de batch al final.Esto no es muy útil. Déjame buscar donde se carga la template o selector, o donde hay un mejor lugar para agregar la lógica de batch. Voy a buscar específicamente por "loadTemplate" o alguna acción inicial.Déjame buscar el final de la función init para agregar la lógica de batch ahí. Voy a buscarla de otra manera.Perfecto, veo que la función init termina en la línea 1491. Justo antes de esa línea, después de `state.aiEnabled = ...`, puedo agregar la lógica para verificar localStorage y abrir el modal AI si vienen de batch.
 
@@ -25622,7 +25622,7 @@ También guarda el resultado en `state.aiResult`. Entonces puedo simplemente cre
 Déjame crear esta función. La colocaré junto a `checkBatchInvoiceData`.Perfecto. Ahora tengo todo el flujo completo:
 1. El usuario hace clic en "Crear factura" en batch.php
 2. Los datos del documento se guardan en localStorage
-3. Se redirige a tool.php con ?fromBatch=1
+3. Se redirige a extract.php con ?fromBatch=1
 4. `checkBatchInvoiceData()` lee de localStorage
 5. Llama a `openAIModal(data)` que guarda en `state.aiResult` y muestra el modal
 
@@ -25637,7 +25637,7 @@ Déjame comprobar la lógica de la función eoBatchDoInvoiceCheck para asegurarm
    - ✅ Parámetro `docNumSafe` agregado a las funciones
    - ✅ Corrección de `onclick="eoBatchCreateInvoiceFromDoc(event)"` (antes era `arguments[0]`)
    - ✅ Parámetro de función corregido de `btnEvent` a `event`
-   - ✅ Implementación de localStorage + redirect a tool.php en lugar del fallback manual inútil
+   - ✅ Implementación de localStorage + redirect a extract.php en lugar del fallback manual inútil
    - ✅ Sintaxis PHP validada sin errores
 
 ### 2. **Nuevas funciones en scripts.js:**
@@ -25673,7 +25673,7 @@ He revisado y **corregido varios problemas** encontrados durante la revisión de
 - Cambiado a `onclick="eoBatchCreateInvoiceFromDoc(event)"`
 - Parámetro de función ajustado de `btnEvent` a `event`
 
-#### 3. **`batch.php` - Redireccionamiento a `tool.php` con localStorage**
+#### 3. **`batch.php` - Redireccionamiento a `extract.php` con localStorage**
 **Problema:** El fallback intentaba usar modal AI que no existe en batch.php, causaría errores.
 
 **Solución:**
@@ -25681,7 +25681,7 @@ He revisado y **corregido varios problemas** encontrados durante la revisión de
   ```javascript
   localStorage.setItem('eoBatchInvoiceData', JSON.stringify(data));
   localStorage.setItem('eoBatchInvoiceTimestamp', Date.now().toString());
-  window.location.href = 'tool.php?fromBatch=1';
+  window.location.href = 'extract.php?fromBatch=1';
   ```
 
 #### 4. **`scripts.js` - Auto-carga de datos batch**
@@ -25725,10 +25725,10 @@ Integrado en `init()` para ejecutarse automáticamente al cargar.
 2. **Sistema verifica** → AJAX `checkInvoiceExists` por `ref_supplier`
 3. **Si NO existe:**
    - Muestra: ℹ️ "No creada" + botón "Crear factura"
-   - Click → Guarda datos en `localStorage` + redirect a `tool.php?fromBatch=1`
+   - Click → Guarda datos en `localStorage` + redirect a `extract.php?fromBatch=1`
 4. **Si SÍ existe:**
    - Muestra: ✓ "Factura ya creada" + enlace "Ver factura" → `card.php?facid=X`
-5. **En tool.php:**
+5. **En extract.php:**
    - `checkBatchInvoiceData()` detecta `?fromBatch=1`
    - Lee `localStorage`, valida timestamp (< 5 min)
    - Abre modal AI con `openAIModal(data)` pre-llenado
@@ -27885,10 +27885,10 @@ Leer [](file:///d%3A/laragon/www/erp-v16/public/custom/easyocr/batch.php#1145-11
 
 <tool-use data-tool-type="search" data-tool-name="copilot_findTextInFiles">
 <details>
-<summary>Tool use: **copilot_findTextInFiles** • Buscando la expresión regular `subscription|suscripci|plan_info|pages_processed|pages_remaining|wallet` (`**/tool.php`)</summary>
+<summary>Tool use: **copilot_findTextInFiles** • Buscando la expresión regular `subscription|suscripci|plan_info|pages_processed|pages_remaining|wallet` (`**/extract.php`)</summary>
 
 
-Se ha buscado la expresión regular `subscription|suscripci|plan_info|pages_processed|pages_remaining|wallet` (`**/tool.php`), 20 resultados
+Se ha buscado la expresión regular `subscription|suscripci|plan_info|pages_processed|pages_remaining|wallet` (`**/extract.php`), 20 resultados
 
 </details>
 </tool-use>
@@ -27897,10 +27897,10 @@ Se ha buscado la expresión regular `subscription|suscripci|plan_info|pages_proc
 
 <tool-use data-tool-type="read" data-tool-name="copilot_readFile">
 <details>
-<summary>Tool use: **copilot_readFile** • Leyendo [](file:///d%3A/laragon/www/erp-v16/public/custom/easyocr/tool.php#35-35), líneas 35 a 250</summary>
+<summary>Tool use: **copilot_readFile** • Leyendo [](file:///d%3A/laragon/www/erp-v16/public/custom/easyocr/extract.php#35-35), líneas 35 a 250</summary>
 
 
-Leer [](file:///d%3A/laragon/www/erp-v16/public/custom/easyocr/tool.php#35-35), líneas 35 a 250
+Leer [](file:///d%3A/laragon/www/erp-v16/public/custom/easyocr/extract.php#35-35), líneas 35 a 250
 
 </details>
 </tool-use>
@@ -28029,10 +28029,10 @@ Leer [](file:///d%3A/laragon/www/erp-v16/public/custom/easyocr/batch.php#1430-14
 
 <tool-use data-tool-type="read" data-tool-name="copilot_readFile">
 <details>
-<summary>Tool use: **copilot_readFile** • Leyendo [](file:///d%3A/laragon/www/erp-v16/public/custom/easyocr/tool.php#1-1), líneas 1 a 35</summary>
+<summary>Tool use: **copilot_readFile** • Leyendo [](file:///d%3A/laragon/www/erp-v16/public/custom/easyocr/extract.php#1-1), líneas 1 a 35</summary>
 
 
-Leer [](file:///d%3A/laragon/www/erp-v16/public/custom/easyocr/tool.php#1-1), líneas 1 a 35
+Leer [](file:///d%3A/laragon/www/erp-v16/public/custom/easyocr/extract.php#1-1), líneas 1 a 35
 
 </details>
 </tool-use>
@@ -28391,7 +28391,7 @@ function eoBatchRowCreateInvoice(docNumSafe, event) {
   try {
     localStorage.setItem('eoBatchInvoiceData', JSON.stringify(data));
     localStorage.setItem('eoBatchInvoiceTimestamp', Date.now().toString());
-    window.location.href = '<?php echo dol_buildpath('/easyocr/tool.php', 1); ?>?fromBatch=1';
+    window.location.href = '<?php echo dol_buildpath('/easyocr/extract.php', 1); ?>?fromBatch=1';
   } catch (e) {
     console.error('localStorage error:', e);
   }
@@ -28899,10 +28899,10 @@ EasyOcrBatchInvoiceNotCreated = Não criada
 
 <tool-use data-tool-type="read" data-tool-name="copilot_readFile">
 <details>
-<summary>Tool use: **copilot_readFile** • Leyendo [](file:///d%3A/laragon/www/erp-v16/public/custom/easyocr/tool.php#172-172), líneas 172 a 240</summary>
+<summary>Tool use: **copilot_readFile** • Leyendo [](file:///d%3A/laragon/www/erp-v16/public/custom/easyocr/extract.php#172-172), líneas 172 a 240</summary>
 
 
-Leer [](file:///d%3A/laragon/www/erp-v16/public/custom/easyocr/tool.php#172-172), líneas 172 a 240
+Leer [](file:///d%3A/laragon/www/erp-v16/public/custom/easyocr/extract.php#172-172), líneas 172 a 240
 
 </details>
 </tool-use>
@@ -28918,8 +28918,8 @@ Parameters:
 
 ```json
 {
-  "file_path": "d%3A/laragon/www/erp-v16/public/custom/easyocr/tool.php",
-  "relativeWorkspacePath": "tool.php"
+  "file_path": "d%3A/laragon/www/erp-v16/public/custom/easyocr/extract.php",
+  "relativeWorkspacePath": "extract.php"
 }
 ```
 Additional data:
@@ -28934,7 +28934,7 @@ Result:
 
 ```json
 {
-  "invocationMessage": "Reemplazando 64 líneas por 58 líneas en [](file:///d%3A/laragon/www/erp-v16/public/custom/easyocr/tool.php)",
+  "invocationMessage": "Reemplazando 64 líneas por 58 líneas en [](file:///d%3A/laragon/www/erp-v16/public/custom/easyocr/extract.php)",
   "isConfirmed": {
     "type": 3,
     "scope": "profile"
@@ -28964,7 +28964,7 @@ Result:
           {
             "type": 2,
             "priority": 9007199254740991,
-            "text": "d:\\laragon\\www\\erp-v16\\public\\custom\\easyocr\\tool.php",
+            "text": "d:\\laragon\\www\\erp-v16\\public\\custom\\easyocr\\extract.php",
             "lineBreakBefore": false
           },
           {
@@ -28991,10 +28991,10 @@ Status: **completed**
 
 <tool-use data-tool-type="read" data-tool-name="copilot_readFile">
 <details>
-<summary>Tool use: **copilot_readFile** • Leyendo [](file:///d%3A/laragon/www/erp-v16/public/custom/easyocr/tool.php#655-655), líneas 655 a 663</summary>
+<summary>Tool use: **copilot_readFile** • Leyendo [](file:///d%3A/laragon/www/erp-v16/public/custom/easyocr/extract.php#655-655), líneas 655 a 663</summary>
 
 
-Leer [](file:///d%3A/laragon/www/erp-v16/public/custom/easyocr/tool.php#655-655), líneas 655 a 663
+Leer [](file:///d%3A/laragon/www/erp-v16/public/custom/easyocr/extract.php#655-655), líneas 655 a 663
 
 </details>
 </tool-use>
@@ -29003,7 +29003,7 @@ Leer [](file:///d%3A/laragon/www/erp-v16/public/custom/easyocr/tool.php#655-655)
 
 <tool-use data-tool-type="read" data-tool-name="copilot_readFile">
 <details>
-<summary>Tool use: **copilot_readFile** • Leyendo [](file:///d%3A/laragon/www/erp-v16/public/custom/easyocr/tool.php#637-637), líneas 637 a 663</summary>
+<summary>Tool use: **copilot_readFile** • Leyendo [](file:///d%3A/laragon/www/erp-v16/public/custom/easyocr/extract.php#637-637), líneas 637 a 663</summary>
 
 ```php
  if (!empty($subscriptionData)) { ?>
@@ -29200,8 +29200,8 @@ Result:
     "type": 3,
     "scope": "profile"
   },
-  "content": "&#96;&#96;&#96;markdown\n\r\n- **Traducción de estados batch**: Los badges de estado (Completed, Processing, Failed, etc.) ahora se muestran traducidos mediante claves i18n (&#96;statusPending&#96;, &#96;statusProcessing&#96;, etc.) en lugar del texto en inglés crudo\r\n- **Icono de factura en fila de documento**: Se añade un icono &#96;fa-file-invoice&#96; directamente en la columna de acciones de cada documento completado del batch:\r\n  - Verde con enlace: factura ya existe en Dolibarr (abre card.php)\r\n  - Rojo con clic: factura no creada, permite crear directamente sin expandir el detalle\r\n  - Verificación asíncrona automática al cargar la lista de documentos\r\n- **Auto-refresh de suscripción**: El widget de cuota/suscripción en &#96;tool.php&#96; se actualiza automáticamente cada 5 segundos vía polling AJAX\r\n  - Nueva acción &#96;getSubscriptionInfo&#96; en &#96;ajax_easyocr.php&#96; que devuelve datos de plan, cuota, wallet y estado\r\n  - Actualización dinámica de todos los elementos del widget (barra de progreso, contadores, estado, wallet) sin recarga de página\r\n- **Traducción \"No creada\"**: Añadida clave &#96;EasyOcrBatchInvoiceNotCreated&#96; en 8 idiomas para reemplazar texto hardcoded en español\n&#96;&#96;&#96;\n\n",
-  "textEditContent": "\r\n- **Traducción de estados batch**: Los badges de estado (Completed, Processing, Failed, etc.) ahora se muestran traducidos mediante claves i18n (&#96;statusPending&#96;, &#96;statusProcessing&#96;, etc.) en lugar del texto en inglés crudo\r\n- **Icono de factura en fila de documento**: Se añade un icono &#96;fa-file-invoice&#96; directamente en la columna de acciones de cada documento completado del batch:\r\n  - Verde con enlace: factura ya existe en Dolibarr (abre card.php)\r\n  - Rojo con clic: factura no creada, permite crear directamente sin expandir el detalle\r\n  - Verificación asíncrona automática al cargar la lista de documentos\r\n- **Auto-refresh de suscripción**: El widget de cuota/suscripción en &#96;tool.php&#96; se actualiza automáticamente cada 5 segundos vía polling AJAX\r\n  - Nueva acción &#96;getSubscriptionInfo&#96; en &#96;ajax_easyocr.php&#96; que devuelve datos de plan, cuota, wallet y estado\r\n  - Actualización dinámica de todos los elementos del widget (barra de progreso, contadores, estado, wallet) sin recarga de página\r\n- **Traducción \"No creada\"**: Añadida clave &#96;EasyOcrBatchInvoiceNotCreated&#96; en 8 idiomas para reemplazar texto hardcoded en español",
+  "content": "&#96;&#96;&#96;markdown\n\r\n- **Traducción de estados batch**: Los badges de estado (Completed, Processing, Failed, etc.) ahora se muestran traducidos mediante claves i18n (&#96;statusPending&#96;, &#96;statusProcessing&#96;, etc.) en lugar del texto en inglés crudo\r\n- **Icono de factura en fila de documento**: Se añade un icono &#96;fa-file-invoice&#96; directamente en la columna de acciones de cada documento completado del batch:\r\n  - Verde con enlace: factura ya existe en Dolibarr (abre card.php)\r\n  - Rojo con clic: factura no creada, permite crear directamente sin expandir el detalle\r\n  - Verificación asíncrona automática al cargar la lista de documentos\r\n- **Auto-refresh de suscripción**: El widget de cuota/suscripción en &#96;extract.php&#96; se actualiza automáticamente cada 5 segundos vía polling AJAX\r\n  - Nueva acción &#96;getSubscriptionInfo&#96; en &#96;ajax_easyocr.php&#96; que devuelve datos de plan, cuota, wallet y estado\r\n  - Actualización dinámica de todos los elementos del widget (barra de progreso, contadores, estado, wallet) sin recarga de página\r\n- **Traducción \"No creada\"**: Añadida clave &#96;EasyOcrBatchInvoiceNotCreated&#96; en 8 idiomas para reemplazar texto hardcoded en español\n&#96;&#96;&#96;\n\n",
+  "textEditContent": "\r\n- **Traducción de estados batch**: Los badges de estado (Completed, Processing, Failed, etc.) ahora se muestran traducidos mediante claves i18n (&#96;statusPending&#96;, &#96;statusProcessing&#96;, etc.) en lugar del texto en inglés crudo\r\n- **Icono de factura en fila de documento**: Se añade un icono &#96;fa-file-invoice&#96; directamente en la columna de acciones de cada documento completado del batch:\r\n  - Verde con enlace: factura ya existe en Dolibarr (abre card.php)\r\n  - Rojo con clic: factura no creada, permite crear directamente sin expandir el detalle\r\n  - Verificación asíncrona automática al cargar la lista de documentos\r\n- **Auto-refresh de suscripción**: El widget de cuota/suscripción en &#96;extract.php&#96; se actualiza automáticamente cada 5 segundos vía polling AJAX\r\n  - Nueva acción &#96;getSubscriptionInfo&#96; en &#96;ajax_easyocr.php&#96; que devuelve datos de plan, cuota, wallet y estado\r\n  - Actualización dinámica de todos los elementos del widget (barra de progreso, contadores, estado, wallet) sin recarga de página\r\n- **Traducción \"No creada\"**: Añadida clave &#96;EasyOcrBatchInvoiceNotCreated&#96; en 8 idiomas para reemplazar texto hardcoded en español",
   "toolCallResult": {
     "$mid": 23,
     "value": {
@@ -29295,10 +29295,10 @@ Leer [](file:///d%3A/laragon/www/erp-v16/public/custom/easyocr/batch.php#1480-14
 
 <tool-use data-tool-type="read" data-tool-name="copilot_readFile">
 <details>
-<summary>Tool use: **copilot_readFile** • Leyendo [](file:///d%3A/laragon/www/erp-v16/public/custom/easyocr/tool.php#660-660), líneas 660 a 738</summary>
+<summary>Tool use: **copilot_readFile** • Leyendo [](file:///d%3A/laragon/www/erp-v16/public/custom/easyocr/extract.php#660-660), líneas 660 a 738</summary>
 
 
-Leer [](file:///d%3A/laragon/www/erp-v16/public/custom/easyocr/tool.php#660-660), líneas 660 a 738
+Leer [](file:///d%3A/laragon/www/erp-v16/public/custom/easyocr/extract.php#660-660), líneas 660 a 738
 
 </details>
 </tool-use>
@@ -29341,13 +29341,13 @@ For task 2, I need to add an invoice action icon in the document row, next to th
 
 For task 3, I need to create an AJAX endpoint to fetch subscription data and poll it. 
 
-Now I'm checking what the EasyOCRClient looks like to understand how to integrate with it.Now let me look at the invoice check functions and the EasyOCR AI class:   Now let me read the end of the ajax file and the easyocr_ai class to understand the API client and how to build the subscription endpoint:   Now I have a clear picture. Let me now look at what the tool.php subscription block uses from PHP to produce the HTML, so I know what to return from the AJAX endpoint. Also, I need to see how tool.php handles the subscription data flow from PHP to the frontend.
+Now I'm checking what the EasyOCRClient looks like to understand how to integrate with it.Now let me look at the invoice check functions and the EasyOCR AI class:   Now let me read the end of the ajax file and the easyocr_ai class to understand the API client and how to build the subscription endpoint:   Now I have a clear picture. Let me now look at what the extract.php subscription block uses from PHP to produce the HTML, so I know what to return from the AJAX endpoint. Also, I need to see how extract.php handles the subscription data flow from PHP to the frontend.
 
 For Task 3, I need to:
 1. Create a new AJAX action `getSubscriptionInfo` that fetches account data from the API and returns JSON
-2. Add JS code in tool.php to poll every 5 seconds and update the subscription card DOM
+2. Add JS code in extract.php to poll every 5 seconds and update the subscription card DOM
 
-Let me check if there's an `EasyOCRClient` class used in tool.php:Now I have a complete understanding. Let me now look at the remaining language files to understand what keys already exist:  Now I have all the context needed. Let me plan and execute the 3 tasks:
+Let me check if there's an `EasyOCRClient` class used in extract.php:Now I have a complete understanding. Let me now look at the remaining language files to understand what keys already exist:  Now I have all the context needed. Let me plan and execute the 3 tasks:
 
 ## Task 1: Translate batch statuses
 The translations already exist in the lang files (EasyOcrBatchStatusPending, etc.). I just need to:
@@ -29364,11 +29364,11 @@ I need to:
 
 ## Task 3: Auto-refresh subscription card
 1. Create a new AJAX action `getSubscriptionInfo` in ajax_easyocr.php
-2. Add JS polling in tool.php to update the card every 5 seconds
+2. Add JS polling in extract.php to update the card every 5 seconds
 
 Let me start implementing.Now I have full context. Let me implement all 3 tasks:    **Task 1: Traducir estados batch** — Las traducciones ya existen en los .lang files. Solo falta conectarlas al `eoBatchI18n` y usarlas en `eoBatchStatusBadge()`. Now let me also fix the hardcoded "No creada" text in the invoice check result: **Task 2: Icono factura en fila documento** — Añadir un icono de acción junto al chevron en la fila del documento que muestre el estado de la factura sin tener que expandir el collapse.    Now I need to add the `eoBatchRowInvoiceCheck()` function. Let me add it before the `eoBatchToggleDocDetail` function:     **Task 4: Añadir traducciones faltantes** — Necesito añadir `EasyOcrBatchInvoiceNotCreated` a los 8 archivos de idiomas.     **Task 5: AJAX getSubscriptionInfo** — Crear endpoint para obtener datos de suscripción y Task 3: Auto-refresh del card.
 
-Primero, añadir la acción AJAX en `ajax_easyocr.php`:    Now let me add the auto-refresh JavaScript to tool.php. I need to add IDs to the DOM elements so they can be updated dynamically: I need to add `id` attributes to the elements that will be dynamically updated, then add the polling JS. Let me apply the changes: Now add the polling JavaScript. Let me find the end of `tool.php` to add a script block:  Ahora verifico que todo esté correcto antes de actualizar el ChangeLog:      Now let me update the ChangeLog:   Verifico que los cambios son coherentes:   Todo se ve bien. Verifico también el `tool.php` con el polling:   Las 3 tareas están completadas. Resumen de los cambios:
+Primero, añadir la acción AJAX en `ajax_easyocr.php`:    Now let me add the auto-refresh JavaScript to extract.php. I need to add IDs to the DOM elements so they can be updated dynamically: I need to add `id` attributes to the elements that will be dynamically updated, then add the polling JS. Let me apply the changes: Now add the polling JavaScript. Let me find the end of `extract.php` to add a script block:  Ahora verifico que todo esté correcto antes de actualizar el ChangeLog:      Now let me update the ChangeLog:   Verifico que los cambios son coherentes:   Todo se ve bien. Verifico también el `extract.php` con el polling:   Las 3 tareas están completadas. Resumen de los cambios:
 
 ---
 
@@ -29380,13 +29380,13 @@ Primero, añadir la acción AJAX en `ajax_easyocr.php`:    Now let me add the au
 ### 2. Icono de factura en fila de documento
 - En la columna "Acciones" de cada documento completado se añade un icono `fa-file-invoice` junto al chevron de expandir
 - **Verde** con enlace directo a la factura si ya existe en Dolibarr
-- **Rojo** con clic para crear factura (redirige a `tool.php` con datos pre-cargados)
+- **Rojo** con clic para crear factura (redirige a `extract.php` con datos pre-cargados)
 - La verificación se ejecuta asincrónicamente al cargar la lista (con delay escalonado por documento)
 - Nuevas funciones: `eoBatchRowInvoiceCheck()` y `eoBatchRowCreateInvoice()`
 
 ### 3. Auto-refresh del widget de suscripción
 - **`ajax_easyocr.php`**: Nueva acción `getSubscriptionInfo` que devuelve JSON con pages_used, pages_limit, pages_remaining, wallet, plan, status
-- **`tool.php`**: Se añadieron IDs a todos los elementos del widget de suscripción y un script de polling cada 5 segundos que actualiza dinámicamente todos los valores (contadores, barra de progreso, estado, wallet, alertas)
+- **`extract.php`**: Se añadieron IDs a todos los elementos del widget de suscripción y un script de polling cada 5 segundos que actualiza dinámicamente todos los valores (contadores, barra de progreso, estado, wallet, alertas)
 
 ### 4. Traducciones
 - Nueva clave `EasyOcrBatchInvoiceNotCreated` en los 8 idiomas (es, en, fr, ca, gl, de, it, pt)
@@ -30004,11 +30004,11 @@ Now I'm looking at the `eoBatchRowInvoiceCheck` function and noticing it uses `e
 
 Wait, I see that `ajax_easyocr.php` has `NOCSRFCHECK` defined at the top, which means CSRF token validation is disabled for these AJAX endpoints anyway. So the token generation shouldn't be causing issues here.
 
-Let me shift focus and check if the problem might actually be in `tool.php` instead—maybe something's going wrong with the auto-detection logic there.
+Let me shift focus and check if the problem might actually be in `extract.php` instead—maybe something's going wrong with the auto-detection logic there.
 
 Actually, the user was clear that the issue is specifically with `easyocr/batch.php`. Let me reconsider whether the API call for subscription data could be hanging or timing out, causing the page to load indefinitely. The user said "se queda cargando y no se ve nada"—nothing appears at all. If it was just slow, the page would eventually render, unless the curl request to the API server is blocking indefinitely.
 
-Wait, that subscription endpoint is only used in `tool.php`, not `batch.php`, so that's not it either. Let me try a different angle entirely.
+Wait, that subscription endpoint is only used in `extract.php`, not `batch.php`, so that's not it either. Let me try a different angle entirely.
 
 I should check the JavaScript in `batch.php` for syntax errors. Actually, let me look more carefully at the `eoBatchI18n` object I modified—I added a new key `invoiceNotCreated` but I need to verify I didn't break the object structure or leave it incomplete.
 
@@ -30838,7 +30838,7 @@ The other error:
 scripts.js.php?lang=es_ES:1535 Uncaught TypeError: Cannot read properties of null (reading 'addEventListener')
 ```
 
-This is in scripts.js.php which tries to attach event listeners to elements that don't exist on batch.php (they're for tool.php). This is expected and not the cause.
+This is in scripts.js.php which tries to attach event listeners to elements that don't exist on batch.php (they're for extract.php). This is expected and not the cause.
 
 
 I need to examine the JavaScript in batch.php more closely to locate the missing closing brace or parenthesis that's causing the syntax error at line 1894.El error clave es:

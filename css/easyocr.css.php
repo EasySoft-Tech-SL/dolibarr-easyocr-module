@@ -100,4 +100,43 @@ div.mainmenu.easyocr {
     filter: none !important;
 }
 
+/* ══════════════════════════════════════════════════════════════
+   EasyOcr — Shared page header (used across all module pages)
+   ══════════════════════════════════════════════════════════════ */
+
+.eo-page-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 24px;
+    padding-bottom: 18px;
+    border-bottom: 1px solid #dee2e6;
+}
+.eo-page-header-icon {
+    width: 46px;
+    height: 46px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2em;
+    flex-shrink: 0;
+}
+.eo-page-header-icon--batch { background: #e8f5e9; color: #2e7d32; }
+.eo-page-header-icon--inv   { background: #fff3e0; color: #e65100; }
+.eo-page-header-icon--tpl   { background: #ede7f6; color: #5e35b1; }
+.eo-page-header-icon--tool  { background: #e3f2fd; color: #1565c0; }
+.eo-page-header-icon--admin { background: #eceff1; color: #546e7a; }
+
+.eo-page-header-text h1 {
+    margin: 0;
+    font-size: 1.4em;
+    font-weight: 700;
+    color: #263238;
+}
+.eo-page-header-text p {
+    margin: 2px 0 0;
+    font-size: .84em;
+    color: #78909c;
+}
 

@@ -26,6 +26,15 @@ EasyOcrPermDelete = Eliminar modelos e registos de faturas
 EasyOcrMenuUploadPdf = Carregar PDF
 EasyOcrMenuTemplates = Modelos
 EasyOcrMenuInvoices = Faturas
+
+# --- index.php (dashboard de cartões) ---
+EasyOcrIndexSections = Acesso rápido
+EasyOcrIndexOpen = Abrir
+EasyOcrIndexDescTool = Importe um PDF e extraia visualmente dados de faturas de fornecedor.
+EasyOcrIndexDescBatch = Processe vários PDFs de uma vez com extração automática por IA.
+EasyOcrIndexDescTemplates = Gira os modelos de seleção de zonas associados a fornecedores.
+EasyOcrIndexDescInvoices = Consulte o histórico de faturas geradas a partir de PDFs importados.
+EasyOcrIndexDescSetup = Configure a chave API, o serviço na nuvem e as opções do módulo.
 EasyOcrImportPdf = Importar PDF
 EasyOcrNoFileSelected = Nenhum ficheiro selecionado
 EasyOcrZoomOut = Diminuir (-)
@@ -90,7 +99,7 @@ EasyOcrInvoiceCreated = Fatura criada
 EasyOcrOpenNewTab = Abrir em novo separador
 EasyOcrOpen = Abrir ↗
 
-# --- Subscription Widget (tool.php) ---
+# --- Subscription Widget (extract.php) ---
 EasyOcrQuotaPages = Páginas processadas
 EasyOcrQuotaRemaining = Restantes
 EasyOcrQuotaReset = Renovação

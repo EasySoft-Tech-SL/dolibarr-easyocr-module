@@ -154,8 +154,14 @@ $helpurl = '';
 $title = $langs->trans('EasyOcrBatchTitle');
 $subtitle = $langs->trans('EasyOcrBatchSubtitle');
 
-print load_fiche_titre($title, '', 'easyocr@easyocr');
-print '<div class="opacitymedium marginbottomonly">' . dol_escape_htmltag($subtitle) . '</div>';
+// ─── Page header (consistent EasyOcr style) ─────────────────────────────
+print '<div class="eo-page-header">';
+print '  <div class="eo-page-header-icon eo-page-header-icon--batch"><i class="fas fa-layer-group"></i></div>';
+print '  <div class="eo-page-header-text">';
+print '    <h1>' . dol_escape_htmltag($title) . '</h1>';
+print '    <p>' . dol_escape_htmltag($subtitle) . '</p>';
+print '  </div>';
+print '</div>';
 
 // ─── Tabs ────────────────────────────────────────────────────────────────
 $activeTab = GETPOST('tab', 'aZ09');
@@ -1671,12 +1677,12 @@ if (!$fromMenu) {
 
     var data = JSON.parse(dataStr);
 
-    // Store data in localStorage and redirect to tool.php where AI modal exists
+    // Store data in localStorage and redirect to extract.php where AI modal exists
     try {
       localStorage.setItem('eoBatchInvoiceData', JSON.stringify(data));
       localStorage.setItem('eoBatchInvoiceTimestamp', Date.now().toString());
-      // Redirect to tool.php which will auto-open modal with this data
-      window.location.href = '<?php echo dol_buildpath('/easyocr/tool.php', 1); ?>?fromBatch=1';
+      // Redirect to extract.php which will auto-open modal with this data
+      window.location.href = '<?php echo dol_buildpath('/easyocr/extract.php', 1); ?>?fromBatch=1';
     } catch (e) {
       alert('Error al preparar datos. Por favor, intenta desde la herramienta principal.');
       console.error('localStorage error:', e);
@@ -1768,7 +1774,7 @@ if (!$fromMenu) {
     try {
       localStorage.setItem('eoBatchInvoiceData', JSON.stringify(data));
       localStorage.setItem('eoBatchInvoiceTimestamp', Date.now().toString());
-      window.location.href = '<?php echo dol_buildpath('/easyocr/tool.php', 1); ?>?fromBatch=1';
+      window.location.href = '<?php echo dol_buildpath('/easyocr/extract.php', 1); ?>?fromBatch=1';
     } catch (e) {
       console.error('localStorage error:', e);
     }

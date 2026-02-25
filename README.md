@@ -156,7 +156,7 @@ easyocr/
 │   ├── llx_easyocr_template.sql
 │   ├── llx_easyocr_template_details.sql
 │   └── llx_easyocr_template_details.key.sql
-├── tool.php                               # Página principal: visor PDF
+├── extract.php                            # Página principal: visor PDF
 ├── invoices.php                           # Listado de facturas procesadas
 ├── templates.php                          # Listado de plantillas
 ├── templates_view.php                     # Editor de plantillas

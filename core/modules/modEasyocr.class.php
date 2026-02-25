@@ -41,7 +41,7 @@ include_once DOL_DOCUMENT_ROOT . '/core/modules/DolibarrModules.class.php';
  * @author     EasySoft Tech S.L. <info@easysoft.es>
  * @copyright  2025-2026 EasySoft Tech S.L.
  * @license    GPL-3.0-or-later
- * @version    2.3.2
+ * @version    2.4.0
  */
 class modEasyocr extends DolibarrModules
 {
@@ -84,7 +84,7 @@ class modEasyocr extends DolibarrModules
 		$this->editor_url = 'https://easysoft.es';
 
 		// Possible values for version are: 'development', 'experimental', 'dolibarr' or version
-		$this->version = '2.3.2';
+		$this->version = '2.4.0';
 		$this->url_last_version = 'https://sdl.easysoft.es/getLastModuleVersion?module=easyocr&for_url_last_version=1&version=' . $this->version;
 
 
@@ -195,7 +195,7 @@ class modEasyocr extends DolibarrModules
 			'titre'    => 'EasyOcr',
 			'mainmenu' => 'easyocr',
 			'leftmenu' => '',
-			'url'      => '/easyocr/tool.php',
+			'url'      => '/easyocr/index.php',
 			'langs'    => 'easyocr@easyocr',
 			'position' => 1000 + $r,
 			'enabled'  => '$conf->easyocr->enabled',
@@ -204,6 +204,8 @@ class modEasyocr extends DolibarrModules
 			'user'     => 2,
 		);
 
+		/*
+		// Menús laterales desactivados — se usa index.php con tarjetas como landing
 		$this->menu[$r++] = array(
 			'fk_menu'  => 'fk_mainmenu=easyocr',
 			'type'     => 'left',
@@ -211,7 +213,7 @@ class modEasyocr extends DolibarrModules
 			'prefix'   => '<img src="' . dol_buildpath('/easyocr/img/uploadpdf.png', 1) . '" width="40px" height="40px">',
 			'mainmenu' => 'easyocr',
 			'leftmenu' => 'easyocr_tool',
-			'url'      => '/easyocr/tool.php',
+			'url'      => '/easyocr/extract.php',
 			'langs'    => 'easyocr@easyocr',
 			'position' => 1000 + $r,
 			'enabled'  => '$conf->easyocr->enabled',
@@ -283,6 +285,7 @@ class modEasyocr extends DolibarrModules
 			'target'   => '',
 			'user'     => 2,
 		);
+		*/
 	}
 
 	/**
