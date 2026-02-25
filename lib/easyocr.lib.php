@@ -104,82 +104,137 @@ function easyocr_admin_prepare_head()
 // ============================================================
 
 /**
- * Parse a date string in multiple common formats and return Y-m-d.
- * Supports European (d/m/Y), ISO (Y-m-d), US (m/d/Y) and dotted (d.m.Y) formats.
- * Two-digit years are expanded using the current century.
+ * Normalise a date string into ISO Y-m-d format.
  *
- * @param  string $input  Date string to parse
- * @return string         Normalised date in Y-m-d format, or today if unparseable
+ * Uses a regex-based approach: first normalises all common separators
+ * (/, -, .) to a single canonical separator, then applies strtotime()
+ * with explicit day/month reordering for European formats.
+ *
+ * @param  string $input  Raw date string from OCR
+ * @return string         Date in Y-m-d, falls back to today
  */
 function easyocrParseDate($input)
 {
-	$dateFormats = [
-		'd/m/Y', 'd-m-Y', 'd.m.Y',   // European day-first
-		'Y-m-d', 'Y/m/d',             // ISO
-		'm/d/Y', 'm-d-Y',             // US month-first
-		'd/m/y',                       // European short year
-	];
-	foreach ($dateFormats as $fmt) {
-		$dateObj = DateTime::createFromFormat($fmt, trim($input));
-		if ($dateObj !== false) {
-			$shortYear = (int) $dateObj->format('y');
-			if (strlen(trim($input)) <= 8 && $shortYear < 100) {
-				$currentCentury = (int) date('Y') - (int) date('y');
-				$fullYear = $currentCentury + $shortYear;
-				$dateObj->setDate($fullYear, (int) $dateObj->format('m'), (int) $dateObj->format('d'));
-			}
-			return $dateObj->format('Y-m-d');
-		}
+	$raw = trim($input);
+	if ($raw === '') {
+		return date('Y-m-d');
 	}
+
+	// Normalise separators to dash
+	$normalised = preg_replace('/[\\/\\.]/', '-', $raw);
+
+	// Try ISO first (YYYY-MM-DD)
+	if (preg_match('/^(\d{4})-(\d{1,2})-(\d{1,2})$/', $normalised, $m)) {
+		return sprintf('%04d-%02d-%02d', $m[1], $m[2], $m[3]);
+	}
+
+	// European day-first (DD-MM-YYYY or DD-MM-YY)
+	if (preg_match('/^(\d{1,2})-(\d{1,2})-(\d{2,4})$/', $normalised, $m)) {
+		$day   = (int) $m[1];
+		$month = (int) $m[2];
+		$year  = (int) $m[3];
+
+		// Expand two-digit year
+		if ($year < 100) {
+			$year += ($year <= 50) ? 2000 : 1900;
+		}
+
+		// Validate: if day > 12, it can only be day-month
+		// If ambiguous (both <= 12), assume European d-m-Y
+		if ($day > 12 && $month <= 12) {
+			return sprintf('%04d-%02d-%02d', $year, $month, $day);
+		}
+		if ($month > 12 && $day <= 12) {
+			// Likely US m-d-Y
+			return sprintf('%04d-%02d-%02d', $year, $day, $month);
+		}
+		// Default: European d-m-Y
+		return sprintf('%04d-%02d-%02d', $year, $month, $day);
+	}
+
+	// Fallback: let PHP guess
+	$ts = strtotime($raw);
+	if ($ts !== false) {
+		return date('Y-m-d', $ts);
+	}
+
 	return date('Y-m-d');
 }
 
 /**
- * Parse a formatted number string into a float value.
- * Automatically detects European format (1.234,56) vs US format (1,234.56)
- * by analysing separator positions. Strips currency symbols and whitespace.
+ * Convert a localised number string to a PHP float.
  *
- * @param  string $value  Formatted number string (e.g. "1.234,56" or "1,234.56")
- * @return float          Parsed numeric value
+ * Strategy: strip non-numeric characters except separators, then use a
+ * single regex to detect the decimal part as the trailing separator group
+ * (1-2 digits after the last separator).
+ *
+ * @param  string $value  OCR-extracted number (e.g. "1.234,56", "$1,234.56")
+ * @return float
  */
 function easyocrParseNumber($value)
 {
-	$clean = trim($value);
-	if (empty($clean)) return 0;
-	// Strip everything except digits, dots, commas and minus sign
-	$clean = preg_replace('/[^\d.,-]/', '', $clean);
-
-	$dots   = substr_count($clean, '.');
-	$commas = substr_count($clean, ',');
-
-	// Simple cases: no ambiguity
-	if ($dots == 0 && $commas == 0) return floatval($clean);
-	if ($dots == 0 && $commas == 1) return floatval(str_replace(',', '.', $clean));
-	if ($commas == 0 && $dots == 1) return floatval($clean);
-
-	// Mixed separators: the last one is the decimal separator
-	$lastDot   = strrpos($clean, '.');
-	$lastComma = strrpos($clean, ',');
-	if ($lastComma > $lastDot) {
-		$clean = str_replace('.', '', $clean);
-		$clean = str_replace(',', '.', $clean);
-	} else {
-		$clean = str_replace(',', '', $clean);
+	$raw = trim($value);
+	if ($raw === '') {
+		return 0.0;
 	}
-	return floatval($clean);
+
+	// Preserve sign
+	$sign = 1;
+	if (preg_match('/^-/', $raw)) {
+		$sign = -1;
+	}
+
+	// Remove everything that isn't a digit, comma, or dot
+	$stripped = preg_replace('/[^\d.,]/', '', $raw);
+	if ($stripped === '') {
+		return 0.0;
+	}
+
+	// If only digits remain after stripping separators, simple conversion
+	$onlyDigits = str_replace(['.', ','], '', $stripped);
+	if ($stripped === $onlyDigits) {
+		return $sign * floatval($stripped);
+	}
+
+	// Find the last separator character
+	$lastSepPos = max(
+		($p1 = strrpos($stripped, '.')) !== false ? $p1 : -1,
+		($p2 = strrpos($stripped, ',')) !== false ? $p2 : -1
+	);
+
+	if ($lastSepPos === -1) {
+		return $sign * floatval($onlyDigits);
+	}
+
+	$afterLast = substr($stripped, $lastSepPos + 1);
+
+	// If the group after the last separator has 1 or 2 digits → decimal part
+	// If it has 3 digits → thousands separator (e.g. 1.000 or 1,000)
+	if (strlen($afterLast) <= 2) {
+		// Last separator is the decimal mark
+		$intPart = str_replace(['.', ','], '', substr($stripped, 0, $lastSepPos));
+		return $sign * floatval($intPart . '.' . $afterLast);
+	}
+
+	// 3+ digits after last separator → treat all separators as grouping
+	return $sign * floatval($onlyDigits);
 }
 
 /**
- * Derive the tax rate percentage from the net amount and the tax amount.
+ * Compute the applicable tax rate given the base and the tax amount.
  *
- * @param  float $netAmount  Total excluding tax (HT)
- * @param  float $taxAmount  Tax amount (TVA/IVA)
- * @return float             Tax rate as a percentage (e.g. 21.000)
+ * @param  float|string $base  Net amount (HT / excl. tax)
+ * @param  float|string $tax   Tax amount (TVA / IVA)
+ * @return float               Rate percentage rounded to 2 decimals (e.g. 21.00)
  */
-function easyocrCalcTaxRate($netAmount, $taxAmount)
+function easyocrCalcTaxRate($base, $tax)
 {
-	if (empty($netAmount) || floatval($netAmount) == 0) return 0;
-	return round(($taxAmount / $netAmount) * 100, 3);
+	$b = abs(floatval($base));
+	$t = abs(floatval($tax));
+	if ($b < 0.01) {
+		return 0.0;
+	}
+	return round($t / $b * 100, 2);
 }
 
 

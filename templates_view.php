@@ -174,7 +174,7 @@ $nbFields = $objFields->nb;
 
 // Load field details
 $templateDetails = array();
-$sqlDetails = "SELECT label, page, x, y, width, height FROM ".MAIN_DB_PREFIX."easyocr_template_details WHERE fk_template = ".((int) $id)." ORDER BY page, label";
+$sqlDetails = "SELECT label, page_index, pos_x, pos_y, sel_w, sel_h FROM ".MAIN_DB_PREFIX."easyocr_template_details WHERE fk_template = ".((int) $id)." ORDER BY page_index, label";
 $resqlDetails = $db->query($sqlDetails);
 if ($resqlDetails) {
 	while ($objd = $db->fetch_object($resqlDetails)) {
@@ -298,11 +298,11 @@ if ($action != 'edit') {
 		foreach ($templateDetails as $detail) {
 			print '<tr class="oddeven">';
 			print '<td>'.dol_escape_htmltag($detail->label).'</td>';
-			print '<td class="center">'.$detail->page.'</td>';
-			print '<td class="center">'.round($detail->x, 2).'</td>';
-			print '<td class="center">'.round($detail->y, 2).'</td>';
-			print '<td class="center">'.round($detail->width, 2).'</td>';
-			print '<td class="center">'.round($detail->height, 2).'</td>';
+			print '<td class="center">'.$detail->page_index.'</td>';
+			print '<td class="center">'.round($detail->pos_x, 2).'</td>';
+			print '<td class="center">'.round($detail->pos_y, 2).'</td>';
+			print '<td class="center">'.round($detail->sel_w, 2).'</td>';
+			print '<td class="center">'.round($detail->sel_h, 2).'</td>';
 			print '</tr>';
 		}
 

@@ -17,11 +17,11 @@
 CREATE TABLE IF NOT EXISTS llx_easyocr_template_details (
     rowid integer AUTO_INCREMENT PRIMARY KEY NOT NULL,
     fk_template integer NOT NULL,
-    objectNum integer NOT NULL,
-    startX integer NOT NULL,
-    startY integer NOT NULL,
-    width integer NOT NULL,
-    height integer NOT NULL,
+    page_index integer NOT NULL,
+    pos_x integer NOT NULL,
+    pos_y integer NOT NULL,
+    sel_w integer NOT NULL,
+    sel_h integer NOT NULL,
     color varchar(250),
     label varchar(250),
     date_creation timestamp DEFAULT CURRENT_TIMESTAMP

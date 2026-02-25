@@ -42,10 +42,10 @@ const EasyOcr = (function () {
 
     // Etiquetas disponibles
     const tags = [
-        { label: L.labelDate || "Invoice date", color: "#8a27b2", key: "Confechade" },
-        { label: L.labelInvoice || "Invoice", color: "#1c7cff", key: "Factura" },
-        { label: L.labelHT || "Total excl. tax", color: "#e51515", key: "HTtotales" },
-        { label: L.labelTTC || "Total price", color: "#e515b3", key: "Preciototal" },
+        { label: L.labelDate || "Invoice date", color: "#6c3483", key: "Confechade" },
+        { label: L.labelInvoice || "Invoice", color: "#2980b9", key: "Factura" },
+        { label: L.labelHT || "Total excl. tax", color: "#c0392b", key: "HTtotales" },
+        { label: L.labelTTC || "Total price", color: "#d4458b", key: "Preciototal" },
         { label: L.labelIVA || "Tax amount", color: "#ff6b35", key: "IVA" },
         { label: L.labelDesc || "Description", color: "#27ae60", key: "Descripcion" },
         { label: L.labelCIF || "Tax ID", color: "#16a085", key: "CIFNIF" },
@@ -56,7 +56,7 @@ const EasyOcr = (function () {
     let toastCount = 0;
 
     // ---- Utilidades ----
-    function hexToRgba(hex, alpha) {
+    function colorWithAlpha(hex, alpha) {
         const r = parseInt(hex.slice(1, 3), 16);
         const g = parseInt(hex.slice(3, 5), 16);
         const b = parseInt(hex.slice(5, 7), 16);
@@ -289,12 +289,12 @@ const EasyOcr = (function () {
         page.ctx.drawImage(page.baseImage, 0, 0);
 
         page.selections.forEach(sel => {
-            page.ctx.fillStyle = hexToRgba(sel.color, 0.25);
-            page.ctx.fillRect(sel.startX, sel.startY, sel.width, sel.height);
+            page.ctx.fillStyle = colorWithAlpha(sel.color, 0.25);
+            page.ctx.fillRect(sel.pos_x, sel.pos_y, sel.sel_w, sel.sel_h);
 
             page.ctx.strokeStyle = sel.color;
             page.ctx.lineWidth = 2;
-            page.ctx.strokeRect(sel.startX, sel.startY, sel.width, sel.height);
+            page.ctx.strokeRect(sel.pos_x, sel.pos_y, sel.sel_w, sel.sel_h);
 
             const labelH = 18;
             const closeW = 18;
@@ -302,30 +302,30 @@ const EasyOcr = (function () {
             page.ctx.font = 'bold 11px sans-serif';
             const textW = page.ctx.measureText(sel.label).width + 12;
             // Label background + close button area
-            page.ctx.fillRect(sel.startX, sel.startY - labelH, textW + closeW, labelH);
+            page.ctx.fillRect(sel.pos_x, sel.pos_y - labelH, textW + closeW, labelH);
             // Label text
             page.ctx.fillStyle = '#fff';
-            page.ctx.fillText(sel.label, sel.startX + 6, sel.startY - 5);
+            page.ctx.fillText(sel.label, sel.pos_x + 6, sel.pos_y - 5);
             // Separator line
             page.ctx.strokeStyle = 'rgba(255,255,255,0.45)';
             page.ctx.lineWidth = 1;
             page.ctx.beginPath();
-            page.ctx.moveTo(sel.startX + textW, sel.startY - labelH + 3);
-            page.ctx.lineTo(sel.startX + textW, sel.startY - 3);
+            page.ctx.moveTo(sel.pos_x + textW, sel.pos_y - labelH + 3);
+            page.ctx.lineTo(sel.pos_x + textW, sel.pos_y - 3);
             page.ctx.stroke();
             // Close "✕" glyph
             page.ctx.fillStyle = '#fff';
             page.ctx.font = 'bold 12px sans-serif';
             const xGlyph = '✕';
             const xGlyphW = page.ctx.measureText(xGlyph).width;
-            page.ctx.fillText(xGlyph, sel.startX + textW + (closeW - xGlyphW) / 2, sel.startY - 4);
+            page.ctx.fillText(xGlyph, sel.pos_x + textW + (closeW - xGlyphW) / 2, sel.pos_y - 4);
 
             const hs = 6;
             page.ctx.fillStyle = sel.color;
-            [[sel.startX, sel.startY],
-             [sel.startX + sel.width, sel.startY],
-             [sel.startX, sel.startY + sel.height],
-             [sel.startX + sel.width, sel.startY + sel.height]].forEach(([hx, hy]) => {
+            [[sel.pos_x, sel.pos_y],
+             [sel.pos_x + sel.sel_w, sel.pos_y],
+             [sel.pos_x, sel.pos_y + sel.sel_h],
+             [sel.pos_x + sel.sel_w, sel.pos_y + sel.sel_h]].forEach(([hx, hy]) => {
                 page.ctx.fillRect(hx - hs/2, hy - hs/2, hs, hs);
             });
         });
@@ -357,10 +357,10 @@ const EasyOcr = (function () {
             for (let i = page.selections.length - 1; i >= 0; i--) {
                 const s = page.selections[i];
                 const corners = [
-                    { type: 'nw', cx: s.startX, cy: s.startY },
-                    { type: 'ne', cx: s.startX + s.width, cy: s.startY },
-                    { type: 'sw', cx: s.startX, cy: s.startY + s.height },
-                    { type: 'se', cx: s.startX + s.width, cy: s.startY + s.height },
+                    { type: 'nw', cx: s.pos_x, cy: s.pos_y },
+                    { type: 'ne', cx: s.pos_x + s.sel_w, cy: s.pos_y },
+                    { type: 'sw', cx: s.pos_x, cy: s.pos_y + s.sel_h },
+                    { type: 'se', cx: s.pos_x + s.sel_w, cy: s.pos_y + s.sel_h },
                 ];
                 for (const c of corners) {
                     if (Math.abs(x - c.cx) <= tol && Math.abs(y - c.cy) <= tol) {
@@ -378,8 +378,8 @@ const EasyOcr = (function () {
             for (let i = page.selections.length - 1; i >= 0; i--) {
                 const s = page.selections[i];
                 const textW = page.ctx.measureText(s.label).width + 12;
-                const bx = s.startX + textW;
-                const by = s.startY - labelH;
+                const bx = s.pos_x + textW;
+                const by = s.pos_y - labelH;
                 if (x >= bx && x <= bx + closeW && y >= by && y <= by + labelH) {
                     return i;
                 }
@@ -390,7 +390,7 @@ const EasyOcr = (function () {
         function getSelectionAt(x, y) {
             for (let i = page.selections.length - 1; i >= 0; i--) {
                 const s = page.selections[i];
-                if (x >= s.startX && x <= s.startX + s.width && y >= s.startY && y <= s.startY + s.height) {
+                if (x >= s.pos_x && x <= s.pos_x + s.sel_w && y >= s.pos_y && y <= s.pos_y + s.sel_h) {
                     return i;
                 }
             }
@@ -419,7 +419,7 @@ const EasyOcr = (function () {
                 resizing = {
                     selIdx: handleInfo.selIdx,
                     handle: handleInfo.handle,
-                    origSel: { startX: sel.startX, startY: sel.startY, width: sel.width, height: sel.height }
+                    origSel: { pos_x: sel.pos_x, pos_y: sel.pos_y, sel_w: sel.sel_w, sel_h: sel.sel_h }
                 };
                 e.preventDefault();
                 return;
@@ -440,8 +440,8 @@ const EasyOcr = (function () {
                 const sel = page.selections[selIdx];
                 moving = {
                     selIdx: selIdx,
-                    offsetX: pos.x - sel.startX,
-                    offsetY: pos.y - sel.startY
+                    offsetX: pos.x - sel.pos_x,
+                    offsetY: pos.y - sel.pos_y
                 };
                 canvas.style.cursor = 'move';
                 e.preventDefault();
@@ -456,24 +456,24 @@ const EasyOcr = (function () {
                 const orig = resizing.origSel;
                 switch (resizing.handle) {
                     case 'se':
-                        sel.width = pos.x - sel.startX;
-                        sel.height = pos.y - sel.startY;
+                        sel.sel_w = pos.x - sel.pos_x;
+                        sel.sel_h = pos.y - sel.pos_y;
                         break;
                     case 'sw':
-                        sel.width = orig.startX + orig.width - pos.x;
-                        sel.startX = pos.x;
-                        sel.height = pos.y - sel.startY;
+                        sel.sel_w = orig.pos_x + orig.sel_w - pos.x;
+                        sel.pos_x = pos.x;
+                        sel.sel_h = pos.y - sel.pos_y;
                         break;
                     case 'ne':
-                        sel.width = pos.x - sel.startX;
-                        sel.height = orig.startY + orig.height - pos.y;
-                        sel.startY = pos.y;
+                        sel.sel_w = pos.x - sel.pos_x;
+                        sel.sel_h = orig.pos_y + orig.sel_h - pos.y;
+                        sel.pos_y = pos.y;
                         break;
                     case 'nw':
-                        sel.width = orig.startX + orig.width - pos.x;
-                        sel.height = orig.startY + orig.height - pos.y;
-                        sel.startX = pos.x;
-                        sel.startY = pos.y;
+                        sel.sel_w = orig.pos_x + orig.sel_w - pos.x;
+                        sel.sel_h = orig.pos_y + orig.sel_h - pos.y;
+                        sel.pos_x = pos.x;
+                        sel.pos_y = pos.y;
                         break;
                 }
                 redrawPage(pageIdx);
@@ -482,8 +482,8 @@ const EasyOcr = (function () {
 
             if (moving) {
                 const sel = page.selections[moving.selIdx];
-                sel.startX = pos.x - moving.offsetX;
-                sel.startY = pos.y - moving.offsetY;
+                sel.pos_x = pos.x - moving.offsetX;
+                sel.pos_y = pos.y - moving.offsetY;
                 redrawPage(pageIdx);
                 return;
             }
@@ -497,7 +497,7 @@ const EasyOcr = (function () {
                 page.ctx.setLineDash([6, 3]);
                 page.ctx.strokeRect(state.drawStart.x, state.drawStart.y, w, h);
                 page.ctx.setLineDash([]);
-                page.ctx.fillStyle = state.activeTag ? hexToRgba(state.activeTag.color, 0.15) : 'rgba(0,0,0,0.05)';
+                page.ctx.fillStyle = state.activeTag ? colorWithAlpha(state.activeTag.color, 0.15) : 'rgba(0,0,0,0.05)';
                 page.ctx.fillRect(state.drawStart.x, state.drawStart.y, w, h);
                 return;
             }
@@ -554,20 +554,20 @@ const EasyOcr = (function () {
                     return;
                 }
 
-                let startX = state.drawStart.x;
-                let startY = state.drawStart.y;
-                if (w < 0) { startX += w; w = Math.abs(w); }
-                if (h < 0) { startY += h; h = Math.abs(h); }
+                let posX = state.drawStart.x;
+                let posY = state.drawStart.y;
+                if (w < 0) { posX += w; w = Math.abs(w); }
+                if (h < 0) { posY += h; h = Math.abs(h); }
 
                 const tag = state.activeTag;
                 const selIdx = page.selections.length;
 
                 page.selections.push({
-                    objectNum: pageIdx,
-                    startX: startX,
-                    startY: startY,
-                    width: w,
-                    height: h,
+                    page_index: pageIdx,
+                    pos_x: posX,
+                    pos_y: posY,
+                    sel_w: w,
+                    sel_h: h,
                     color: tag.color,
                     label: tag.label,
                     text: ''
@@ -597,13 +597,13 @@ const EasyOcr = (function () {
     }
 
     function normalizeSelection(sel) {
-        if (sel.width < 0) {
-            sel.startX += sel.width;
-            sel.width = Math.abs(sel.width);
+        if (sel.sel_w < 0) {
+            sel.pos_x += sel.sel_w;
+            sel.sel_w = Math.abs(sel.sel_w);
         }
-        if (sel.height < 0) {
-            sel.startY += sel.height;
-            sel.height = Math.abs(sel.height);
+        if (sel.sel_h < 0) {
+            sel.pos_y += sel.sel_h;
+            sel.sel_h = Math.abs(sel.sel_h);
         }
     }
 
@@ -650,10 +650,10 @@ const EasyOcr = (function () {
 
         showLoader();
 
-        const selLeft = sel.startX;
-        const selTop = sel.startY;
-        const selRight = sel.startX + sel.width;
-        const selBottom = sel.startY + sel.height;
+        const selLeft = sel.pos_x;
+        const selTop = sel.pos_y;
+        const selRight = sel.pos_x + sel.sel_w;
+        const selBottom = sel.pos_y + sel.sel_h;
 
         getPageTextItems(pageIdx).then(items => {
             const hits = [];
@@ -699,10 +699,10 @@ const EasyOcr = (function () {
         const ratio = newScale / oldScale;
         state.pages.forEach(page => {
             page.selections.forEach(sel => {
-                sel.startX *= ratio;
-                sel.startY *= ratio;
-                sel.width *= ratio;
-                sel.height *= ratio;
+                sel.pos_x *= ratio;
+                sel.pos_y *= ratio;
+                sel.sel_w *= ratio;
+                sel.sel_h *= ratio;
             });
         });
 
@@ -1004,17 +1004,17 @@ const EasyOcr = (function () {
                     const ratio = state.scale / savedScale;
 
                     data.details.forEach(item => {
-                        const pageIdx = parseInt(item.objectNum);
+                        const pageIdx = parseInt(item.page_index);
                         if (state.pages[pageIdx]) {
                             const page = state.pages[pageIdx];
                             const selIdx = page.selections.length;
 
                             page.selections.push({
-                                objectNum: pageIdx,
-                                startX: parseFloat(item.startX) * ratio,
-                                startY: parseFloat(item.startY) * ratio,
-                                width: parseFloat(item.width) * ratio,
-                                height: parseFloat(item.height) * ratio,
+                                page_index: pageIdx,
+                                pos_x: parseFloat(item.pos_x) * ratio,
+                                pos_y: parseFloat(item.pos_y) * ratio,
+                                sel_w: parseFloat(item.sel_w) * ratio,
+                                sel_h: parseFloat(item.sel_h) * ratio,
                                 color: item.color,
                                 label: item.label,
                                 text: ''

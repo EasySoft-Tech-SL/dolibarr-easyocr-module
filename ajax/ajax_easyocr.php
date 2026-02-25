@@ -375,7 +375,7 @@ if ($action == "createSupplierInvoice") {
 	$tpl_scale = $tpl_data && $tpl_data->scale ? floatval($tpl_data->scale) : 1.5;
 	$custom_instructions = $tpl_data && !empty($tpl_data->custom_instructions) ? $tpl_data->custom_instructions : '';
 
-	$sql = "SELECT objectNum, startX, startY, width, height, color, label";
+	$sql = "SELECT page_index, pos_x, pos_y, sel_w, sel_h, color, label";
 	$sql .= " FROM " . MAIN_DB_PREFIX . "easyocr_template_details";
 	$sql .= " WHERE fk_template = " . ((int) $template_id);
 	$resql = $db->query($sql);
@@ -383,11 +383,11 @@ if ($action == "createSupplierInvoice") {
 	if ($resql) {
 		while ($obj = $db->fetch_object($resql)) {
 			$result[] = array(
-				'objectNum' => $obj->objectNum,
-				'startX' => $obj->startX,
-				'startY' => $obj->startY,
-				'width' => $obj->width,
-				'height' => $obj->height,
+				'page_index' => $obj->page_index,
+				'pos_x' => $obj->pos_x,
+				'pos_y' => $obj->pos_y,
+				'sel_w' => $obj->sel_w,
+				'sel_h' => $obj->sel_h,
 				'color' => $obj->color,
 				'label' => $obj->label
 			);
@@ -430,14 +430,14 @@ if ($action == "createSupplierInvoice") {
 	if (is_array($selections)) {
 		foreach ($selections as $item) {
 			$sql = "INSERT INTO " . MAIN_DB_PREFIX . "easyocr_template_details";
-			$sql .= " (fk_template, objectNum, startX, startY, width, height, color, label)";
+			$sql .= " (fk_template, page_index, pos_x, pos_y, sel_w, sel_h, color, label)";
 			$sql .= " VALUES (";
 			$sql .= ((int) $template_id) . ", ";
-			$sql .= ((int) $item['objectNum']) . ", ";
-			$sql .= floatval($item['startX']) . ", ";
-			$sql .= floatval($item['startY']) . ", ";
-			$sql .= floatval($item['width']) . ", ";
-			$sql .= floatval($item['height']) . ", ";
+			$sql .= ((int) $item['page_index']) . ", ";
+			$sql .= floatval($item['pos_x']) . ", ";
+			$sql .= floatval($item['pos_y']) . ", ";
+			$sql .= floatval($item['sel_w']) . ", ";
+			$sql .= floatval($item['sel_h']) . ", ";
 			$sql .= "'" . $db->escape($item['color']) . "', ";
 			$sql .= "'" . $db->escape($item['label']) . "'";
 			$sql .= ")";
@@ -480,14 +480,14 @@ if ($action == "createSupplierInvoice") {
 	if (is_array($selections)) {
 		foreach ($selections as $item) {
 			$sql = "INSERT INTO " . MAIN_DB_PREFIX . "easyocr_template_details";
-			$sql .= " (fk_template, objectNum, startX, startY, width, height, color, label)";
+			$sql .= " (fk_template, page_index, pos_x, pos_y, sel_w, sel_h, color, label)";
 			$sql .= " VALUES (";
 			$sql .= ((int) $template_id) . ", ";
-			$sql .= ((int) $item['objectNum']) . ", ";
-			$sql .= floatval($item['startX']) . ", ";
-			$sql .= floatval($item['startY']) . ", ";
-			$sql .= floatval($item['width']) . ", ";
-			$sql .= floatval($item['height']) . ", ";
+			$sql .= ((int) $item['page_index']) . ", ";
+			$sql .= floatval($item['pos_x']) . ", ";
+			$sql .= floatval($item['pos_y']) . ", ";
+			$sql .= floatval($item['sel_w']) . ", ";
+			$sql .= floatval($item['sel_h']) . ", ";
 			$sql .= "'" . $db->escape($item['color']) . "', ";
 			$sql .= "'" . $db->escape($item['label']) . "'";
 			$sql .= ")";
