@@ -492,6 +492,26 @@ div.mainmenu.easyocr {
   gap: 6px;
   align-items: center;
 }
+.eo-template-row .eo-select {
+  flex: 1 1 0;
+  min-width: 0;
+  width: auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.eo-template-row .select2-container {
+  flex: 1 1 0 !important;
+  min-width: 0 !important;
+  width: auto !important;
+}
+.eo-template-row .select2-container .select2-selection--single .select2-selection__rendered {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.eo-template-row .eo-btn {
+  flex-shrink: 0;
+}
 
 /* ---- Selecciones / Datos extraídos ---- */
 .eo-selections-list {

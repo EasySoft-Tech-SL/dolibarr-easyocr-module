@@ -1552,8 +1552,9 @@ const EasyOcr = (function () {
             if ($(this).data('select2')) {
                 $(this).select2('destroy');
             }
+            var inTemplateRow = $(this).closest('.eo-template-row').length > 0;
             $(this).select2({
-                width: '100%',
+                width: inTemplateRow ? 'resolve' : '100%',
                 dropdownAutoWidth: true,
                 dropdownParent: $(this).closest('.eo-modal') .length ? $(this).closest('.eo-modal') : $(document.body)
             });
