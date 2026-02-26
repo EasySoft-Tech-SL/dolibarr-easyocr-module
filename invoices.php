@@ -182,7 +182,7 @@ $sql = "SELECT c.rowid, c.ref, c.ref_supplier, c.datef, c.total_ht, c.total_ttc,
 $sql .= " d.nom as supplier_name";
 $sql .= " FROM ".MAIN_DB_PREFIX."facture_fourn as c";
 $sql .= " JOIN ".MAIN_DB_PREFIX."societe as d ON c.fk_soc = d.rowid";
-$sql .= " WHERE c.import_key IN ('easyocr','easyocr-ai')";
+$sql .= " WHERE c.import_key IN ('easyocr','easyocr-ai','easyocr-wh')";
 $sql .= " AND c.entity IN (".getEntity('facture_fourn').")";
 
 // Filters
@@ -359,6 +359,7 @@ print '<select name="search_import_key" class="flat maxwidth100">';
 print '<option value="">'.dol_escape_htmltag($langs->trans('EasyOcrAllSuppliers')).'</option>';
 print '<option value="easyocr"'.($search_import_key == 'easyocr' ? ' selected' : '').'>OCR</option>';
 print '<option value="easyocr-ai"'.($search_import_key == 'easyocr-ai' ? ' selected' : '').'>IA OCR</option>';
+print '<option value="easyocr-wh"'.($search_import_key == 'easyocr-wh' ? ' selected' : '').'>Webhook</option>';
 print '</select>';
 print '</td>';
 

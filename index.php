@@ -67,13 +67,11 @@ $permDelete = easyocrCheckRight($user, 'easyocr', 'delete');
 $title     = 'EasyOcr';
 $help_url  = '';
 
-llxHeader('', $title, $help_url, '', 0, 0, array(), array(), '', 'mod-easyocr page-index');
-
-// ─── Quick stats from DB ────────────────────────────────────────────────────
+// ─── Quick stats from DB — antes del header (patrón estándar Dolibarr) ──────
 $nbInvoices = 0;
 $nbTemplates = 0;
 
-$resql = $db->query("SELECT COUNT(*) as nb FROM ".MAIN_DB_PREFIX."easyocr_invoices");
+$resql = $db->query("SELECT COUNT(*) as nb FROM ".MAIN_DB_PREFIX."facture_fourn WHERE import_key IN ('easyocr','easyocr-ai','easyocr-wh') AND entity IN (".getEntity('facture_fourn').")");
 if ($resql) {
 	$obj = $db->fetch_object($resql);
 	$nbInvoices = (int) $obj->nb;
@@ -84,6 +82,8 @@ if ($resql2) {
 	$obj2 = $db->fetch_object($resql2);
 	$nbTemplates = (int) $obj2->nb;
 }
+
+llxHeader('', $title, $help_url, '', 0, 0, array(), array(), '', 'mod-easyocr page-index');
 
 // ─── Inline styles ─────────────────────────────────────────────────────────
 ?>
