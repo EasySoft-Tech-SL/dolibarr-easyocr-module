@@ -414,6 +414,7 @@ EasyOcrCustomInstructions = KI-Anweisungen
 EasyOcrCustomInstructionsHint = Zusätzliche Anweisungen für die KI bei der Verarbeitung von Rechnungen dieses Lieferanten.
 EasyOcrCustomInstructionsPlaceholder = Z.B.: Dieser Lieferant schließt immer Versandkosten in der letzten Zeile ein. Die MwSt. beträgt immer 21%%...
 EasyOcrCustomInstructionsSaveHint = Diese Anweisungen werden bei jeder Verwendung dieser Vorlage an die KI gesendet.
+EasyOcrCustomInstructionsUpgrade = Ihr Plan enthält keine benutzerdefinierten Anweisungen. Upgraden Sie Ihren Plan, um diese Funktion zu nutzen.
 
 # --- Templates & Invoices list ---
 EasyOcrNumFields = Anz. Felder

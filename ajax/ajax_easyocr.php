@@ -802,6 +802,25 @@ if ($action == "createSupplierInvoice") {
 	$filename   = GETPOST('filename', 'alpha') ?: 'document.pdf';
 	$customInstructions = GETPOST('custom_instructions', 'restricthtml');
 
+	// If custom instructions were sent, verify the plan supports them
+	if (!empty($customInstructions)) {
+		try {
+			$apiKey = !empty($conf->global->EASYOCR_AI_APIKEY) ? $conf->global->EASYOCR_AI_APIKEY : '';
+			$apiUrl = !empty($conf->global->EASYOCR_AI_URL) ? $conf->global->EASYOCR_AI_URL : 'https://app.easyocr.es';
+			$client = new \EasySoft\EasyOCR\EasyOCRClient($apiKey, ['base_url' => $apiUrl]);
+			$accountData = $client->account()->me();
+			$features = $accountData['data']['features'] ?? [];
+			if (empty($features['custom_instructions'])) {
+				dol_syslog('EasyOcr aiOcrStream: custom_instructions stripped (plan does not allow)', LOG_WARNING);
+				$customInstructions = '';
+			}
+		} catch (\Exception $e) {
+			// If we can't verify, strip instructions to be safe
+			dol_syslog('EasyOcr aiOcrStream: custom_instructions stripped (plan check failed: '.$e->getMessage().')', LOG_WARNING);
+			$customInstructions = '';
+		}
+	}
+
 	if (empty($base64Data)) {
 		header('Content-Type: text/event-stream');
 		echo "event: error\ndata: " . json_encode(["message" => "No PDF data"]) . "\n\n";

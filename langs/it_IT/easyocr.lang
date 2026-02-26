@@ -411,6 +411,7 @@ EasyOcrCustomInstructions = Istruzioni IA
 EasyOcrCustomInstructionsHint = Istruzioni aggiuntive per l'IA durante l'elaborazione delle fatture di questo fornitore.
 EasyOcrCustomInstructionsPlaceholder = Es: Questo fornitore include sempre le spese di spedizione nell'ultima riga. L'IVA è sempre del 21%%...
 EasyOcrCustomInstructionsSaveHint = Queste istruzioni verranno inviate all'IA ogni volta che viene utilizzato questo modello.
+EasyOcrCustomInstructionsUpgrade = Il tuo piano non include istruzioni personalizzate. Aggiorna il tuo piano per utilizzare questa funzione.
 
 # --- Templates & Invoices list ---
 EasyOcrNumFields = N. Campi

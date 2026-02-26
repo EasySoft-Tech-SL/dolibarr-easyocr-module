@@ -414,6 +414,7 @@ EasyOcrCustomInstructions = Instrucións IA
 EasyOcrCustomInstructionsHint = Instrucións adicionais para a IA ao procesar facturas deste provedor.
 EasyOcrCustomInstructionsPlaceholder = Ex: Este provedor sempre inclúe portes na última liña. O IVE é sempre o 21%%...
 EasyOcrCustomInstructionsSaveHint = Estas instrucións enviaranse á IA cada vez que se use este modelo.
+EasyOcrCustomInstructionsUpgrade = O teu plan non inclúe instrucións personalizadas. Mellora o teu plan para usar esta función.
 
 # --- Templates & Invoices list ---
 EasyOcrNumFields = Núm. Campos

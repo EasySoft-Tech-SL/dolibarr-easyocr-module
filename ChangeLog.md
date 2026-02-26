@@ -5,6 +5,21 @@ Todos los cambios notables de EasyOcr se documentarán en este archivo.
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/),
 y este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 
+## [2.4.1] - 2026-02-26
+
+### Corregido
+- **Error 403 en AI OCR con instrucciones personalizadas**: La API devolvía HTTP 403 cuando el plan activo no incluía la feature `custom_instructions`. Ahora se verifica el plan antes de enviar las instrucciones; si no está permitido, se procesan sin ellas en lugar de fallar.
+- **Protección backend `aiOcrStream`**: Antes de llamar a la API externa, se consulta `/me` para verificar que `features.custom_instructions` está activo. Si no lo está, las instrucciones se descartan silenciosamente y el OCR continúa normalmente.
+
+### Añadido
+- **Textarea deshabilitado si plan no lo permite**: En `extract.php`, el textarea de instrucciones personalizadas se muestra deshabilitado con mensaje de upgrade cuando el plan no incluye `custom_instructions`.
+- **Debug detallado en `aiOcrStream`**: 3 puntos de `dol_syslog` (ENTRY, PRE-CURL, POST-CURL) para diagnóstico de problemas con la API IA.
+- **Clave de traducción `EasyOcrCustomInstructionsUpgrade`**: Añadida en los 8 idiomas (es, en, fr, de, it, pt, ca, gl).
+
+### Mejorado
+- **Contador de métricas en `index.php`**: Corregida consulta de facturas procesadas para contar desde `llx_facture_fourn` con `import_key IN ('easyocr','easyocr-ai','easyocr-wh')` en lugar de la tabla auxiliar vacía.
+- **Listado de facturas (`invoices.php`)**: Incluido el tipo `easyocr-wh` (webhook) en el filtro SQL y en el selector desplegable.
+
 ## [2.4.0] - 2026-02-25
 
 ### Añadido

@@ -37,6 +37,7 @@ $aiEnabled = $aiService->isEnabled();
 
 // Fetch subscription info if API is enabled
 $subscriptionData = null;
+$hasCustomInstructions = false;
 if ($aiEnabled) {
 	try {
 		$apiKey = !empty($conf->global->EASYOCR_AI_APIKEY) ? $conf->global->EASYOCR_AI_APIKEY : '';
@@ -45,6 +46,10 @@ if ($aiEnabled) {
 			$client = new \EasySoft\EasyOCR\EasyOCRClient($apiKey, ['base_url' => $apiUrl]);
 			$accountData = $client->account()->me();
 			$subscriptionData = $accountData['data'] ?? null;
+			// Check if plan allows custom instructions
+			if (!empty($subscriptionData['features'])) {
+				$hasCustomInstructions = !empty($subscriptionData['features']['custom_instructions']);
+			}
 		}
 	} catch (\Exception $e) {
 		// Silently fail - subscription widget will not show
@@ -289,8 +294,13 @@ llxHeader("", "EasyOcr", '', '', 0, 0, $arrayofjs, $arrayofcss);
         <svg class="eo-collapse-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
       </div>
       <div class="eo-hidden">
+        <?php if ($hasCustomInstructions) { ?>
         <p class="eo-hint"><?php echo $langs->trans('EasyOcrCustomInstructionsHint'); ?></p>
         <textarea id="eo-custom-instructions" class="eo-input" rows="3" placeholder="<?php echo $langs->trans('EasyOcrCustomInstructionsPlaceholder'); ?>"></textarea>
+        <?php } else { ?>
+        <p class="eo-hint eo-hint-disabled"><?php echo $langs->trans('EasyOcrCustomInstructionsUpgrade'); ?></p>
+        <textarea id="eo-custom-instructions" class="eo-input eo-input-disabled" rows="2" disabled placeholder="<?php echo $langs->trans('EasyOcrCustomInstructionsUpgrade'); ?>"></textarea>
+        <?php } ?>
       </div>
     </div>
     <?php } ?>
