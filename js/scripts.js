@@ -42,14 +42,14 @@ const EasyOcr = (function () {
 
     // Etiquetas disponibles
     const tags = [
-        { label: L.labelDate || "Invoice date", color: "#6c3483", key: "Confechade" },
-        { label: L.labelInvoice || "Invoice", color: "#2980b9", key: "Factura" },
-        { label: L.labelHT || "Total excl. tax", color: "#c0392b", key: "HTtotales" },
-        { label: L.labelTTC || "Total price", color: "#d4458b", key: "Preciototal" },
-        { label: L.labelIVA || "Tax amount", color: "#ff6b35", key: "IVA" },
-        { label: L.labelDesc || "Description", color: "#27ae60", key: "Descripcion" },
-        { label: L.labelCIF || "Tax ID", color: "#16a085", key: "CIFNIF" },
-        { label: L.labelDueDate || "Due date", color: "#f39c12", key: "Vencimiento" },
+        { label: L.labelDate || "Invoice date", color: "#6c3483" },
+        { label: L.labelInvoice || "Invoice", color: "#2980b9" },
+        { label: L.labelHT || "Total excl. tax", color: "#c0392b" },
+        { label: L.labelTTC || "Total price", color: "#d4458b" },
+        { label: L.labelIVA || "Tax amount", color: "#ff6b35" },
+        { label: L.labelDesc || "Description", color: "#27ae60" },
+        { label: L.labelCIF || "Tax ID", color: "#16a085" },
+        { label: L.labelDueDate || "Due date", color: "#f39c12" },
     ];
 
     // Toast stacking
@@ -57,10 +57,11 @@ const EasyOcr = (function () {
 
     // ---- Utilidades ----
     function colorWithAlpha(hex, alpha) {
-        const r = parseInt(hex.slice(1, 3), 16);
-        const g = parseInt(hex.slice(3, 5), 16);
-        const b = parseInt(hex.slice(5, 7), 16);
-        return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+        const num = parseInt(hex.replace('#', ''), 16);
+        const r = (num >> 16) & 0xff;
+        const g = (num >> 8) & 0xff;
+        const b = num & 0xff;
+        return 'rgba(' + r + ',' + g + ',' + b + ',' + alpha + ')';
     }
 
     function showLoader() {
@@ -248,7 +249,7 @@ const EasyOcr = (function () {
                         ${sel.label}
                         <span class="eo-sel-page">${(L.page || 'Pág.') + ' '}${sel.pageIdx + 1}</span>
                     </div>
-                    <button class="eo-sel-delete" onclick="EasyOcr.deleteSelection(${sel.pageIdx}, ${sel.selIdx})" title="${L.deleteSelection || 'Eliminar'}">✕</button>
+                    <button class="eo-sel-delete" onclick="EasyOcr.removeOcrSelection(${sel.pageIdx}, ${sel.selIdx})" title="${L.deleteSelection || 'Eliminar'}">✕</button>
                 </div>
                 <input type="text" class="eo-sel-input" 
                     data-page="${sel.pageIdx}" 
@@ -272,7 +273,7 @@ const EasyOcr = (function () {
     }
 
     // ---- Eliminar selección ----
-    function deleteSelection(pageIdx, selIdx) {
+    function removeOcrSelection(pageIdx, selIdx) {
         pushHistory();
         state.pages[pageIdx].selections.splice(selIdx, 1);
         redrawPage(pageIdx);
@@ -1126,7 +1127,7 @@ const EasyOcr = (function () {
         const supplier = $('#eo-template-supplier').val();
         const customInstr = document.getElementById('eo-template-instructions') ? document.getElementById('eo-template-instructions').value.trim() : '';
         showLoader();
-        const details = getAllSelections();
+        const details = collectCurrentSelections();
 
         // Update state
         state.customInstructions = customInstr;
@@ -1163,7 +1164,7 @@ const EasyOcr = (function () {
         if (!state.templateId) return;
 
         showLoader();
-        const details = getAllSelections();
+        const details = collectCurrentSelections();
         const supplier = $('#eo-supplier').val();
         // Sync custom instructions from sidebar textarea
         var instrEl = document.getElementById('eo-custom-instructions');
@@ -1196,14 +1197,8 @@ const EasyOcr = (function () {
         });
     }
 
-    function getAllSelections() {
-        const all = [];
-        state.pages.forEach(page => {
-            page.selections.forEach(sel => {
-                all.push({ ...sel });
-            });
-        });
-        return all;
+    function collectCurrentSelections() {
+        return state.pages.flatMap(page => page.selections.map(sel => Object.assign({}, sel)));
     }
 
     // ---- Generar factura ----
@@ -1508,7 +1503,7 @@ const EasyOcr = (function () {
 
             // Ctrl+S: Guardar plantilla
             if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-                if (state.pages.length > 0 && getAllSelections().length > 0) {
+                if (state.pages.length > 0 && collectCurrentSelections().length > 0) {
                     e.preventDefault();
                     if (state.templateId) {
                         updateCurrentTemplate();
@@ -2683,7 +2678,7 @@ const EasyOcr = (function () {
     // ---- API pública ----
     return {
         selectTag,
-        deleteSelection,
+        removeOcrSelection,
         updateSelectionText,
         loadTemplate,
         clearTemplate,
