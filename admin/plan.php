@@ -80,12 +80,22 @@ $error = '';
 // Try to fetch account data if API key is configured
 if (!empty($apiKey) && $apiEnabled) {
 	try {
-		$client = new \EasySoft\EasyOCR\EasyOCRClient($apiKey, ['base_url' => $apiUrl]);
-		$accountData = $client->account()->me();
-	} catch (\EasySoft\EasyOCR\Exceptions\AuthenticationException $e) {
-		$error = $langs->trans('EasyOcrPlanErrorAuth') . ': ' . $e->getMessage();
-	} catch (\EasySoft\EasyOCR\Exceptions\EasyOCRException $e) {
-		$error = $langs->trans('EasyOcrPlanErrorAPI') . ': ' . $e->getMessage();
+		$client   = new \EasySoft\EasyOCR\EasyOCRClient($apiKey, ['base_url' => $apiUrl]);
+		$response = $client->getHttpClient()->get('account/me');
+		$rawBody  = (string) $response->getBody();
+		// Strip UTF-8 BOM (\xEF\xBB\xBF) emitted by the server — json_decode fails with it
+		$rawBody  = ltrim($rawBody, "\xEF\xBB\xBF");
+		$accountData = json_decode($rawBody, true);
+		if ($accountData === null) {
+			$error = $langs->trans('EasyOcrPlanErrorAPI') . ': JSON inválido — ' . json_last_error_msg();
+		}
+	} catch (\GuzzleHttp\Exception\ClientException $e) {
+		$statusCode = $e->getResponse() ? $e->getResponse()->getStatusCode() : 0;
+		if ($statusCode === 401 || $statusCode === 403) {
+			$error = $langs->trans('EasyOcrPlanErrorAuth') . ': ' . $e->getMessage();
+		} else {
+			$error = $langs->trans('EasyOcrPlanErrorAPI') . ': ' . $e->getMessage();
+		}
 	} catch (\Exception $e) {
 		$error = $langs->trans('Error') . ': ' . $e->getMessage();
 	}

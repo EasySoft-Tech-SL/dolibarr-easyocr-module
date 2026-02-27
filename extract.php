@@ -43,8 +43,12 @@ if ($aiEnabled) {
 		$apiKey = !empty($conf->global->EASYOCR_AI_APIKEY) ? $conf->global->EASYOCR_AI_APIKEY : '';
 		$apiUrl = !empty($conf->global->EASYOCR_AI_URL) ? $conf->global->EASYOCR_AI_URL : 'https://app.easyocr.es';
 		if (!empty($apiKey)) {
-			$client = new \EasySoft\EasyOCR\EasyOCRClient($apiKey, ['base_url' => $apiUrl]);
-			$accountData = $client->account()->me();
+			$client   = new \EasySoft\EasyOCR\EasyOCRClient($apiKey, ['base_url' => $apiUrl]);
+			$response = $client->getHttpClient()->get('account/me');
+			$rawBody  = (string) $response->getBody();
+			// Strip UTF-8 BOM (\xEF\xBB\xBF) emitted by the server — json_decode fails with it
+			$rawBody  = ltrim($rawBody, "\xEF\xBB\xBF");
+			$accountData = json_decode($rawBody, true);
 			$subscriptionData = $accountData['data'] ?? null;
 			// Check if plan allows custom instructions
 			if (!empty($subscriptionData['features'])) {
