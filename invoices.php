@@ -178,7 +178,7 @@ $morejs = array();
 $morecss = array();
 
 // Build and execute select
-$sql = "SELECT c.rowid, c.ref, c.ref_supplier, c.datef, c.total_ht, c.total_ttc, c.fk_soc, c.import_key, c.paye, c.fk_statut,";
+$sql = "SELECT c.rowid, c.ref, c.ref_supplier, c.datef, c.datec, c.total_ht, c.total_ttc, c.fk_soc, c.import_key, c.paye, c.fk_statut,";
 $sql .= " d.nom as supplier_name";
 $sql .= " FROM ".MAIN_DB_PREFIX."facture_fourn as c";
 $sql .= " JOIN ".MAIN_DB_PREFIX."societe as d ON c.fk_soc = d.rowid";
@@ -342,6 +342,9 @@ print '</td>';
 // Date
 print '<td class="liste_titre"></td>';
 
+// Date Creation
+print '<td class="liste_titre"></td>';
+
 // Supplier
 print '<td class="liste_titre">';
 print $form->select_company($search_supplier, 'search_supplier', 's.fournisseur=1', $langs->trans('EasyOcrAllSuppliers'), 0, 0, array(), 0, 'flat maxwidth200');
@@ -390,6 +393,9 @@ print_liste_field_titre($langs->trans("EasyOcrSupplierRef"), $_SERVER['PHP_SELF'
 $totalarray['nbfield']++;
 
 print_liste_field_titre($langs->trans("EasyOcrDate"), $_SERVER['PHP_SELF'], 'c.datef', '', $param, '', $sortfield, $sortorder, 'center ');
+$totalarray['nbfield']++;
+
+print_liste_field_titre($langs->trans("EasyOcrCreation"), $_SERVER['PHP_SELF'], 'c.datec', '', $param, '', $sortfield, $sortorder, 'center ');
 $totalarray['nbfield']++;
 
 print_liste_field_titre($langs->trans("EasyOcrThirdParty"), $_SERVER['PHP_SELF'], 'd.nom', '', $param, '', $sortfield, $sortorder);
@@ -463,6 +469,14 @@ while ($i < $imaxinloop) {
 	// Date
 	print '<td class="center nowraponall">';
 	print dol_print_date($db->jdate($obj->datef), 'day');
+	print '</td>';
+	if (!$i) {
+		$totalarray['nbfield']++;
+	}
+
+	// Date Creation
+	print '<td class="center nowraponall">';
+	print dol_print_date($db->jdate($obj->datec), 'dayhour');
 	print '</td>';
 	if (!$i) {
 		$totalarray['nbfield']++;
@@ -559,7 +573,7 @@ if (isset($totalarray['pos'])) {
 if ($num == 0) {
 	$colspan = $totalarray['nbfield'] ? $totalarray['nbfield'] : $savnbfield;
 	if (!$colspan) {
-		$colspan = 9;
+		$colspan = 10;
 	}
 	print '<tr><td colspan="'.$colspan.'"><span class="opacitymedium">'.$langs->trans("NoRecordFound").'</span></td></tr>';
 }

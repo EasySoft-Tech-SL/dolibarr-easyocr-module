@@ -5,6 +5,11 @@ Todos los cambios notables de EasyOcr se documentarán en este archivo.
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/),
 y este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 
+## [2.4.2] - 2026-02-27
+
+### Añadido
+- **Columna «Creación» en listado de facturas** (`invoices.php`): Nueva columna que muestra la fecha y hora de creación de la factura en Dolibarr (`datec`), ordenable, junto a la columna de fecha de factura existente.
+
 ## [2.4.1] - 2026-02-26
 
 ### Corregido
