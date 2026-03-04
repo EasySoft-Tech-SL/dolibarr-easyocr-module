@@ -68,6 +68,7 @@ require_once DOL_DOCUMENT_ROOT . '/product/class/product.class.php';
 require_once DOL_DOCUMENT_ROOT . '/core/lib/date.lib.php';
 require_once __DIR__ . '/../lib/easyocr.lib.php';
 require_once __DIR__ . '/../lib/easyocr_ai.class.php';
+dol_include_once('/easyocr/lib/easyocr_autoload.php');
 
 // For SSE stream, skip JSON content-type (will set text/event-stream later)
 $_action = GETPOST('action', 'aZ09');
@@ -1013,8 +1014,6 @@ if ($action == "createSupplierInvoice") {
 		exit;
 	}
 
-	require_once __DIR__ . '/../lib/easyocr_autoload.php';
-
 	$apiKey = !empty($conf->global->EASYOCR_AI_APIKEY) ? $conf->global->EASYOCR_AI_APIKEY : '';
 	$apiUrl = !empty($conf->global->EASYOCR_AI_URL) ? $conf->global->EASYOCR_AI_URL : 'https://app.easyocr.es';
 
@@ -1058,8 +1057,6 @@ if ($action == "createSupplierInvoice") {
 		exit;
 	}
 
-	require_once __DIR__ . '/../lib/easyocr_autoload.php';
-
 	$apiKey = !empty($conf->global->EASYOCR_AI_APIKEY) ? $conf->global->EASYOCR_AI_APIKEY : '';
 	$apiUrl = !empty($conf->global->EASYOCR_AI_URL) ? $conf->global->EASYOCR_AI_URL : 'https://app.easyocr.es';
 	$uuid = GETPOST('uuid', 'alphanohtml');
@@ -1091,8 +1088,6 @@ if ($action == "createSupplierInvoice") {
 		print json_encode(["status" => "error", "message" => $langs->trans('EasyOcrAccessDenied')]);
 		exit;
 	}
-
-	require_once __DIR__ . '/../lib/easyocr_autoload.php';
 
 	$apiKey = !empty($conf->global->EASYOCR_AI_APIKEY) ? $conf->global->EASYOCR_AI_APIKEY : '';
 	$apiUrl = !empty($conf->global->EASYOCR_AI_URL) ? $conf->global->EASYOCR_AI_URL : 'https://app.easyocr.es';
@@ -1179,8 +1174,6 @@ if ($action == "createSupplierInvoice") {
 		print json_encode(["status" => "error", "message" => $langs->trans('EasyOcrAccessDenied')]);
 		exit;
 	}
-
-	require_once __DIR__ . '/../lib/easyocr_autoload.php';
 
 	$apiKey = !empty($conf->global->EASYOCR_AI_APIKEY) ? $conf->global->EASYOCR_AI_APIKEY : '';
 	$apiUrl = !empty($conf->global->EASYOCR_AI_URL) ? $conf->global->EASYOCR_AI_URL : 'https://app.easyocr.es';
@@ -1279,8 +1272,6 @@ if ($action == "createSupplierInvoice") {
 		exit;
 	}
 
-	require_once __DIR__ . '/../lib/easyocr_autoload.php';
-
 	$apiKey = !empty($conf->global->EASYOCR_AI_APIKEY) ? $conf->global->EASYOCR_AI_APIKEY : '';
 	$apiUrl = !empty($conf->global->EASYOCR_AI_URL) ? $conf->global->EASYOCR_AI_URL : 'https://app.easyocr.es';
 	$uuid = GETPOST('uuid', 'alphanohtml');
@@ -1350,8 +1341,6 @@ if ($action == "createSupplierInvoice") {
 	// ============================================================
 } else if ($action == "getSubscriptionInfo") {
 
-	require_once __DIR__ . '/../lib/easyocr_autoload.php';
-
 	$aiService = new EasyOcrAI($db);
 	if (!$aiService->isEnabled()) {
 		print json_encode(["status" => "error", "message" => "AI not enabled"]);
@@ -1418,6 +1407,7 @@ if ($action == "createSupplierInvoice") {
 			"status_text" => $statusText
 		]);
 	} catch (\Exception $e) {
+		dol_syslog('EasyOcr getSubscriptionInfo ERROR: ' . $e->getMessage(), LOG_ERR);
 		print json_encode(["status" => "error", "message" => $e->getMessage()]);
 	}
 }

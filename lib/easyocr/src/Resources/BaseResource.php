@@ -113,6 +113,11 @@ abstract class BaseResource
     {
         $body = $response->getBody()->getContents();
 
+        // Strip UTF-8 BOM if present (EF BB BF)
+        if (substr($body, 0, 3) === "\xEF\xBB\xBF") {
+            $body = substr($body, 3);
+        }
+
         if (empty($body)) {
             return [];
         }
@@ -120,8 +125,11 @@ abstract class BaseResource
         $data = json_decode($body, true);
 
         if (json_last_error() !== JSON_ERROR_NONE) {
+            $preview = mb_substr($body, 0, 200);
             throw new EasyOCRException(
-                'Respuesta inválida del servidor (JSON malformado)',
+                'Respuesta inválida del servidor (JSON malformado). json_last_error: '
+                    . json_last_error_msg() . '. HTTP ' . $response->getStatusCode()
+                    . '. Body preview: ' . $preview,
                 $response->getStatusCode(),
                 'INVALID_RESPONSE'
             );
@@ -187,6 +195,10 @@ abstract class BaseResource
         }
         try {
             $content = $response->getBody()->getContents();
+            // Strip UTF-8 BOM if present
+            if (substr($content, 0, 3) === "\xEF\xBB\xBF") {
+                $content = substr($content, 3);
+            }
             return json_decode($content, true) ?? [];
         } catch (\Throwable $e) {
             return [];

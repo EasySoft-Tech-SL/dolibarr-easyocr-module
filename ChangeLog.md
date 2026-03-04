@@ -5,6 +5,17 @@ Todos los cambios notables de EasyOcr se documentarán en este archivo.
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/),
 y este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 
+## [2.4.4] - 2026-03-04
+
+### Corregido
+- **Respuesta JSON con BOM de la API**: La API de `app.easyocr.es` devuelve respuestas con UTF-8 BOM (`EF BB BF`), lo que causaba que `json_decode()` fallara con "JSON malformado". Se añadió strip de BOM en `BaseResource::decode()` y `BaseResource::safeDecodeBody()`.
+- **Clase `EasyOCRClient` no encontrada en `aiOcrStream`**: Faltaba cargar el autoloader antes de instanciar `EasyOCRClient` en la acción `aiOcrStream` de `ajax_easyocr.php`.
+
+### Mejorado
+- **Autoload centralizado en AJAX handler**: Se reemplazaron 7 `require_once` sueltos del autoloader por un único `dol_include_once('/easyocr/lib/easyocr_autoload.php')` al inicio de `ajax_easyocr.php`.
+- **Diagnóstico de errores JSON mejorado**: El mensaje de excepción en `BaseResource::decode()` ahora incluye `json_last_error_msg()`, código HTTP y preview del body para facilitar depuración.
+- **Logging en `getSubscriptionInfo`**: Se añadió `dol_syslog` en el catch de errores para registrar fallos en el log de Dolibarr.
+
 ## [2.4.3] - 2026-03-04
 
 ### Corregido

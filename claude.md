@@ -2,7 +2,7 @@
 
 ## Información del módulo
 - **Nombre:** EasyOcr
-- **Versión:** 2.4.3
+- **Versión:** 2.4.4
 - **Número módulo:** 402020
 - **Empresa:** EasySoft Tech S.L. (info@easysoft.es)
 - **Autor:** Alberto Luque Rivas (aluquerivasdev@gmail.com)
