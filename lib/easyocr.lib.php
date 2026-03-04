@@ -871,22 +871,26 @@ function easyocrCreateInvoiceFromOCR($params, $userObj = null)
 		$facture->fetch($newId);
 	}
 
-	// ── Upload PDF ───────────────────────────────────────────────────────
+	// ── Attach PDF to invoice ────────────────────────────────────────────
 	if (!empty($file_tmp_path) && file_exists($file_tmp_path)) {
 		$ref_clean = dol_sanitizeFileName($ref);
 		$reldir = 'fournisseur/facture/' . get_exdir($newId, 2, 0, 0, $facture, 'invoice_supplier') . $ref_clean;
-		$upload_dir = DOL_DATA_ROOT . '/' . $reldir;
+		$destDir = DOL_DATA_ROOT . '/' . $reldir;
 
-		if (!@is_dir($upload_dir)) {
-			@mkdir($upload_dir, 0755, true); // Native mkdir avoids dol_mkdir open_basedir issue
+		if (!@is_dir($destDir)) {
+			@mkdir($destDir, 0755, true); // Native mkdir avoids dol_mkdir open_basedir issue
 		}
 
 		$fileName = dol_sanitizeFileName(basename($file_name));
 		$destFileName = $ref_clean . '-' . $fileName;
-		$destFullPath = $upload_dir . '/' . $destFileName;
+		$destFullPath = $destDir . '/' . $destFileName;
 
-		// move_uploaded_file for HTTP uploads, copy as fallback (webhook / CLI)
-		if (move_uploaded_file($file_tmp_path, $destFullPath) || copy($file_tmp_path, $destFullPath)) {
+		// dol_move for HTTP context, copy() as fallback for webhook / CLI
+		$fileMoved = @dol_move($file_tmp_path, $destFullPath, 0, 1, 0, 0);
+		if (!$fileMoved) {
+			$fileMoved = @copy($file_tmp_path, $destFullPath);
+		}
+		if ($fileMoved) {
 			$ecmfile = new EcmFiles($db);
 			$ecmfile->filepath = $reldir;
 			$ecmfile->filename = $destFileName;

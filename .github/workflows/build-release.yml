@@ -60,6 +60,8 @@ jobs:
             --exclude='Thumbs.db' \
             --exclude='*.log' \
             --exclude='temp_build' \
+            --exclude='claude.md' \
+            --exclude='.spectory' \
             ./ temp_build/easyocr/
           
           # Crear el archivo zip desde el directorio temporal

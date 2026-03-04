@@ -179,6 +179,7 @@ EasyOcrSelectPaymentType = Selecione um tipo de pagamento
 EasyOcrInvoiceCreatedOk = Fatura criada com sucesso — pode carregar outro PDF
 EasyOcrInvoiceAlreadyExists = Esta fatura já existe no sistema
 EasyOcrDuplicateRefSupplier = Já existe uma fatura com a referência '%s' para este fornecedor (fatura existente: %s)
+EasyOcrViewInvoice = Ver fatura
 EasyOcrDuplicateAmountDate = Provável fatura duplicada (mesmo fornecedor, valor e data). Fatura existente: %s
 EasyOcrErrorGeneratingInvoice = Erro ao gerar a fatura
 EasyOcrSelectPdfFile = Selecione um ficheiro PDF

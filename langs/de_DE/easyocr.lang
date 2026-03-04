@@ -181,6 +181,7 @@ EasyOcrSelectPaymentType = Wählen Sie eine Zahlungsart
 EasyOcrInvoiceCreatedOk = Rechnung erfolgreich erstellt — Sie können ein weiteres PDF laden
 EasyOcrInvoiceAlreadyExists = Diese Rechnung existiert bereits im System
 EasyOcrDuplicateRefSupplier = Eine Rechnung mit der Referenz '%s' existiert bereits für diesen Lieferanten (vorhandene Rechnung: %s)
+EasyOcrViewInvoice = Rechnung anzeigen
 EasyOcrDuplicateAmountDate = Wahrscheinlich doppelte Rechnung (gleicher Lieferant, Betrag und Datum). Vorhandene Rechnung: %s
 EasyOcrErrorGeneratingInvoice = Fehler beim Erstellen der Rechnung
 EasyOcrSelectPdfFile = Bitte wählen Sie eine PDF-Datei

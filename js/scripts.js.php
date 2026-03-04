@@ -119,6 +119,7 @@ window.EasyOcrLang = {
   selectPaymentType: <?php echo transJson('EasyOcrSelectPaymentType'); ?>,
   invoiceCreatedOk: <?php echo transJson('EasyOcrInvoiceCreatedOk'); ?>,
   invoiceAlreadyExists: <?php echo transJson('EasyOcrInvoiceAlreadyExists'); ?>,
+  viewInvoice: <?php echo transJson('EasyOcrViewInvoice'); ?>,
   errorGeneratingInvoice: <?php echo transJson('EasyOcrErrorGeneratingInvoice'); ?>,
   selectPdfFile: <?php echo transJson('EasyOcrSelectPdfFile'); ?>,
   onlyPdfAccepted: <?php echo transJson('EasyOcrOnlyPdfAccepted'); ?>,

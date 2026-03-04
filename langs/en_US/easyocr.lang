@@ -197,6 +197,7 @@ EasyOcrSelectPaymentType = Select a payment mode
 EasyOcrInvoiceCreatedOk = Invoice created successfully — you can load another PDF
 EasyOcrInvoiceAlreadyExists = This invoice already exists in the system
 EasyOcrDuplicateRefSupplier = An invoice with reference '%s' already exists for this supplier (existing invoice: %s)
+EasyOcrViewInvoice = View invoice
 EasyOcrDuplicateAmountDate = Probable duplicate invoice (same supplier, amount and date). Existing invoice: %s
 EasyOcrErrorGeneratingInvoice = Error generating invoice
 EasyOcrSelectPdfFile = Please select a PDF file

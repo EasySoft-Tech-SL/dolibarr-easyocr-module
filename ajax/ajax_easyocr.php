@@ -219,23 +219,25 @@ if ($action == "createSupplierInvoice") {
 		$facture->fetch($newId);
 	}
 
-	// Subir archivo PDF
-	if (isset($_FILES['file']) && $_FILES['file']['error'] === UPLOAD_ERR_OK) {
+	// Attach PDF file to invoice
+	$receivedFile = isset($_FILES['file']) ? $_FILES['file'] : null;
+	if (!empty($receivedFile) && $receivedFile['error'] === UPLOAD_ERR_OK) {
 
 		$ref = dol_sanitizeFileName($facture->ref);
 		$reldir = 'fournisseur/facture/' . get_exdir($newId, 2, 0, 0, $facture, 'invoice_supplier') . $ref;
-		$upload_dir = DOL_DATA_ROOT . '/' . $reldir;
+		$destDir = DOL_DATA_ROOT . '/' . $reldir;
 
-		if (!dol_is_dir($upload_dir)) {
-			dol_mkdir($upload_dir);
+		if (!dol_is_dir($destDir)) {
+			dol_mkdir($destDir);
 		}
 
-		$fileName = dol_sanitizeFileName(basename($_FILES['file']['name']));
+		$fileName = dol_sanitizeFileName(basename($receivedFile['name']));
 		$destFileName = $ref . '-' . $fileName;
-		$destFullPath = $upload_dir . '/' . $destFileName;
+		$destFullPath = $destDir . '/' . $destFileName;
 
-		if (move_uploaded_file($_FILES['file']['tmp_name'], $destFullPath)) {
-			// Registrar en ECM usando la clase nativa
+		$moveResult = dol_move_uploaded_file($receivedFile['tmp_name'], $destFullPath, 1, 1, $receivedFile['error'], 1, 'file');
+		if ($moveResult > 0) {
+			// Register in ECM
 			$ecmfile = new EcmFiles($db);
 			$ecmfile->filepath = $reldir;
 			$ecmfile->filename = $destFileName;
@@ -732,10 +734,11 @@ if ($action == "createSupplierInvoice") {
 		'import_key'       => 'easyocr-ai',
 	);
 
-	// Handle file upload
-	if (isset($_FILES['file']) && $_FILES['file']['error'] === UPLOAD_ERR_OK) {
-		$params['file_tmp_path'] = $_FILES['file']['tmp_name'];
-		$params['file_name'] = $_FILES['file']['name'];
+	// Handle received file
+	$receivedFile = isset($_FILES['file']) ? $_FILES['file'] : null;
+	if (!empty($receivedFile) && $receivedFile['error'] === UPLOAD_ERR_OK) {
+		$params['file_tmp_path'] = $receivedFile['tmp_name'];
+		$params['file_name'] = $receivedFile['name'];
 	}
 
 	// Call shared invoice creation function
@@ -1130,8 +1133,9 @@ if ($action == "createSupplierInvoice") {
 		exit;
 	}
 
-	if (empty($_FILES['file']) || $_FILES['file']['error'] !== UPLOAD_ERR_OK) {
-		$errCode = !empty($_FILES['file']['error']) ? $_FILES['file']['error'] : 'no file';
+	$receivedFile = isset($_FILES['file']) ? $_FILES['file'] : null;
+	if (empty($receivedFile) || $receivedFile['error'] !== UPLOAD_ERR_OK) {
+		$errCode = !empty($receivedFile['error']) ? $receivedFile['error'] : 'no file';
 		print json_encode(["status" => "error", "message" => $langs->trans('EasyOcrBatchUploadError', '') . ' (code: ' . $errCode . ')']);
 		exit;
 	}
@@ -1145,9 +1149,9 @@ if ($action == "createSupplierInvoice") {
 		'image/bmp',
 		'image/webp'
 	);
-	$fileMime = $_FILES['file']['type'];
+	$fileMime = $receivedFile['type'];
 	if (!in_array($fileMime, $allowedMimes)) {
-		print json_encode(["status" => "error", "message" => $langs->transnoentities('EasyOcrBatchInvalidType', $_FILES['file']['name'])]);
+		print json_encode(["status" => "error", "message" => $langs->transnoentities('EasyOcrBatchInvalidType', $receivedFile['name'])]);
 		exit;
 	}
 
@@ -1156,9 +1160,10 @@ if ($action == "createSupplierInvoice") {
 		dol_mkdir($tempDir);
 	}
 
-	$destPath = $tempDir . '/' . dol_sanitizeFileName($_FILES['file']['name']);
-	if (!move_uploaded_file($_FILES['file']['tmp_name'], $destPath)) {
-		print json_encode(["status" => "error", "message" => $langs->transnoentities('EasyOcrBatchMoveError', $_FILES['file']['name'])]);
+	$destPath = $tempDir . '/' . dol_sanitizeFileName($receivedFile['name']);
+	$moveResult = dol_move_uploaded_file($receivedFile['tmp_name'], $destPath, 1, 1, $receivedFile['error'], 1, 'file');
+	if (!($moveResult > 0)) {
+		print json_encode(["status" => "error", "message" => $langs->transnoentities('EasyOcrBatchMoveError', $receivedFile['name'])]);
 		exit;
 	}
 

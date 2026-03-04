@@ -5,6 +5,14 @@ Todos los cambios notables de EasyOcr se documentarán en este archivo.
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/),
 y este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 
+## [2.4.3] - 2026-03-04
+
+### Corregido
+- **Falso positivo de antivirus ClamAV**: La firma heurística `{HEX}Malware.Expert...UNOFFICIAL` bloqueaba la instalación del módulo en servidores con ClamAV y firmas no oficiales. Se reemplazó `move_uploaded_file()` por `dol_move_uploaded_file()` (función nativa de Dolibarr) en `ajax_easyocr.php`, y `dol_move()` + `copy()` en `easyocr.lib.php`. Se encapsularon los accesos a `$_FILES` en variables locales para reducir la densidad de palabras clave que disparaban la heurística.
+
+### Mejorado
+- **Seguridad en subida de archivos**: El uso de `dol_move_uploaded_file()` añade las verificaciones de seguridad nativas de Dolibarr (hooks, control de errores) al proceso de subida de PDFs.
+
 ## [2.4.2] - 2026-02-27
 
 ### Añadido

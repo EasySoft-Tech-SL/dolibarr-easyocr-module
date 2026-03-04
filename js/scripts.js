@@ -33,7 +33,8 @@ const EasyOcr = (function () {
         aiEnabled: false,     // AI OCR habilitado
         aiResult: null,       // Último resultado AI OCR
         defaultTaxRate: 0,    // Tasa IVA por defecto del documento (de totals.taxes)
-        customInstructions: '' // Instrucciones personalizadas para IA (por plantilla/proveedor)
+        customInstructions: '', // Instrucciones personalizadas para IA (por plantilla/proveedor)
+        selectedSupplierID: null // Proveedor seleccionado/detectado por CIF en modal AI
     };
 
     // Historial para undo
@@ -76,18 +77,25 @@ const EasyOcr = (function () {
         type = type || 'success';
         const el = document.createElement('div');
         el.className = 'eo-toast ' + type;
-        el.textContent = msg;
+        // Use innerHTML for warn/error to allow links; textContent for success (safe)
+        if (type === 'warn' || type === 'error') {
+            el.innerHTML = msg;
+        } else {
+            el.textContent = msg;
+        }
         const offset = 20 + (toastCount * 52);
         el.style.bottom = offset + 'px';
         document.body.appendChild(el);
         toastCount++;
+        // Longer display for errors/warnings (6s) vs success (3s)
+        var duration = (type === 'error' || type === 'warn') ? 6000 : 3000;
         setTimeout(() => {
             el.classList.add('eo-toast-out');
             setTimeout(() => {
                 el.remove();
                 toastCount = Math.max(0, toastCount - 1);
             }, 300);
-        }, 3000);
+        }, duration);
     }
 
     function showModal(id) {
@@ -1303,7 +1311,19 @@ const EasyOcr = (function () {
                     toast(L.invoiceCreatedOk, 'success');
                     resetWorkspace();
                 } else if (data.status === 'repeat') {
-                    toast(L.invoiceAlreadyExists, 'warn');
+                    var msg = L.invoiceAlreadyExists || 'La factura ya existe';
+                    if (data.existing_ref) {
+                        msg += ': ' + data.existing_ref;
+                    }
+                    if (data.existing_ref_supplier) {
+                        msg += ' (Ref: ' + data.existing_ref_supplier + ')';
+                    }
+                    if (data.existing_id) {
+                        msg += ' <a href="../../fourn/facture/card.php?facid=' + data.existing_id + '" target="_blank" style="color:#fff;text-decoration:underline;">' + (L.viewInvoice || 'Ver factura') + '</a>';
+                    }
+                    toast(msg, 'warn');
+                } else {
+                    toast(data.message || L.errorGeneratingInvoice, 'error');
                 }
             },
             error: function () {
@@ -2184,6 +2204,84 @@ const EasyOcr = (function () {
         return hasAnyValue;
     }
 
+    function checkSupplierByCIF(cif) {
+        var indicator = document.getElementById('eo-supplier-status-indicator');
+        var selectorDiv = document.getElementById('eo-supplier-selector-container');
+
+        // Reset state
+        state.selectedSupplierID = null;
+        if (selectorDiv) { selectorDiv.style.display = 'none'; selectorDiv.innerHTML = ''; }
+
+        if (!cif || !cif.trim()) {
+            if (indicator) indicator.style.display = 'none';
+            return;
+        }
+
+        // Loading
+        if (indicator) {
+            indicator.style.display = '';
+            indicator.textContent = '⏳';
+            indicator.title = '';
+        }
+
+        $.ajax({
+            url: 'ajax/ajax_easyocr.php',
+            type: 'POST',
+            data: { action: 'findSupplierByCIF', cif: cif.trim() },
+            dataType: 'json',
+            success: function(data) {
+                if (data && data.status === 'ok') {
+                    if (data.found_count > 1 && data.suppliers && data.suppliers.length > 1) {
+                        // Multiple suppliers — show selector
+                        if (indicator) indicator.style.display = 'none';
+                        if (selectorDiv) {
+                            var sel = document.createElement('select');
+                            sel.className = 'eo-select eo-ai-field-input';
+                            sel.style.width = '100%';
+                            for (var i = 0; i < data.suppliers.length; i++) {
+                                var opt = document.createElement('option');
+                                opt.value = data.suppliers[i].id;
+                                opt.textContent = data.suppliers[i].name;
+                                sel.appendChild(opt);
+                            }
+                            state.selectedSupplierID = String(data.suppliers[0].id);
+                            sel.addEventListener('change', function() {
+                                state.selectedSupplierID = this.value || null;
+                            });
+                            selectorDiv.innerHTML = '';
+                            selectorDiv.appendChild(sel);
+                            selectorDiv.style.display = '';
+                        }
+                    } else {
+                        // Single supplier
+                        state.selectedSupplierID = String(data.fk_soc);
+                        if (indicator) {
+                            indicator.style.display = '';
+                            indicator.textContent = '✅';
+                            indicator.title = (L.supplierAutoDetected || 'Proveedor detectado') + ': ' + (data.name || '');
+                        }
+                        if (selectorDiv) selectorDiv.style.display = 'none';
+                    }
+                } else {
+                    state.selectedSupplierID = null;
+                    if (indicator) {
+                        indicator.style.display = '';
+                        indicator.textContent = '❌';
+                        indicator.title = L.noSupplierFoundByCIF || 'Ningún proveedor encontrado con ese CIF/NIF';
+                    }
+                }
+            },
+            error: function() {
+                state.selectedSupplierID = null;
+                if (indicator) {
+                    indicator.style.display = '';
+                    indicator.textContent = '❌';
+                    indicator.title = L.noSupplierFoundByCIF || 'Ningún proveedor encontrado con ese CIF/NIF';
+                }
+            }
+        });
+    }
+
     function createLineRow(item, idx) {
         var tr = document.createElement('tr');
         tr.setAttribute('data-ai-line-idx', idx);
@@ -2345,6 +2443,8 @@ const EasyOcr = (function () {
         var btn = document.getElementById('eo-btn-show-payload');
         if (panel) panel.style.display = 'none';
         if (btn) btn.classList.remove('active');
+        // Reset supplier selection from CIF lookup
+        state.selectedSupplierID = null;
     }
 
     function collectAIModalData() {
@@ -2576,7 +2676,7 @@ const EasyOcr = (function () {
                 msg += ' (Ref: ' + data.existing_ref_supplier + ')';
             }
             if (data.existing_id) {
-                msg += ' <a href="' + DOL_URL_ROOT + '/fourn/facture/card.php?facid=' + data.existing_id + '" target="_blank" style="color:#fff;text-decoration:underline;">Ver factura</a>';
+                msg += ' <a href="../../fourn/facture/card.php?facid=' + data.existing_id + '" target="_blank" style="color:#fff;text-decoration:underline;">' + (L.viewInvoice || 'Ver factura') + '</a>';
             }
             toast(msg, 'warn');
         } else {
