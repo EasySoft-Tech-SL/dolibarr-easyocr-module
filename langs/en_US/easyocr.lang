@@ -1,0 +1,677 @@
+# EasyOcr - English (US)
+# Copyright (C) 2025-2026 EasySoft Tech S.L.
+
+# --- Module descriptor ---
+Module402020Name = EasyOcr
+ModuleEasyocrDesc = Text extraction and invoice import from PDF
+ModuleEasyocrDescLong = Tool for extracting text content from PDF files for automatic creation of supplier invoices in Dolibarr.
+# --- Admin tabs ---
+EasyOcrSetup = Setup
+EasyOcrAbout = About
+EasyOcrChangeLog = ChangeLog
+EasyOcrConfigurationOptions = Configuration options
+EasyOcrModuleDescription = Module description
+EasyOcrModuleActiveInfo = The EasyOcr module is active
+EasyOcrSetupInfo = Setup information
+EasyOcrSetupInfoDesc = Access module tools from the main EasyOcr menu
+EasyOcrCloudServiceTitle = EasyOCR Cloud Service
+EasyOcrCloudServiceWebsite = Service website
+EasyOcrCloudServiceWebsiteDesc = Information about the EasyOCR cloud OCR extraction service
+EasyOcrCloudServicePanel = Management panel
+EasyOcrCloudServicePanelDesc = Access the management panel to manage your account, subscription and API usage
+EasyOcrReadmeFileNotFound = README file not found
+EasyOcrChangeLogFileNotFound = ChangeLog file not foundEasyOcrPermRead = Read templates and processed invoices
+EasyOcrPermWrite = Create and edit templates, process invoices
+EasyOcrPermDelete = Delete templates and invoice records
+
+# --- Menus ---
+EasyOcrMenuUploadPdf = Upload PDF
+EasyOcrMenuTemplates = Templates
+EasyOcrMenuInvoices = Invoices
+
+# --- index.php (card dashboard) ---
+EasyOcrIndexSections = Quick access
+EasyOcrIndexOpen = Open
+EasyOcrIndexDescTool = Import a PDF and visually extract supplier invoice data.
+EasyOcrIndexDescBatch = Process multiple PDFs at once with AI-powered automatic extraction.
+EasyOcrIndexDescTemplates = Manage zone selection templates linked to suppliers.
+EasyOcrIndexDescInvoices = View the history of invoices generated from imported PDFs.
+EasyOcrIndexDescSetup = Configure the API key, cloud service and module options.
+
+# --- extract.php (PDF viewer) ---
+EasyOcrImportPdf = Import PDF
+EasyOcrNoFileSelected = No file selected
+EasyOcrZoomOut = Zoom out (-)
+EasyOcrZoomIn = Zoom in (+)
+EasyOcrDropHere = Click or drag a PDF here
+EasyOcrImportPdfToStart = Import a PDF to begin
+EasyOcrDragAndDrop = or drag and drop a file here
+EasyOcrDropPdfHere = Drop the PDF here
+EasyOcrLabels = Labels
+EasyOcrSelectLabelHint = Select a label → Draw a rectangle on the PDF
+EasyOcrTemplates = Templates
+EasyOcrNoTemplate = No template
+EasyOcrApply = Apply
+EasyOcrClearTemplate = Clear template
+EasyOcrPdfMetadata = PDF Metadata
+EasyOcrExtractedData = Extracted data
+EasyOcrSupplier = Supplier
+EasyOcrSelectSupplier = Select supplier
+EasyOcrNoSelectionsYet = No selections yet
+EasyOcrReadinessSupplier = Supplier
+EasyOcrReadinessInvoice = Invoice
+EasyOcrReadinessDate = Date
+EasyOcrReadinessHT = Total excl. tax
+EasyOcrReadinessTTC = Total price
+EasyOcrCompleteness = Completeness
+EasyOcrPromoBadge = Coming soon
+EasyOcrPromoTitle = Bulk extraction with AI
+EasyOcrPromoText = Upload multiple invoices and extract all data automatically without manual intervention. Available with subscription.
+EasyOcrSaveTemplate = Save template
+EasyOcrEditTemplate = Edit template
+EasyOcrGenerateInvoice = Generate Invoice
+EasyOcrHelpAndShortcuts = Help and shortcuts
+EasyOcrHelpKeyboardTitle = Keyboard shortcuts
+EasyOcrHelpSelectLabel = Select label
+EasyOcrHelpUndo = Undo last action
+EasyOcrHelpSaveEditTpl = Save/Edit template
+EasyOcrHelpGenerateInvoice = Generate invoice
+EasyOcrHelpCloseModal = Close modal / Deselect
+EasyOcrHelpInteractionTitle = Interaction
+EasyOcrHelpDragPdf = Drag a PDF to the viewer to load it
+EasyOcrHelpDrawRects = Draw rectangles after selecting a label
+EasyOcrHelpDragSelections = Drag selections to move them
+EasyOcrHelpResizeCorners = Use corners to resize
+EasyOcrHelpZoom = +/− to zoom the PDF
+
+# --- Save template modal ---
+EasyOcrSaveAsTemplate = Save as template
+EasyOcrTemplateName = Template name
+EasyOcrTemplateNamePlaceholder = E.g.: Supplier X Invoice
+EasyOcrAssociatedSupplier = Associated supplier
+EasyOcrNoSupplierGeneric = No supplier (generic)
+EasyOcrAutoSelectSupplierHint = Loading this template will automatically select the supplier
+EasyOcrSave = Save
+
+# --- Confirm invoice modal ---
+EasyOcrConfirmGenerateInvoice = Confirm invoice generation
+EasyOcrConfirmIntro = A supplier invoice will be created with the following data:
+EasyOcrCreatePayment = Create payment linked to the invoice
+EasyOcrPaymentMode = Payment mode
+EasyOcrSelectPaymentMode = Select payment mode
+EasyOcrBankAccount = Bank account
+EasyOcrSelectBankAccount = Select bank account
+EasyOcrCancel = Cancel
+EasyOcrConfirmAndGenerate = Confirm and Generate
+
+# --- Invoice preview modal ---
+EasyOcrInvoiceCreated = Invoice created
+EasyOcrOpenNewTab = Open in new tab
+EasyOcrOpen = Open ↗
+
+# --- Subscription Widget (extract.php) ---
+EasyOcrQuotaPages = Processed pages
+EasyOcrQuotaRemaining = Remaining
+EasyOcrQuotaReset = Renewal
+EasyOcrWalletBalance = Wallet
+EasyOcrQuotaExceeded = ⚠️ You have exceeded your monthly quota. Some features may be limited.
+EasyOcrQuotaNearLimit = ⚠️ You are approaching your monthly quota limit.
+EasyOcrViewFullPlan = View full plan
+
+# --- templates.php ---
+EasyOcrTemplatesTitle = Templates
+EasyOcrDeleteTemplate = Delete Template
+EasyOcrConfirmDeleteTemplate = Confirm deletion of this template?
+EasyOcrTemplatesDeleted = Templates deleted
+EasyOcrTemplateDeleted = Template deleted
+EasyOcrErrorDeletingTemplates = Error deleting templates
+EasyOcrTemplateNameExists = Template name already exists
+EasyOcrTemplateUpdated = Template updated
+EasyOcrErrorUpdatingTemplate = Error updating template
+EasyOcrName = Name
+EasyOcrCreation = Creation
+EasyOcrActions = Actions
+EasyOcrNoSupplier = No supplier
+EasyOcrSearch = Search
+EasyOcrClear = Clear
+EasyOcrShow = Show
+EasyOcrDelete = Delete
+EasyOcrConfirm = Confirm
+EasyOcrConfirmDeleteTemplates = Delete %s selected template(s)?
+EasyOcrNoTemplatesFound = No templates found
+EasyOcrEditName = Edit Name
+EasyOcrNameLabel = Name:
+EasyOcrSearchPlaceholder = Search...
+EasyOcrAllSuppliers = All
+
+# --- invoices.php ---
+EasyOcrInvoicesTitle = Invoices
+EasyOcrDeleteInvoice = Delete Invoice
+EasyOcrConfirmDeleteInvoice = Confirm deletion of this record?
+EasyOcrRecordsDeleted = Records deleted
+EasyOcrRecordDeleted = Record deleted
+EasyOcrErrorDeletingRecords = Error deleting records
+EasyOcrRef = Ref.
+EasyOcrSupplierRef = Supplier Ref.
+EasyOcrDate = Date
+EasyOcrThirdParty = Third party
+EasyOcrDeleteRecord = Delete record
+EasyOcrConfirmDeleteRecords = Delete %s selected record(s)?
+EasyOcrNoInvoicesFound = No invoices found
+
+# --- templates_view.php ---
+EasyOcrEditTemplateTitle = Edit Template
+EasyOcrTemplateNameLabel = Template Name
+EasyOcrFieldRequired = The <b>Name</b> field is required
+EasyOcrTemplateExists = Template already exists
+EasyOcrTemplateUpdatedOk = Template updated successfully
+EasyOcrErrorUpdatingTpl = Error updating template
+
+# --- admin/setup.php ---
+EasyOcrAboutModule = About the EasyOcr module
+EasyOcrBackToModules = Back to modules list
+EasyOcrAbout = About
+EasyOcrForDolibarr = EASYOCR FOR DOLIBARR ERP CRM
+EasyOcrFeaturesTitle = Features
+EasyOcrFeaturesDesc = A tool or software component specifically designed to extract text content from PDF (Portable Document Format) files. This functionality is essential in various applications and services that require the extraction and manipulation of text from PDF documents.
+EasyOcrLicenseTitle = Licenses
+EasyOcrLicenseDesc = All rights reserved to EasySoft Tech S.L.
+EasyOcrSetupTitle = EasyOcr configuration
+
+# --- JS (scripts.js) toasts and UI ---
+EasyOcrNothingToUndo = Nothing to undo
+EasyOcrActionUndone = Action undone
+EasyOcrErrorLoadingPdf = Error loading PDF
+EasyOcrTemplateDetected = Template "%s" detected for this supplier
+EasyOcrSelectTemplateFirst = Select a template first
+EasyOcrTemplateNoSelections = Template has no selections
+EasyOcrErrorLoadingTemplate = Error loading template
+EasyOcrEnterTemplateName = Enter a template name
+EasyOcrTemplateSavedOk = Template saved successfully
+EasyOcrErrorSavingTemplate = Error saving template
+EasyOcrTemplateEditedOk = Template updated successfully
+EasyOcrErrorEditingTemplate = Error editing template
+EasyOcrCompleteAllFields = Complete all fields before generating
+EasyOcrSelectBankForPayment = Select a bank account for payment
+EasyOcrSelectPaymentType = Select a payment mode
+EasyOcrInvoiceCreatedOk = Invoice created successfully — you can load another PDF
+EasyOcrInvoiceAlreadyExists = This invoice already exists in the system
+EasyOcrDuplicateRefSupplier = An invoice with reference '%s' already exists for this supplier (existing invoice: %s)
+EasyOcrViewInvoice = View invoice
+EasyOcrDuplicateAmountDate = Probable duplicate invoice (same supplier, amount and date). Existing invoice: %s
+EasyOcrErrorGeneratingInvoice = Error generating invoice
+EasyOcrSelectPdfFile = Please select a PDF file
+EasyOcrOnlyPdfAccepted = Only PDF files are accepted
+EasyOcrNoMetadata = No metadata available
+EasyOcrNoRelevantMetadata = No relevant metadata
+
+# --- JS labels (selection labels) ---
+EasyOcrLabelDate = Invoice date
+EasyOcrLabelInvoice = Invoice
+EasyOcrLabelHT = Total excl. tax
+EasyOcrLabelTTC = Total price
+EasyOcrAccessDenied = Access denied
+EasyOcrPaymentAutoNote = Payment automatically generated by EasyOcr
+
+EasyOcrErrorCreatingInvoice = Error creating invoice
+EasyOcrInvoiceLineDesc = See details in the attached files
+EasyOcrErrorAddingLine = Error adding line
+EasyOcrErrorValidating = Error validating
+EasyOcrErrorCreatingTemplate = Error creating template
+EasyOcrPage = Page
+EasyOcrDeleteSelection = Delete
+EasyOcrInvoiceNumber = Invoice No.
+EasyOcrTaxableBase = Tax base
+EasyOcrMetaTitle = Title
+EasyOcrMetaAuthor = Author
+EasyOcrMetaSubject = Subject
+EasyOcrMetaCreator = Creator
+EasyOcrMetaProducer = Producer
+EasyOcrMetaCreationDate = Creation date
+EasyOcrMetaModDate = Modification date
+EasyOcrMetaKeywords = Keywords
+EasyOcrMetaTrapped = Trapped
+EasyOcrPdfVersion = PDF version
+EasyOcrXmpAuthor = XMP Author
+EasyOcrXmpDescription = XMP Description
+EasyOcrXmpTitle = XMP Title
+EasyOcrXmpSubject = XMP Subject
+EasyOcrInvoiceCreatedWithRef = Invoice %s created
+EasyOcrRefPlaceholder = SI...
+
+# --- New OCR labels ---
+EasyOcrLabelIVA = Tax amount
+EasyOcrLabelDesc = Description
+EasyOcrLabelCIF = Tax ID
+EasyOcrLabelDueDate = Due date
+EasyOcrReadinessIVA = Tax amount
+EasyOcrReadinessDesc = Description
+EasyOcrReadinessCIF = Tax ID
+EasyOcrReadinessDueDate = Due date
+EasyOcrOptional = (optional)
+EasyOcrSupplierAutoDetected = Supplier auto-detected by Tax ID
+EasyOcrNoSupplierFoundByCIF = No supplier found with that Tax ID
+EasyOcrDueDate = Due date
+EasyOcrDescription = Description
+
+# --- AI OCR ---
+EasyOcrGeneralConfig = General configuration
+EasyOcrInvoiceDraft = Create invoices as draft
+EasyOcrInvoiceDraftDesc = If enabled, created invoices will be left in draft status instead of being automatically validated
+EasyOcrAIConfiguration = AI OCR Configuration
+EasyOcrAIEnabled = Enable AI OCR
+EasyOcrAIUrl = OCR service URL
+EasyOcrAIApiKey = API Key
+EasyOcrAITimeout = Timeout
+EasyOcrAIOcr = AI OCR
+EasyOcrAIOcrHint = Send the PDF to AI service for automatic data extraction
+EasyOcrAIExtract = Extract with AI
+EasyOcrAIResult = AI Result
+EasyOcrAIApply = Apply data
+EasyOcrAINotConfigured = AI OCR service is not configured. Go to Module Configuration.
+EasyOcrAIOcrSuccess = AI extraction complete
+EasyOcrAIOcrError = AI OCR service error
+EasyOcrAIApplied = AI data applied
+EasyOcrAINoData = No data extracted
+EasyOcrAITaxes = Taxes
+EasyOcrAITaxBase = Base
+EasyOcrAITaxAmount = Tax
+EasyOcrAILines = Invoice lines
+EasyOcrAIQty = Qty
+EasyOcrAIPrice = Price
+EasyOcrAITotal = Total
+EasyOcrAICurrency = Currency
+EasyOcrAIImportPdfFirst = Import a PDF first
+
+# --- AI Modal Premium ---
+EasyOcrAIDocument = Document
+EasyOcrAISupplier = Supplier
+EasyOcrAICustomer = Customer
+EasyOcrAITotals = Totals
+EasyOcrAIPayment = Payment
+EasyOcrAINotes = Notes
+EasyOcrAIAddLine = Add line
+EasyOcrAILineDesc = Description
+EasyOcrAITaxRate = Tax %
+EasyOcrAIApplyToInvoice = Apply to invoice
+EasyOcrAIDocType = Type
+EasyOcrAIName = Name
+EasyOcrAIAddress = Address
+EasyOcrAICity = City
+EasyOcrAIPostalCode = Postal code
+EasyOcrAICountry = Country
+EasyOcrAIPhone = Phone
+EasyOcrAIEmail = Email
+EasyOcrAIConfidence = confidence
+EasyOcrAIPages = pages
+EasyOcrAIDiscount = Discount
+EasyOcrAIPayMethod = Method
+EasyOcrAIPayStatus = Status
+EasyOcrAIPayBank = Bank account
+EasyOcrAIPayRef = Reference
+EasyOcrAINoLines = No line items
+
+EasyOcrAICreateInvoice = Create invoice
+EasyOcrAIProcessing = Processing...
+EasyOcrAIStarting = Starting analysis...
+EasyOcrAIMissingInvoiceNum = Invoice number is required
+EasyOcrAIMissingDate = Invoice date is required
+EasyOcrAIMissingTotals = Total amounts are required
+EasyOcrAISupplierNotFound = Supplier not found. Please select one manually.
+EasyOcrAISupplierRequired = Select a supplier or include a Tax ID
+EasyOcrAISupplierCreated = Supplier created:
+EasyOcrAIOff = INACTIVE
+EasyOcrAIDisabledHint = Extract supplier, tax ID, dates, amounts and invoice lines with AI
+EasyOcrAIConfigure = Enable AI OCR
+EasyOcrAIFeat1 = Extracts supplier, tax ID, dates and amounts
+EasyOcrAIFeat2 = Detects all invoice lines
+EasyOcrAIFeat3 = Creates invoices and suppliers automatically
+EasyOcrAICtaHeadline = Supercharge your data extraction
+EasyOcrAIActivateHint = Enable it from Setup > EasyOCR
+
+# ---- License Agreement (copying.php) ----
+EasyOcrCopying = License Agreement
+EasyOcrCopyingLicense = License
+EasyOcrCopyingAuthor = Author
+EasyOcrCopyingContact = Contact
+EasyOcrCopyingWeb = Website
+EasyOcrCopyingGPLTitle = GNU GPL v3 License
+EasyOcrCopyingGPLDesc = This module is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License version 3. This allows you to use, study, modify and distribute the software freely, as long as you maintain the same license.
+EasyOcrCopyingAITitle = AI Services Notice
+EasyOcrCopyingAIDesc = The easyOCR AI functionality uses third-party artificial intelligence services for processing and extracting data from PDF documents. By activating and using the AI function, you agree that the content of processed documents will be sent to these external services. EasySoft Tech S.L. does not store or retain data processed by these third-party services. The user is responsible for ensuring that processed documents do not contain information that should not be shared with external services.
+EasyOcrCopyingFullText = Full license text
+EasyOcrCopyingFileNotFound = License file not found (COPYING or LICENSE).
+# ---- Telemetry & Data Protection (telemetry.php) ----
+EasyOcrTelemetry = Telemetry & Data Protection
+EasyOcrTelemetryModule = Module
+EasyOcrTelemetryPurpose = Purpose
+EasyOcrTelemetryPurposeDesc = Transparency about data transmitted when using AI OCR functionality for invoice data extraction.
+EasyOcrTelemetryContact = Contact
+EasyOcrTelemetryAITitle = Third-party AI services
+EasyOcrTelemetryAIWhat = What does the AI do?
+EasyOcrTelemetryAIWhatDesc = When you activate easyOCR AI, PDF documents are processed by an artificial intelligence service that automatically extracts supplier, tax ID, dates, amounts and invoice lines.
+EasyOcrTelemetryAISent = What data is sent?
+EasyOcrTelemetryAISentDesc = Only the content of the PDF document you voluntarily process. Data is sent only when you click the AI extraction button.
+EasyOcrTelemetryAINever = What is NOT sent?
+EasyOcrTelemetryAINeverDesc = ERP data (customers, suppliers, existing invoices, banking data, passwords) is never sent. Only the content of the PDF you choose to process.
+EasyOcrTelemetryAIProvider = Service provider
+EasyOcrTelemetryAIProviderDesc = The AI service is provided by a configurable microservice. URL and API key are configured in the Settings tab. EasySoft Tech S.L. may offer a managed service or you can connect your own service.
+EasyOcrTelemetryDataSent = Data transmitted to the AI service
+EasyOcrTelemetryDataPDF = Content of the processed PDF document (text and images from the PDF you select)
+EasyOcrTelemetryDataLang = System language (to optimize extraction)
+EasyOcrTelemetryDataDomain = Installation domain (for API access control)
+EasyOcrTelemetryDataNever = Data NEVER transmitted
+EasyOcrTelemetryNeverClients = Customer or supplier data from your ERP
+EasyOcrTelemetryNeverInvoices = Existing invoices, amounts or descriptions from your system
+EasyOcrTelemetryNeverBank = Banking or payment information
+EasyOcrTelemetryNeverPasswords = Passwords, credentials or access tokens
+EasyOcrTelemetryNeverPersonal = Personal data of ERP users
+EasyOcrTelemetrySecurity = Security & Privacy
+EasyOcrTelemetrySecHTTPS = All communications are encrypted via HTTPS/TLS
+EasyOcrTelemetrySecEU = Data is processed on servers located in the European Union
+EasyOcrTelemetrySecAccess = Restricted access: only authorized EasySoft personnel
+EasyOcrTelemetrySecGDPR = GDPR compliant: processing in accordance with European data protection regulations
+EasyOcrTelemetrySecNoSale = Processed data is NOT sold, commercialized or used to train AI models
+EasyOcrTelemetryLegal = Legal basis for processing
+EasyOcrTelemetryLegalContract = Contract execution
+EasyOcrTelemetryLegalContractDesc = Document processing is a service actively requested by the user when clicking the AI extraction button.
+EasyOcrTelemetryLegalLegitimate = Legitimate interest
+EasyOcrTelemetryLegalLegitimateDesc = Providing an accurate and secure data extraction service, protecting system integrity.
+EasyOcrTelemetryLegalGDPR = GDPR Rights
+EasyOcrTelemetryLegalGDPRDesc = The user retains all rights of access, rectification, erasure and portability under GDPR.
+EasyOcrTelemetryRightsTitle = Your rights
+EasyOcrTelemetryRightsDesc = You have the right to: access data we process, request rectification or deletion, object to processing, and request data portability. AI usage is completely voluntary: if you do not activate the function or do not click the extraction button, no data will be transmitted.
+
+# ---- EU AI Regulation (EU) 2024/1689 ----
+EasyOcrTelemetryEUAITitle = European Artificial Intelligence Regulation
+EasyOcrTelemetryEUAIRegulation = Applicable regulation
+EasyOcrTelemetryEUAIRegulationDesc = Regulation (EU) 2024/1689 of the European Parliament and of the Council, of 13 June 2024, establishes harmonized rules on artificial intelligence (AI Act). This module uses third-party AI services and complies with applicable obligations as an operator/end-user.
+EasyOcrTelemetryEUAIArticle50 = Article 50 — Transparency
+EasyOcrTelemetryEUAIArticle50Desc = Article 50 of the AI Regulation, enforceable from August 2026, requires expressly informing individuals that they are interacting with an artificial intelligence system. Following the recommendations of the Spanish Data Protection Agency (AEPD), this module anticipates compliance and clearly informs about AI usage.
+EasyOcrTelemetryEUAIRiskLevel = Risk level
+EasyOcrTelemetryEUAIRiskLevelDesc = AI usage in this module is limited to data extraction from invoices between businesses (B2B). This use is classified as minimal risk, as it does not evaluate, diagnose or make autonomous decisions about natural persons. No additional special measures are required beyond informational transparency.
+EasyOcrTelemetryEUAICompliance = Anticipated compliance
+EasyOcrTelemetryEUAIComplianceDesc = Although Article 50 will not be fully enforceable until August 2026, this module anticipates compliance with transparency and information requirements, in line with AEPD recommendations and in accordance with GDPR (General Data Protection Regulation).
+EasyOcrTelemetryAITransparencyTitle = Transparency Notice on the use of Artificial Intelligence
+EasyOcrTelemetryAITransparencyDesc = This module may use artificial intelligence-based tools to support certain tasks such as invoicing processes. Specifically, the easyOCR AI functionality employs a third-party AI service for automatic data extraction from PDF documents (supplier, tax ID, dates, amounts and invoice lines). The use of this functionality is voluntary and requires explicit user action. AI-generated results are always reviewable and editable by the user before application, ensuring human oversight at all times.
+EasyOcrTelemetryUserObligationsTitle = User obligations as AI operator
+EasyOcrTelemetryObligationUse = Use according to instructions
+EasyOcrTelemetryObligationUseDesc = The user must use AI systems according to the instructions provided by the developer, following the documentation and configuration established in the module.
+EasyOcrTelemetryObligationHuman = Human oversight
+EasyOcrTelemetryObligationHumanDesc = The user must ensure human oversight in decisions, especially sensitive ones. AI results are always reviewable and editable before generating any invoice or record in the system.
+EasyOcrTelemetryObligationInform = Inform affected persons
+EasyOcrTelemetryObligationInformDesc = The user must inform affected persons (employees, clients, suppliers) that AI tools may be used in invoicing processes. This Telemetry page constitutes part of that information.
+EasyOcrTelemetryObligationValidate = Data validation
+EasyOcrTelemetryObligationValidateDesc = The user is responsible for validating input data and AI-extracted results to avoid biases or errors before final application in the ERP.
+EasyOcrTelemetryLegalEUAI = AI Regulation (EU) 2024/1689
+EasyOcrTelemetryLegalEUAIDesc = Data processing through AI is carried out in accordance with Regulation (EU) 2024/1689 on Artificial Intelligence, complying with transparency obligations (Art. 50) and user responsibilities as an operator/deployer of AI systems.
+# ---- GDPR activation message ----
+EasyOcrGDPRInformation = By activating easyOCR, you accept: (1) The GNU GPL v3 License under which this software is distributed. (2) That the easyOCR AI functionality, if activated, will use third-party artificial intelligence services for data extraction, transmitting the content of PDF documents you voluntarily process. (3) That EasySoft Tech S.L. does not store data processed by third-party AI services. See the 'License Agreement' and 'Telemetry & Data Protection' tabs in module settings for more information.
+
+# ---- AI Modal: extra columns and options ----
+EasyOcrAICode = Code
+EasyOcrAIType = Type
+EasyOcrAIRE = RE%%
+EasyOcrAIIRPF = IRPF%%
+EasyOcrAIInvoiceStatus = Status
+EasyOcrAIValidated = Validated
+EasyOcrAIDraft = Draft
+EasyOcrAIJournal = Journal
+EasyOcrAIJournalAuto = -- Automatic --
+EasyOcrTypeProduct = Product
+EasyOcrTypeService = Service
+EasyOcrTypeShipping = Shipping
+EasyOcrTypeSurcharge = Surcharge
+EasyOcrTypeFee = Fee
+EasyOcrTypeDiscount = Discount
+EasyOcrTypeOther = Other
+
+# --- Custom Instructions (AI) ---
+EasyOcrCustomInstructions = AI Instructions
+EasyOcrCustomInstructionsHint = Additional instructions for the AI when processing invoices from this supplier.
+EasyOcrCustomInstructionsPlaceholder = E.g.: This supplier always includes shipping in the last line. VAT is always 21%%. Discounts are on separate lines...
+EasyOcrCustomInstructionsSaveHint = These instructions will be sent to the AI every time this template is used.
+EasyOcrCustomInstructionsUpgrade = Your plan does not include custom instructions. Upgrade your plan to use this feature.
+
+# --- Templates & Invoices list ---
+EasyOcrNumFields = Num. Fields
+EasyOcrScale = Scale
+EasyOcrTemplateFields = Template fields
+EasyOcrFieldLabel = Label
+EasyOcrWidth = Width
+EasyOcrHeight = Height
+EasyOcrOrigin = Origin
+EasyOcrRemoveMark = Remove EasyOcr mark
+
+# --- Service Plan (admin/plan.php) ---
+EasyOcrPlan = Service Plan
+EasyOcrPlanNotConfigured = The AI OCR service is not configured. Configure your API Key in the Setup tab to view your plan information.
+EasyOcrPlanGoToSetup = Go to Setup
+EasyOcrPlanErrorAuth = Authentication error
+EasyOcrPlanErrorAPI = Error connecting to API
+EasyOcrPlanNoData = No data available
+
+# Account Section
+EasyOcrPlanAccount = Account information
+EasyOcrPlanAccountName = Name
+EasyOcrPlanAccountEmail = Email
+EasyOcrPlanAccountStatus = Account status
+EasyOcrPlanAccountActive = Active
+EasyOcrPlanAccountInactive = Inactive
+EasyOcrPlanBillingMode = Billing mode
+EasyOcrPlanCreatedAt = Registration date
+
+# Subscription Section
+EasyOcrPlanSubscription = Subscription
+EasyOcrPlanBillingCycle = Billing cycle
+EasyOcrPlanMonthly = monthly
+EasyOcrPlanYearly = yearly
+EasyOcrPlanPeriodStart = Period start
+EasyOcrPlanPeriodEnd = Period end
+EasyOcrPlanTrialEnds = Trial ends
+EasyOcrPlanCancelledAt = Cancelled on
+EasyOcrPlanStatusActive = Active
+EasyOcrPlanStatusInactive = Inactive
+EasyOcrPlanStatusTrial = Trial
+EasyOcrPlanStatusCancelled = Cancelled
+EasyOcrPlanStatusExpired = Expired
+EasyOcrPlanStatusPastDue = Past due
+EasyOcrPlanStatusPaused = Paused
+
+# Subscription status descriptions
+EasyOcrSubscriptionStatusActive = Active subscription, payments up to date
+EasyOcrSubscriptionStatusTrialing = In trial period
+EasyOcrSubscriptionStatusPastDue = Payment failed, pending retry
+EasyOcrSubscriptionStatusCancelled = Cancelled by user or system
+EasyOcrSubscriptionStatusExpired = Period ended without renewal
+EasyOcrSubscriptionStatusPaused = Temporarily paused
+
+# Plan Section
+EasyOcrPlanCurrent = Current plan
+EasyOcrPlanName = Plan name
+EasyOcrPlanType = Plan type
+EasyOcrPlanTypeSubscription = Subscription
+EasyOcrPlanTypePrepaid = Prepaid
+EasyOcrPlanPrice = Price
+EasyOcrPlanSlug = Identifier
+EasyOcrPlanFree = Free
+EasyOcrPlanPriceMonthly = Monthly price
+EasyOcrPlanPriceYearly = Yearly price
+EasyOcrPlanMonth = month
+EasyOcrPlanYear = year
+
+# Quota Section
+EasyOcrPlanQuota = Usage quota
+EasyOcrPlanPeriod = Current period
+EasyOcrPlanQuotaPages = Pages processed
+EasyOcrPlanQuotaDocs = Documents processed
+EasyOcrPlanPagesRemaining = Pages remaining
+EasyOcrPlanDocsRemaining = Documents remaining
+EasyOcrPlanPages = pages
+EasyOcrPlanDocuments = documents
+EasyOcrPlanQuotaUnlimited = Unlimited
+EasyOcrPlanQuotaRemaining = Remaining requests
+EasyOcrPlanQuotaReset = Quota renewal
+
+# Usage Stats Section
+EasyOcrPlanUsageStats = Usage statistics
+EasyOcrPlanTokensInput = Input tokens
+EasyOcrPlanTokensOutput = Output tokens
+EasyOcrPlanTokensTotal = Total tokens
+EasyOcrPlanRequestsTotal = Total requests
+EasyOcrPlanRequestsFailed = Failed requests
+EasyOcrPlanSuccessRate = Success rate
+
+# Limits Section
+EasyOcrPlanLimits = Plan limits
+EasyOcrPlanLimitPagesMonth = Maximum pages per month
+EasyOcrPlanLimitDocsMonth = Maximum documents per month
+EasyOcrPlanLimitPagesDoc = Maximum pages per document
+EasyOcrPlanLimitFileSize = Maximum file size
+EasyOcrPlanLimitBatch = Maximum batch size
+EasyOcrPlanLimitApiKeys = Maximum API keys
+EasyOcrPlanLimitRate = Request limit
+EasyOcrPlanLimitConcurrent = Maximum concurrent requests
+EasyOcrPlanLimitRetention = Document retention
+EasyOcrPlanPerMin = per minute
+
+# Features Section
+EasyOcrPlanFeatures = Plan features
+EasyOcrPlanFeatureApi = API access
+EasyOcrPlanFeatureStreaming = Real-time streaming
+EasyOcrPlanFeatureBatch = Batch processing
+EasyOcrPlanFeatureInstructions = Custom instructions
+EasyOcrPlanFeatureWebhooks = Webhooks
+EasyOcrPlanFeaturePriority = Priority queue
+EasyOcrPlanFeatureStorage = Document storage
+EasyOcrPlanFeatureText = Include extracted text
+EasyOcrPlanFeatureAutoCorrect = Text auto-correction
+EasyOcrPlanFeatureVision = Image analysis (Vision)
+
+# API Key Section
+EasyOcrPlanApiKey = Current API key
+EasyOcrPlanKeyName = Key name
+EasyOcrPlanKeyPrefix = Prefix
+EasyOcrPlanKeyEnv = Environment
+EasyOcrPlanEnvLive = Production
+EasyOcrPlanEnvSandbox = Sandbox
+EasyOcrPlanKeyCreated = Creation date
+EasyOcrPlanKeyLastUsed = Last used
+EasyOcrPlanKeyExpires = Expiration date
+EasyOcrPlanNoExpiration = No expiration
+
+# Wallet Section
+EasyOcrPlanWallet = Prepaid wallet
+EasyOcrPlanWalletBalance = Available balance
+EasyOcrPlanWalletPurchased = Purchased pages
+EasyOcrPlanWalletConsumed = Consumed pages
+EasyOcrPlanWalletCanProcess = Can process
+
+# --- Batch processing (batch.php) ---
+EasyOcrMenuBatch = Batch processing
+EasyOcrBatchHistory = Batch history
+EasyOcrBatchTitle = Batch processing
+EasyOcrBatchSubtitle = Upload multiple documents and process them in bulk
+EasyOcrBatchNoApiKey = The API key is not configured. Set it up in Module Settings.
+EasyOcrBatchNotAvailable = Batch processing is not available on your current plan.
+EasyOcrBatchNoQuota = No pages available. Top up your wallet or upgrade your plan.
+EasyOcrBatchApiError = API communication error
+EasyOcrBatchLocked = Batch processing not available
+EasyOcrBatchNoFiles = You must select at least one file.
+EasyOcrBatchMaxFiles = The maximum number of files per batch is %s.
+EasyOcrBatchUploadError = Error uploading file %s.
+EasyOcrBatchInvalidType = File type not allowed: %s.
+EasyOcrBatchFileTooLarge = File %s exceeds the maximum size of %s.
+EasyOcrBatchMoveError = Error moving file %s.
+EasyOcrBatchInvalidToken = Invalid security token. Please reload the page.
+EasyOcrBatchSuccess = Batch submitted successfully!
+EasyOcrBatchSuccessDesc = Your batch is being processed. You will receive the results when they are ready.
+EasyOcrBatchFiles = file(s)
+EasyOcrBatchName = Batch name
+EasyOcrBatchNamePlaceholder = E.g.: Invoices January 2026
+EasyOcrBatchConfig = Configuration
+EasyOcrBatchIncludeText = Include extracted text
+EasyOcrBatchIncludeTextDesc = Adds the extracted_text field in the webhook. Increases token consumption.
+EasyOcrBatchAutoCorrect = Auto-correction
+EasyOcrBatchAutoCorrectDesc = Automatically corrects errors in structured data (amounts, dates, etc.).
+EasyOcrBatchWebhookHint = You will receive a POST notification when the batch is complete.
+EasyOcrBatchWebhookAutoHint = Auto-generated URL. Points to the module webhook receiver.
+EasyOcrBatchLanguage = Document language
+EasyOcrBatchLanguagePlaceholder = es, en, fr...
+EasyOcrBatchLanguageHint = ISO code of the document's primary language (optional).
+EasyOcrBatchTemplateSelect = Supplier template
+EasyOcrBatchTemplateSelectHint = — Select template —
+EasyOcrBatchUpgradePlan = Feature not available on your current plan
+EasyOcrBatchQuotaInfo = Usage & quota
+EasyOcrBatchFromPlan = From plan
+EasyOcrBatchMaxPerBatch = Max per batch
+EasyOcrBatchMaxSize = max. %s
+EasyOcrBatchMaxFilesHint = up to %s files
+EasyOcrBatchHowItWorks = How does it work?
+EasyOcrBatchStep1 = Upload your documents (up to 200 per batch)
+EasyOcrBatchStep2 = Configure processing options
+EasyOcrBatchStep3 = Receive the extracted data automatically
+EasyOcrBatchDropFiles = Drag files here or 
+EasyOcrBatchClickSelect = click to select
+EasyOcrBatchClearAll = Remove all
+EasyOcrBatchProcess = Process batch
+EasyOcrBatchProcessN = Process %s file(s)
+EasyOcrBatchProcessing = Processing...
+EasyOcrBatchUploading = Uploading file
+
+# --- Batch list/detail ---
+EasyOcrBatchTabNew = New batch
+EasyOcrBatchTabList = Batch history
+EasyOcrBatchAllStatuses = All statuses
+EasyOcrBatchStatusPending = Pending
+EasyOcrBatchStatusProcessing = Processing
+EasyOcrBatchStatusCompleted = Completed
+EasyOcrBatchStatusFailed = Failed
+EasyOcrBatchStatusCancelled = Cancelled
+EasyOcrBatchNoResults = No batches found
+EasyOcrBatchCancelConfirm = Cancel this batch? This action cannot be undone.
+EasyOcrBatchTotalDocs = Total documents
+EasyOcrBatchProcessed = Processed
+EasyOcrBatchCompletedAt = Completed at
+EasyOcrBatchPages = Pages
+EasyOcrBatchDocInfo = Document information
+EasyOcrBatchNoDocResults = No results available for this document
+EasyOcrBatchResultsTitle = View results
+EasyOcrBatchStatusPartial = Partial
+EasyOcrBatchSearchName = Search by name...
+EasyOcrBatchProgress = Progress
+EasyOcrBatchFailedDocs = Failed documents
+EasyOcrBatchCompletedDocs = Completed documents
+EasyOcrClear = Clear
+EasyOcrBatchCustomer = Customer
+EasyOcrBatchTaxId = Tax ID
+EasyOcrBatchItems = Line items
+EasyOcrBatchTotals = Totals
+EasyOcrBatchTotalPayable = Total payable
+EasyOcrBatchWithholdings = Withholdings
+EasyOcrBatchSurcharges = Surcharges
+EasyOcrBatchDiscountTotal = Discount total
+EasyOcrBatchPayment = Payment
+EasyOcrBatchPayMethod = Payment method
+EasyOcrBatchPayStatus = Payment status
+EasyOcrBatchPayTerms = Payment terms
+EasyOcrBatchPayRef = Payment reference
+EasyOcrBatchBankAccount = Bank account
+EasyOcrBatchMetadata = Additional info
+EasyOcrBatchProcessingTime = Processing time
+EasyOcrBatchStartedAt = Started at
+EasyOcrBatchLogo = Logo
+EasyOcrBatchStamp = Stamp
+EasyOcrBatchSignature = Signature
+EasyOcrBatchNotes = Notes
+EasyOcrBatchCheckingInvoice = Checking invoice
+EasyOcrBatchInvoiceExists = Invoice already created
+EasyOcrBatchCreateInvoice = Create invoice
+EasyOcrBatchViewInvoice = View invoice
+EasyOcrBatchInvoiceNotCreated = Not created
+
+# --- Batch Trash / Recycle Bin ---
+EasyOcrBatchTrash = Trash
+EasyOcrBatchTrashConfirm = Move this batch to trash? It will be cancelled and cannot be restored.
+EasyOcrBatchTrashEmpty = Trash is empty
+EasyOcrBatchBackToHistory = Back to history

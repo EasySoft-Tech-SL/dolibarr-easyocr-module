@@ -1,0 +1,681 @@
+# EasyOcr - Español (España)
+# Copyright (C) 2025-2026 EasySoft Tech S.L.
+
+# --- Module descriptor ---
+Module402020Name = EasyOcr
+ModuleEasyocrDesc = Extracción de texto e importación de facturas desde PDF
+ModuleEasyocrDescLong = Herramienta de extracción de contenido textual de archivos PDF para la creación automática de facturas de proveedor en Dolibarr.
+
+# --- Admin tabs ---
+EasyOcrSetup = Configuración
+EasyOcrAbout = Acerca de
+EasyOcrChangeLog = Historial de cambios
+EasyOcrConfigurationOptions = Opciones de configuración
+EasyOcrModuleDescription = Descripción del módulo
+EasyOcrModuleActiveInfo = El módulo EasyOcr está activo
+EasyOcrSetupInfo = Información de configuración
+EasyOcrSetupInfoDesc = Accede a las herramientas del módulo desde el menú principal de EasyOcr
+EasyOcrCloudServiceTitle = Servicio en la nube EasyOCR
+EasyOcrCloudServiceWebsite = Sitio web del servicio
+EasyOcrCloudServiceWebsiteDesc = Información sobre el servicio de extracción OCR en la nube de EasyOCR
+EasyOcrCloudServicePanel = Panel de gestión
+EasyOcrCloudServicePanelDesc = Accede al panel de gestión para administrar tu cuenta, suscripción y uso de la API
+EasyOcrReadmeFileNotFound = Archivo README no encontrado
+EasyOcrChangeLogFileNotFound = Archivo ChangeLog no encontrado
+EasyOcrPermRead = Leer plantillas y facturas procesadas
+EasyOcrPermWrite = Crear y editar plantillas, procesar facturas
+EasyOcrPermDelete = Eliminar plantillas y registros de facturas
+
+# --- Menus ---
+EasyOcrMenuUploadPdf = Cargar Pdf
+EasyOcrMenuTemplates = Plantillas
+EasyOcrMenuInvoices = Facturas
+
+# --- index.php (dashboard de tarjetas) ---
+EasyOcrIndexSections = Accesos directos
+EasyOcrIndexOpen = Abrir
+EasyOcrIndexDescTool = Importa un PDF y extrae datos de facturas de proveedor de forma visual.
+EasyOcrIndexDescBatch = Procesa múltiples PDFs a la vez con extracción automática mediante IA.
+EasyOcrIndexDescTemplates = Gestiona las plantillas de selección de zonas asociadas a proveedores.
+EasyOcrIndexDescInvoices = Consulta el historial de facturas generadas desde PDFs importados.
+EasyOcrIndexDescSetup = Configura la clave API, el servicio en la nube y las opciones del módulo.
+
+# --- extract.php (visor PDF) ---
+EasyOcrImportPdf = Importar PDF
+EasyOcrNoFileSelected = Ningún archivo seleccionado
+EasyOcrZoomOut = Alejar (-)
+EasyOcrZoomIn = Acercar (+)
+EasyOcrDropHere = Haz click o arrastra un PDF aquí
+EasyOcrImportPdfToStart = Importa un PDF para comenzar
+EasyOcrDragAndDrop = o arrastra y suelta un archivo aquí
+EasyOcrDropPdfHere = Suelta el PDF aquí
+EasyOcrLabels = Etiquetas
+EasyOcrSelectLabelHint = Selecciona una etiqueta → Dibuja un rectángulo sobre el PDF
+EasyOcrTemplates = Plantillas
+EasyOcrNoTemplate = Sin plantilla
+EasyOcrApply = Aplicar
+EasyOcrClearTemplate = Limpiar plantilla
+EasyOcrPdfMetadata = Metadatos PDF
+EasyOcrExtractedData = Datos extraídos
+EasyOcrSupplier = Proveedor
+EasyOcrSelectSupplier = Selecciona proveedor
+EasyOcrNoSelectionsYet = Sin selecciones aún
+EasyOcrReadinessSupplier = Proveedor
+EasyOcrReadinessInvoice = Factura
+EasyOcrReadinessDate = Fecha
+EasyOcrReadinessHT = HT totales
+EasyOcrReadinessTTC = Precio total
+EasyOcrCompleteness = Completitud
+EasyOcrPromoBadge = Próximamente
+EasyOcrPromoTitle = Extracción masiva con IA
+EasyOcrPromoText = Sube múltiples facturas y extrae todos los datos automáticamente sin intervención manual. Disponible con suscripción.
+EasyOcrSaveTemplate = Guardar plantilla
+EasyOcrEditTemplate = Editar plantilla
+EasyOcrGenerateInvoice = Generar Factura
+EasyOcrHelpAndShortcuts = Ayuda y atajos
+EasyOcrHelpKeyboardTitle = Atajos de teclado
+EasyOcrHelpSelectLabel = Seleccionar etiqueta
+EasyOcrHelpUndo = Deshacer última acción
+EasyOcrHelpSaveEditTpl = Guardar/Editar plantilla
+EasyOcrHelpGenerateInvoice = Generar factura
+EasyOcrHelpCloseModal = Cerrar modal / Deseleccionar
+EasyOcrHelpInteractionTitle = Interacción
+EasyOcrHelpDragPdf = Arrastra un PDF al visor para cargarlo
+EasyOcrHelpDrawRects = Dibuja rectángulos tras seleccionar etiqueta
+EasyOcrHelpDragSelections = Arrastra selecciones para moverlas
+EasyOcrHelpResizeCorners = Usa las esquinas para redimensionar
+EasyOcrHelpZoom = +/− para hacer zoom al PDF
+
+# --- Modal guardar plantilla ---
+EasyOcrSaveAsTemplate = Guardar como plantilla
+EasyOcrTemplateName = Nombre de la plantilla
+EasyOcrTemplateNamePlaceholder = Ej: Factura Proveedor X
+EasyOcrAssociatedSupplier = Proveedor asociado
+EasyOcrNoSupplierGeneric = Sin proveedor (genérico)
+EasyOcrAutoSelectSupplierHint = Al cargar esta plantilla se seleccionará automáticamente el proveedor
+EasyOcrSave = Guardar
+
+# --- Modal confirmar factura ---
+EasyOcrConfirmGenerateInvoice = Confirmar generación de factura
+EasyOcrConfirmIntro = Se creará una factura de proveedor con los siguientes datos:
+EasyOcrCreatePayment = Crear pago asociado a la factura
+EasyOcrPaymentMode = Modo de pago
+EasyOcrSelectPaymentMode = Selecciona modo de pago
+EasyOcrBankAccount = Cuenta bancaria
+EasyOcrSelectBankAccount = Selecciona cuenta bancaria
+EasyOcrCancel = Cancelar
+EasyOcrConfirmAndGenerate = Confirmar y Generar
+
+# --- Modal preview factura ---
+EasyOcrInvoiceCreated = Factura creada
+EasyOcrOpenNewTab = Abrir en pestaña nueva
+EasyOcrOpen = Abrir ↗
+
+# --- Subscription Widget (extract.php) ---
+EasyOcrQuotaPages = Páginas procesadas
+EasyOcrQuotaRemaining = Restantes
+EasyOcrQuotaReset = Renovación
+EasyOcrWalletBalance = Monedero
+EasyOcrQuotaExceeded = ⚠️ Has excedido tu cuota mensual. Algunas funciones pueden estar limitadas.
+EasyOcrQuotaNearLimit = ⚠️ Te estás acercando al límite de tu cuota mensual.
+EasyOcrViewFullPlan = Ver plan completo
+
+# --- templates.php ---
+EasyOcrTemplatesTitle = Plantillas
+EasyOcrDeleteTemplate = Eliminar Plantilla
+EasyOcrConfirmDeleteTemplate = ¿Confirmar eliminación de esta plantilla?
+EasyOcrTemplatesDeleted = Plantillas eliminadas
+EasyOcrTemplateDeleted = Plantilla eliminada
+EasyOcrErrorDeletingTemplates = Error al eliminar plantillas
+EasyOcrTemplateNameExists = El nombre de plantilla ya existe
+EasyOcrTemplateUpdated = Plantilla actualizada
+EasyOcrErrorUpdatingTemplate = Error al actualizar plantilla
+EasyOcrName = Nombre
+EasyOcrCreation = Creación
+EasyOcrActions = Acciones
+EasyOcrNoSupplier = Sin proveedor
+EasyOcrSearch = Buscar
+EasyOcrClear = Limpiar
+EasyOcrShow = Mostrar
+EasyOcrDelete = Eliminar
+EasyOcrConfirm = Confirmar
+EasyOcrConfirmDeleteTemplates = ¿Eliminar %s plantilla(s) seleccionada(s)?
+EasyOcrNoTemplatesFound = No se encontraron plantillas
+EasyOcrEditName = Editar Nombre
+EasyOcrNameLabel = Nombre:
+EasyOcrSearchPlaceholder = Buscar...
+EasyOcrAllSuppliers = Todos
+
+# --- invoices.php ---
+EasyOcrInvoicesTitle = Facturas
+EasyOcrDeleteInvoice = Eliminar Factura
+EasyOcrConfirmDeleteInvoice = ¿Confirmar eliminación de este registro?
+EasyOcrRecordsDeleted = Registros eliminados
+EasyOcrRecordDeleted = Registro eliminado
+EasyOcrErrorDeletingRecords = Error al eliminar registros
+EasyOcrRef = Ref.
+EasyOcrSupplierRef = Ref. Proveedor
+EasyOcrDate = Fecha
+EasyOcrThirdParty = Tercero
+EasyOcrDeleteRecord = Eliminar registro
+EasyOcrConfirmDeleteRecords = ¿Eliminar %s registro(s) seleccionado(s)?
+EasyOcrNoInvoicesFound = No se encontraron facturas
+
+# --- templates_view.php ---
+EasyOcrEditTemplateTitle = Editar Plantilla
+EasyOcrTemplateNameLabel = Nombre de la Plantilla
+EasyOcrFieldRequired = El campo <b>Nombre</b> es requerido
+EasyOcrTemplateExists = La plantilla ya existe
+EasyOcrTemplateUpdatedOk = Plantilla actualizada correctamente
+EasyOcrErrorUpdatingTpl = Error al actualizar plantilla
+
+# --- admin/setup.php ---
+EasyOcrAboutModule = Acerca del modulo EasyOcr
+EasyOcrBackToModules = Volver al listado de módulos
+EasyOcrAbout = Acerca de
+EasyOcrForDolibarr = EASYOCR PARA DOLIBARR ERP CRM
+EasyOcrFeaturesTitle = Características
+EasyOcrFeaturesDesc = Es una herramienta o componente de software diseñada específicamente para extraer contenido textual de archivos PDF (Portable Document Format). Esta funcionalidad es esencial en diversas aplicaciones y servicios que requieren la extracción y manipulación de texto de documentos PDF.
+EasyOcrLicenseTitle = Licencias
+EasyOcrLicenseDesc = Todos los derechos reservados a EasySoft Tech S.L.
+EasyOcrSetupTitle = configuración de EasyOcr
+
+# --- JS (scripts.js) toasts y UI ---
+EasyOcrNothingToUndo = Nada que deshacer
+EasyOcrActionUndone = Acción deshecha
+EasyOcrErrorLoadingPdf = Error al cargar el PDF
+EasyOcrTemplateDetected = Plantilla "%s" detectada para este proveedor
+EasyOcrSelectTemplateFirst = Selecciona una plantilla primero
+EasyOcrTemplateNoSelections = La plantilla no tiene selecciones
+EasyOcrErrorLoadingTemplate = Error al cargar la plantilla
+EasyOcrEnterTemplateName = Ingresa un nombre para la plantilla
+EasyOcrTemplateSavedOk = Plantilla guardada correctamente
+EasyOcrErrorSavingTemplate = Error al guardar la plantilla
+EasyOcrTemplateEditedOk = Plantilla actualizada correctamente
+EasyOcrErrorEditingTemplate = Error al editar la plantilla
+EasyOcrCompleteAllFields = Completa todos los campos antes de generar
+EasyOcrSelectBankForPayment = Selecciona una cuenta bancaria para el pago
+EasyOcrSelectPaymentType = Selecciona un modo de pago
+EasyOcrInvoiceCreatedOk = Factura creada correctamente — puedes cargar otro PDF
+EasyOcrInvoiceAlreadyExists = Esta factura ya existe en el sistema
+EasyOcrDuplicateRefSupplier = Ya existe una factura con la referencia '%s' para este proveedor (factura existente: %s)
+EasyOcrViewInvoice = Ver factura
+EasyOcrDuplicateAmountDate = Posible factura duplicada (mismo proveedor, importe y fecha). Factura existente: %s
+EasyOcrErrorGeneratingInvoice = Error al generar la factura
+EasyOcrSelectPdfFile = Por favor selecciona un archivo PDF
+EasyOcrOnlyPdfAccepted = Solo se aceptan archivos PDF
+EasyOcrNoMetadata = Sin metadatos disponibles
+EasyOcrNoRelevantMetadata = Sin metadatos relevantes
+
+# --- JS labels (etiquetas de selección) ---
+EasyOcrLabelDate = Con fecha de
+EasyOcrLabelInvoice = Factura
+EasyOcrLabelHT = HT totales
+EasyOcrLabelTTC = Precio total
+EasyOcrAccessDenied = Acceso denegado
+EasyOcrPaymentAutoNote = Pago generado automáticamente por EasyOcr
+
+EasyOcrErrorCreatingInvoice = Error al crear factura
+EasyOcrInvoiceLineDesc = Mira el detalle en los archivos adjuntos
+EasyOcrErrorAddingLine = Error al añadir línea
+EasyOcrErrorValidating = Error al validar
+EasyOcrErrorCreatingTemplate = Error al crear plantilla
+EasyOcrPage = Pág.
+EasyOcrDeleteSelection = Eliminar
+EasyOcrInvoiceNumber = Nº Factura
+EasyOcrTaxableBase = Base imponible
+EasyOcrMetaTitle = Título
+EasyOcrMetaAuthor = Autor
+EasyOcrMetaSubject = Asunto
+EasyOcrMetaCreator = Creador
+EasyOcrMetaProducer = Productor
+EasyOcrMetaCreationDate = Fecha creación
+EasyOcrMetaModDate = Fecha modificación
+EasyOcrMetaKeywords = Palabras clave
+EasyOcrMetaTrapped = Trapped
+EasyOcrPdfVersion = Versión PDF
+EasyOcrXmpAuthor = XMP Autor
+EasyOcrXmpDescription = XMP Descripción
+EasyOcrXmpTitle = XMP Título
+EasyOcrXmpSubject = XMP Asunto
+EasyOcrInvoiceCreatedWithRef = Factura %s creada
+EasyOcrRefPlaceholder = SI...
+
+# --- New OCR labels ---
+EasyOcrLabelIVA = IVA
+EasyOcrLabelDesc = Descripción
+EasyOcrLabelCIF = CIF/NIF
+EasyOcrLabelDueDate = Vencimiento
+EasyOcrReadinessIVA = IVA
+EasyOcrReadinessDesc = Descripción
+EasyOcrReadinessCIF = CIF/NIF
+EasyOcrReadinessDueDate = Vencimiento
+EasyOcrOptional = (opcional)
+EasyOcrSupplierAutoDetected = Proveedor detectado automáticamente por CIF/NIF
+EasyOcrNoSupplierFoundByCIF = Ningún proveedor encontrado con ese CIF/NIF
+EasyOcrDueDate = Vencimiento
+EasyOcrDescription = Descripción
+
+# --- AI OCR ---
+EasyOcrGeneralConfig = Configuración general
+EasyOcrInvoiceDraft = Crear facturas como borrador
+EasyOcrInvoiceDraftDesc = Si se activa, las facturas creadas se dejarán en estado borrador en vez de validarse automáticamente
+EasyOcrAIConfiguration = Configuración IA OCR
+EasyOcrAIEnabled = Habilitar IA OCR
+EasyOcrAIUrl = URL del servicio OCR
+EasyOcrAIApiKey = Clave API
+EasyOcrAITimeout = Tiempo de espera
+EasyOcrAIOcr = IA OCR
+EasyOcrAIOcrHint = Envía el PDF al servicio de IA para extraer datos automáticamente
+EasyOcrAIExtract = Extraer con IA
+EasyOcrAIResult = Resultado IA
+EasyOcrAIApply = Aplicar datos
+EasyOcrAINotConfigured = El servicio de IA OCR no está configurado. Vaya a Configuración del módulo.
+EasyOcrAIOcrSuccess = Extracción IA completada
+EasyOcrAIOcrError = Error en el servicio de IA OCR
+EasyOcrAIApplied = Datos de IA aplicados
+EasyOcrAINoData = No se extrajeron datos
+EasyOcrAITaxes = Impuestos
+EasyOcrAITaxBase = Base
+EasyOcrAITaxAmount = Impuesto
+EasyOcrAILines = Líneas de factura
+EasyOcrAIQty = Cant.
+EasyOcrAIPrice = Precio
+EasyOcrAITotal = Total
+EasyOcrAICurrency = Moneda
+EasyOcrAIImportPdfFirst = Importe un PDF primero
+
+# --- AI Modal Premium ---
+EasyOcrAIDocument = Documento
+EasyOcrAISupplier = Proveedor
+EasyOcrAICustomer = Cliente
+EasyOcrAITotals = Totales
+EasyOcrAIPayment = Pago
+EasyOcrAINotes = Notas
+EasyOcrAIAddLine = Añadir línea
+EasyOcrAILineDesc = Descripción
+EasyOcrAITaxRate = %% IVA
+EasyOcrAIApplyToInvoice = Aplicar a factura
+EasyOcrAIDocType = Tipo
+EasyOcrAIName = Nombre
+EasyOcrAIAddress = Dirección
+EasyOcrAICity = Ciudad
+EasyOcrAIPostalCode = Código postal
+EasyOcrAICountry = País
+EasyOcrAIPhone = Teléfono
+EasyOcrAIEmail = Email
+EasyOcrAIConfidence = confianza
+EasyOcrAIPages = páginas
+EasyOcrAIDiscount = Descuento
+EasyOcrAIPayMethod = Método
+EasyOcrAIPayStatus = Estado
+EasyOcrAIPayBank = Cuenta bancaria
+EasyOcrAIPayRef = Referencia
+EasyOcrAINoLines = Sin líneas de factura
+
+EasyOcrAICreateInvoice = Crear factura
+EasyOcrAIProcessing = Procesando...
+EasyOcrAIStarting = Iniciando análisis...
+EasyOcrAIMissingInvoiceNum = Se requiere el número de factura
+EasyOcrAIMissingDate = Se requiere la fecha de la factura
+EasyOcrAIMissingTotals = Se requieren los importes totales
+EasyOcrAISupplierNotFound = Proveedor no encontrado. Seleccione uno manualmente.
+EasyOcrAISupplierRequired = Seleccione un proveedor o incluya un CIF/NIF
+EasyOcrAISupplierCreated = Proveedor creado:
+EasyOcrAIOff = INACTIVO
+EasyOcrAIDisabledHint = Extrae proveedor, CIF, fechas, importes y líneas de factura con IA
+EasyOcrAIConfigure = Activar IA OCR
+EasyOcrAIFeat1 = Extrae proveedor, CIF, fechas e importes
+EasyOcrAIFeat2 = Detecta todas las líneas de factura
+EasyOcrAIFeat3 = Crea facturas y proveedores automáticamente
+EasyOcrAICtaHeadline = Potencia tu extracción de datos
+EasyOcrAIActivateHint = Actívelo desde Configuración > EasyOCR
+
+# ---- Acuerdo de Licencia (copying.php) ----
+EasyOcrCopying = Acuerdo de Licencia
+EasyOcrCopyingLicense = Licencia
+EasyOcrCopyingAuthor = Autor
+EasyOcrCopyingContact = Contacto
+EasyOcrCopyingWeb = Sitio web
+EasyOcrCopyingGPLTitle = Licencia GNU GPL v3
+EasyOcrCopyingGPLDesc = Este módulo es software libre: puede redistribuirlo y/o modificarlo bajo los términos de la Licencia Pública General GNU versión 3. Esto le permite usar, estudiar, modificar y distribuir el software libremente, siempre que mantenga la misma licencia.
+EasyOcrCopyingAITitle = Aviso sobre Servicios de IA
+EasyOcrCopyingAIDesc = La funcionalidad easyOCR AI utiliza servicios de inteligencia artificial de terceros para el procesamiento y extracción de datos de documentos PDF. Al activar y utilizar la función de IA, usted acepta que el contenido de los documentos procesados será enviado a estos servicios externos. EasySoft Tech S.L. no almacena ni retiene los datos procesados por estos servicios de terceros. El usuario es responsable de asegurar que los documentos procesados no contienen información que no deba ser compartida con servicios externos.
+EasyOcrCopyingFullText = Texto completo de la licencia
+EasyOcrCopyingFileNotFound = No se encontró el archivo de licencia (COPYING o LICENSE).
+
+# ---- Telemetría y Protección de Datos (telemetry.php) ----
+EasyOcrTelemetry = Telemetría y Protección de Datos
+EasyOcrTelemetryModule = Módulo
+EasyOcrTelemetryPurpose = Finalidad
+EasyOcrTelemetryPurposeDesc = Transparencia sobre los datos transmitidos cuando se utiliza la funcionalidad de IA OCR para la extracción de datos de facturas.
+EasyOcrTelemetryContact = Contacto
+EasyOcrTelemetryAITitle = Servicios de IA de terceros
+EasyOcrTelemetryAIWhat = ¿Qué hace la IA?
+EasyOcrTelemetryAIWhatDesc = Cuando activa easyOCR AI, los documentos PDF son procesados por un servicio de inteligencia artificial que extrae automáticamente proveedor, CIF, fechas, importes y líneas de factura.
+EasyOcrTelemetryAISent = ¿Qué datos se envían?
+EasyOcrTelemetryAISentDesc = Únicamente el contenido del documento PDF que usted procesa voluntariamente. El envío solo ocurre cuando usted pulsa el botón de extracción de IA.
+EasyOcrTelemetryAINever = ¿Qué NO se envía?
+EasyOcrTelemetryAINeverDesc = Nunca se envían datos de su ERP (clientes, proveedores, facturas existentes, datos bancarios, contraseñas). Solo el contenido del PDF que usted decide procesar.
+EasyOcrTelemetryAIProvider = Proveedor del servicio
+EasyOcrTelemetryAIProviderDesc = El servicio de IA es proporcionado por un microservicio configurable. La URL y clave API se configuran en la pestaña de Configuración. EasySoft Tech S.L. puede ofrecer un servicio gestionado o puede conectar su propio servicio.
+EasyOcrTelemetryDataSent = Datos que se transmiten al servicio de IA
+EasyOcrTelemetryDataPDF = Contenido del documento PDF procesado (texto e imágenes del PDF que usted selecciona)
+EasyOcrTelemetryDataLang = Idioma del sistema (para optimizar la extracción)
+EasyOcrTelemetryDataDomain = Dominio de instalación (para control de acceso a la API)
+EasyOcrTelemetryDataNever = Datos que NUNCA se transmiten
+EasyOcrTelemetryNeverClients = Datos de clientes o proveedores de su ERP
+EasyOcrTelemetryNeverInvoices = Facturas existentes, importes o descripciones de su sistema
+EasyOcrTelemetryNeverBank = Información bancaria o datos de pago
+EasyOcrTelemetryNeverPasswords = Contraseñas, credenciales o tokens de acceso
+EasyOcrTelemetryNeverPersonal = Datos personales de usuarios del ERP
+EasyOcrTelemetrySecurity = Seguridad y privacidad
+EasyOcrTelemetrySecHTTPS = Todas las comunicaciones están cifradas mediante HTTPS/TLS
+EasyOcrTelemetrySecEU = Los datos se procesan en servidores ubicados en la Unión Europea
+EasyOcrTelemetrySecAccess = Acceso restringido: solo personal autorizado de EasySoft
+EasyOcrTelemetrySecGDPR = Cumplimiento RGPD/LOPDGDD: tratamiento conforme a la normativa europea de protección de datos
+EasyOcrTelemetrySecNoSale = Los datos procesados NO se venden, comercializan ni se usan para entrenar modelos de IA
+EasyOcrTelemetryLegal = Base legal del tratamiento
+EasyOcrTelemetryLegalContract = Ejecución de contrato
+EasyOcrTelemetryLegalContractDesc = El procesamiento de documentos es un servicio solicitado activamente por el usuario al pulsar el botón de extracción de IA.
+EasyOcrTelemetryLegalLegitimate = Interés legítimo
+EasyOcrTelemetryLegalLegitimateDesc = Proporcionar un servicio de extracción de datos preciso y seguro, protegiendo la integridad del sistema.
+EasyOcrTelemetryLegalGDPR = Derechos RGPD
+EasyOcrTelemetryLegalGDPRDesc = El usuario mantiene todos sus derechos de acceso, rectificación, supresión y portabilidad conforme al RGPD.
+EasyOcrTelemetryRightsTitle = Sus derechos
+EasyOcrTelemetryRightsDesc = Usted tiene derecho a: acceder a los datos que procesamos, solicitar su rectificación o eliminación, oponerse al tratamiento, y solicitar la portabilidad de sus datos. El uso de la IA es completamente voluntario: si no activa la función o no pulsa el botón de extracción, ningún dato será transmitido.
+
+# ---- Reglamento Europeo de IA (UE) 2024/1689 ----
+EasyOcrTelemetryEUAITitle = Reglamento Europeo de Inteligencia Artificial
+EasyOcrTelemetryEUAIRegulation = Normativa aplicable
+EasyOcrTelemetryEUAIRegulationDesc = El Reglamento (UE) 2024/1689 del Parlamento Europeo y del Consejo, de 13 de junio de 2024, establece normas armonizadas en materia de inteligencia artificial (Reglamento de Inteligencia Artificial). Este módulo utiliza servicios de IA de terceros y cumple con las obligaciones aplicables como operador/usuario final.
+EasyOcrTelemetryEUAIArticle50 = Artículo 50 — Transparencia
+EasyOcrTelemetryEUAIArticle50Desc = El artículo 50 del Reglamento de IA, exigible desde agosto de 2026, obliga a informar expresamente a las personas de que están interactuando con un sistema de inteligencia artificial. Siguiendo la recomendación de la Agencia Española de Protección de Datos (AEPD), este módulo anticipa dicho cumplimiento e informa de forma clara sobre el uso de IA.
+EasyOcrTelemetryEUAIRiskLevel = Nivel de riesgo
+EasyOcrTelemetryEUAIRiskLevelDesc = El uso de IA en este módulo se limita a la extracción de datos de facturas entre empresas (B2B). Este uso se clasifica como de riesgo mínimo, ya que no evalúa, diagnostica ni toma decisiones autónomas sobre personas físicas. No se requieren medidas especiales adicionales más allá de la transparencia informativa.
+EasyOcrTelemetryEUAICompliance = Cumplimiento anticipado
+EasyOcrTelemetryEUAIComplianceDesc = Aunque el artículo 50 no será plenamente exigible hasta agosto de 2026, este módulo cumple de forma anticipada con los requisitos de transparencia e información, en línea con las recomendaciones de la AEPD y en concordancia con el RGPD (Reglamento General de Protección de Datos).
+EasyOcrTelemetryAITransparencyTitle = Aviso de Transparencia sobre el uso de Inteligencia Artificial
+EasyOcrTelemetryAITransparencyDesc = Este módulo puede utilizar herramientas basadas en inteligencia artificial para apoyar determinadas tareas como los procesos de facturación. En concreto, la funcionalidad easyOCR AI emplea un servicio de IA de terceros para la extracción automática de datos de documentos PDF (proveedor, CIF/NIF, fechas, importes y líneas de factura). El uso de esta funcionalidad es voluntario y requiere la acción expresa del usuario. Los resultados generados por la IA son siempre revisables y editables por el usuario antes de su aplicación, garantizando la intervención humana en todo momento.
+EasyOcrTelemetryUserObligationsTitle = Obligaciones del usuario como operador de IA
+EasyOcrTelemetryObligationUse = Uso conforme a indicaciones
+EasyOcrTelemetryObligationUseDesc = El usuario debe utilizar los sistemas de IA conforme a las indicaciones proporcionadas por el desarrollador, siguiendo la documentación y configuración establecida en el módulo.
+EasyOcrTelemetryObligationHuman = Intervención humana
+EasyOcrTelemetryObligationHumanDesc = El usuario debe garantizar la intervención humana en las decisiones, especialmente en las más sensibles. Los resultados de la IA son siempre revisables y editables antes de generar cualquier factura o registro en el sistema.
+EasyOcrTelemetryObligationInform = Informar a las personas afectadas
+EasyOcrTelemetryObligationInformDesc = El usuario debe informar a las personas afectadas (trabajadores, clientes, proveedores) de que se pueden utilizar herramientas de IA en los procesos de facturación. Esta página de Telemetría constituye parte de dicha información.
+EasyOcrTelemetryObligationValidate = Validación de datos
+EasyOcrTelemetryObligationValidateDesc = El usuario es responsable de validar los datos introducidos y los resultados extraídos por la IA para evitar sesgos o errores antes de su aplicación definitiva en el ERP.
+EasyOcrTelemetryLegalEUAI = Reglamento de IA (UE) 2024/1689
+EasyOcrTelemetryLegalEUAIDesc = El tratamiento de datos mediante IA se realiza conforme al Reglamento (UE) 2024/1689 de Inteligencia Artificial, cumpliendo con las obligaciones de transparencia (Art. 50) y las responsabilidades del usuario como operador/desplegador de sistemas de IA.
+
+# ---- Mensaje GDPR en activación del módulo ----
+EasyOcrGDPRInformation = Al activar easyOCR, usted acepta: (1) La Licencia Pública General GNU GPL v3 bajo la que se distribuye este software. (2) Que la funcionalidad easyOCR AI, si se activa, utilizará servicios de inteligencia artificial de terceros para la extracción de datos, transmitiendo el contenido de los documentos PDF que usted procese voluntariamente. (3) Que EasySoft Tech S.L. no almacena los datos procesados por servicios de IA de terceros. Consulte las pestañas 'Acuerdo de Licencia' y 'Telemetría y Protección de Datos' en la configuración del módulo para más información.
+
+# ---- AI Modal: columnas y opciones extra ----
+EasyOcrAICode = Código
+EasyOcrAIType = Tipo
+EasyOcrAIRE = RE%%
+EasyOcrAIIRPF = IRPF%%
+EasyOcrAIInvoiceStatus = Estado
+EasyOcrAIValidated = Validada
+EasyOcrAIDraft = Borrador
+EasyOcrAIJournal = Diario
+EasyOcrAIJournalAuto = -- Automático --
+EasyOcrTypeProduct = Producto
+EasyOcrTypeService = Servicio
+EasyOcrTypeShipping = Envío/Portes
+EasyOcrTypeSurcharge = Recargo
+EasyOcrTypeFee = Tasa
+EasyOcrTypeDiscount = Descuento
+EasyOcrTypeOther = Otro
+
+# --- Custom Instructions (AI) ---
+EasyOcrCustomInstructions = Instrucciones IA
+EasyOcrCustomInstructionsHint = Instrucciones adicionales para la IA al procesar facturas de este proveedor.
+EasyOcrCustomInstructionsPlaceholder = Ej: Este proveedor siempre incluye portes en la última línea. El IVA es siempre 21%%. Los descuentos van en líneas separadas...
+EasyOcrCustomInstructionsSaveHint = Estas instrucciones se enviarán a la IA cada vez que se use esta plantilla.
+EasyOcrCustomInstructionsUpgrade = Tu plan no incluye instrucciones personalizadas. Mejora tu plan para usar esta función.
+
+# --- Templates & Invoices list ---
+EasyOcrNumFields = Nº Campos
+EasyOcrScale = Escala
+EasyOcrTemplateFields = Campos de la plantilla
+EasyOcrFieldLabel = Etiqueta
+EasyOcrWidth = Ancho
+EasyOcrHeight = Alto
+EasyOcrOrigin = Origen
+EasyOcrRemoveMark = Quitar marca EasyOcr
+
+# --- Service Plan (admin/plan.php) ---
+EasyOcrPlan = Plan de Servicio
+EasyOcrPlanNotConfigured = El servicio de IA OCR no está configurado. Configure su API Key en la pestaña de Configuración para ver la información de su plan.
+EasyOcrPlanGoToSetup = Ir a Configuración
+EasyOcrPlanErrorAuth = Error de autenticación
+EasyOcrPlanErrorAPI = Error al conectar con la API
+EasyOcrPlanNoData = No hay datos disponibles
+
+# Account Section
+EasyOcrPlanAccount = Información de la cuenta
+EasyOcrPlanAccountName = Nombre
+EasyOcrPlanAccountEmail = Correo electrónico
+EasyOcrPlanAccountStatus = Estado de la cuenta
+EasyOcrPlanAccountActive = Activa
+EasyOcrPlanAccountInactive = Inactiva
+EasyOcrPlanBillingMode = Modo de facturación
+EasyOcrPlanCreatedAt = Fecha de registro
+
+# Subscription Section
+EasyOcrPlanSubscription = Suscripción
+EasyOcrPlanBillingCycle = Ciclo de facturación
+EasyOcrPlanMonthly = mensual
+EasyOcrPlanYearly = anual
+EasyOcrPlanPeriodStart = Inicio del período
+EasyOcrPlanPeriodEnd = Fin del período
+EasyOcrPlanTrialEnds = Fin del período de prueba
+EasyOcrPlanCancelledAt = Cancelada el
+EasyOcrPlanStatusActive = Activa
+EasyOcrPlanStatusInactive = Inactiva
+EasyOcrPlanStatusTrial = Prueba
+EasyOcrPlanStatusCancelled = Cancelada
+EasyOcrPlanStatusExpired = Expirada
+EasyOcrPlanStatusPastDue = Cobro fallido
+EasyOcrPlanStatusPaused = Pausada
+
+# Subscription status descriptions
+EasyOcrSubscriptionStatusActive = Suscripción activa y al corriente
+EasyOcrSubscriptionStatusTrialing = En periodo de prueba
+EasyOcrSubscriptionStatusPastDue = Cobro fallido, pendiente de reintento
+EasyOcrSubscriptionStatusCancelled = Cancelada por el usuario o el sistema
+EasyOcrSubscriptionStatusExpired = Periodo finalizado sin renovación
+EasyOcrSubscriptionStatusPaused = Pausada temporalmente
+
+# Plan Section
+EasyOcrPlanCurrent = Plan actual
+EasyOcrPlanName = Nombre del plan
+EasyOcrPlanType = Tipo de plan
+EasyOcrPlanTypeSubscription = Suscripción
+EasyOcrPlanTypePrepaid = Prepago
+EasyOcrPlanPrice = Precio
+EasyOcrPlanSlug = Identificador
+EasyOcrPlanFree = Gratuito
+EasyOcrPlanPriceMonthly = Precio mensual
+EasyOcrPlanPriceYearly = Precio anual
+EasyOcrPlanMonth = mes
+EasyOcrPlanYear = año
+
+# Quota Section
+EasyOcrPlanQuota = Cuota de uso
+EasyOcrPlanPeriod = Período actual
+EasyOcrPlanQuotaPages = Páginas procesadas
+EasyOcrPlanQuotaDocs = Documentos procesados
+EasyOcrPlanPagesRemaining = Páginas restantes
+EasyOcrPlanDocsRemaining = Documentos restantes
+EasyOcrPlanPages = páginas
+EasyOcrPlanDocuments = documentos
+EasyOcrPlanQuotaUnlimited = Ilimitado
+EasyOcrPlanQuotaRemaining = Peticiones restantes
+EasyOcrPlanQuotaReset = Renovación de cuota
+
+# Usage Stats Section
+EasyOcrPlanUsageStats = Estadísticas de uso
+EasyOcrPlanTokensInput = Tokens de entrada
+EasyOcrPlanTokensOutput = Tokens de salida
+EasyOcrPlanTokensTotal = Tokens totales
+EasyOcrPlanRequestsTotal = Total de peticiones
+EasyOcrPlanRequestsFailed = Peticiones fallidas
+EasyOcrPlanSuccessRate = Tasa de éxito
+
+# Limits Section
+EasyOcrPlanLimits = Límites del plan
+EasyOcrPlanLimitPagesMonth = Páginas máximas por mes
+EasyOcrPlanLimitDocsMonth = Documentos máximos por mes
+EasyOcrPlanLimitPagesDoc = Páginas máximas por documento
+EasyOcrPlanLimitFileSize = Tamaño máximo de archivo
+EasyOcrPlanLimitBatch = Tamaño máximo de lote
+EasyOcrPlanLimitApiKeys = Claves API máximas
+EasyOcrPlanLimitRate = Límite de peticiones
+EasyOcrPlanLimitConcurrent = Peticiones concurrentes máximas
+EasyOcrPlanLimitRetention = Retención de documentos
+EasyOcrPlanPerMin = por minuto
+
+# Features Section
+EasyOcrPlanFeatures = Características del plan
+EasyOcrPlanFeatureApi = Acceso a la API
+EasyOcrPlanFeatureStreaming = Streaming en tiempo real
+EasyOcrPlanFeatureBatch = Procesamiento por lotes
+EasyOcrPlanFeatureInstructions = Instrucciones personalizadas
+EasyOcrPlanFeatureWebhooks = Webhooks
+EasyOcrPlanFeaturePriority = Cola de prioridad
+EasyOcrPlanFeatureStorage = Almacenamiento de documentos
+EasyOcrPlanFeatureText = Incluir texto extraído
+EasyOcrPlanFeatureAutoCorrect = Autocorrección de texto
+EasyOcrPlanFeatureVision = Análisis de imágenes (Vision)
+
+# API Key Section
+EasyOcrPlanApiKey = Clave API actual
+EasyOcrPlanKeyName = Nombre de la clave
+EasyOcrPlanKeyPrefix = Prefijo
+EasyOcrPlanKeyEnv = Entorno
+EasyOcrPlanEnvLive = Producción
+EasyOcrPlanEnvSandbox = Pruebas
+EasyOcrPlanKeyCreated = Fecha de creación
+EasyOcrPlanKeyLastUsed = Último uso
+EasyOcrPlanKeyExpires = Fecha de expiración
+EasyOcrPlanNoExpiration = Sin expiración
+
+# Wallet Section
+EasyOcrPlanWallet = Monedero prepago
+EasyOcrPlanWalletBalance = Saldo disponible
+EasyOcrPlanWalletPurchased = Páginas compradas
+EasyOcrPlanWalletConsumed = Páginas consumidas
+EasyOcrPlanWalletCanProcess = Puede procesar
+
+# --- Batch processing (batch.php) ---
+EasyOcrMenuBatch = Envío por lotes
+EasyOcrBatchHistory = Historial de lotes
+EasyOcrBatchTitle = Envío por lotes
+EasyOcrBatchSubtitle = Sube varios documentos y procésalos de forma masiva
+EasyOcrBatchNoApiKey = La clave API no está configurada. Configúrela en Ajustes del módulo.
+EasyOcrBatchNotAvailable = El procesamiento por lotes no está disponible en tu plan actual.
+EasyOcrBatchNoQuota = No tienes páginas disponibles. Recarga tu monedero o amplía tu plan.
+EasyOcrBatchApiError = Error al comunicar con la API
+EasyOcrBatchLocked = Envío por lotes no disponible
+EasyOcrBatchNoFiles = Debes seleccionar al menos un archivo.
+EasyOcrBatchMaxFiles = El máximo de archivos por lote es %s.
+EasyOcrBatchUploadError = Error al subir el archivo %s.
+EasyOcrBatchInvalidType = El tipo de archivo no está permitido: %s.
+EasyOcrBatchFileTooLarge = El archivo %s supera el tamaño máximo de %s.
+EasyOcrBatchMoveError = Error al mover el archivo %s.
+EasyOcrBatchInvalidToken = Token de seguridad inválido. Recarga la página.
+EasyOcrBatchSuccess = ¡Lote enviado correctamente!
+EasyOcrBatchSuccessDesc = Tu lote se está procesando. Recibirás los resultados cuando estén listos.
+EasyOcrBatchFiles = archivo(s)
+EasyOcrBatchName = Nombre del lote
+EasyOcrBatchNamePlaceholder = Ej: Facturas Enero 2026
+EasyOcrBatchConfig = Configuración
+EasyOcrBatchIncludeText = Incluir texto extraído
+EasyOcrBatchIncludeTextDesc = Añade el campo extracted_text en el webhook. Aumenta el consumo de tokens.
+EasyOcrBatchAutoCorrect = Auto-corrección
+EasyOcrBatchAutoCorrectDesc = Corrige automáticamente errores en datos estructurados (importes, fechas, etc.).
+EasyOcrBatchWebhookHint = Recibirás una notificación POST cuando el lote se complete.
+EasyOcrBatchWebhookAutoHint = URL auto-generada. Apunta al receptor de webhooks del módulo.
+EasyOcrBatchLanguage = Idioma del documento
+EasyOcrBatchLanguagePlaceholder = es, en, fr...
+EasyOcrBatchLanguageHint = Código ISO del idioma principal del documento (opcional).
+EasyOcrBatchTemplateSelect = Plantilla de proveedor
+EasyOcrBatchTemplateSelectHint = — Seleccionar plantilla —
+EasyOcrBatchUpgradePlan = Función no disponible en tu plan actual
+EasyOcrBatchQuotaInfo = Uso y cuota
+EasyOcrBatchFromPlan = Del plan
+EasyOcrBatchMaxPerBatch = Máx. por lote
+EasyOcrBatchMaxSize = máx. %s
+EasyOcrBatchMaxFilesHint = hasta %s archivos
+EasyOcrBatchHowItWorks = ¿Cómo funciona?
+EasyOcrBatchStep1 = Sube tus documentos (hasta 200 por lote)
+EasyOcrBatchStep2 = Configura las opciones de procesamiento
+EasyOcrBatchStep3 = Recibe los datos extraídos automáticamente
+EasyOcrBatchDropFiles = Arrastra archivos aquí o 
+EasyOcrBatchClickSelect = haz clic para seleccionar
+EasyOcrBatchClearAll = Eliminar todos
+EasyOcrBatchProcess = Procesar lote
+EasyOcrBatchProcessN = Procesar %s archivo(s)
+EasyOcrBatchProcessing = Procesando...
+EasyOcrBatchUploading = Subiendo archivo
+
+# --- Batch list/detail ---
+EasyOcrBatchTabNew = Nuevo lote
+EasyOcrBatchTabList = Historial de lotes
+EasyOcrBatchAllStatuses = Todos los estados
+EasyOcrBatchStatusPending = Pendiente
+EasyOcrBatchStatusProcessing = Procesando
+EasyOcrBatchStatusCompleted = Completado
+EasyOcrBatchStatusFailed = Fallido
+EasyOcrBatchStatusCancelled = Cancelado
+EasyOcrBatchNoResults = No se encontraron lotes
+EasyOcrBatchCancelConfirm = ¿Cancelar este lote? Esta acción no se puede deshacer.
+EasyOcrBatchTotalDocs = Documentos totales
+EasyOcrBatchProcessed = Procesados
+EasyOcrBatchCompletedAt = Completado el
+EasyOcrBatchPages = Páginas
+EasyOcrBatchDocInfo = Información del documento
+EasyOcrBatchNoDocResults = No hay resultados disponibles para este documento
+EasyOcrBatchResultsTitle = Ver resultados
+EasyOcrBatchStatusPartial = Parcial
+EasyOcrBatchSearchName = Buscar por nombre...
+EasyOcrBatchProgress = Progreso
+EasyOcrBatchFailedDocs = Documentos fallidos
+EasyOcrBatchCompletedDocs = Documentos completados
+EasyOcrClear = Limpiar
+EasyOcrBatchCustomer = Cliente
+EasyOcrBatchTaxId = NIF/CIF
+EasyOcrBatchItems = Líneas
+EasyOcrBatchTotals = Totales
+EasyOcrBatchTotalPayable = Total a pagar
+EasyOcrBatchWithholdings = Retenciones
+EasyOcrBatchSurcharges = Recargos
+EasyOcrBatchDiscountTotal = Descuento total
+EasyOcrBatchPayment = Pago
+EasyOcrBatchPayMethod = Método de pago
+EasyOcrBatchPayStatus = Estado del pago
+EasyOcrBatchPayTerms = Condiciones de pago
+EasyOcrBatchPayRef = Referencia de pago
+EasyOcrBatchBankAccount = Cuenta bancaria
+EasyOcrBatchMetadata = Información adicional
+EasyOcrBatchProcessingTime = Tiempo de procesamiento
+EasyOcrBatchStartedAt = Iniciado el
+EasyOcrBatchLogo = Logo
+EasyOcrBatchStamp = Sello
+EasyOcrBatchSignature = Firma
+EasyOcrBatchNotes = Notas
+EasyOcrBatchCheckingInvoice = Comprobando factura
+EasyOcrBatchInvoiceExists = Factura ya creada
+EasyOcrBatchCreateInvoice = Crear factura
+EasyOcrBatchViewInvoice = Ver factura
+EasyOcrBatchInvoiceNotCreated = No creada
+
+# --- Batch Trash / Papelera ---
+EasyOcrBatchTrash = Papelera
+EasyOcrBatchTrashConfirm = ¿Mover este lote a la papelera? Se cancelará y no se podrá restaurar.
+EasyOcrBatchTrashEmpty = La papelera está vacía
+EasyOcrBatchBackToHistory = Volver al historial
