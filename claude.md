@@ -1,12 +1,12 @@
-# EasyOcr - Módulo Dolibarr v16
+﻿# EasyOcr - Módulo Dolibarr v16
 
 ## Información del módulo
 - **Nombre:** EasyOcr
-- **Versión:** 2.4.4
+- **Versión:** 2.4.5
 - **Número módulo:** 402020
 - **Empresa:** EasySoft Tech S.L. (info@easysoft.es)
 - **Autor:** Alberto Luque Rivas (aluquerivasdev@gmail.com)
-- **Carpeta:** `/custom/easyocr/` *(pendiente renombrar carpeta física de `masterpdf` → `easyocr`)*
+- **Carpeta:** `/custom/easyocr/`
 
 ---
 
@@ -93,38 +93,7 @@ easyocr/
 
 ## Historial de cambios
 
-### v2.0.0 — Renombrado completo a EasyOcr
-- Renombrado de `masterpdf` → `easyocr` en todo el código
-- Branding EasySoft Tech S.L.
-- Prefijos CSS/DOM: `mp-` → `eo-`
-- Namespace JS: `MasterPdf` → `EasyOcr`
-- Tablas SQL: `master_pdf_*` → `easyocr_*`
-- AJAX: `ajax_masterPdf.php` → `ajax_easyocr.php`
-- Módulo: `modMasterPdf` → `modEasyocr`, numero=402020
-- Eliminados todos los archivos antiguos
-
-### v1.x — Desarrollo bajo nombre MasterPdf
-- Corrección bug PDF.js worker (deprecation warning)
-- Corrección canvas drawImage 0-dimension
-- Validación mínimo 5px en selecciones click-sin-drag
-- Handles de redimensionamiento en esquinas
-- Reescritura completa UX: layout 2 paneles (visor + sidebar)
-- Corrección extracción de precios (coordenadas PDF.js)
-- Eliminación de Tesseract.js — extracción 100% PDF.js nativo con caché de texto
-- Soporte fk_soc en plantillas (proveedor asociado)
-- Migración SQL a carpeta `/sql/` (estándar Dolibarr)
-
----
-
-## Notas de despliegue
-
-1. **Renombrar carpeta:** `custom/masterpdf/` → `custom/easyocr/`
-2. **Desactivar módulo viejo** en Dolibarr si estaba activo (`modMasterPdf`)
-3. **Activar módulo nuevo** `modEasyocr` desde Inicio > Configuración > Módulos
-4. **Renombrar tablas SQL** si ya existen datos:
-   ```sql
-   RENAME TABLE llx_master_pdf_invoices TO llx_easyocr_invoices;
-   RENAME TABLE llx_master_pdf_template TO llx_easyocr_template;
-   RENAME TABLE llx_master_pdf_template_details TO llx_easyocr_template_details;
-   ```
-5. Las tablas nuevas incluyen la columna `fk_soc` en `llx_easyocr_template`
+### v2.4.5 — Correcciones de issues (#1, #2, #3)
+- Fix radio button estado factura ignoraba `EASYOCR_INVOICE_DRAFT` (#1)
+- Fix fallback SSE→AJAX reutilizaba PDF anterior tras error (#2)
+- Fix PDF adjuntos inaccesibles en facturas borrador por paréntesis en nombre (#3)

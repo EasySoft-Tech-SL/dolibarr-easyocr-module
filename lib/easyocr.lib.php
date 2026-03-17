@@ -882,7 +882,14 @@ function easyocrCreateInvoiceFromOCR($params, $userObj = null)
 		}
 
 		$fileName = dol_sanitizeFileName(basename($file_name));
-		$destFileName = $ref_clean . '-' . $fileName;
+		// Only prefix with ref when invoice is validated (clean ref).
+		// Draft refs like (PROVx) contain parentheses that cause URL issues
+		// and Dolibarr renames files starting with the old ref on validation anyway.
+		if ($invoice_status !== 'draft') {
+			$destFileName = $ref_clean . '-' . $fileName;
+		} else {
+			$destFileName = $fileName;
+		}
 		$destFullPath = $destDir . '/' . $destFileName;
 
 		// dol_move for HTTP context, copy() as fallback for webhook / CLI

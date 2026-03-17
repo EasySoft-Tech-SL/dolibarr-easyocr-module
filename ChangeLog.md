@@ -5,6 +5,13 @@ Todos los cambios notables de EasyOcr se documentarán en este archivo.
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/),
 y este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 
+## [2.4.5] - 2026-03-17
+
+### Corregido
+- **Estado de factura no respetaba configuración del módulo** ([#1](https://github.com/EasySoft-Tech-SL/dolibarr-easyocr-module/issues/1)): El radio button de estado (Validada/Borrador) en el modal AI de `extract.php` tenía "Validada" siempre marcado por defecto, ignorando la configuración `EASYOCR_INVOICE_DRAFT`. Afectaba tanto a la subida manual como al batch interactivo. Ahora el valor por defecto del radio respeta la configuración del módulo.
+- **OCR leía PDF anterior tras error** ([#2](https://github.com/EasySoft-Tech-SL/dolibarr-easyocr-module/issues/2)): Cuando el stream SSE fallaba y se recurría al fallback AJAX clásico, se reutilizaba el `base64` capturado en el closure original en lugar del PDF actualmente cargado. Si el usuario había cambiado de PDF durante la petición, el fallback procesaba el archivo anterior. Ahora se re-codifica desde `state.pdfArrayBuffer` actual.
+- **PDF adjuntos no accesibles en facturas borrador** ([#3](https://github.com/EasySoft-Tech-SL/dolibarr-easyocr-module/issues/3)): El nombre del PDF adjunto se prefijaba con el ref provisional `(PROVx)`, cuyos paréntesis causaban problemas de encoding en URLs de Dolibarr. Para facturas borrador, ahora se guarda el archivo con su nombre original sin prefijo. Para facturas validadas se mantiene el prefijo con el ref limpio.
+
 ## [2.4.4] - 2026-03-04
 
 ### Corregido

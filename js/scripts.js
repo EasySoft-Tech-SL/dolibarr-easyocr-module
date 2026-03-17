@@ -1811,7 +1811,19 @@ const EasyOcr = (function () {
             console.warn('SSE stream error, falling back to classic:', err.message);
             stopSimulatedProgress();
             resetAIProgress();
-            runAIOcrClassic(base64);
+            // Re-encode from current pdfArrayBuffer in case the user loaded a new PDF
+            // since the SSE request was initiated (base64 in closure may be stale)
+            if (state.pdfArrayBuffer) {
+                var freshBytes = new Uint8Array(state.pdfArrayBuffer);
+                var freshBinary = '';
+                var chunkSize = 8192;
+                for (var i = 0; i < freshBytes.length; i += chunkSize) {
+                    freshBinary += String.fromCharCode.apply(null, freshBytes.subarray(i, i + chunkSize));
+                }
+                runAIOcrClassic(btoa(freshBinary));
+            } else {
+                toast(L.aiOcrError || 'AI OCR service error', 'error');
+            }
         });
     }
 

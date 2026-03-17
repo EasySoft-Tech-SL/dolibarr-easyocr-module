@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 $res = 0;
 if (!$res && !empty($_SERVER["CONTEXT_DOCUMENT_ROOT"])) {
@@ -629,10 +629,10 @@ llxHeader("", "EasyOcr", '', '', 0, 0, $arrayofjs, $arrayofcss);
             <span class="eo-ai-option-label"><?php echo $langs->trans('EasyOcrAIInvoiceStatus') ?: 'Estado'; ?></span>
             <span class="eo-ai-option-sep"></span>
             <label class="eo-radio-label eo-radio-sm">
-              <input type="radio" name="eo-ai-invoice-status" value="validated" checked> <?php echo $langs->trans('EasyOcrAIValidated') ?: 'Validada'; ?>
+              <input type="radio" name="eo-ai-invoice-status" value="validated" <?php echo empty($conf->global->EASYOCR_INVOICE_DRAFT) ? 'checked' : ''; ?>> <?php echo $langs->trans('EasyOcrAIValidated') ?: 'Validada'; ?>
             </label>
             <label class="eo-radio-label eo-radio-sm">
-              <input type="radio" name="eo-ai-invoice-status" value="draft"> <?php echo $langs->trans('EasyOcrAIDraft') ?: 'Borrador'; ?>
+              <input type="radio" name="eo-ai-invoice-status" value="draft" <?php echo !empty($conf->global->EASYOCR_INVOICE_DRAFT) ? 'checked' : ''; ?>> <?php echo $langs->trans('EasyOcrAIDraft') ?: 'Borrador'; ?>
             </label>
           </div>
           <div class="eo-ai-option-group">
