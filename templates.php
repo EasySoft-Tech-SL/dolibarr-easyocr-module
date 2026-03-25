@@ -142,7 +142,7 @@ if ($massaction == 'delete' && $permissiontodelete) {
 			if (!$db->query($sql)) {
 				$error++;
 			}
-			$sql = "DELETE FROM ".MAIN_DB_PREFIX."easyocr_template WHERE rowid = ".$toselectid;
+			$sql = "DELETE FROM ".MAIN_DB_PREFIX."easyocr_template WHERE rowid = ".$toselectid." AND entity = ".((int) $conf->entity);
 			if (!$db->query($sql)) {
 				$error++;
 			}
@@ -168,7 +168,7 @@ if ($action == 'confirm_delete' && $confirm == 'yes' && $permissiontodelete) {
 	if (!$db->query($sql)) {
 		$error++;
 	}
-	$sql = "DELETE FROM ".MAIN_DB_PREFIX."easyocr_template WHERE rowid = ".((int) $id);
+	$sql = "DELETE FROM ".MAIN_DB_PREFIX."easyocr_template WHERE rowid = ".((int) $id)." AND entity = ".((int) $conf->entity);
 	if (!$db->query($sql)) {
 		$error++;
 	}
@@ -199,7 +199,7 @@ $sql = "SELECT t.rowid, t.name, t.fk_soc, t.custom_instructions, t.date_creation
 $sql .= " s.nom as supplier_name";
 $sql .= " FROM ".MAIN_DB_PREFIX."easyocr_template as t";
 $sql .= " LEFT JOIN ".MAIN_DB_PREFIX."societe as s ON t.fk_soc = s.rowid";
-$sql .= " WHERE 1 = 1";
+$sql .= " WHERE t.entity = ".((int) $conf->entity);
 
 // Filters
 if ($search_name) {

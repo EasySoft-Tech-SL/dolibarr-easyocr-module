@@ -297,6 +297,7 @@ if ($action == "createSupplierInvoice") {
 	$sql = "SELECT t.rowid, t.name, t.fk_soc, t.custom_instructions, s.nom as supplier_name";
 	$sql .= " FROM " . MAIN_DB_PREFIX . "easyocr_template t";
 	$sql .= " LEFT JOIN " . MAIN_DB_PREFIX . "societe s ON t.fk_soc = s.rowid";
+	$sql .= " WHERE t.entity = " . ((int) $conf->entity);
 	$sql .= " ORDER BY t.name";
 	$resql = $db->query($sql);
 	$result_templates = array();
@@ -371,7 +372,7 @@ if ($action == "createSupplierInvoice") {
 
 	$template_id = GETPOST("template_id", "int");
 
-	$sql = "SELECT fk_soc, scale, custom_instructions FROM " . MAIN_DB_PREFIX . "easyocr_template WHERE rowid = " . ((int) $template_id);
+	$sql = "SELECT fk_soc, scale, custom_instructions FROM " . MAIN_DB_PREFIX . "easyocr_template WHERE rowid = " . ((int) $template_id) . " AND entity = " . ((int) $conf->entity);
 	$resql = $db->query($sql);
 	$tpl_data = $db->fetch_object($resql);
 	$fk_soc = $tpl_data ? $tpl_data->fk_soc : null;
@@ -419,8 +420,8 @@ if ($action == "createSupplierInvoice") {
 
 	$db->begin();
 
-	$sql = "INSERT INTO " . MAIN_DB_PREFIX . "easyocr_template (name, fk_soc, scale, custom_instructions, date_creation)";
-	$sql .= " VALUES ('" . $db->escape($name) . "', " . ($fk_soc > 0 ? ((int) $fk_soc) : "NULL") . ", " . $tpl_scale . ", " . (!empty($custom_instructions) ? "'" . $db->escape($custom_instructions) . "'" : "NULL") . ", NOW())";
+	$sql = "INSERT INTO " . MAIN_DB_PREFIX . "easyocr_template (entity, name, fk_soc, scale, custom_instructions, date_creation)";
+	$sql .= " VALUES (" . ((int) $conf->entity) . ", '" . $db->escape($name) . "', " . ($fk_soc > 0 ? ((int) $fk_soc) : "NULL") . ", " . $tpl_scale . ", " . (!empty($custom_instructions) ? "'" . $db->escape($custom_instructions) . "'" : "NULL") . ", NOW())";
 
 	if (!$db->query($sql)) {
 		$db->rollback();
@@ -473,7 +474,7 @@ if ($action == "createSupplierInvoice") {
 
 	$sql = "UPDATE " . MAIN_DB_PREFIX . "easyocr_template SET fk_soc = " . ($fk_soc > 0 ? ((int) $fk_soc) : "NULL") . ", scale = " . $tpl_scale;
 	$sql .= ", custom_instructions = " . (!empty($custom_instructions) ? "'" . $db->escape($custom_instructions) . "'" : "NULL");
-	$sql .= " WHERE rowid = " . ((int) $template_id);
+	$sql .= " WHERE rowid = " . ((int) $template_id) . " AND entity = " . ((int) $conf->entity);
 	$db->query($sql);
 
 	// Borrar detalles anteriores y reinsertar

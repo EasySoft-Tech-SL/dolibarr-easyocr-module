@@ -95,7 +95,7 @@ if ($action == 'update' && $permissiontoadd) {
 		$action = 'edit';
 	} else {
 		// Check duplicate name
-		$sql = "SELECT COUNT(*) as num FROM ".MAIN_DB_PREFIX."easyocr_template WHERE rowid <> ".((int) $id)." AND name = '".$db->escape($name)."'";
+		$sql = "SELECT COUNT(*) as num FROM ".MAIN_DB_PREFIX."easyocr_template WHERE rowid <> ".((int) $id)." AND name = '".$db->escape($name)."' AND entity = ".((int) $conf->entity);
 		$resql = $db->query($sql);
 		$obj_check = $db->fetch_object($resql);
 
@@ -109,7 +109,7 @@ if ($action == 'update' && $permissiontoadd) {
 			$sql .= " name = '".$db->escape($name)."'";
 			$sql .= ", fk_soc = ".($fk_soc > 0 ? ((int) $fk_soc) : "NULL");
 			$sql .= ", custom_instructions = ".(!empty($custom_instructions) ? "'".$db->escape($custom_instructions)."'" : "NULL");
-			$sql .= " WHERE rowid = ".((int) $id);
+			$sql .= " WHERE rowid = ".((int) $id)." AND entity = ".((int) $conf->entity);
 			if ($db->query($sql)) {
 				setEventMessages($langs->trans('EasyOcrTemplateUpdatedOk'), null, 'mesgs');
 				header('Location: '.$_SERVER['PHP_SELF'].'?id='.$id);
@@ -130,7 +130,7 @@ if ($action == 'confirm_delete' && $confirm == 'yes' && $permissiontodelete) {
 	if (!$db->query($sql)) {
 		$error++;
 	}
-	$sql = "DELETE FROM ".MAIN_DB_PREFIX."easyocr_template WHERE rowid = ".((int) $id);
+	$sql = "DELETE FROM ".MAIN_DB_PREFIX."easyocr_template WHERE rowid = ".((int) $id)." AND entity = ".((int) $conf->entity);
 	if (!$db->query($sql)) {
 		$error++;
 	}
@@ -156,7 +156,7 @@ $sql = "SELECT t.rowid, t.name, t.fk_soc, t.scale, t.custom_instructions, t.date
 $sql .= " s.nom as supplier_name";
 $sql .= " FROM ".MAIN_DB_PREFIX."easyocr_template as t";
 $sql .= " LEFT JOIN ".MAIN_DB_PREFIX."societe as s ON t.fk_soc = s.rowid";
-$sql .= " WHERE t.rowid = ".((int) $id);
+$sql .= " WHERE t.rowid = ".((int) $id)." AND t.entity = ".((int) $conf->entity);
 $resql = $db->query($sql);
 
 if ($db->num_rows($resql) === 0) {

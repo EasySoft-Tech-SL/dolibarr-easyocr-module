@@ -77,7 +77,7 @@ if ($resql) {
 	$nbInvoices = (int) $obj->nb;
 }
 
-$resql2 = $db->query("SELECT COUNT(*) as nb FROM ".MAIN_DB_PREFIX."easyocr_template");
+$resql2 = $db->query("SELECT COUNT(*) as nb FROM ".MAIN_DB_PREFIX."easyocr_template WHERE entity = ".((int) $conf->entity));
 if ($resql2) {
 	$obj2 = $db->fetch_object($resql2);
 	$nbTemplates = (int) $obj2->nb;

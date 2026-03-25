@@ -5,6 +5,7 @@
 
 CREATE TABLE llx_easyocr_webhook_log (
     rowid           INTEGER AUTO_INCREMENT PRIMARY KEY,
+    entity          INTEGER      DEFAULT 1 NOT NULL,
     batch_id        VARCHAR(64)  DEFAULT NULL,
     event           VARCHAR(64)  DEFAULT NULL,
     document_id     VARCHAR(64)  DEFAULT NULL,

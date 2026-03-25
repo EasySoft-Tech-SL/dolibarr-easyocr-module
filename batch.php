@@ -207,7 +207,7 @@ if (!$canBatch) {
       $sqlTpl = "SELECT t.rowid, t.name, t.fk_soc, t.custom_instructions, s.nom AS supplier_name";
       $sqlTpl .= " FROM " . MAIN_DB_PREFIX . "easyocr_template t";
       $sqlTpl .= " LEFT JOIN " . MAIN_DB_PREFIX . "societe s ON t.fk_soc = s.rowid";
-      $sqlTpl .= " WHERE t.custom_instructions IS NOT NULL AND t.custom_instructions <> ''";
+      $sqlTpl .= " WHERE t.entity = " . ((int) $conf->entity) . " AND t.custom_instructions IS NOT NULL AND t.custom_instructions <> ''";
       $sqlTpl .= " ORDER BY s.nom ASC, t.name ASC";
       $resTpl = $db->query($sqlTpl);
       if ($resTpl) {

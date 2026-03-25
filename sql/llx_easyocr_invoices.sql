@@ -16,6 +16,7 @@
 
 CREATE TABLE IF NOT EXISTS llx_easyocr_invoices (
     rowid integer AUTO_INCREMENT PRIMARY KEY NOT NULL,
+    entity integer DEFAULT 1 NOT NULL,
     fk_file integer NOT NULL,
     date_creation timestamp DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=innodb;

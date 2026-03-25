@@ -5,6 +5,11 @@ Todos los cambios notables de EasyOcr se documentarán en este archivo.
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/),
 y este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 
+## [2.5.0] - 2026-03-25
+
+### Añadido
+- **Soporte completo Multiempresa / Multisociété**: Todas las tablas propias del módulo (`llx_easyocr_template`, `llx_easyocr_invoices`, `llx_easyocr_webhook_log`) incluyen ahora la columna `entity` para aislar datos por entidad. Todas las consultas SELECT, INSERT, UPDATE y DELETE filtran por `$conf->entity`. Configuración del módulo ya se guardaba por entidad. Compatible con el módulo Multicompany de Dolibarr (inodbox.com).
+
 ## [2.4.5] - 2026-03-17
 
 ### Corregido

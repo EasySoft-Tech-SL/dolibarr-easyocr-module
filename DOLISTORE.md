@@ -4,7 +4,7 @@
 
 | Campo | Valor |
 |-------|-------|
-| **Versión del módulo** | 2.3.2 |
+| **Versión del módulo** | 2.5.0 |
 | **Compatibilidad Min** | V16 |
 | **Compatibilidad Max** | V23 |
 | **PHP Min** | 7.4 |
@@ -16,7 +16,7 @@
 ## Palabras Clave / Keywords
 
 ```
-pdf, ocr, ai ocr, artificial intelligence, invoice automation, batch processing, supplier invoices, webhook, easyocr, pdf.js, text extraction, invoice processing, automation, pdf viewer, facturas, extracción de texto, procesamiento de facturas, facturas de proveedor, automatización, visor pdf, lotes, batch, inteligencia artificial, instrucciones personalizadas, document processing, auto invoice, supplier management, PDF processing, API OCR
+pdf, ocr, ai ocr, artificial intelligence, invoice automation, batch processing, supplier invoices, webhook, easyocr, pdf.js, text extraction, invoice processing, automation, pdf viewer, facturas, extracción de texto, procesamiento de facturas, facturas de proveedor, automatización, visor pdf, lotes, batch, inteligencia artificial, instrucciones personalizadas, document processing, auto invoice, supplier management, PDF processing, API OCR, multicompany, multisociete, multiempresa, multi-entity
 ```
 
 ## Categorías (máximo 3)
@@ -57,6 +57,7 @@ Herramienta para extracción de datos de facturas PDF y generación automática 
 <tr><td>Plantillas de selección por proveedor</td><td>✅</td><td>✅</td></tr>
 <tr><td>Extracción de texto nativa (PDF.js)</td><td>✅</td><td>✅</td></tr>
 <tr><td>Historial de facturas procesadas</td><td>✅</td><td>✅</td></tr>
+<tr><td>Compatible Multiempresa (Multisociété)</td><td>✅</td><td>✅</td></tr>
 <tr><td>OCR por Inteligencia Artificial</td><td>❌</td><td>✅</td></tr>
 <tr><td>Procesamiento en lotes (hasta 200 PDFs)</td><td>❌</td><td>✅</td></tr>
 <tr><td>Creación automática de facturas vía webhook</td><td>❌</td><td>✅</td></tr>
@@ -114,6 +115,7 @@ Herramienta para extracción de datos de facturas PDF y generación automática 
     <li>🔐 Pestaña de Telemetría y Protección de Datos (transparencia RGPD).</li>
     <li>📜 Pestaña de Acuerdo de Licencia con información legal completa.</li>
     <li>🌍 Traducciones completas en 8 idiomas: ES, EN, FR, DE, IT, PT, CA, GL.</li>
+    <li>🏢 Compatible con módulo <strong>Multiempresa / Multisociété</strong> (datos aislados por entidad).</li>
     <li>⚡ Motor AJAX: operaciones sin recarga de página.</li>
 </ul>
 
@@ -165,6 +167,7 @@ Tool for extracting data from PDF invoices and automatically generating supplier
 <tr><td>Selection templates per supplier</td><td>✅</td><td>✅</td></tr>
 <tr><td>Native text extraction (PDF.js)</td><td>✅</td><td>✅</td></tr>
 <tr><td>Processed invoice history</td><td>✅</td><td>✅</td></tr>
+<tr><td>Multicompany compatible (Multisociété)</td><td>✅</td><td>✅</td></tr>
 <tr><td>Artificial Intelligence OCR</td><td>❌</td><td>✅</td></tr>
 <tr><td>Batch processing (up to 200 PDFs)</td><td>❌</td><td>✅</td></tr>
 <tr><td>Automatic invoice creation via webhook</td><td>❌</td><td>✅</td></tr>
@@ -222,6 +225,7 @@ Tool for extracting data from PDF invoices and automatically generating supplier
     <li>🔐 Telemetry &amp; Data Protection tab (GDPR transparency).</li>
     <li>📜 License Agreement tab with complete legal information.</li>
     <li>🌍 Full translations in 8 languages: ES, EN, FR, DE, IT, PT, CA, GL.</li>
+    <li>🏢 Compatible with <strong>Multicompany / Multisociété</strong> module (data isolated per entity).</li>
     <li>⚡ AJAX engine: all operations without page reload.</li>
 </ul>
 
@@ -273,6 +277,7 @@ Automatisez le traitement des factures fournisseur dans Dolibarr grâce à l'OCR
 <tr><td>Modèles de sélection par fournisseur</td><td>✅</td><td>✅</td></tr>
 <tr><td>Extraction de texte native (PDF.js)</td><td>✅</td><td>✅</td></tr>
 <tr><td>Historique des factures traitées</td><td>✅</td><td>✅</td></tr>
+<tr><td>Compatible Multisociété / Multicompany</td><td>✅</td><td>✅</td></tr>
 <tr><td>OCR par Intelligence Artificielle</td><td>❌</td><td>✅</td></tr>
 <tr><td>Traitement en lots (jusqu'à 200 PDF)</td><td>❌</td><td>✅</td></tr>
 <tr><td>Création automatique de factures via webhook</td><td>❌</td><td>✅</td></tr>
@@ -330,6 +335,7 @@ Automatisez le traitement des factures fournisseur dans Dolibarr grâce à l'OCR
     <li>🔐 Onglet Télémétrie et Protection des Données (transparence RGPD).</li>
     <li>📜 Onglet Accord de Licence avec informations légales complètes.</li>
     <li>🌍 Traductions complètes en 8 langues : ES, EN, FR, DE, IT, PT, CA, GL.</li>
+    <li>🏢 Compatible avec le module <strong>Multisociété / Multicompany</strong> (données isolées par entité).</li>
     <li>⚡ Moteur AJAX : toutes les opérations sans rechargement de page.</li>
 </ul>
 
@@ -382,6 +388,7 @@ Verarbeitung von Lieferantenrechnungen in Dolibarr mit KI-OCR. Kostenloser klass
 <tr><td>Auswahlvorlagen pro Lieferant</td><td>✅</td><td>✅</td></tr>
 <tr><td>Native Textextraktion (PDF.js)</td><td>✅</td><td>✅</td></tr>
 <tr><td>Verlauf verarbeiteter Rechnungen</td><td>✅</td><td>✅</td></tr>
+<tr><td>Kompatibel mit Multicompany / Multisociété</td><td>✅</td><td>✅</td></tr>
 <tr><td>Künstliche Intelligenz OCR</td><td>❌</td><td>✅</td></tr>
 <tr><td>Batch-Verarbeitung (bis 200 PDFs)</td><td>❌</td><td>✅</td></tr>
 <tr><td>Automatische Rechnungserstellung per Webhook</td><td>❌</td><td>✅</td></tr>
@@ -439,6 +446,7 @@ Verarbeitung von Lieferantenrechnungen in Dolibarr mit KI-OCR. Kostenloser klass
     <li>🔐 Reiter Telemetrie und Datenschutz (DSGVO-Transparenz).</li>
     <li>📜 Reiter Lizenzvereinbarung mit vollständigen rechtlichen Informationen.</li>
     <li>🌍 Vollständige Übersetzungen in 8 Sprachen: ES, EN, FR, DE, IT, PT, CA, GL.</li>
+    <li>🏢 Kompatibel mit dem Modul <strong>Multicompany / Multisociété</strong> (Daten pro Entität isoliert).</li>
     <li>⚡ AJAX-Engine: alle Operationen ohne Seitenneuladen.</li>
 </ul>
 
@@ -491,6 +499,7 @@ Automatizza l'elaborazione delle fatture fornitori in Dolibarr con OCR basato su
 <tr><td>Modelli di selezione per fornitore</td><td>✅</td><td>✅</td></tr>
 <tr><td>Estrazione testo nativa (PDF.js)</td><td>✅</td><td>✅</td></tr>
 <tr><td>Cronologia fatture elaborate</td><td>✅</td><td>✅</td></tr>
+<tr><td>Compatibile Multicompany / Multisociété</td><td>✅</td><td>✅</td></tr>
 <tr><td>OCR con Intelligenza Artificiale</td><td>❌</td><td>✅</td></tr>
 <tr><td>Elaborazione batch (fino a 200 PDF)</td><td>❌</td><td>✅</td></tr>
 <tr><td>Creazione automatica fatture via webhook</td><td>❌</td><td>✅</td></tr>
@@ -548,6 +557,7 @@ Automatizza l'elaborazione delle fatture fornitori in Dolibarr con OCR basato su
     <li>🔐 Scheda Telemetria e Protezione Dati (trasparenza GDPR).</li>
     <li>📜 Scheda Accordo di Licenza con informazioni legali complete.</li>
     <li>🌍 Traduzioni complete in 8 lingue: ES, EN, FR, DE, IT, PT, CA, GL.</li>
+    <li>🏢 Compatibile con il modulo <strong>Multicompany / Multisociété</strong> (dati isolati per entità).</li>
     <li>⚡ Motore AJAX: tutte le operazioni senza ricarico della pagina.</li>
 </ul>
 

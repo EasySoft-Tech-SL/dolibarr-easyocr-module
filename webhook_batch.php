@@ -459,10 +459,11 @@ if (!isset($db) || !is_object($db)) {
 } else {
 	// Insert webhook event into llx_easyocr_webhook_log table
 	$sql = "INSERT INTO " . MAIN_DB_PREFIX . "easyocr_webhook_log";
-	$sql .= " (batch_id, event, document_id, document_filename, document_status,";
+	$sql .= " (entity, batch_id, event, document_id, document_filename, document_status,";
 	$sql .= " batch_status, batch_progress, invoice_id, invoice_ref, supplier_id,";
 	$sql .= " processing_status, processing_message, payload, datec)";
 	$sql .= " VALUES (";
+	$sql .= " " . ((int) $conf->entity) . ",";
 	$sql .= " '" . $db->escape($batchId) . "',";
 	$sql .= " '" . $db->escape($event) . "',";
 	$sql .= " '" . $db->escape($document ? (isset($document['document_id']) ? $document['document_id'] : '') : '') . "',";
