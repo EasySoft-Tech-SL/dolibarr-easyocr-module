@@ -26,6 +26,7 @@ EasyOcrPermDelete = Eliminare modelli e record fatture
 EasyOcrMenuUploadPdf = Carica PDF
 EasyOcrMenuTemplates = Modelli
 EasyOcrMenuInvoices = Fatture
+EasyOcrMenuWebhookLogs = Log webhook
 
 # --- index.php (dashboard a schede) ---
 EasyOcrIndexSections = Accesso rapido
@@ -35,6 +36,31 @@ EasyOcrIndexDescBatch = Elabora più PDF contemporaneamente con estrazione autom
 EasyOcrIndexDescTemplates = Gestisci i modelli di selezione zone associati ai fornitori.
 EasyOcrIndexDescInvoices = Consulta lo storico delle fatture generate dai PDF importati.
 EasyOcrIndexDescSetup = Configura la chiave API, il servizio cloud e le opzioni del modulo.
+EasyOcrIndexDescWebhookLogs = Controlla le notifiche webhook ricevute ed esamina gli errori di elaborazione.
+
+# --- webhook_logs.php ---
+EasyOcrWebhookLogsTitle = Log webhook
+EasyOcrWebhookLogsDesc = Storico delle notifiche ricevute da webhook_batch.php (creazione di fatture dall'API EasyOCR).
+EasyOcrWebhookLogId = ID
+EasyOcrWebhookLogReceivedAt = Ricevuto
+EasyOcrWebhookLogEvent = Evento
+EasyOcrWebhookLogBatchId = Lotto
+EasyOcrWebhookLogDocumentId = ID documento
+EasyOcrWebhookLogFilename = File
+EasyOcrWebhookLogDocStatus = Stato documento
+EasyOcrWebhookLogProcStatus = Stato elaborazione
+EasyOcrWebhookLogProcMessage = Messaggio
+EasyOcrWebhookLogInvoice = Fattura
+EasyOcrWebhookLogSupplier = Fornitore
+EasyOcrWebhookLogPayload = Payload (JSON)
+EasyOcrWebhookLogNotFound = Record non trovato o appartiene a un'altra entità.
+EasyOcrWebhookLogDeleteTitle = Elimina registro webhook
+EasyOcrWebhookLogConfirmDelete = Sei sicuro di voler eliminare questo registro? Questa azione non può essere annullata.
+EasyOcrWebhookLogDeleted = Registro eliminato.
+EasyOcrWebhookLogPurgeOldBtn = Elimina registri >30 giorni
+EasyOcrWebhookLogPurgeOldTitle = Elimina log vecchi
+EasyOcrWebhookLogConfirmPurgeOld = Eliminare tutti i registri più vecchi di 30 giorni dell'entità corrente?
+EasyOcrWebhookLogPurgedOld = Log vecchi eliminati.
 EasyOcrImportPdf = Importa PDF
 EasyOcrNoFileSelected = Nessun file selezionato
 EasyOcrZoomOut = Riduci (-)

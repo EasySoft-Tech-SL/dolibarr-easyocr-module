@@ -28,6 +28,7 @@ EasyOcrPermDelete = Eliminar modelos e rexistros de facturas
 EasyOcrMenuUploadPdf = Cargar PDF
 EasyOcrMenuTemplates = Modelos
 EasyOcrMenuInvoices = Facturas
+EasyOcrMenuWebhookLogs = Logs do Webhook
 
 # --- index.php (panel de tarxetas) ---
 EasyOcrIndexSections = Accesos directos
@@ -37,6 +38,31 @@ EasyOcrIndexDescBatch = Procesa múltiples PDFs á vez con extracción automáti
 EasyOcrIndexDescTemplates = Xestiona os modelos de selección de zonas asociados a provedores.
 EasyOcrIndexDescInvoices = Consulta o historial de facturas xeradas desde PDFs importados.
 EasyOcrIndexDescSetup = Configura a chave API, o servizo na nube e as opcións do módulo.
+EasyOcrIndexDescWebhookLogs = Audita as notificacións do webhook recibidas e revisa os fallos de procesamento.
+
+# --- webhook_logs.php ---
+EasyOcrWebhookLogsTitle = Logs do Webhook
+EasyOcrWebhookLogsDesc = Historial de notificacións recibidas por webhook_batch.php (creación de facturas desde a API EasyOCR).
+EasyOcrWebhookLogId = ID
+EasyOcrWebhookLogReceivedAt = Recibido
+EasyOcrWebhookLogEvent = Evento
+EasyOcrWebhookLogBatchId = Lote
+EasyOcrWebhookLogDocumentId = ID documento
+EasyOcrWebhookLogFilename = Ficheiro
+EasyOcrWebhookLogDocStatus = Estado documento
+EasyOcrWebhookLogProcStatus = Estado proceso
+EasyOcrWebhookLogProcMessage = Mensaxe
+EasyOcrWebhookLogInvoice = Factura
+EasyOcrWebhookLogSupplier = Provedor
+EasyOcrWebhookLogPayload = Payload (JSON)
+EasyOcrWebhookLogNotFound = Rexistro non atopado ou pertence a outra entidade.
+EasyOcrWebhookLogDeleteTitle = Eliminar rexistro do webhook
+EasyOcrWebhookLogConfirmDelete = Seguro que queres eliminar este rexistro? Esta acción non se pode desfacer.
+EasyOcrWebhookLogDeleted = Rexistro eliminado.
+EasyOcrWebhookLogPurgeOldBtn = Purgar rexistros >30 días
+EasyOcrWebhookLogPurgeOldTitle = Purgar logs antigos
+EasyOcrWebhookLogConfirmPurgeOld = Eliminar todos os rexistros con máis de 30 días da entidade actual?
+EasyOcrWebhookLogPurgedOld = Logs antigos purgados.
 EasyOcrImportPdf = Importar PDF
 EasyOcrNoFileSelected = Ningún ficheiro seleccionado
 EasyOcrZoomOut = Reducir (-)

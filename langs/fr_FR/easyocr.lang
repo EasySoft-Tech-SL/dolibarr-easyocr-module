@@ -28,6 +28,7 @@ EasyOcrPermDelete = Supprimer les modèles et les enregistrements de factures
 EasyOcrMenuUploadPdf = Charger PDF
 EasyOcrMenuTemplates = Modèles
 EasyOcrMenuInvoices = Factures
+EasyOcrMenuWebhookLogs = Logs Webhook
 
 # --- index.php (tableau de bord) ---
 EasyOcrIndexSections = Accès rapide
@@ -37,6 +38,31 @@ EasyOcrIndexDescBatch = Traitez plusieurs PDFs à la fois avec extraction automa
 EasyOcrIndexDescTemplates = Gérez les modèles de sélection de zones associés aux fournisseurs.
 EasyOcrIndexDescInvoices = Consultez l'historique des factures générées depuis les PDFs importés.
 EasyOcrIndexDescSetup = Configurez la clé API, le service cloud et les options du module.
+EasyOcrIndexDescWebhookLogs = Auditez les notifications webhook reçues et examinez les échecs de traitement.
+
+# --- webhook_logs.php ---
+EasyOcrWebhookLogsTitle = Logs Webhook
+EasyOcrWebhookLogsDesc = Historique des notifications reçues par webhook_batch.php (création de factures depuis l'API EasyOCR).
+EasyOcrWebhookLogId = ID
+EasyOcrWebhookLogReceivedAt = Reçu
+EasyOcrWebhookLogEvent = Événement
+EasyOcrWebhookLogBatchId = Lot
+EasyOcrWebhookLogDocumentId = ID document
+EasyOcrWebhookLogFilename = Fichier
+EasyOcrWebhookLogDocStatus = État document
+EasyOcrWebhookLogProcStatus = État traitement
+EasyOcrWebhookLogProcMessage = Message
+EasyOcrWebhookLogInvoice = Facture
+EasyOcrWebhookLogSupplier = Fournisseur
+EasyOcrWebhookLogPayload = Payload (JSON)
+EasyOcrWebhookLogNotFound = Enregistrement introuvable ou appartenant à une autre entité.
+EasyOcrWebhookLogDeleteTitle = Supprimer l'entrée du webhook
+EasyOcrWebhookLogConfirmDelete = Êtes-vous sûr de vouloir supprimer cette entrée ? Cette action est irréversible.
+EasyOcrWebhookLogDeleted = Entrée supprimée.
+EasyOcrWebhookLogPurgeOldBtn = Purger entrées >30 jours
+EasyOcrWebhookLogPurgeOldTitle = Purger les anciens logs
+EasyOcrWebhookLogConfirmPurgeOld = Supprimer toutes les entrées de plus de 30 jours de l'entité actuelle ?
+EasyOcrWebhookLogPurgedOld = Anciens logs purgés.
 
 # --- extract.php (visionneuse PDF) ---
 EasyOcrImportPdf = Importer PDF

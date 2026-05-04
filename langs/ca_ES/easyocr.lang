@@ -26,6 +26,7 @@ EasyOcrPermDelete = Eliminar plantilles i registres de factures
 EasyOcrMenuUploadPdf = Carregar PDF
 EasyOcrMenuTemplates = Plantilles
 EasyOcrMenuInvoices = Factures
+EasyOcrMenuWebhookLogs = Logs del Webhook
 
 # --- index.php (tauler de targetes) ---
 EasyOcrIndexSections = Accés ràpid
@@ -35,6 +36,31 @@ EasyOcrIndexDescBatch = Processeu múltiples PDFs alhora amb extracció automàt
 EasyOcrIndexDescTemplates = Gestioneu les plantilles de selecció de zones associades a proveïdors.
 EasyOcrIndexDescInvoices = Consulteu l'historial de factures generades des dels PDFs importats.
 EasyOcrIndexDescSetup = Configureu la clau API, el servei al núvol i les opcions del mòdul.
+EasyOcrIndexDescWebhookLogs = Auditeu les notificacions del webhook rebudes i reviseu els errors de processament.
+
+# --- webhook_logs.php ---
+EasyOcrWebhookLogsTitle = Logs del Webhook
+EasyOcrWebhookLogsDesc = Històric de notificacions rebudes per webhook_batch.php (creació de factures des de l'API EasyOCR).
+EasyOcrWebhookLogId = ID
+EasyOcrWebhookLogReceivedAt = Rebut
+EasyOcrWebhookLogEvent = Esdeveniment
+EasyOcrWebhookLogBatchId = Lot
+EasyOcrWebhookLogDocumentId = ID document
+EasyOcrWebhookLogFilename = Fitxer
+EasyOcrWebhookLogDocStatus = Estat document
+EasyOcrWebhookLogProcStatus = Estat procés
+EasyOcrWebhookLogProcMessage = Missatge
+EasyOcrWebhookLogInvoice = Factura
+EasyOcrWebhookLogSupplier = Proveïdor
+EasyOcrWebhookLogPayload = Payload (JSON)
+EasyOcrWebhookLogNotFound = Registre no trobat o pertany a una altra entitat.
+EasyOcrWebhookLogDeleteTitle = Eliminar registre del webhook
+EasyOcrWebhookLogConfirmDelete = Esteu segur que voleu eliminar aquest registre? Aquesta acció no es pot desfer.
+EasyOcrWebhookLogDeleted = Registre eliminat.
+EasyOcrWebhookLogPurgeOldBtn = Purgar registres >30 dies
+EasyOcrWebhookLogPurgeOldTitle = Purgar logs antics
+EasyOcrWebhookLogConfirmPurgeOld = Eliminar tots els registres de més de 30 dies de l'entitat actual?
+EasyOcrWebhookLogPurgedOld = Logs antics purgats.
 EasyOcrImportPdf = Importar PDF
 EasyOcrNoFileSelected = Cap fitxer seleccionat
 EasyOcrZoomOut = Reduir (-)

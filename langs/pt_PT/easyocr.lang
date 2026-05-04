@@ -26,6 +26,7 @@ EasyOcrPermDelete = Eliminar modelos e registos de faturas
 EasyOcrMenuUploadPdf = Carregar PDF
 EasyOcrMenuTemplates = Modelos
 EasyOcrMenuInvoices = Faturas
+EasyOcrMenuWebhookLogs = Logs do Webhook
 
 # --- index.php (dashboard de cartões) ---
 EasyOcrIndexSections = Acesso rápido
@@ -35,6 +36,31 @@ EasyOcrIndexDescBatch = Processe vários PDFs de uma vez com extração automát
 EasyOcrIndexDescTemplates = Gira os modelos de seleção de zonas associados a fornecedores.
 EasyOcrIndexDescInvoices = Consulte o histórico de faturas geradas a partir de PDFs importados.
 EasyOcrIndexDescSetup = Configure a chave API, o serviço na nuvem e as opções do módulo.
+EasyOcrIndexDescWebhookLogs = Audite as notificações do webhook recebidas e reveja as falhas de processamento.
+
+# --- webhook_logs.php ---
+EasyOcrWebhookLogsTitle = Logs do Webhook
+EasyOcrWebhookLogsDesc = Histórico de notificações recebidas por webhook_batch.php (criação de faturas a partir da API EasyOCR).
+EasyOcrWebhookLogId = ID
+EasyOcrWebhookLogReceivedAt = Recebido
+EasyOcrWebhookLogEvent = Evento
+EasyOcrWebhookLogBatchId = Lote
+EasyOcrWebhookLogDocumentId = ID documento
+EasyOcrWebhookLogFilename = Ficheiro
+EasyOcrWebhookLogDocStatus = Estado documento
+EasyOcrWebhookLogProcStatus = Estado processamento
+EasyOcrWebhookLogProcMessage = Mensagem
+EasyOcrWebhookLogInvoice = Fatura
+EasyOcrWebhookLogSupplier = Fornecedor
+EasyOcrWebhookLogPayload = Payload (JSON)
+EasyOcrWebhookLogNotFound = Registo não encontrado ou pertence a outra entidade.
+EasyOcrWebhookLogDeleteTitle = Eliminar registo do webhook
+EasyOcrWebhookLogConfirmDelete = Tem a certeza de que quer eliminar este registo? Esta ação não pode ser anulada.
+EasyOcrWebhookLogDeleted = Registo eliminado.
+EasyOcrWebhookLogPurgeOldBtn = Purgar registos >30 dias
+EasyOcrWebhookLogPurgeOldTitle = Purgar logs antigos
+EasyOcrWebhookLogConfirmPurgeOld = Eliminar todos os registos com mais de 30 dias da entidade atual?
+EasyOcrWebhookLogPurgedOld = Logs antigos purgados.
 EasyOcrImportPdf = Importar PDF
 EasyOcrNoFileSelected = Nenhum ficheiro selecionado
 EasyOcrZoomOut = Diminuir (-)

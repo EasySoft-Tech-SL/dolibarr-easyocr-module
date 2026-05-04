@@ -28,6 +28,7 @@ EasyOcrPermDelete = Vorlagen und Rechnungsdatensätze löschen
 EasyOcrMenuUploadPdf = PDF laden
 EasyOcrMenuTemplates = Vorlagen
 EasyOcrMenuInvoices = Rechnungen
+EasyOcrMenuWebhookLogs = Webhook-Protokolle
 
 # --- index.php (Kachel-Dashboard) ---
 EasyOcrIndexSections = Schnellzugriff
@@ -37,6 +38,31 @@ EasyOcrIndexDescBatch = Mehrere PDFs auf einmal mit KI-gestützter automatischer
 EasyOcrIndexDescTemplates = Zonenauswahl-Vorlagen für Lieferanten verwalten.
 EasyOcrIndexDescInvoices = Den Verlauf der aus importierten PDFs generierten Rechnungen anzeigen.
 EasyOcrIndexDescSetup = API-Schlüssel, Cloud-Dienst und Moduloptionen konfigurieren.
+EasyOcrIndexDescWebhookLogs = Eingehende Webhook-Benachrichtigungen prüfen und Verarbeitungsfehler überprüfen.
+
+# --- webhook_logs.php ---
+EasyOcrWebhookLogsTitle = Webhook-Protokolle
+EasyOcrWebhookLogsDesc = Verlauf der von webhook_batch.php empfangenen Benachrichtigungen (Rechnungserstellung über die EasyOCR-API).
+EasyOcrWebhookLogId = ID
+EasyOcrWebhookLogReceivedAt = Empfangen
+EasyOcrWebhookLogEvent = Ereignis
+EasyOcrWebhookLogBatchId = Stapel
+EasyOcrWebhookLogDocumentId = Dokument-ID
+EasyOcrWebhookLogFilename = Datei
+EasyOcrWebhookLogDocStatus = Dokumentstatus
+EasyOcrWebhookLogProcStatus = Verarbeitungsstatus
+EasyOcrWebhookLogProcMessage = Meldung
+EasyOcrWebhookLogInvoice = Rechnung
+EasyOcrWebhookLogSupplier = Lieferant
+EasyOcrWebhookLogPayload = Payload (JSON)
+EasyOcrWebhookLogNotFound = Datensatz nicht gefunden oder gehört zu einer anderen Entität.
+EasyOcrWebhookLogDeleteTitle = Webhook-Eintrag löschen
+EasyOcrWebhookLogConfirmDelete = Möchten Sie diesen Eintrag wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.
+EasyOcrWebhookLogDeleted = Eintrag gelöscht.
+EasyOcrWebhookLogPurgeOldBtn = Einträge >30 Tage bereinigen
+EasyOcrWebhookLogPurgeOldTitle = Alte Logs bereinigen
+EasyOcrWebhookLogConfirmPurgeOld = Alle Einträge älter als 30 Tage aus der aktuellen Entität löschen?
+EasyOcrWebhookLogPurgedOld = Alte Logs bereinigt.
 EasyOcrImportPdf = PDF importieren
 EasyOcrNoFileSelected = Keine Datei ausgewählt
 EasyOcrZoomOut = Verkleinern (-)
