@@ -386,11 +386,16 @@ if (!$canBatch) {
     print '<tr>';
     print '<td>Webhook URL' . $lockedWebhook . '</td>';
     print '<td>';
-    print '<input type="url" id="webhook_url" name="webhook_url" class="flat minwidth300" form="eo-batch-form"';
+    print '<div class="eo-webhook-url-wrapper" style="display:flex;gap:6px;align-items:center;max-width:720px;">';
+    print '<input type="url" id="webhook_url" name="webhook_url" class="flat" form="eo-batch-form" style="flex:1;min-width:0;"';
     print $disabledWebhook;
     print ' value="' . dol_escape_htmltag($webhookDefault) . '">';
+    print '<button type="button" id="eo-webhook-url-copy" class="button button-save" title="' . dol_escape_htmltag($langs->trans('CopyToClipboard')) . '" style="white-space:nowrap;">';
+    print '<i class="fas fa-copy"></i> <span class="eo-copy-label">' . dol_escape_htmltag($langs->trans('Copy')) . '</span>';
+    print '</button>';
+    print '</div>';
     if ($hasWebhooks) {
-      print '<br><span class="opacitymedium small">' . img_picto('', 'info', 'class="pictofixedwidth"') . $langs->trans('EasyOcrBatchWebhookAutoHint') . '</span>';
+      print '<span class="opacitymedium small">' . img_picto('', 'info', 'class="pictofixedwidth"') . $langs->trans('EasyOcrBatchWebhookAutoHint') . '</span>';
     }
     print '</td></tr>';
 
@@ -550,6 +555,35 @@ if (!$fromMenu) {
   var eoBatchTemplates = <?php echo json_encode($eoBatchTemplates, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE); ?>;
   (function() {
     var dropzone = document.getElementById('eo-batch-dropzone');
+
+    // Webhook URL → copy to clipboard
+    var copyBtn = document.getElementById('eo-webhook-url-copy');
+    if (copyBtn) {
+      copyBtn.addEventListener('click', function() {
+        var input = document.getElementById('webhook_url');
+        if (!input) return;
+        var url = input.value;
+        var label = copyBtn.querySelector('.eo-copy-label');
+        var originalLabel = label ? label.textContent : '';
+        var copiedLabel = <?php echo json_encode($langs->trans('Copied')); ?>;
+        var done = function() {
+          if (label) label.textContent = copiedLabel;
+          copyBtn.classList.add('button-add');
+          setTimeout(function() {
+            if (label) label.textContent = originalLabel;
+            copyBtn.classList.remove('button-add');
+          }, 1500);
+        };
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(url).then(done).catch(function() {
+            // fallback
+            input.select(); document.execCommand('copy'); done();
+          });
+        } else {
+          input.select(); document.execCommand('copy'); done();
+        }
+      });
+    }
 
     // Template selector → auto-fill custom_instructions
     var tplSel = document.getElementById('batch_template_select');
