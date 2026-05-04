@@ -30,6 +30,7 @@ EasyOcrPermDelete = Eliminar plantillas y registros de facturas
 EasyOcrMenuUploadPdf = Cargar Pdf
 EasyOcrMenuTemplates = Plantillas
 EasyOcrMenuInvoices = Facturas
+EasyOcrMenuWebhookLogs = Logs de Webhook
 
 # --- index.php (dashboard de tarjetas) ---
 EasyOcrIndexSections = Accesos directos
@@ -39,6 +40,31 @@ EasyOcrIndexDescBatch = Procesa múltiples PDFs a la vez con extracción automá
 EasyOcrIndexDescTemplates = Gestiona las plantillas de selección de zonas asociadas a proveedores.
 EasyOcrIndexDescInvoices = Consulta el historial de facturas generadas desde PDFs importados.
 EasyOcrIndexDescSetup = Configura la clave API, el servicio en la nube y las opciones del módulo.
+EasyOcrIndexDescWebhookLogs = Audita las notificaciones del webhook recibidas y revisa los fallos de procesamiento.
+
+# --- webhook_logs.php ---
+EasyOcrWebhookLogsTitle = Logs de Webhook
+EasyOcrWebhookLogsDesc = Histórico de notificaciones recibidas por webhook_batch.php (creación de facturas desde la API EasyOCR).
+EasyOcrWebhookLogId = ID
+EasyOcrWebhookLogReceivedAt = Recibido
+EasyOcrWebhookLogEvent = Evento
+EasyOcrWebhookLogBatchId = Batch
+EasyOcrWebhookLogDocumentId = ID documento
+EasyOcrWebhookLogFilename = Fichero
+EasyOcrWebhookLogDocStatus = Estado documento
+EasyOcrWebhookLogProcStatus = Estado proceso
+EasyOcrWebhookLogProcMessage = Mensaje
+EasyOcrWebhookLogInvoice = Factura
+EasyOcrWebhookLogSupplier = Proveedor
+EasyOcrWebhookLogPayload = Payload (JSON)
+EasyOcrWebhookLogNotFound = Registro no encontrado o pertenece a otra entidad.
+EasyOcrWebhookLogDeleteTitle = Eliminar registro de webhook
+EasyOcrWebhookLogConfirmDelete = ¿Seguro que quieres eliminar este registro? Esta acción no se puede deshacer.
+EasyOcrWebhookLogDeleted = Registro eliminado.
+EasyOcrWebhookLogPurgeOldBtn = Purgar registros >30 días
+EasyOcrWebhookLogPurgeOldTitle = Purgar logs antiguos
+EasyOcrWebhookLogConfirmPurgeOld = ¿Eliminar todos los registros con más de 30 días de antigüedad de la entidad actual?
+EasyOcrWebhookLogPurgedOld = Logs antiguos purgados.
 
 # --- extract.php (visor PDF) ---
 EasyOcrImportPdf = Importar PDF

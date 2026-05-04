@@ -2,7 +2,7 @@
 
 ## Información del módulo
 - **Nombre:** EasyOcr
-- **Versión:** 2.5.0
+- **Versión:** 2.5.1
 - **Número módulo:** 402020
 - **Empresa:** EasySoft Tech S.L. (info@easysoft.es)
 - **Autor:** Alberto Luque Rivas (aluquerivasdev@gmail.com)
@@ -92,6 +92,14 @@ easyocr/
 ---
 
 ## Historial de cambios
+
+### v2.5.1 — Hardening Multiempresa
+- Webhook batch lee `?entity=N` y fuerza `$conf->entity` (antes caía a 1 por `NOLOGIN`).
+- Cross-tenant write/destrucción en `template_details` cerrado: nueva columna `entity`, queries acotadas y validación de pertenencia en `updateTemplate`.
+- Logs/debug del webhook aislados por entidad en `entity_N/...`.
+- Búsqueda de admin filtrada por entidad en `easyocrCreateInvoiceFromOCR()`.
+- Typo `'atohtml'` → `'alphanohtml'` en GETPOST.
+- Migración: `sql/llx_easyocr_template_details.alter2.sql`.
 
 ### v2.4.5 — Correcciones de issues (#1, #2, #3)
 - Fix radio button estado factura ignoraba `EASYOCR_INVOICE_DRAFT` (#1)

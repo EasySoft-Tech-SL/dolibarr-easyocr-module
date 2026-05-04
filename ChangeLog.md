@@ -5,6 +5,23 @@ Todos los cambios notables de EasyOcr se documentarán en este archivo.
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/),
 y este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 
+## [2.5.1] - 2026-05-04
+
+### Corregido (Multiempresa / Multisociété)
+- **Webhook batch ignoraba la entidad de origen**: El receptor `webhook_batch.php` se ejecuta en modo `NOLOGIN`, por lo que `$conf->entity` caía a 1 y todas las facturas del webhook aterrizaban en la entidad maestra. Ahora `batch.php` añade `&entity=N` a la URL del webhook (solo cuando el módulo Multicompany está activo) y `webhook_batch.php` lo lee para forzar `$conf->entity` antes del procesamiento.
+- **Cross-tenant write/destrucción en plantillas**: Las operaciones de borrado y actualización sobre `llx_easyocr_template_details` (en `templates.php`, `templates_view.php` y la acción AJAX `updateTemplate`) sólo filtraban por `fk_template`, sin entidad. Un usuario podía borrar/sobrescribir las selecciones de plantillas de otra entidad enviando un `template_id` ajeno. Se añade columna `entity` a la tabla y todas las queries filtran por ella. La acción `updateTemplate` valida pertenencia antes de cualquier DELETE/INSERT destructivo.
+- **Cross-tenant read en `fetchTemplateData`**: El SELECT de `template_details` no filtraba por entidad, lo que devolvía las coordenadas de las selecciones de plantillas ajenas aunque `fk_soc` viniera vacío. Corregido.
+- **Recuento global en listado de plantillas**: La query `GROUP BY fk_template` en `templates.php` agregaba contadores de todas las entidades. Ahora filtra por `entity = $conf->entity`.
+- **Logs/debug del webhook compartidos entre entidades**: Los directorios `DOL_DATA_ROOT/easyocr/{webhook_debug,webhook_logs,temp}/` eran únicos para toda la instalación, exponiendo payloads (proveedores, NIF, totales) entre entidades a quien tuviera acceso al filesystem. Ahora se usan rutas `entity_N/...` aisladas.
+- **Búsqueda de admin por entidad**: La función `easyocrCreateInvoiceFromOCR()` cogía el primer admin global. Ahora filtra por `entity IN (getEntity('user'))` para no mezclar usuarios entre entidades.
+- **Typo en `GETPOST`**: `'atohtml'` (no es un tipo válido y devolvía la cadena `BadFirstParameterForGETPOST` como valor) corregido a `'alphanohtml'` en `batch.php` y `ajax_easyocr.php`.
+
+### Migración
+- Nuevo `sql/llx_easyocr_template_details.alter2.sql`: añade columna `entity` y la rellena por JOIN con la plantilla padre. Se ejecuta automáticamente al actualizar el módulo (desactivar + activar).
+
+### ⚠️ Acción requerida tras actualizar
+- Si ya tienes batches activos en la API de EasyOCR con la URL de webhook antigua (sin `&entity=N`), regenera la URL desde el panel del batch. De lo contrario las facturas seguirán aterrizando en la entidad 1.
+
 ## [2.5.0] - 2026-03-25
 
 ### Añadido

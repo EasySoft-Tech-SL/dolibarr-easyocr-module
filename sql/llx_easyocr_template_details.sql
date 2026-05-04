@@ -16,6 +16,7 @@
 
 CREATE TABLE IF NOT EXISTS llx_easyocr_template_details (
     rowid integer AUTO_INCREMENT PRIMARY KEY NOT NULL,
+    entity integer DEFAULT 1 NOT NULL,
     fk_template integer NOT NULL,
     page_index integer NOT NULL,
     pos_x integer NOT NULL,

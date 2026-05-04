@@ -315,7 +315,11 @@ function easyocrCreateInvoiceFromOCR($params, $userObj = null)
 	if (empty($userObj) || !is_object($userObj) || empty($userObj->id)) {
 		dol_syslog('EasyOCR-CREATE: No user provided, auto-detecting admin...', LOG_INFO);
 		require_once DOL_DOCUMENT_ROOT . '/user/class/user.class.php';
-		$sql = "SELECT rowid FROM " . MAIN_DB_PREFIX . "user WHERE admin = 1 AND statut = 1 ORDER BY rowid ASC LIMIT 1";
+		// Pick admin from current entity (or shared), so multicompany webhooks
+		// don't grab an admin from a foreign entity.
+		$sql = "SELECT rowid FROM " . MAIN_DB_PREFIX . "user WHERE admin = 1 AND statut = 1";
+		$sql .= " AND entity IN (" . getEntity('user') . ")";
+		$sql .= " ORDER BY rowid ASC LIMIT 1";
 		$res = $db->query($sql);
 		if (!$res || $db->num_rows($res) < 1) {
 			dol_syslog('EasyOCR-CREATE: ERROR — No admin user found', LOG_ERR);

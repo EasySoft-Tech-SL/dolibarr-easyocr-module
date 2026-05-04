@@ -382,6 +382,7 @@ if ($action == "createSupplierInvoice") {
 	$sql = "SELECT page_index, pos_x, pos_y, sel_w, sel_h, color, label";
 	$sql .= " FROM " . MAIN_DB_PREFIX . "easyocr_template_details";
 	$sql .= " WHERE fk_template = " . ((int) $template_id);
+	$sql .= " AND entity = " . ((int) $conf->entity);
 	$resql = $db->query($sql);
 	$result = array();
 	if ($resql) {
@@ -434,8 +435,9 @@ if ($action == "createSupplierInvoice") {
 	if (is_array($selections)) {
 		foreach ($selections as $item) {
 			$sql = "INSERT INTO " . MAIN_DB_PREFIX . "easyocr_template_details";
-			$sql .= " (fk_template, page_index, pos_x, pos_y, sel_w, sel_h, color, label)";
+			$sql .= " (entity, fk_template, page_index, pos_x, pos_y, sel_w, sel_h, color, label)";
 			$sql .= " VALUES (";
+			$sql .= ((int) $conf->entity) . ", ";
 			$sql .= ((int) $template_id) . ", ";
 			$sql .= ((int) $item['page_index']) . ", ";
 			$sql .= floatval($item['pos_x']) . ", ";
@@ -472,20 +474,30 @@ if ($action == "createSupplierInvoice") {
 
 	$db->begin();
 
+	// Validate template belongs to current entity before any destructive op on details
+	$sqlOwn = "SELECT rowid FROM " . MAIN_DB_PREFIX . "easyocr_template WHERE rowid = " . ((int) $template_id) . " AND entity = " . ((int) $conf->entity);
+	$resOwn = $db->query($sqlOwn);
+	if (!$resOwn || $db->num_rows($resOwn) < 1) {
+		$db->rollback();
+		print json_encode(["status" => "error", "message" => "Template not found in current entity"]);
+		exit;
+	}
+
 	$sql = "UPDATE " . MAIN_DB_PREFIX . "easyocr_template SET fk_soc = " . ($fk_soc > 0 ? ((int) $fk_soc) : "NULL") . ", scale = " . $tpl_scale;
 	$sql .= ", custom_instructions = " . (!empty($custom_instructions) ? "'" . $db->escape($custom_instructions) . "'" : "NULL");
 	$sql .= " WHERE rowid = " . ((int) $template_id) . " AND entity = " . ((int) $conf->entity);
 	$db->query($sql);
 
-	// Borrar detalles anteriores y reinsertar
-	$sql = "DELETE FROM " . MAIN_DB_PREFIX . "easyocr_template_details WHERE fk_template = " . ((int) $template_id);
+	// Borrar detalles anteriores y reinsertar (acotado por entidad para defensa en profundidad)
+	$sql = "DELETE FROM " . MAIN_DB_PREFIX . "easyocr_template_details WHERE fk_template = " . ((int) $template_id) . " AND entity = " . ((int) $conf->entity);
 	$db->query($sql);
 
 	if (is_array($selections)) {
 		foreach ($selections as $item) {
 			$sql = "INSERT INTO " . MAIN_DB_PREFIX . "easyocr_template_details";
-			$sql .= " (fk_template, page_index, pos_x, pos_y, sel_w, sel_h, color, label)";
+			$sql .= " (entity, fk_template, page_index, pos_x, pos_y, sel_w, sel_h, color, label)";
 			$sql .= " VALUES (";
+			$sql .= ((int) $conf->entity) . ", ";
 			$sql .= ((int) $template_id) . ", ";
 			$sql .= ((int) $item['page_index']) . ", ";
 			$sql .= floatval($item['pos_x']) . ", ";
@@ -1229,7 +1241,7 @@ if ($action == "createSupplierInvoice") {
 	$webhookUrl = GETPOST('webhook_url', 'alpha');
 	if (!empty($webhookUrl)) $options['webhook_url'] = $webhookUrl;
 
-	$language = GETPOST('language', 'atohtml');
+	$language = GETPOST('language', 'alphanohtml');
 	if (!empty($language)) $options['language'] = $language;
 
 	$customInstructions = GETPOST('custom_instructions', 'restricthtml');

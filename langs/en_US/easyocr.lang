@@ -28,6 +28,7 @@ EasyOcrPermDelete = Delete templates and invoice records
 EasyOcrMenuUploadPdf = Upload PDF
 EasyOcrMenuTemplates = Templates
 EasyOcrMenuInvoices = Invoices
+EasyOcrMenuWebhookLogs = Webhook logs
 
 # --- index.php (card dashboard) ---
 EasyOcrIndexSections = Quick access
@@ -37,6 +38,31 @@ EasyOcrIndexDescBatch = Process multiple PDFs at once with AI-powered automatic 
 EasyOcrIndexDescTemplates = Manage zone selection templates linked to suppliers.
 EasyOcrIndexDescInvoices = View the history of invoices generated from imported PDFs.
 EasyOcrIndexDescSetup = Configure the API key, cloud service and module options.
+EasyOcrIndexDescWebhookLogs = Audit incoming webhook notifications and review processing failures.
+
+# --- webhook_logs.php ---
+EasyOcrWebhookLogsTitle = Webhook logs
+EasyOcrWebhookLogsDesc = History of notifications received by webhook_batch.php (invoice creation from the EasyOCR API).
+EasyOcrWebhookLogId = ID
+EasyOcrWebhookLogReceivedAt = Received
+EasyOcrWebhookLogEvent = Event
+EasyOcrWebhookLogBatchId = Batch
+EasyOcrWebhookLogDocumentId = Document ID
+EasyOcrWebhookLogFilename = File
+EasyOcrWebhookLogDocStatus = Document status
+EasyOcrWebhookLogProcStatus = Processing status
+EasyOcrWebhookLogProcMessage = Message
+EasyOcrWebhookLogInvoice = Invoice
+EasyOcrWebhookLogSupplier = Supplier
+EasyOcrWebhookLogPayload = Payload (JSON)
+EasyOcrWebhookLogNotFound = Record not found or belongs to another entity.
+EasyOcrWebhookLogDeleteTitle = Delete webhook log entry
+EasyOcrWebhookLogConfirmDelete = Are you sure you want to delete this entry? This action cannot be undone.
+EasyOcrWebhookLogDeleted = Entry deleted.
+EasyOcrWebhookLogPurgeOldBtn = Purge entries >30 days
+EasyOcrWebhookLogPurgeOldTitle = Purge old logs
+EasyOcrWebhookLogConfirmPurgeOld = Delete all entries older than 30 days from the current entity?
+EasyOcrWebhookLogPurgedOld = Old logs purged.
 
 # --- extract.php (PDF viewer) ---
 EasyOcrImportPdf = Import PDF

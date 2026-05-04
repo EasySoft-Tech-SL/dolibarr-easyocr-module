@@ -126,7 +126,7 @@ if ($action == 'update' && $permissiontoadd) {
 if ($action == 'confirm_delete' && $confirm == 'yes' && $permissiontodelete) {
 	$db->begin();
 	$error = 0;
-	$sql = "DELETE FROM ".MAIN_DB_PREFIX."easyocr_template_details WHERE fk_template = ".((int) $id);
+	$sql = "DELETE FROM ".MAIN_DB_PREFIX."easyocr_template_details WHERE fk_template = ".((int) $id)." AND entity = ".((int) $conf->entity);
 	if (!$db->query($sql)) {
 		$error++;
 	}
@@ -167,14 +167,14 @@ if ($db->num_rows($resql) === 0) {
 $obj = $db->fetch_object($resql);
 
 // Count template fields
-$sqlFields = "SELECT COUNT(*) as nb FROM ".MAIN_DB_PREFIX."easyocr_template_details WHERE fk_template = ".((int) $id);
+$sqlFields = "SELECT COUNT(*) as nb FROM ".MAIN_DB_PREFIX."easyocr_template_details WHERE fk_template = ".((int) $id)." AND entity = ".((int) $conf->entity);
 $resqlFields = $db->query($sqlFields);
 $objFields = $db->fetch_object($resqlFields);
 $nbFields = $objFields->nb;
 
 // Load field details
 $templateDetails = array();
-$sqlDetails = "SELECT label, page_index, pos_x, pos_y, sel_w, sel_h FROM ".MAIN_DB_PREFIX."easyocr_template_details WHERE fk_template = ".((int) $id)." ORDER BY page_index, label";
+$sqlDetails = "SELECT label, page_index, pos_x, pos_y, sel_w, sel_h FROM ".MAIN_DB_PREFIX."easyocr_template_details WHERE fk_template = ".((int) $id)." AND entity = ".((int) $conf->entity)." ORDER BY page_index, label";
 $resqlDetails = $db->query($sqlDetails);
 if ($resqlDetails) {
 	while ($objd = $db->fetch_object($resqlDetails)) {

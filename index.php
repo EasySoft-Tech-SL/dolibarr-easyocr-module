@@ -276,6 +276,7 @@ llxHeader('', $title, $help_url, '', 0, 0, array(), array(), '', 'mod-easyocr pa
 .eo-card--tpl   { --eo-c: #5e35b1; --eo-bg: #ede7f6; }
 .eo-card--inv   { --eo-c: #e65100; --eo-bg: #fff3e0; }
 .eo-card--admin { --eo-c: #546e7a; --eo-bg: #eceff1; }
+.eo-card--whlog { --eo-c: #00838f; --eo-bg: #e0f7fa; }
 </style>
 
 <div class="eo-dashboard">
@@ -340,6 +341,15 @@ llxHeader('', $title, $help_url, '', 0, 0, array(), array(), '', 'mod-easyocr pa
 			<div class="eo-card-icon"><i class="fas fa-file-invoice-dollar"></i></div>
 			<h3><?php echo $langs->trans('EasyOcrMenuInvoices'); ?></h3>
 			<p><?php echo $langs->trans('EasyOcrIndexDescInvoices'); ?></p>
+			<span class="eo-card-footer"><?php echo $langs->trans('EasyOcrIndexOpen'); ?> <i class="fas fa-arrow-right"></i></span>
+		</a>
+		<?php endif; ?>
+
+		<?php if ($permRead): ?>
+		<a href="<?php echo dol_buildpath('/easyocr/webhook_logs.php', 1); ?>" class="eo-card eo-card--whlog">
+			<div class="eo-card-icon"><i class="fas fa-satellite-dish"></i></div>
+			<h3><?php echo $langs->trans('EasyOcrMenuWebhookLogs'); ?></h3>
+			<p><?php echo $langs->trans('EasyOcrIndexDescWebhookLogs'); ?></p>
 			<span class="eo-card-footer"><?php echo $langs->trans('EasyOcrIndexOpen'); ?> <i class="fas fa-arrow-right"></i></span>
 		</a>
 		<?php endif; ?>

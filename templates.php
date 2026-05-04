@@ -138,7 +138,7 @@ if ($massaction == 'delete' && $permissiontodelete) {
 		$error = 0;
 		foreach ($toselect as $toselectid) {
 			$toselectid = (int) $toselectid;
-			$sql = "DELETE FROM ".MAIN_DB_PREFIX."easyocr_template_details WHERE fk_template = ".$toselectid;
+			$sql = "DELETE FROM ".MAIN_DB_PREFIX."easyocr_template_details WHERE fk_template = ".$toselectid." AND entity = ".((int) $conf->entity);
 			if (!$db->query($sql)) {
 				$error++;
 			}
@@ -164,7 +164,7 @@ if ($action == 'confirm_delete' && $confirm == 'yes' && $permissiontodelete) {
 	$id = GETPOST('id', 'int');
 	$db->begin();
 	$error = 0;
-	$sql = "DELETE FROM ".MAIN_DB_PREFIX."easyocr_template_details WHERE fk_template = ".((int) $id);
+	$sql = "DELETE FROM ".MAIN_DB_PREFIX."easyocr_template_details WHERE fk_template = ".((int) $id)." AND entity = ".((int) $conf->entity);
 	if (!$db->query($sql)) {
 		$error++;
 	}
@@ -408,7 +408,7 @@ print '</tr>'."\n";
 
 // Pre-fetch field counts per template
 $fieldCounts = array();
-$sqlFields = "SELECT fk_template, COUNT(*) as nb FROM ".MAIN_DB_PREFIX."easyocr_template_details GROUP BY fk_template";
+$sqlFields = "SELECT fk_template, COUNT(*) as nb FROM ".MAIN_DB_PREFIX."easyocr_template_details WHERE entity = ".((int) $conf->entity)." GROUP BY fk_template";
 $resqlFields = $db->query($sqlFields);
 if ($resqlFields) {
 	while ($objf = $db->fetch_object($resqlFields)) {

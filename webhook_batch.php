@@ -88,8 +88,14 @@ if (!$res) {
 	exit;
 }
 
+// ─── Resolve entity for filesystem isolation (multicompany) ──────────────
+// Use ?entity=N from URL when present; default to 1. instance_id is still
+// validated below — this only scopes file paths, not security.
+$entityForPaths = isset($_GET['entity']) && (int) $_GET['entity'] > 0 ? (int) $_GET['entity'] : 1;
+$entityPathFragment = '/easyocr/entity_' . $entityForPaths;
+
 // ─── Debug: Save ALL input data to JSON file ─────────────────────────────
-$debugDir = DOL_DATA_ROOT . '/easyocr/webhook_debug';
+$debugDir = DOL_DATA_ROOT . $entityPathFragment . '/webhook_debug';
 if (!@is_dir($debugDir)) {
 	@mkdir($debugDir, 0755, true); // Use native mkdir to avoid dol_mkdir open_basedir issue
 }
@@ -205,6 +211,21 @@ if (empty($expectedInstanceId)) {
 	}
 }
 
+// ─── Force entity context (multicompany support) ─────────────────────────
+// In NOLOGIN mode $conf->entity defaults to 1. The batch URL carries the
+// originating entity in ?entity=N so all downstream lookups (supplier,
+// duplicates, invoice, log) hit the correct entity when multicompany is on.
+$reqEntity = isset($_GET['entity']) ? (int) $_GET['entity'] : 0;
+if ($reqEntity > 0 && isset($conf) && is_object($conf)) {
+	$conf->entity = $reqEntity;
+	if (isset($conf->multicompany) && is_object($conf->multicompany)) {
+		$conf->multicompany->current_entity = $reqEntity;
+	}
+	if (function_exists('dol_syslog')) {
+		dol_syslog('EasyOCR webhook: forced $conf->entity = ' . $reqEntity, LOG_INFO);
+	}
+}
+
 // ─── Only accept POST ────────────────────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 	http_response_code(405);
@@ -242,7 +263,7 @@ if (json_last_error() !== JSON_ERROR_NONE) {
 }
 
 // ─── Log webhook to file for debugging ───────────────────────────────────
-$logDir = DOL_DATA_ROOT . '/easyocr/webhook_logs';
+$logDir = DOL_DATA_ROOT . $entityPathFragment . '/webhook_logs';
 if (!@is_dir($logDir)) {
 	@mkdir($logDir, 0755, true); // Use native mkdir to avoid dol_mkdir open_basedir issue
 }
@@ -287,8 +308,10 @@ $webhookInvoiceRef = null;
 $webhookSupplierId = null;
 
 // ─── Process document.completed event ────────────────────────────────────
-// When a document is completed, automatically create an invoice
-$_condEvent = ($event === 'batch.document.completed');
+// When a document is completed, automatically create an invoice.
+// Accept both 'batch.document.completed' (current API) and 'document.completed'
+// (legacy / non-batch flow) for forward compatibility.
+$_condEvent = ($event === 'batch.document.completed' || $event === 'document.completed');
 $_condDoc   = !empty($document);
 $_condStat  = (isset($document['status']) && $document['status'] === 'completed');
 @file_put_contents($logFile, date('H:i:s') . " | DEBUG-FLOW: Conditions: event_match=$_condEvent, doc_present=$_condDoc, status_completed=$_condStat" . ($document ? ', document[status]=' . ($document['status'] ?? 'NOT_SET') : '') . "\n", FILE_APPEND | LOCK_EX);
@@ -375,7 +398,7 @@ if ($_condEvent && $_condDoc && $_condStat) {
 				$pdfData = base64_decode($originalDoc['base64'], true);
 				if ($pdfData !== false && strlen($pdfData) > 0) {
 					// Save to temp file
-					$tempDir = DOL_DATA_ROOT . '/easyocr/temp';
+					$tempDir = DOL_DATA_ROOT . $entityPathFragment . '/temp';
 					if (!@is_dir($tempDir)) {
 						@mkdir($tempDir, 0755, true);
 					}
@@ -453,8 +476,9 @@ if ($_condEvent && $_condDoc && $_condStat) {
 
 // ─── Store in database ──────────────────────────────────────────────────
 // Verify $db is available before attempting DB operations
+$webhookLogInsertError = null;
 if (!isset($db) || !is_object($db)) {
-	// No database connection - log to file and return OK anyway
+	$webhookLogInsertError = '$db not available, log row skipped';
 	@file_put_contents($logFile, date('H:i:s') . " | WARNING: \$db not available, skipping DB insert\n", FILE_APPEND | LOCK_EX);
 } else {
 	// Insert webhook event into llx_easyocr_webhook_log table
@@ -484,22 +508,63 @@ if (!isset($db) || !is_object($db)) {
 
 	$dbResult = $db->query($sql);
 	if (!$dbResult) {
-		// Log DB error but still return 200 to avoid retries
-		$errMsg = 'DB insert failed: ' . $db->lasterror();
-		@file_put_contents($logFile, date('H:i:s') . ' | ERROR: ' . $errMsg . "\n", FILE_APPEND | LOCK_EX);
+		$webhookLogInsertError = $db->lasterror();
+		@file_put_contents($logFile, date('H:i:s') . ' | ERROR: webhook_log insert failed: ' . $webhookLogInsertError . "\n", FILE_APPEND | LOCK_EX);
 	}
 }
 
-// ─── Respond OK ──────────────────────────────────────────────────────────
-http_response_code(200);
-header('Content-Type: application/json');
-echo json_encode([
-	'status'   => 'ok',
-	'message'  => 'Webhook received',
+// ─── Build response reflecting real outcome ──────────────────────────────
+// Decide overall status:
+//   - 'ok'      → invoice created (or no processing was needed for this event).
+//   - 'repeat'  → duplicate, no action needed (still HTTP 200, no retry).
+//   - 'error'   → business error (HTTP 200, no retry — manual review required).
+// We never return 5xx for business errors because the EasyOCR API would retry,
+// and a duplicated invoice on retry is worse than a failed log entry.
+$responseStatus  = 'ok';
+$responseMessage = 'Webhook received';
+$responseHttp    = 200;
+
+if ($webhookProcessingStatus === 'error') {
+	$responseStatus  = 'error';
+	$responseMessage = $webhookProcessingMessage ?: 'Invoice creation failed';
+	$responseHttp    = 200; // do not trigger API-side retry on business errors
+} elseif ($webhookProcessingStatus === 'repeat') {
+	$responseStatus  = 'repeat';
+	$responseMessage = $webhookProcessingMessage ?: 'Duplicate invoice skipped';
+} elseif ($webhookProcessingStatus === 'ok') {
+	$responseStatus  = 'ok';
+	$responseMessage = 'Invoice created';
+}
+
+// If we entered the processing block but couldn't find structured_data,
+// expose that too instead of pretending success.
+if ($_condEvent && $_condDoc && $_condStat && $webhookProcessingStatus === null) {
+	$responseStatus  = 'error';
+	$responseMessage = 'No structured_data found in webhook payload';
+}
+
+$responseBody = [
+	'status'   => $responseStatus,
+	'message'  => $responseMessage,
 	'batch_id' => $batchId,
 	'event'    => $event,
 	'instance_id_validated' => !empty($expectedInstanceId),
-]);
+	'entity'   => isset($conf) && is_object($conf) ? (int) $conf->entity : null,
+	'processing' => [
+		'status'  => $webhookProcessingStatus,
+		'message' => $webhookProcessingMessage,
+		'invoice_id'  => $webhookInvoiceId,
+		'invoice_ref' => $webhookInvoiceRef,
+		'supplier_id' => $webhookSupplierId,
+	],
+];
+if (!empty($webhookLogInsertError)) {
+	$responseBody['webhook_log_error'] = $webhookLogInsertError;
+}
+
+http_response_code($responseHttp);
+header('Content-Type: application/json');
+echo json_encode($responseBody);
 
 } catch (Throwable $e) {
 	// ─── Catch ANY error (including fatal) and return informative JSON ────
@@ -512,7 +577,8 @@ echo json_encode([
 	];
 
 	// Try to log the error
-	$crashFile = (defined('DOL_DATA_ROOT') ? DOL_DATA_ROOT : '/tmp') . '/easyocr/webhook_debug/crash_' . date('Y-m-d_His') . '.json';
+	$crashEntityFragment = isset($entityPathFragment) ? $entityPathFragment : '/easyocr/entity_1';
+	$crashFile = (defined('DOL_DATA_ROOT') ? DOL_DATA_ROOT : '/tmp') . $crashEntityFragment . '/webhook_debug/crash_' . date('Y-m-d_His') . '.json';
 	@file_put_contents($crashFile, json_encode($errorInfo, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
 
 	http_response_code(500);

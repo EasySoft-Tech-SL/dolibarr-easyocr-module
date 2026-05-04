@@ -135,7 +135,10 @@ if (file_exists($pathoffile)) {
 	print '<td>'.$langs->trans("EasyOcrCopyingFullText").'</td>';
 	print '</tr>';
 	print '<tr class="oddeven">';
-	print '<td><pre style="white-space: pre-wrap; font-size: 11px; max-height: 500px; overflow-y: auto;">'.dol_escape_htmltag(file_get_contents($pathoffile)).'</pre></td>';
+	// Inside <pre> we want real newlines preserved, not escaped to literal "\n".
+	// dol_escape_htmltag() escapes them by default; use htmlspecialchars() which is the
+	// correct choice for a <pre> block: it neutralizes HTML but keeps whitespace as-is.
+	print '<td><pre style="white-space: pre-wrap; font-size: 11px; max-height: 500px; overflow-y: auto;">'.htmlspecialchars(file_get_contents($pathoffile), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8').'</pre></td>';
 	print '</tr>';
 	print '</table>';
 	print '</div>';

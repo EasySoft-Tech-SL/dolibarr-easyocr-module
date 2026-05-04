@@ -377,6 +377,10 @@ if (!$canBatch) {
       $webhookDefault = preg_replace('/^http:\/\//i', 'https://', $webhookDefault);
       if (!empty($instanceId)) {
         $webhookDefault .= '?instance_id=' . urlencode($instanceId);
+        // Only emit entity when multicompany is enabled — without it $conf->entity is always 1.
+        if (isModEnabled('multicompany')) {
+          $webhookDefault .= '&entity=' . (int) $conf->entity;
+        }
       }
     }
     print '<tr>';
@@ -412,7 +416,7 @@ if (!$canBatch) {
     print '<tr>';
     print '<td>' . $langs->trans('EasyOcrBatchLanguage') . $lockedAI . '</td>';
     print '<td>';
-    print '<input type="text" id="batch_language" name="batch_language" class="flat" style="width:100px"' . $disabledAI . ' placeholder="' . dol_escape_htmltag($langs->trans('EasyOcrBatchLanguagePlaceholder')) . '" form="eo-batch-form" value="' . dol_escape_htmltag(GETPOST('batch_language', 'atohtml')) . '">';
+    print '<input type="text" id="batch_language" name="batch_language" class="flat" style="width:100px"' . $disabledAI . ' placeholder="' . dol_escape_htmltag($langs->trans('EasyOcrBatchLanguagePlaceholder')) . '" form="eo-batch-form" value="' . dol_escape_htmltag(GETPOST('batch_language', 'alphanohtml')) . '">';
     print '<br><span class="opacitymedium small">' . img_picto('', 'info', 'class="pictofixedwidth"') . $langs->trans('EasyOcrBatchLanguageHint') . '</span>';
     print '</td></tr>';
 
