@@ -136,6 +136,23 @@ EasyOcrQuotaExceeded = ⚠️ Sie haben Ihr monatliches Kontingent überschritte
 EasyOcrQuotaNearLimit = ⚠️ Sie nähern sich dem Limit Ihres monatlichen Kontingents.
 EasyOcrViewFullPlan = Vollständigen Plan anzeigen
 
+# --- Operative Sperren (status.block_code aus /me API) ---
+EasyOcrBlockGeneric = Verarbeitung gesperrt
+EasyOcrBlockOverdue = Abonnement abgelaufen ohne Verlängerung
+EasyOcrBlockWalletEmpty = Geldbörse leer
+EasyOcrBlockQuotaExceeded = Monatliches Kontingent erschöpft
+EasyOcrBlockAccountDisabled = Konto deaktiviert
+EasyOcrSubscriptionOverdueWarn = Hinweis: Verlängerung ausstehend
+EasyOcrSubscriptionOverdueDesc = Ihr Abonnement ist am %s abgelaufen und die Verlängerung wurde noch nicht verarbeitet. Aktualisieren Sie die Abrechnung oder kontaktieren Sie den Support.
+EasyOcrPlanRenewalStatus = Verlängerungsstatus
+EasyOcrPlanRenewalOverdue = Abgelaufen ohne Verlängerung
+EasyOcrPlanRenewalOverdueHint = Die automatische Abbuchung wurde nicht verarbeitet. Kontaktieren Sie den Support, wenn das Problem weiterhin besteht.
+EasyOcrPlanCanProcess = Kann jetzt verarbeiten?
+EasyOcrPlanPagesAvailableNow = Jetzt verfügbar
+EasyOcrPlanPagesRemainingMathHint = (rechnerisch; ggf. nicht verbrauchbar bei Sperrung)
+EasyOcrPlanPagesAvailableNowBlockedHint = Gesperrt aufgrund des Kontostatus
+EasyOcrBatchBlockedButQuotaRemains = Gesperrt · theoretisches Kontingent: %s Seiten
+
 # --- templates.php ---
 EasyOcrTemplatesTitle = Vorlagen
 EasyOcrDeleteTemplate = Vorlage löschen

@@ -86,6 +86,59 @@ if (!easyocrCheckRight($user, 'easyocr', 'read')) {
 
 // --- Helpers in lib/easyocr.lib.php (easyocrParseDate, easyocrParseNumber, easyocrCalcTaxRate) ---
 
+/**
+ * Verifica el estado operativo de procesamiento contra el endpoint /me del panel.
+ * Cachea el resultado en estática durante la petición (evita llamadas duplicadas).
+ *
+ * @return array{can_process: bool, block_code: ?string, block_message: ?string, error: ?string}
+ *               can_process=true si la API permite procesar AHORA
+ *               block_code/message si está bloqueado (SUBSCRIPTION_OVERDUE, WALLET_EMPTY, etc.)
+ *               error si la verificación falla — el caller decide si fail-open o fail-closed
+ */
+function easyocr_ajax_check_can_process()
+{
+	static $cache = null;
+	if ($cache !== null) {
+		return $cache;
+	}
+
+	global $conf, $langs;
+	$apiKey = !empty($conf->global->EASYOCR_AI_APIKEY) ? $conf->global->EASYOCR_AI_APIKEY : '';
+	$apiUrl = !empty($conf->global->EASYOCR_AI_URL) ? $conf->global->EASYOCR_AI_URL : 'https://app.easyocr.es';
+
+	if (empty($apiKey)) {
+		$cache = ['can_process' => true, 'block_code' => null, 'block_message' => null, 'error' => 'no_api_key'];
+		return $cache;
+	}
+
+	try {
+		$client = new \EasySoft\EasyOCR\EasyOCRClient($apiKey, ['base_url' => $apiUrl]);
+		$accountData = $client->account()->me();
+		$opStatus = $accountData['data']['status'] ?? [];
+
+		// Si la API antigua no expone status.can_process, asumir true (fail-open)
+		// para no romper instalaciones que aún no estén actualizadas.
+		if (!isset($opStatus['can_process'])) {
+			$cache = ['can_process' => true, 'block_code' => null, 'block_message' => null, 'error' => null];
+			return $cache;
+		}
+
+		$cache = [
+			'can_process'   => (bool) $opStatus['can_process'],
+			'block_code'    => $opStatus['block_code'] ?? null,
+			'block_message' => $opStatus['block_message'] ?? null,
+			'error'         => null,
+		];
+		return $cache;
+	} catch (\Exception $e) {
+		dol_syslog('easyocr_ajax_check_can_process FAILED: ' . $e->getMessage(), LOG_WARNING);
+		// Fail-open: si no podemos consultar /me, dejar que el panel haga el gating final.
+		// (El panel de todos modos rechazará si está bloqueado.)
+		$cache = ['can_process' => true, 'block_code' => null, 'block_message' => null, 'error' => $e->getMessage()];
+		return $cache;
+	}
+}
+
 // --- Actions ---
 
 $action = isset($_POST["action"]) ? $_POST["action"] : '';
@@ -776,6 +829,17 @@ if ($action == "createSupplierInvoice") {
 		exit;
 	}
 
+	// Pre-flight: bloqueo operativo (sub vencida, monedero vacío, cuenta deshabilitada)
+	$gate = easyocr_ajax_check_can_process();
+	if (!$gate['can_process']) {
+		print json_encode([
+			"status"     => "error",
+			"message"    => $gate['block_message'] ?: $langs->transnoentities('EasyOcrBlockGeneric'),
+			"block_code" => $gate['block_code'],
+		]);
+		exit;
+	}
+
 	// Accept base64 data from frontend
 	$base64Data = GETPOST("base64_data", "restricthtml");
 	$customInstructions = GETPOST("custom_instructions", "restricthtml");
@@ -783,6 +847,21 @@ if ($action == "createSupplierInvoice") {
 	if (empty($base64Data)) {
 		print json_encode(["status" => "error", "message" => "No PDF data provided"]);
 		exit;
+	}
+
+	// Strip custom_instructions si el plan no las permite (lo verificábamos solo en SSE).
+	if (!empty($customInstructions)) {
+		try {
+			$apiKey = !empty($conf->global->EASYOCR_AI_APIKEY) ? $conf->global->EASYOCR_AI_APIKEY : '';
+			$apiUrl = !empty($conf->global->EASYOCR_AI_URL) ? $conf->global->EASYOCR_AI_URL : 'https://app.easyocr.es';
+			$client = new \EasySoft\EasyOCR\EasyOCRClient($apiKey, ['base_url' => $apiUrl]);
+			$accountData = $client->account()->me();
+			if (empty($accountData['data']['features']['custom_instructions'])) {
+				$customInstructions = '';
+			}
+		} catch (\Exception $e) {
+			$customInstructions = '';
+		}
 	}
 
 	$result = $aiService->processBase64($base64Data, $customInstructions);
@@ -819,21 +898,33 @@ if ($action == "createSupplierInvoice") {
 	$filename   = GETPOST('filename', 'alpha') ?: 'document.pdf';
 	$customInstructions = GETPOST('custom_instructions', 'restricthtml');
 
-	// If custom instructions were sent, verify the plan supports them
+	// Pre-flight: bloqueo operativo. Helper compartido cachea la llamada a /me.
+	$gate = easyocr_ajax_check_can_process();
+	if (!$gate['can_process']) {
+		dol_syslog('EasyOcr aiOcrStream: bloqueado por '.$gate['block_code'].' — '.$gate['block_message'], LOG_WARNING);
+		header('Content-Type: text/event-stream; charset=utf-8');
+		header('Cache-Control: no-cache, no-store, must-revalidate');
+		header('Pragma: no-cache');
+		echo "event: error\ndata: " . json_encode([
+			"message"    => $gate['block_message'] ?: $langs->transnoentities('EasyOcrBlockGeneric'),
+			"block_code" => $gate['block_code'] ?: 'PROCESSING_BLOCKED',
+		]) . "\n\n";
+		exit;
+	}
+
+	// Strip custom_instructions si el plan no las permite
 	if (!empty($customInstructions)) {
 		try {
 			$apiKey = !empty($conf->global->EASYOCR_AI_APIKEY) ? $conf->global->EASYOCR_AI_APIKEY : '';
 			$apiUrl = !empty($conf->global->EASYOCR_AI_URL) ? $conf->global->EASYOCR_AI_URL : 'https://app.easyocr.es';
 			$client = new \EasySoft\EasyOCR\EasyOCRClient($apiKey, ['base_url' => $apiUrl]);
 			$accountData = $client->account()->me();
-			$features = $accountData['data']['features'] ?? [];
-			if (empty($features['custom_instructions'])) {
+			if (empty($accountData['data']['features']['custom_instructions'])) {
 				dol_syslog('EasyOcr aiOcrStream: custom_instructions stripped (plan does not allow)', LOG_WARNING);
 				$customInstructions = '';
 			}
 		} catch (\Exception $e) {
-			// If we can't verify, strip instructions to be safe
-			dol_syslog('EasyOcr aiOcrStream: custom_instructions stripped (plan check failed: '.$e->getMessage().')', LOG_WARNING);
+			dol_syslog('EasyOcr aiOcrStream: feature check failed, stripping CI: '.$e->getMessage(), LOG_WARNING);
 			$customInstructions = '';
 		}
 	}
@@ -1196,6 +1287,18 @@ if ($action == "createSupplierInvoice") {
 		exit;
 	}
 
+	// Pre-flight: bloqueo operativo. El usuario ya subió los ficheros, pero
+	// abortamos antes de crear el batch en el panel para evitar trabajo en vano.
+	$gate = easyocr_ajax_check_can_process();
+	if (!$gate['can_process']) {
+		print json_encode([
+			"status"     => "error",
+			"message"    => $gate['block_message'] ?: $langs->transnoentities('EasyOcrBlockGeneric'),
+			"block_code" => $gate['block_code'],
+		]);
+		exit;
+	}
+
 	$sessionId = GETPOST('session_id', 'alphanohtml');
 	if (empty($sessionId) || !preg_match('/^batch_[0-9]+_[a-z0-9]+$/', $sessionId)) {
 		print json_encode(["status" => "error", "message" => "Invalid session ID"]);
@@ -1381,6 +1484,8 @@ if ($action == "createSupplierInvoice") {
 		$plan = $data['plan'] ?? [];
 		$quota = $data['quota'] ?? [];
 		$wallet = $data['wallet'] ?? [];
+		$subscription = $data['subscription'] ?? [];
+		$opStatus = $data['status'] ?? [];
 
 		$pagesUsed = $quota['pages_used'] ?? 0;
 		$pagesLimit = $quota['pages_limit'] ?? 0;
@@ -1393,15 +1498,35 @@ if ($action == "createSupplierInvoice") {
 		$walletBalance = $wallet['balance_pages'] ?? 0;
 		$percentage = $pagesLimit > 0 ? min(round(($pagesUsed / $pagesLimit) * 100, 1), 100) : 0;
 
-		// Determine status
+		// Verdad operativa de la API. Cae con retrocompatibilidad si el panel
+		// es antiguo y no expone status.* todavía.
+		$canProcess        = isset($opStatus['can_process']) ? (bool) $opStatus['can_process'] : ($usagePercentage < 100);
+		$blockCode         = $opStatus['block_code'] ?? null;
+		$blockMessage      = $opStatus['block_message'] ?? null;
+		$isOverdue         = !empty($subscription['is_overdue']);
+		$pagesAvailableNow = $quota['pages_available_now'] ?? ($canProcess ? $pagesRemaining : 0);
+
+		// Determine status — prioriza la verdad operativa (block_code) sobre %.
+		// transnoentities() porque el JSON resultante se renderiza con .textContent
+		// en el JS poller — si llegan entidades nombradas se ven literales.
 		$statusClass = 'ok';
 		$statusText = '';
-		if ($usagePercentage >= 100) {
+		if (!$canProcess) {
 			$statusClass = 'danger';
-			$statusText = $langs->trans('EasyOcrQuotaExceeded');
+			if ($blockCode === 'SUBSCRIPTION_OVERDUE')      $statusText = $langs->transnoentities('EasyOcrBlockOverdue');
+			elseif ($blockCode === 'WALLET_EMPTY')          $statusText = $langs->transnoentities('EasyOcrBlockWalletEmpty');
+			elseif ($blockCode === 'ACCOUNT_DISABLED')      $statusText = $langs->transnoentities('EasyOcrBlockAccountDisabled');
+			elseif ($blockCode === 'QUOTA_EXCEEDED')        $statusText = $langs->transnoentities('EasyOcrQuotaExceeded');
+			else                                            $statusText = $blockMessage ?: $langs->transnoentities('EasyOcrQuotaExceeded');
+		} elseif ($isOverdue) {
+			$statusClass = 'warning';
+			$statusText = $langs->transnoentities('EasyOcrBlockOverdue');
+		} elseif ($usagePercentage >= 100) {
+			$statusClass = 'danger';
+			$statusText = $langs->transnoentities('EasyOcrQuotaExceeded');
 		} elseif ($usagePercentage >= 80) {
 			$statusClass = 'warning';
-			$statusText = $langs->trans('EasyOcrQuotaNearLimit');
+			$statusText = $langs->transnoentities('EasyOcrQuotaNearLimit');
 		}
 
 		print json_encode([
@@ -1409,6 +1534,7 @@ if ($action == "createSupplierInvoice") {
 			"pages_used" => $pagesUsed,
 			"pages_limit" => $pagesLimit,
 			"pages_remaining" => $pagesRemaining,
+			"pages_available_now" => $pagesAvailableNow,
 			"usage_percentage" => $usagePercentage,
 			"percentage" => $percentage,
 			"reset_date" => $resetDate ? dol_print_date(strtotime($resetDate), 'day') : '',
@@ -1417,7 +1543,11 @@ if ($action == "createSupplierInvoice") {
 			"has_wallet" => $hasWallet,
 			"wallet_balance" => $walletBalance,
 			"status_class" => $statusClass,
-			"status_text" => $statusText
+			"status_text" => $statusText,
+			"can_process" => $canProcess,
+			"block_code" => $blockCode,
+			"block_message" => $blockMessage,
+			"is_overdue" => $isOverdue
 		]);
 	} catch (\Exception $e) {
 		dol_syslog('EasyOcr getSubscriptionInfo ERROR: ' . $e->getMessage(), LOG_ERR);

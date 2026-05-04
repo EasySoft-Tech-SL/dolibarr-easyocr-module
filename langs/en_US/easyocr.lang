@@ -144,6 +144,23 @@ EasyOcrQuotaExceeded = ⚠️ You have exceeded your monthly quota. Some feature
 EasyOcrQuotaNearLimit = ⚠️ You are approaching your monthly quota limit.
 EasyOcrViewFullPlan = View full plan
 
+# --- Operational blocks (status.block_code from /me API) ---
+EasyOcrBlockGeneric = Processing blocked
+EasyOcrBlockOverdue = Subscription expired without renewal
+EasyOcrBlockWalletEmpty = Wallet empty
+EasyOcrBlockQuotaExceeded = Monthly quota exhausted
+EasyOcrBlockAccountDisabled = Account disabled
+EasyOcrSubscriptionOverdueWarn = Warning: renewal pending
+EasyOcrSubscriptionOverdueDesc = Your subscription expired on %s and renewal has not been processed yet. Update billing or contact support.
+EasyOcrPlanRenewalStatus = Renewal status
+EasyOcrPlanRenewalOverdue = Expired without renewal
+EasyOcrPlanRenewalOverdueHint = Automatic charge was not processed. Contact support if it persists.
+EasyOcrPlanCanProcess = Can process now?
+EasyOcrPlanPagesAvailableNow = Available now
+EasyOcrPlanPagesRemainingMathHint = (arithmetic; may not be consumable if blocked)
+EasyOcrPlanPagesAvailableNowBlockedHint = Blocked by account state
+EasyOcrBatchBlockedButQuotaRemains = Blocked · theoretical quota: %s pages
+
 # --- templates.php ---
 EasyOcrTemplatesTitle = Templates
 EasyOcrDeleteTemplate = Delete Template

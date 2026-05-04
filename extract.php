@@ -38,6 +38,11 @@ $aiEnabled = $aiService->isEnabled();
 // Fetch subscription info if API is enabled
 $subscriptionData = null;
 $hasCustomInstructions = false;
+// Operational truth from /me — used to gate the AI OCR button below.
+$canProcess        = true;
+$blockCode         = null;
+$blockMessage      = null;
+$isOverdue         = false;
 if ($aiEnabled) {
 	try {
 		$apiKey = !empty($conf->global->EASYOCR_AI_APIKEY) ? $conf->global->EASYOCR_AI_APIKEY : '';
@@ -54,6 +59,15 @@ if ($aiEnabled) {
 			if (!empty($subscriptionData['features'])) {
 				$hasCustomInstructions = !empty($subscriptionData['features']['custom_instructions']);
 			}
+			// Read operational state. `status.can_process` is the single source
+			// of truth from the API (sub válida + cuota o monedero disponible).
+			// Si el campo no existe (API antigua), asumimos true para no romper.
+			if (isset($subscriptionData['status']['can_process'])) {
+				$canProcess = (bool) $subscriptionData['status']['can_process'];
+				$blockCode  = $subscriptionData['status']['block_code'] ?? null;
+				$blockMessage = $subscriptionData['status']['block_message'] ?? null;
+			}
+			$isOverdue = !empty($subscriptionData['subscription']['is_overdue']);
 		}
 	} catch (\Exception $e) {
 		// Silently fail - subscription widget will not show
@@ -136,10 +150,34 @@ llxHeader("", "EasyOcr", '', '', 0, 0, $arrayofjs, $arrayofcss);
           <div class="eo-ai-progress-bar"><div class="eo-ai-progress-fill" id="eo-ai-progress-fill"></div></div>
           <span class="eo-ai-progress-text" id="eo-ai-progress-text"></span>
         </div>
-        <button class="eo-btn eo-btn-ai" onclick="EasyOcr.runAIOcr()" id="eo-btn-ai-ocr">
+        <button class="eo-btn eo-btn-ai" onclick="EasyOcr.runAIOcr()" id="eo-btn-ai-ocr"
+          data-can-process="<?php echo $canProcess ? '1' : '0'; ?>"
+          data-block-code="<?php echo htmlspecialchars((string) $blockCode, ENT_QUOTES, 'UTF-8'); ?>"
+          data-block-message="<?php echo htmlspecialchars((string) $blockMessage, ENT_QUOTES, 'UTF-8'); ?>"
+          <?php if (!$canProcess) echo 'disabled aria-disabled="true" style="opacity:.55;cursor:not-allowed"'; ?>>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a4 4 0 014 4v1a2 2 0 012 2v1a2 2 0 01-2 2H8a2 2 0 01-2-2V9a2 2 0 012-2V6a4 4 0 014-4z"/><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 14v4"/></svg>
           <?php echo $langs->trans('EasyOcrAIExtract'); ?>
         </button>
+        <?php if (!$canProcess && !empty($blockMessage)) { ?>
+        <div class="eo-block-banner eo-block-<?php echo htmlspecialchars(strtolower((string) $blockCode), ENT_QUOTES, 'UTF-8'); ?>"
+             id="eo-block-banner"
+             style="margin-top:8px;padding:10px 12px;border-radius:6px;background:#fef2f2;border:1px solid #fecaca;color:#991b1b;font-size:12px;display:flex;gap:8px;align-items:flex-start;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;margin-top:2px"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          <div>
+            <strong><?php
+              // transnoentities() para texto en HTML directo: trans() puede devolver
+              // tildes como entidades HTML que el navegador mostraría literalmente
+              // si en algún punto del flujo se vuelve a escapar el '&'.
+              if ($blockCode === 'SUBSCRIPTION_OVERDUE') echo $langs->transnoentities('EasyOcrBlockOverdue');
+              elseif ($blockCode === 'WALLET_EMPTY') echo $langs->transnoentities('EasyOcrBlockWalletEmpty');
+              elseif ($blockCode === 'QUOTA_EXCEEDED') echo $langs->transnoentities('EasyOcrBlockQuotaExceeded');
+              elseif ($blockCode === 'ACCOUNT_DISABLED') echo $langs->transnoentities('EasyOcrBlockAccountDisabled');
+              else echo $langs->transnoentities('EasyOcrBlockGeneric');
+            ?></strong><br>
+            <span><?php echo htmlspecialchars((string) $blockMessage, ENT_QUOTES, 'UTF-8'); ?></span>
+          </div>
+        </div>
+        <?php } ?>
 
         <?php if (!empty($subscriptionData)) {
           $plan = $subscriptionData['plan'] ?? [];
@@ -158,11 +196,33 @@ llxHeader("", "EasyOcr", '', '', 0, 0, $arrayofjs, $arrayofcss);
           $hasWallet = !empty($wallet['exists']);
           $walletBalance = $wallet['balance_pages'] ?? 0;
           
-          // Determinar estado
+          // Determinar estado: prioriza la verdad operativa (block_code de la API)
+          // sobre el porcentaje de cuota — un usuario con SUBSCRIPTION_OVERDUE
+          // puede tener 1% de uso pero no poder procesar, y antes se mostraba "ok".
           $statusClass = '';
           $statusIcon = '';
           $statusText = '';
-          if ($usagePercentage >= 100) {
+          if (!$canProcess) {
+            $statusClass = 'danger';
+            $statusIcon = '⚠️';
+            // transnoentities() porque $statusText luego se imprime crudo en HTML
+            // y el block_message del API ya viene en UTF-8 puro (no necesita escape extra).
+            if ($blockCode === 'SUBSCRIPTION_OVERDUE') {
+              $statusText = $langs->transnoentities('EasyOcrBlockOverdue');
+            } elseif ($blockCode === 'WALLET_EMPTY') {
+              $statusText = $langs->transnoentities('EasyOcrBlockWalletEmpty');
+            } elseif ($blockCode === 'ACCOUNT_DISABLED') {
+              $statusText = $langs->transnoentities('EasyOcrBlockAccountDisabled');
+            } else {
+              $statusText = $blockMessage ?: $langs->transnoentities('EasyOcrQuotaExceeded');
+            }
+          } elseif ($isOverdue) {
+            // Coherencia defensiva: si el campo can_process está caído pero
+            // is_overdue=true, mostrar warning aunque la API no haya marcado el bloqueo.
+            $statusClass = 'warning';
+            $statusIcon = '⚠️';
+            $statusText = $langs->transnoentities('EasyOcrBlockOverdue');
+          } elseif ($usagePercentage >= 100) {
             $statusClass = 'danger';
             $statusIcon = '⚠️';
             $statusText = $langs->trans('EasyOcrQuotaExceeded');
@@ -698,8 +758,35 @@ llxHeader("", "EasyOcr", '', '', 0, 0, $arrayofjs, $arrayofcss);
         var compactText = document.getElementById('eo-quota-compact-text');
         if (compactText) compactText.innerHTML = '<strong>' + eoFmtNum(res.pages_used) + '</strong> / ' + eoFmtNum(res.pages_limit) + ' ' + eoQuotaLabels.pages;
 
+        // Show pages_available_now (verdad operativa) en el indicador de "restantes"
+        // — si hay bloqueo (overdue, etc.), pages_available_now=0 aunque pages_remaining>0.
+        var displayRemaining = (typeof res.pages_available_now === 'number') ? res.pages_available_now : res.pages_remaining;
         var remainEl = document.getElementById('eo-quota-remaining');
-        if (remainEl) remainEl.textContent = eoFmtNum(res.pages_remaining) + ' ' + eoQuotaLabels.remaining;
+        if (remainEl) remainEl.textContent = eoFmtNum(displayRemaining) + ' ' + eoQuotaLabels.remaining;
+
+        // Sincronizar el botón AI: desactivar si la API dice can_process=false.
+        // Mantiene la UI alineada con cambios en tiempo real (cuota recién agotada,
+        // sub que pasa a overdue, cuenta deshabilitada por admin, etc.)
+        var btnAi = document.getElementById('eo-btn-ai-ocr');
+        if (btnAi) {
+          if (res.can_process === false) {
+            btnAi.setAttribute('disabled', 'disabled');
+            btnAi.setAttribute('aria-disabled', 'true');
+            btnAi.style.opacity = '.55';
+            btnAi.style.cursor = 'not-allowed';
+            btnAi.dataset.canProcess = '0';
+            btnAi.dataset.blockCode = res.block_code || '';
+            btnAi.dataset.blockMessage = res.block_message || '';
+          } else {
+            btnAi.removeAttribute('disabled');
+            btnAi.removeAttribute('aria-disabled');
+            btnAi.style.opacity = '';
+            btnAi.style.cursor = '';
+            btnAi.dataset.canProcess = '1';
+            btnAi.dataset.blockCode = '';
+            btnAi.dataset.blockMessage = '';
+          }
+        }
 
         // Status icon
         var statusIcon = document.getElementById('eo-quota-status-icon');

@@ -144,6 +144,23 @@ EasyOcrQuotaExceeded = ⚠️ Vous avez dépassé votre quota mensuel. Certaines
 EasyOcrQuotaNearLimit = ⚠️ Vous approchez de la limite de votre quota mensuel.
 EasyOcrViewFullPlan = Voir le plan complet
 
+# --- Blocages opérationnels (status.block_code de l'API /me) ---
+EasyOcrBlockGeneric = Traitement bloqué
+EasyOcrBlockOverdue = Abonnement expiré sans renouvellement
+EasyOcrBlockWalletEmpty = Portefeuille vide
+EasyOcrBlockQuotaExceeded = Quota mensuel épuisé
+EasyOcrBlockAccountDisabled = Compte désactivé
+EasyOcrSubscriptionOverdueWarn = Avertissement : renouvellement en attente
+EasyOcrSubscriptionOverdueDesc = Votre abonnement a expiré le %s et le renouvellement n'a pas encore été traité. Régularisez depuis Facturation ou contactez le support.
+EasyOcrPlanRenewalStatus = État du renouvellement
+EasyOcrPlanRenewalOverdue = Expiré sans renouvellement
+EasyOcrPlanRenewalOverdueHint = Le prélèvement automatique n'a pas été traité. Contactez le support si le problème persiste.
+EasyOcrPlanCanProcess = Peut traiter maintenant ?
+EasyOcrPlanPagesAvailableNow = Disponibles maintenant
+EasyOcrPlanPagesRemainingMathHint = (calcul arithmétique ; peut ne pas être consommable en cas de blocage)
+EasyOcrPlanPagesAvailableNowBlockedHint = Bloqué par l'état du compte
+EasyOcrBatchBlockedButQuotaRemains = Bloqué · quota théorique : %s pages
+
 # --- templates.php ---
 EasyOcrTemplatesTitle = Modèles
 EasyOcrDeleteTemplate = Supprimer Modèle

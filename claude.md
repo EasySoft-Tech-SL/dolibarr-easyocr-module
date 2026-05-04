@@ -2,7 +2,7 @@
 
 ## Información del módulo
 - **Nombre:** EasyOcr
-- **Versión:** 2.5.1
+- **Versión:** 2.5.2
 - **Número módulo:** 402020
 - **Empresa:** EasySoft Tech S.L. (info@easysoft.es)
 - **Autor:** Alberto Luque Rivas (aluquerivasdev@gmail.com)
@@ -92,6 +92,14 @@ easyocr/
 ---
 
 ## Historial de cambios
+
+### v2.5.2 — Verdad operativa `/me` (sub overdue / bloqueos)
+- Lectura de `status.can_process`, `status.block_code`, `status.block_message`, `subscription.is_overdue`, `quota.pages_available_now` introducidos por `easyOCR-PANEL` v2.5+.
+- Botón "AI Extract" en `extract.php` se renderiza `disabled` con banner cuando hay bloqueo. Pantalla LOCKED en `batch.php`. Banner + filas nuevas en `admin/plan.php`.
+- Helper compartido `easyocr_ajax_check_can_process()` en `ajax_easyocr.php` con cache estática por petición. Gates pre-flight en `aiOcr`, `aiOcrStream` y `batchCreateFromUploads`.
+- Poller JS sincroniza el botón AI en tiempo real (cada 5 s) según `can_process`.
+- 14 claves nuevas traducidas a los 8 idiomas (ca/de/en/es/fr/gl/it/pt).
+- Retrocompatible: fail-open si la API antigua no expone `status.*`.
 
 ### v2.5.1 — Hardening Multiempresa
 - Webhook batch lee `?entity=N` y fuerza `$conf->entity` (antes caía a 1 por `NOLOGIN`).

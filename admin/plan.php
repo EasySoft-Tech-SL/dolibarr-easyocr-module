@@ -200,6 +200,45 @@ if (empty($apiKey) || !$apiEnabled) {
 	$wallet = $data['wallet'] ?? [];
 	$tokens = $quota['tokens'] ?? [];
 	$requests = $quota['requests'] ?? [];
+	// Operational truth — fuente única para "puede procesar ahora mismo"
+	$opStatus     = $data['status'] ?? [];
+	$canProcess   = isset($opStatus['can_process']) ? (bool) $opStatus['can_process'] : true;
+	$blockCode    = $opStatus['block_code'] ?? null;
+	$blockMessage = $opStatus['block_message'] ?? null;
+	$isOverdue    = !empty($subscription['is_overdue']);
+
+	// =========================================================================
+	// SECTION 0: Estado operativo (banner) — destaca bloqueos antes que nada
+	// =========================================================================
+	if (!$canProcess || $isOverdue) {
+		$bannerColor = !$canProcess ? '#fef2f2' : '#fff7ed';
+		$bannerBorder = !$canProcess ? '#fecaca' : '#fed7aa';
+		$bannerText = !$canProcess ? '#991b1b' : '#9a3412';
+		$bannerIcon = !$canProcess ? 'fa-times-circle' : 'fa-exclamation-triangle';
+
+		$bannerTitleKey = 'EasyOcrBlockGeneric';
+		if ($blockCode === 'SUBSCRIPTION_OVERDUE') $bannerTitleKey = 'EasyOcrBlockOverdue';
+		elseif ($blockCode === 'WALLET_EMPTY')      $bannerTitleKey = 'EasyOcrBlockWalletEmpty';
+		elseif ($blockCode === 'QUOTA_EXCEEDED')    $bannerTitleKey = 'EasyOcrBlockQuotaExceeded';
+		elseif ($blockCode === 'ACCOUNT_DISABLED')  $bannerTitleKey = 'EasyOcrBlockAccountDisabled';
+		elseif ($isOverdue && $canProcess)          $bannerTitleKey = 'EasyOcrSubscriptionOverdueWarn';
+
+		// transnoentities() en estos textos: van a HTML directo y trans() puede
+		// devolver tildes como entidades nombradas, que luego dol_escape_htmltag()
+		// vuelve a escapar produciendo "&amp;oacute;" → el navegador muestra literal.
+		// $blockMessage viene del API en UTF-8 puro; usar htmlspecialchars (no convierte tildes).
+		print '<div style="margin-bottom:15px;padding:14px 16px;border-radius:6px;background:'.$bannerColor.';border:1px solid '.$bannerBorder.';color:'.$bannerText.';display:flex;gap:12px;align-items:flex-start;">';
+		print '  <span class="fas '.$bannerIcon.'" style="font-size:20px;flex-shrink:0;margin-top:2px"></span>';
+		print '  <div style="flex:1">';
+		print '    <strong style="font-size:14px;display:block;margin-bottom:4px">'.$langs->transnoentities($bannerTitleKey).'</strong>';
+		if (!empty($blockMessage)) {
+			print '    <span style="font-size:13px">'.htmlspecialchars($blockMessage, ENT_QUOTES, 'UTF-8').'</span>';
+		} elseif ($isOverdue && !empty($subscription['current_period_end'])) {
+			print '    <span style="font-size:13px">'.$langs->transnoentities('EasyOcrSubscriptionOverdueDesc', dol_print_date(strtotime($subscription['current_period_end']), 'day')).'</span>';
+		}
+		print '  </div>';
+		print '</div>';
+	}
 
 	// =========================================================================
 	// SECTION 1: Account Information
@@ -286,6 +325,26 @@ if (empty($apiKey) || !$apiEnabled) {
 			print '<td><span style="color: #e74c3c;">'.dol_print_date(strtotime($subscription['cancelled_at']), 'dayhour').'</span></td></tr>';
 		}
 
+		// Estado de renovación: subscription.is_overdue distingue entre 'active'
+		// real vs 'active' con periodo vencido sin renovar.
+		if ($isOverdue) {
+			print '<tr class="oddeven"><td>'.$langs->transnoentities("EasyOcrPlanRenewalStatus").'</td>';
+			print '<td><span class="badge badge-status8" style="background:#dc2626;color:white">'.$langs->transnoentities("EasyOcrPlanRenewalOverdue").'</span> ';
+			print '<span class="opacitymedium" style="margin-left:6px">'.$langs->transnoentities("EasyOcrPlanRenewalOverdueHint").'</span></td></tr>';
+		}
+
+		// Capacidad de procesamiento (verdad operativa)
+		print '<tr class="oddeven"><td>'.$langs->transnoentities("EasyOcrPlanCanProcess").'</td>';
+		if ($canProcess) {
+			print '<td><span class="badge badge-status4" style="background:#16a34a;color:white">'.$langs->transnoentities("Yes").'</span></td></tr>';
+		} else {
+			print '<td><span class="badge badge-status8" style="background:#dc2626;color:white">'.$langs->transnoentities("No").'</span>';
+			if (!empty($blockCode)) {
+				print ' <code style="margin-left:6px;background:#fef2f2;padding:2px 6px;border-radius:3px;color:#991b1b">'.htmlspecialchars($blockCode, ENT_QUOTES, 'UTF-8').'</code>';
+			}
+			print '</td></tr>';
+		}
+
 		print '</table></div><br>';
 	}
 
@@ -362,8 +421,21 @@ if (empty($apiKey) || !$apiEnabled) {
 
 			print '<tr class="oddeven">';
 			print '<td>'.$langs->trans("EasyOcrPlanPagesRemaining").'</td>';
-			print '<td colspan="2"><strong style="color: '.($pagesRemaining > 0 ? '#27ae60' : '#e74c3c').';">'.$pagesRemaining.'</strong> '.$langs->trans("EasyOcrPlanPages").'</td>';
-			print '</tr>';
+			print '<td colspan="2"><strong style="color: '.($pagesRemaining > 0 ? '#27ae60' : '#e74c3c').';">'.$pagesRemaining.'</strong> '.$langs->trans("EasyOcrPlanPages");
+			print ' <span class="opacitymedium" style="font-size:11px;margin-left:6px">'.$langs->transnoentities("EasyOcrPlanPagesRemainingMathHint").'</span>';
+			print '</td></tr>';
+
+			// Páginas que el usuario REALMENTE puede consumir ahora (respeta bloqueos)
+			if (isset($quota['pages_available_now'])) {
+				$pagesAvailableNow = (int) $quota['pages_available_now'];
+				print '<tr class="oddeven">';
+				print '<td><strong>'.$langs->transnoentities("EasyOcrPlanPagesAvailableNow").'</strong></td>';
+				print '<td colspan="2"><strong style="color: '.($pagesAvailableNow > 0 ? '#27ae60' : '#e74c3c').';font-size:1.05em">'.$pagesAvailableNow.'</strong> '.$langs->trans("EasyOcrPlanPages");
+				if ($pagesAvailableNow === 0 && $pagesRemaining > 0) {
+					print ' <span class="opacitymedium" style="font-size:11px;margin-left:6px">'.$langs->transnoentities("EasyOcrPlanPagesAvailableNowBlockedHint").'</span>';
+				}
+				print '</td></tr>';
+			}
 		}
 
 		// Documents usage with progress bar

@@ -5,6 +5,34 @@ Todos los cambios notables de EasyOcr se documentarán en este archivo.
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/),
 y este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 
+## [2.5.2] - 2026-05-04
+
+### Añadido — Verdad operativa de la API `/me`
+- **Lectura de `status.can_process` / `status.block_code` / `status.block_message`** en `extract.php`, `batch.php`, `admin/plan.php` y `ajax/ajax_easyocr.php`. Estos tres campos son la fuente única de verdad introducida en el panel `easyOCR-PANEL` v2.5+: indican si el usuario puede procesar AHORA, independientemente de que el plan tenga cuota teórica. Antes la UI confiaba solo en `quota.pages_remaining > 0`, lo que no detectaba el caso "suscripción `active` pero `current_period_end` vencido sin renovar".
+- **Lectura de `subscription.is_overdue`** para distinguir entre `active` real y `active` con periodo vencido (renovación bloqueada).
+- **Lectura de `quota.pages_available_now`** (páginas que el usuario realmente puede consumir ahora, respeta bloqueos) en lugar de `pages_remaining` (cálculo aritmético) en los indicadores de la UI. Se mantiene `pages_remaining` como info secundaria para no romper la lectura existente.
+- **Banner de bloqueo en `admin/plan.php`**: cuando `!can_process` o `is_overdue`, se renderiza un banner superior rojo/ámbar con el motivo traducido (`SUBSCRIPTION_OVERDUE`, `WALLET_EMPTY`, `QUOTA_EXCEEDED`, `ACCOUNT_DISABLED`). Nuevas filas en la tabla "Suscripción": `Estado de renovación` (badge "Vencida sin renovar") y `¿Puede procesar ahora?`. Nueva fila en "Cuota": `Disponibles ahora`.
+- **Banner de bloqueo en `extract.php`**: bajo el botón "AI Extract" cuando `!can_process`. El botón sale ya con `disabled` desde el render PHP, con `data-block-code` / `data-block-message` para coordinar con el JS.
+- **Pantalla LOCKED en `batch.php`**: si `!can_process`, el formulario de batch se sustituye por un panel con el motivo específico. La card "Disponibles" muestra `pages_available_now` (puede ser 0 aunque haya cuota teórica) con sub-leyenda "Bloqueado · cuota teórica: X pág." cuando hay disonancia.
+- **Helper compartido `easyocr_ajax_check_can_process()`** en `ajax/ajax_easyocr.php` con cache estática por petición. Consulta `/me` una sola vez aunque varios endpoints lo necesiten. Fail-open si la API antigua no expone el campo (retrocompatibilidad).
+
+### Cambiado
+- **Gate de `$canBatch` en `batch.php`**: era `$batchEnabled && $pagesRemaining > 0`. Ahora es `$batchEnabled && $apiCanProcess` (verdad operativa). El cálculo aritmético mentía cuando la suscripción estaba vencida pero la cuota mensual fresca tenía páginas disponibles.
+- **Iconos/alertas de cuota en `extract.php`**: la lógica de `$statusClass` priorizaba `usage_percentage` sobre cualquier otro estado. Ahora prioriza `!can_process` y `is_overdue` antes que el porcentaje, evitando mostrar "✓ OK" cuando la suscripción estaba vencida con 1 % de uso.
+- **Poller JS `getSubscriptionInfo` en `extract.php`**: cada 5 s sincroniza el botón AI con el estado de la API (añade/quita `disabled` y `data-block-*` en tiempo real). Muestra `pages_available_now` en el indicador de "restantes".
+- **`getSubscriptionInfo` (AJAX)**: además de los campos antiguos, devuelve `can_process`, `block_code`, `block_message`, `is_overdue`, `pages_available_now` para que el JS reaccione sin recargar la página.
+
+### Bloqueado en endpoints AJAX (defensa en profundidad)
+- **`aiOcr` (modo síncrono)**: pre-flight `easyocr_ajax_check_can_process()`. Si bloqueado → `{status:error, message, block_code}` y aborta antes de subir el PDF al microservicio. Antes solo verificaba `custom_instructions`.
+- **`aiOcrStream` (SSE)**: refactorizado al helper compartido. Si bloqueado → `event: error` SSE con `block_code` y aborta. Una sola llamada a `/me` en lugar de las dos previas (gate + features).
+- **`batchCreateFromUploads`**: pre-flight con helper antes de crear el batch en el panel. Evita trabajo en vano cuando los ficheros ya se han subido pero la suscripción acaba de cambiar de estado.
+
+### Traducciones
+- **14 claves nuevas en los 8 idiomas** (ca_ES, de_DE, en_US, es_ES, fr_FR, gl_ES, it_IT, pt_PT): `EasyOcrBlock{Generic,Overdue,WalletEmpty,QuotaExceeded,AccountDisabled}`, `EasyOcrSubscriptionOverdue{Warn,Desc}`, `EasyOcrPlanRenewal{Status,Overdue,OverdueHint}`, `EasyOcrPlanCanProcess`, `EasyOcrPlanPagesAvailableNow`, `EasyOcrPlanPagesRemainingMathHint`, `EasyOcrPlanPagesAvailableNowBlockedHint`, `EasyOcrBatchBlockedButQuotaRemains`.
+
+### Compatibilidad
+- **Retrocompatible con paneles `easyOCR-PANEL` antiguos**: si la API no expone `status.can_process`, el helper hace fail-open (asume `true`) y la UI usa el cálculo aritmético antiguo. La actualización del módulo no exige actualizar el panel; solo aprovecha la nueva información cuando está disponible.
+
 ## [2.5.1] - 2026-05-04
 
 ### Corregido (Multiempresa / Multisociété)

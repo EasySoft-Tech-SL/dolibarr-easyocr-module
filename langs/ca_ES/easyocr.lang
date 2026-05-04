@@ -134,6 +134,23 @@ EasyOcrQuotaExceeded = ⚠️ Heu excedit la vostra quota mensual. Algunes funci
 EasyOcrQuotaNearLimit = ⚠️ Us esteu acostant al límit de la vostra quota mensual.
 EasyOcrViewFullPlan = Veure el pla complet
 
+# --- Bloquejos operatius (status.block_code de l'API /me) ---
+EasyOcrBlockGeneric = Processament bloquejat
+EasyOcrBlockOverdue = Subscripció vençuda sense renovar
+EasyOcrBlockWalletEmpty = Cartera buida
+EasyOcrBlockQuotaExceeded = Quota mensual exhaurida
+EasyOcrBlockAccountDisabled = Compte desactivat
+EasyOcrSubscriptionOverdueWarn = Avís: renovació pendent
+EasyOcrSubscriptionOverdueDesc = La vostra subscripció va vèncer el %s i encara no s'ha processat la renovació. Regularitzeu des de Facturació o contacteu amb suport.
+EasyOcrPlanRenewalStatus = Estat de la renovació
+EasyOcrPlanRenewalOverdue = Vençuda sense renovar
+EasyOcrPlanRenewalOverdueHint = El cobrament automàtic no s'ha processat. Contacteu amb suport si persisteix.
+EasyOcrPlanCanProcess = Pot processar ara?
+EasyOcrPlanPagesAvailableNow = Disponibles ara
+EasyOcrPlanPagesRemainingMathHint = (càlcul aritmètic; pot no ser consumible si hi ha bloqueig)
+EasyOcrPlanPagesAvailableNowBlockedHint = Bloquejat per l'estat del compte
+EasyOcrBatchBlockedButQuotaRemains = Bloquejat · quota teòrica: %s pàg.
+
 # --- templates.php ---
 EasyOcrTemplatesTitle = Plantilles
 EasyOcrDeleteTemplate = Eliminar plantilla

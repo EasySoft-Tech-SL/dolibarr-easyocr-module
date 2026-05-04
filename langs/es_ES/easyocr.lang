@@ -146,6 +146,23 @@ EasyOcrQuotaExceeded = ⚠️ Has excedido tu cuota mensual. Algunas funciones p
 EasyOcrQuotaNearLimit = ⚠️ Te estás acercando al límite de tu cuota mensual.
 EasyOcrViewFullPlan = Ver plan completo
 
+# --- Bloqueos operativos (status.block_code de la API /me) ---
+EasyOcrBlockGeneric = Procesamiento bloqueado
+EasyOcrBlockOverdue = Suscripción vencida sin renovar
+EasyOcrBlockWalletEmpty = Monedero vacío
+EasyOcrBlockQuotaExceeded = Cuota mensual agotada
+EasyOcrBlockAccountDisabled = Cuenta deshabilitada
+EasyOcrSubscriptionOverdueWarn = Aviso: renovación pendiente
+EasyOcrSubscriptionOverdueDesc = Tu suscripción venció el %s y aún no se ha procesado la renovación. Regulariza desde Facturación o contacta con soporte.
+EasyOcrPlanRenewalStatus = Estado de renovación
+EasyOcrPlanRenewalOverdue = Vencida sin renovar
+EasyOcrPlanRenewalOverdueHint = El cobro automático no se procesó. Contacta con soporte si persiste.
+EasyOcrPlanCanProcess = ¿Puede procesar ahora?
+EasyOcrPlanPagesAvailableNow = Disponibles ahora
+EasyOcrPlanPagesRemainingMathHint = (cálculo aritmético; puede no ser consumible si hay bloqueo)
+EasyOcrPlanPagesAvailableNowBlockedHint = Bloqueado por estado de la cuenta
+EasyOcrBatchBlockedButQuotaRemains = Bloqueado · cuota teórica: %s pág.
+
 # --- templates.php ---
 EasyOcrTemplatesTitle = Plantillas
 EasyOcrDeleteTemplate = Eliminar Plantilla

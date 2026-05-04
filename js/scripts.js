@@ -1722,6 +1722,18 @@ const EasyOcr = (function () {
             return;
         }
 
+        // Bloqueo operativo desde /me (sub overdue, monedero vacío, etc.).
+        // El botón ya queda disabled por PHP/poller, pero si se invoca por
+        // teclado o programáticamente, abortamos con un toast claro.
+        var btnAiCheck = document.getElementById('eo-btn-ai-ocr');
+        if (btnAiCheck && btnAiCheck.dataset.canProcess === '0') {
+            var msg = btnAiCheck.dataset.blockMessage
+                || L.processingBlocked
+                || 'No puedes procesar ahora. Revisa el estado de tu suscripción.';
+            toast(msg, 'warn');
+            return;
+        }
+
         // If we already have AI results, just re-show the modal
         if (state.aiResult) {
             document.getElementById('eo-modal-ai').style.display = 'flex';

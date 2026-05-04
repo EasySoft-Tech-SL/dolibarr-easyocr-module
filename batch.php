@@ -101,13 +101,35 @@ if (!$aiEnabled) {
       $maxBatchFiles = $limits['max_batch_size'] ?? 0;
       $maxFileSizeMb = $limits['max_file_size_mb'] ?? 10;
 
-      // Can batch if: feature enabled AND pages remaining (combined plan + wallet)
-      $canBatch = $batchEnabled && $pagesRemaining > 0;
+      // Verdad operativa de la API. Si no viene (API antigua), inferir
+      // del cálculo aritmético antiguo para no romper retrocompatibilidad.
+      $opStatus      = $subscriptionData['status'] ?? array();
+      $apiCanProcess = isset($opStatus['can_process']) ? (bool) $opStatus['can_process'] : ($pagesRemaining > 0);
+      $apiBlockCode  = $opStatus['block_code'] ?? null;
+      $apiBlockMsg   = $opStatus['block_message'] ?? null;
+      $isOverdue     = !empty($subscriptionData['subscription']['is_overdue']);
+      // Páginas reales que se pueden consumir ahora (0 si hay bloqueo)
+      $pagesAvailableNow = $quota['pages_available_now'] ?? ($apiCanProcess ? $pagesRemaining : 0);
+
+      // Can batch if: feature enabled AND API permite procesar AHORA.
+      // Antes era `pagesRemaining > 0`, lo que mentía cuando había overdue.
+      $canBatch = $batchEnabled && $apiCanProcess;
 
       if (!$batchEnabled) {
-        $subscriptionError = $langs->trans('EasyOcrBatchNotAvailable');
-      } elseif ($pagesRemaining <= 0) {
-        $subscriptionError = $langs->trans('EasyOcrBatchNoQuota');
+        $subscriptionError = $langs->transnoentities('EasyOcrBatchNotAvailable');
+      } elseif (!$apiCanProcess) {
+        // Mensaje específico según el motivo real del bloqueo.
+        // Usamos transnoentities() porque luego pasa por dol_escape_htmltag(),
+        // y trans() podría devolver tildes ya como entidades → doble escape.
+        if ($apiBlockCode === 'SUBSCRIPTION_OVERDUE') {
+          $subscriptionError = $apiBlockMsg ?: $langs->transnoentities('EasyOcrBlockOverdue');
+        } elseif ($apiBlockCode === 'WALLET_EMPTY') {
+          $subscriptionError = $apiBlockMsg ?: $langs->transnoentities('EasyOcrBlockWalletEmpty');
+        } elseif ($apiBlockCode === 'ACCOUNT_DISABLED') {
+          $subscriptionError = $apiBlockMsg ?: $langs->transnoentities('EasyOcrBlockAccountDisabled');
+        } else {
+          $subscriptionError = $apiBlockMsg ?: $langs->transnoentities('EasyOcrBatchNoQuota');
+        }
       }
     }
   } catch (\Exception $e) {
@@ -226,10 +248,20 @@ if (!$canBatch) {
     // ── Quota summary cards across top ──
     print '<div class="eo-batch-quota-cards">';
 
-    // Card: Pages remaining (combined)
-    print '<div class="eo-batch-qcard eo-batch-qcard-main">';
-    print '<div class="eo-batch-qcard-value">' . number_format($pagesRemaining, 0, ',', '.') . '</div>';
+    // Card: Pages available NOW (verdad operativa — respeta bloqueos)
+    // Si hay bloqueo (overdue, etc), pages_available_now=0 aunque pagesRemaining>0.
+    // transnoentities() para los textos que pasan por dol_escape_htmltag o se imprimen
+    // en HTML directo: trans() puede devolver tildes ya como entidades → doble escape.
+    print '<div class="eo-batch-qcard eo-batch-qcard-main' . ($pagesAvailableNow <= 0 ? ' eo-batch-qcard-blocked' : '') . '"';
+    if ($pagesAvailableNow <= 0 && $pagesRemaining > 0) {
+      print ' title="' . dol_escape_htmltag($langs->transnoentities('EasyOcrPlanPagesAvailableNowBlockedHint')) . '"';
+    }
+    print '>';
+    print '<div class="eo-batch-qcard-value"' . ($pagesAvailableNow <= 0 ? ' style="color:#dc2626"' : '') . '>' . number_format($pagesAvailableNow, 0, ',', '.') . '</div>';
     print '<div class="eo-batch-qcard-label">' . $langs->trans('EasyOcrQuotaRemaining') . '</div>';
+    if ($pagesAvailableNow <= 0 && $pagesRemaining > 0) {
+      print '<div class="eo-batch-qcard-sub" style="font-size:10px;color:#9a3412">' . $langs->transnoentities('EasyOcrBatchBlockedButQuotaRemains', number_format($pagesRemaining, 0, ',', '.')) . '</div>';
+    }
     print '</div>';
 
     // Card: From plan
