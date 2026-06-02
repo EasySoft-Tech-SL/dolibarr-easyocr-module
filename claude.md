@@ -93,6 +93,13 @@ easyocr/
 
 ## Historial de cambios
 
+### v2.5.3 — Persistencia del CODE OCR en la referencia de línea (Réf. produit fournisseur)
+- **Fix:** el `code` extraído por la IA ahora se guarda en `llx_facture_fourn_det.ref` (campo "Réf. produit fournisseur"). Antes solo se usaba para resolver/crear `fk_product` y se perdía en la línea (issue cliente AU PETRIN — Dolibarr 23.0.2 / Nouvelle-Calédonie).
+- `easyocrCreateInvoiceFromOCR()` en `lib/easyocr.lib.php`: la llamada a `FactureFournisseur::addline()` se amplía de 14 a 21 argumentos posicionales para pasar el `code` como `$ref_supplier` (parámetro 21). Posición verificada estable en el core Dolibarr v14→v23; el arg 17 `array_options` (`array()`) está protegido por `is_array()` en el core → sin riesgo en PHP 8.
+- El `code` se captura ANTES del gate `skipProductMatch`, así se conserva también en líneas service/discount/surcharge/other (no solo product).
+- Log del fallo de auto-creación de producto (antes silencioso) + `ref` añadido al `dol_syslog` de cada línea para trazabilidad.
+- Retrocompatible: sin `code`, se pasa cadena vacía (comportamiento anterior intacto).
+
 ### v2.5.2 — Verdad operativa `/me` (sub overdue / bloqueos)
 - Lectura de `status.can_process`, `status.block_code`, `status.block_message`, `subscription.is_overdue`, `quota.pages_available_now` introducidos por `easyOCR-PANEL` v2.5+.
 - Botón "AI Extract" en `extract.php` se renderiza `disabled` con banner cuando hay bloqueo. Pantalla LOCKED en `batch.php`. Banner + filas nuevas en `admin/plan.php`.

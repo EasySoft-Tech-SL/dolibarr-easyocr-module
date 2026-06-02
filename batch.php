@@ -1680,7 +1680,7 @@ if (!$fromMenu) {
     if (taxId) {
       // First need to find supplier by CIF
       jQuery.ajax({
-        url: '<?php echo DOL_URL_ROOT . '/custom/easyocr/ajax/ajax_easyocr.php'; ?>',
+        url: '<?php echo dol_buildpath('/easyocr/ajax/ajax_easyocr.php', 1); ?>',
         type: 'POST',
         data: {
           action: 'findSupplierByCIF',
@@ -1711,7 +1711,7 @@ if (!$fromMenu) {
 
   function eoBatchDoInvoiceCheck(docNum, ajaxData, statusEl, actionEl, data) {
     jQuery.ajax({
-      url: '<?php echo DOL_URL_ROOT . '/custom/easyocr/ajax/ajax_easyocr.php'; ?>',
+      url: '<?php echo dol_buildpath('/easyocr/ajax/ajax_easyocr.php', 1); ?>',
       type: 'POST',
       data: ajaxData,
       success: function(res) {

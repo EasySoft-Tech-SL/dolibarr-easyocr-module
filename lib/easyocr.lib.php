@@ -704,6 +704,9 @@ function easyocrCreateInvoiceFromOCR($params, $userObj = null)
 			$unit_price = isset($item['unit_price']) && $item['unit_price'] !== '' ? easyocrParseNumber($item['unit_price']) : 0;
 			$discount = !empty($item['discount_percent']) ? floatval($item['discount_percent']) : 0;
 			$itemType = isset($item['item_type']) ? strtolower(trim($item['item_type'])) : '';
+			// Réf. produit fournisseur (CODE OCR): capturar SIEMPRE, antes del gate de producto,
+			// para conservarla también en líneas service/discount/surcharge/other. Se persiste abajo en addline().
+			$lineRef = isset($item['code']) ? trim((string) $item['code']) : '';
 
 			// Tax handling — parse IVA rate from AI data
 			$tva_rate = 0;
@@ -755,10 +758,10 @@ function easyocrCreateInvoiceFromOCR($params, $userObj = null)
 			// Product matching by code/ref — skip for discount/surcharge/other types
 			$fk_product = 0;
 			$skipProductMatch = in_array($itemType, ['discount', 'surcharge', 'other', '']);
-			if (!$skipProductMatch && !empty($item['code'])) {
+			if (!$skipProductMatch && $lineRef !== '') {
 				$sqlProd = "SELECT rowid FROM " . MAIN_DB_PREFIX . "product";
-				$sqlProd .= " WHERE (ref = '" . $db->escape($item['code']) . "'";
-				$sqlProd .= " OR barcode = '" . $db->escape($item['code']) . "')";
+				$sqlProd .= " WHERE (ref = '" . $db->escape($lineRef) . "'";
+				$sqlProd .= " OR barcode = '" . $db->escape($lineRef) . "')";
 				$sqlProd .= " AND entity IN (" . getEntity('product') . ") LIMIT 1";
 				$resProd = $db->query($sqlProd);
 				if ($resProd && $db->num_rows($resProd) > 0) {
@@ -766,7 +769,7 @@ function easyocrCreateInvoiceFromOCR($params, $userObj = null)
 				} else {
 					// Auto-create product if not found
 					$newProduct = new Product($db);
-					$newProduct->ref = $item['code'];
+					$newProduct->ref = $lineRef;
 					$newProduct->label = $desc;
 					$newProduct->status = 1;        // On sale
 					$newProduct->status_buy = 1;     // On purchase
@@ -782,6 +785,8 @@ function easyocrCreateInvoiceFromOCR($params, $userObj = null)
 					$prodId = $newProduct->create($userObj);
 					if ($prodId > 0) {
 						$fk_product = $prodId;
+					} else {
+						dol_syslog("EasyOCR: product auto-create failed for code='$lineRef' (line #$lineIndex): " . $newProduct->error, LOG_WARNING);
 					}
 				}
 			}
@@ -792,7 +797,7 @@ function easyocrCreateInvoiceFromOCR($params, $userObj = null)
 				$line_type = 1;
 			}
 
-			dol_syslog("EasyOCR addline #$lineIndex: desc=$desc, pu=$unit_price, tva=$tva_rate, ltx1=$localtax1_rate, ltx2=$localtax2_rate, qty=$qty, fk_prod=$fk_product, disc=$discount, type=$line_type", LOG_DEBUG);
+			dol_syslog("EasyOCR addline #$lineIndex: ref=$lineRef, desc=$desc, pu=$unit_price, tva=$tva_rate, ltx1=$localtax1_rate, ltx2=$localtax2_rate, qty=$qty, fk_prod=$fk_product, disc=$discount, type=$line_type", LOG_DEBUG);
 
 			$addLineResult = $facture->addline(
 				$desc,              // description
@@ -808,7 +813,14 @@ function easyocrCreateInvoiceFromOCR($params, $userObj = null)
 				0,                   // ventil
 				'',                  // info_bits
 				'HT',               // price_base_type
-				$line_type           // type (0=product, 1=service)
+				$line_type,          // 14 type (0=product, 1=service)
+				-1,                  // 15 rang
+				false,               // 16 notrigger
+				array(),             // 17 array_options (is_array()-guarded en core v14-v23 -> seguro)
+				null,                // 18 fk_unit
+				0,                   // 19 origin_id
+				0,                   // 20 pu_devise (pu_ht_devise en v10/v14; posicional, valor sin cambio)
+				$lineRef             // 21 ref_supplier -> llx_facture_fourn_det.ref ("Réf. produit fournisseur")
 			);
 
 			if ($addLineResult < 0) {
