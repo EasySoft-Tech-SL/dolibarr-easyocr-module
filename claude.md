@@ -2,7 +2,7 @@
 
 ## Información del módulo
 - **Nombre:** EasyOcr
-- **Versión:** 2.5.2
+- **Versión:** 2.5.4
 - **Número módulo:** 402020
 - **Empresa:** EasySoft Tech S.L. (info@easysoft.es)
 - **Autor:** Alberto Luque Rivas (aluquerivasdev@gmail.com)
@@ -92,6 +92,13 @@ easyocr/
 ---
 
 ## Historial de cambios
+
+### v2.5.4 — Rattachement de producto por referencia de proveedor (ref_fourn)
+- **Fix:** `fk_product` ahora se resuelve buscando el `code` OCR en `llx_product_fournisseur_price.ref_fourn` filtrado por `fk_soc` (el `code` ES la referencia del proveedor). Antes solo se buscaba en `product.ref`/`barcode`, por lo que productos existentes cuya ref interna difiere del `code` (p.ej. `S057` con `ref_fourn` `04810007`) nunca se enlazaban y `fk_product` quedaba `null` (issue cliente AU PETRIN — factura PROV853).
+- Nuevo orden de matching en `easyocrCreateInvoiceFromOCR()`: **1)** `product_fournisseur_price.ref_fourn` por proveedor → **2)** `product.ref`/`barcode` (fallback) → **3)** auto-creación.
+- **Auto-creación de productos** ahora es opt-in mediante el nuevo ajuste `EASYOCR_AI_AUTOCREATE_PRODUCT` (**OFF por defecto**) para no ensuciar el catálogo con duplicados. Toggle en `admin/setup.php` + 2 claves traducidas a los 8 idiomas (ca/de/en/es/fr/gl/it/pt).
+- Log de trazabilidad cuando una línea empareja por `ref_fourn`.
+- Retrocompatible: el fallback por `product.ref`/`barcode` se mantiene; con el toggle OFF, las líneas sin coincidencia quedan como línea libre (con su `ref` ya persistida desde 2.5.3). ⚠️ Cambio de comportamiento: la auto-creación, que antes era implícita, ahora requiere activar el ajuste.
 
 ### v2.5.3 — Persistencia del CODE OCR en la referencia de línea (Réf. produit fournisseur)
 - **Fix:** el `code` extraído por la IA ahora se guarda en `llx_facture_fourn_det.ref` (campo "Réf. produit fournisseur"). Antes solo se usaba para resolver/crear `fk_product` y se perdía en la línea (issue cliente AU PETRIN — Dolibarr 23.0.2 / Nouvelle-Calédonie).

@@ -755,19 +755,39 @@ function easyocrCreateInvoiceFromOCR($params, $userObj = null)
 				$unit_price = ($lineTotal - $lineTaxAmt) / ($qty > 0 ? $qty : 1);
 			}
 
-			// Product matching by code/ref — skip for discount/surcharge/other types
+			// Product matching — skip for discount/surcharge/other types.
+			// The OCR "code" is the SUPPLIER's article reference, so fk_product is resolved in order:
+			//   1) supplier ref (product_fournisseur_price.ref_fourn) for this supplier -> links the EXISTING product
+			//   2) internal product ref / barcode                                       -> in case the code is the internal ref
+			//   3) auto-create product                                                  -> opt-in only (EASYOCR_AI_AUTOCREATE_PRODUCT), OFF by default
 			$fk_product = 0;
 			$skipProductMatch = in_array($itemType, ['discount', 'surcharge', 'other', '']);
 			if (!$skipProductMatch && $lineRef !== '') {
-				$sqlProd = "SELECT rowid FROM " . MAIN_DB_PREFIX . "product";
-				$sqlProd .= " WHERE (ref = '" . $db->escape($lineRef) . "'";
-				$sqlProd .= " OR barcode = '" . $db->escape($lineRef) . "')";
-				$sqlProd .= " AND entity IN (" . getEntity('product') . ") LIMIT 1";
-				$resProd = $db->query($sqlProd);
-				if ($resProd && $db->num_rows($resProd) > 0) {
-					$fk_product = $db->fetch_object($resProd)->rowid;
-				} else {
-					// Auto-create product if not found
+				// 1) PRIMARY: supplier reference (ref_fourn) registered for this supplier
+				$sqlPfp = "SELECT fk_product FROM " . MAIN_DB_PREFIX . "product_fournisseur_price";
+				$sqlPfp .= " WHERE fk_soc = " . ((int) $fk_soc);
+				$sqlPfp .= " AND ref_fourn = '" . $db->escape($lineRef) . "'";
+				$sqlPfp .= " AND entity IN (" . getEntity('product') . ") LIMIT 1";
+				$resPfp = $db->query($sqlPfp);
+				if ($resPfp && $db->num_rows($resPfp) > 0) {
+					$fk_product = (int) $db->fetch_object($resPfp)->fk_product;
+					dol_syslog("EasyOCR: line #$lineIndex matched fk_product=$fk_product by ref_fourn='$lineRef' (fk_soc=$fk_soc)", LOG_DEBUG);
+				}
+
+				// 2) FALLBACK: internal product ref / barcode (code may be the internal ref)
+				if ($fk_product == 0) {
+					$sqlProd = "SELECT rowid FROM " . MAIN_DB_PREFIX . "product";
+					$sqlProd .= " WHERE (ref = '" . $db->escape($lineRef) . "'";
+					$sqlProd .= " OR barcode = '" . $db->escape($lineRef) . "')";
+					$sqlProd .= " AND entity IN (" . getEntity('product') . ") LIMIT 1";
+					$resProd = $db->query($sqlProd);
+					if ($resProd && $db->num_rows($resProd) > 0) {
+						$fk_product = (int) $db->fetch_object($resProd)->rowid;
+					}
+				}
+
+				// 3) AUTO-CREATE (opt-in, OFF by default): only when no existing product matched
+				if ($fk_product == 0 && !empty($conf->global->EASYOCR_AI_AUTOCREATE_PRODUCT)) {
 					$newProduct = new Product($db);
 					$newProduct->ref = $lineRef;
 					$newProduct->label = $desc;

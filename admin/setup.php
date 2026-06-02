@@ -87,6 +87,9 @@ if ($action == 'update') {
 	$res = dolibarr_set_const($db, 'EASYOCR_INVOICE_DRAFT', GETPOST('EASYOCR_INVOICE_DRAFT', 'int'), 'chaine', 0, '', $conf->entity);
 	if (!($res > 0)) $error++;
 
+	$res = dolibarr_set_const($db, 'EASYOCR_AI_AUTOCREATE_PRODUCT', GETPOST('EASYOCR_AI_AUTOCREATE_PRODUCT', 'int'), 'chaine', 0, '', $conf->entity);
+	if (!($res > 0)) $error++;
+
 	// AI OCR settings
 	$res = dolibarr_set_const($db, 'EASYOCR_AI_ENABLED', GETPOST('EASYOCR_AI_ENABLED', 'int'), 'chaine', 0, '', $conf->entity);
 	if (!($res > 0)) $error++;
@@ -166,6 +169,15 @@ print '<td>'.$langs->trans("EasyOcrInvoiceDraft").'</td>';
 print '<td>';
 print $form->selectyesno('EASYOCR_INVOICE_DRAFT', !empty($conf->global->EASYOCR_INVOICE_DRAFT) ? $conf->global->EASYOCR_INVOICE_DRAFT : 0, 1);
 print '<br><span class="opacitymedium small">'.$langs->trans("EasyOcrInvoiceDraftDesc").'</span>';
+print '</td>';
+print '</tr>';
+
+// Auto-create products from supplier reference
+print '<tr class="oddeven">';
+print '<td>'.$langs->trans("EasyOcrAutoCreateProduct").'</td>';
+print '<td>';
+print $form->selectyesno('EASYOCR_AI_AUTOCREATE_PRODUCT', !empty($conf->global->EASYOCR_AI_AUTOCREATE_PRODUCT) ? $conf->global->EASYOCR_AI_AUTOCREATE_PRODUCT : 0, 1);
+print '<br><span class="opacitymedium small">'.$langs->trans("EasyOcrAutoCreateProductDesc").'</span>';
 print '</td>';
 print '</tr>';
 
