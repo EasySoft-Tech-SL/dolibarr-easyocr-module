@@ -84,7 +84,7 @@ class modEasyocr extends DolibarrModules
 		$this->editor_url = 'https://easysoft.es';
 
 		// Possible values for version are: 'development', 'experimental', 'dolibarr' or version
-		$this->version = '2.5.4';
+		$this->version = '2.5.5';
 		$this->url_last_version = 'https://sdl.easysoft.es/getLastModuleVersion?module=easyocr&for_url_last_version=1&version=' . $this->version;
 
 

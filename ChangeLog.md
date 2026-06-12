@@ -5,6 +5,13 @@ Todos los cambios notables de EasyOcr se documentarán en este archivo.
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/),
 y este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 
+## [2.5.5] - 2026-06-11
+
+### Corregido — CSS/JS con doble ruta en instalaciones sobre subcarpeta
+- En instalaciones donde Dolibarr cuelga de una **subcarpeta** (p. ej. `https://host/vecamarti23/`), `extract.php` y `batch.php` cargaban su CSS/JS con la ruta **duplicada** (`/vecamarti23/vecamarti23/custom/easyocr/...`) → **404**, página sin estilos ni JS (visor PDF / batch inservibles).
+- **Causa:** ambos pasaban a `llxHeader` los assets ya resueltos con `dol_buildpath(...,1)`, y el core (`top_htmlhead`) **vuelve a aplicar `dol_buildpath`** a cada entrada de los arrays css/js → segundo prefijo. En instalación raíz (`DOL_URL_ROOT` vacío) no se notaba; solo en subcarpeta.
+- **Arreglo:** los arrays `$arrayofjs`/`$arrayofcss` pasan ahora la **ruta relativa** (`/easyocr/...`) y dejan que el core la resuelva **una sola vez** (relativa al host). Correcto en raíz, subcarpeta y `easydoli`. (`invoices.php`/`templates.php` ya usaban arrays vacíos; no afectados.)
+
 ## [2.5.2] - 2026-05-04
 
 ### Añadido — Verdad operativa de la API `/me`

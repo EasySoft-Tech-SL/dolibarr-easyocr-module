@@ -144,11 +144,14 @@ $action = GETPOST('action', 'aZ09');
 // ─── Page output ──────────────────────────────────────────────────────────
 $form = new Form($db);
 
+// Pass RELATIVE paths: llxHeader/top_htmlhead resolves them with dol_buildpath(...,1) itself.
+// Pre-resolving here would make the core resolve a 2nd time -> double prefix (/sub/sub/custom/...)
+// and a 404 on subfolder installs.
 $arrayofjs = array(
-  dol_buildpath('/easyocr/js/scripts.js.php', 1),
+  '/easyocr/js/scripts.js.php',
 );
 $arrayofcss = array(
-  dol_buildpath('/easyocr/css/easyocr.css', 1),
+  '/easyocr/css/easyocr.css',
 );
 
 // Batch submission is now 100% AJAX — no server-side POST messages needed
