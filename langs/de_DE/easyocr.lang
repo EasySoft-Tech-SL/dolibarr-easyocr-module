@@ -285,6 +285,13 @@ EasyOcrInvoiceDraft = Rechnungen als Entwurf erstellen
 EasyOcrInvoiceDraftDesc = Wenn aktiviert, werden erstellte Rechnungen im Entwurfsstatus belassen, anstatt automatisch validiert zu werden
 EasyOcrAutoCreateProduct = Produkte automatisch anlegen
 EasyOcrAutoCreateProductDesc = Wenn der OCR-Code zu keinem vorhandenen Produkt oder keiner Lieferantenreferenz passt, ein neues Produkt anlegen. Standardmäßig deaktiviert: Zeilen werden über die Lieferantenreferenz (ref_fourn) mit vorhandenen Produkten verknüpft; unbekannte Artikel bleiben Freitextzeilen.
+EasyOcrWebhookPaymentConfig = Automatische Zahlung (Webhook)
+EasyOcrWebhookMarkPaid = Webhook-Rechnungen als bezahlt markieren
+EasyOcrWebhookMarkPaidDesc = Wenn aktiviert, werden über den Webhook erstellte Rechnungen mit ihrem Gesamtbetrag als bezahlt verbucht. Erfordert, dass Rechnungen validiert (nicht Entwurf) erstellt werden und ein Bankkonto angegeben ist.
+EasyOcrWebhookBankAccount = Bankkonto der Zahlung
+EasyOcrWebhookBankAccountDesc = Konto, auf dem die automatische Webhook-Zahlung verbucht wird.
+EasyOcrWebhookPaymentType = Zahlungsart
+EasyOcrWebhookPaymentTypeDesc = Zahlungsart für die automatische Webhook-Zahlung. Kann pro Stapel mit ?pay=1&bank_id=N&payment_type=N in der Webhook-URL überschrieben werden.
 EasyOcrAIConfiguration = KI-OCR Konfiguration
 EasyOcrAIEnabled = KI-OCR aktivieren
 EasyOcrAIUrl = OCR-Service URL

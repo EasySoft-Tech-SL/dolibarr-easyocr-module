@@ -303,6 +303,13 @@ EasyOcrInvoiceDraft = Create invoices as draft
 EasyOcrInvoiceDraftDesc = If enabled, created invoices will be left in draft status instead of being automatically validated
 EasyOcrAutoCreateProduct = Auto-create products
 EasyOcrAutoCreateProductDesc = When the OCR code matches no existing product or supplier reference, create a new product. Off by default: lines are linked to existing products by their supplier reference (ref_fourn); unknown items stay as free-text lines.
+EasyOcrWebhookPaymentConfig = Automatic payment (Webhook)
+EasyOcrWebhookMarkPaid = Mark webhook invoices as paid
+EasyOcrWebhookMarkPaidDesc = When enabled, invoices created by the webhook are registered as paid for their full amount. Requires invoices to be created validated (not draft) and a bank account to be set.
+EasyOcrWebhookBankAccount = Payment bank account
+EasyOcrWebhookBankAccountDesc = Account where the webhook auto-payment is recorded.
+EasyOcrWebhookPaymentType = Payment method
+EasyOcrWebhookPaymentTypeDesc = Payment method used for the webhook auto-payment. Can be overridden per batch with ?pay=1&bank_id=N&payment_type=N in the webhook URL.
 EasyOcrAIConfiguration = AI OCR Configuration
 EasyOcrAIEnabled = Enable AI OCR
 EasyOcrAIUrl = OCR service URL

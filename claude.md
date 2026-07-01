@@ -1,8 +1,8 @@
-﻿# EasyOcr - Módulo Dolibarr v16
+# EasyOcr - Módulo Dolibarr v16
 
 ## Información del módulo
 - **Nombre:** EasyOcr
-- **Versión:** 2.5.4
+- **Versión:** 2.5.6
 - **Número módulo:** 402020
 - **Empresa:** EasySoft Tech S.L. (info@easysoft.es)
 - **Autor:** Alberto Luque Rivas (aluquerivasdev@gmail.com)
@@ -92,6 +92,16 @@ easyocr/
 ---
 
 ## Historial de cambios
+
+### v2.5.6 — Pago automático de facturas creadas por el webhook
+- **Feat:** el webhook (`webhook_batch.php`) puede ahora **marcar la factura como pagada**, registrando el pago en una **cuenta bancaria** y con un **método de pago**. Antes los parámetros `create_payment` / `payment_bank_id` / `payment_type_id` se pasaban vacíos/en cero, por lo que la factura se creaba pero nunca se pagaba (la lógica ya existía en `easyocrCreateInvoiceFromOCR()`, solo faltaba cablearla desde el webhook).
+- **Doble fuente de configuración (la URL tiene prioridad):**
+  1. **Config del módulo** (`admin/setup.php`, sección "Pago automático (Webhook)"): `EASYOCR_WEBHOOK_MARK_PAID` (toggle), `EASYOCR_WEBHOOK_BANK_ID` (selector de cuenta bancaria), `EASYOCR_WEBHOOK_PAYMENT_TYPE` (selector de método de pago).
+  2. **Parámetros de URL** por lote: `?pay=1&bank_id=N&payment_type=N` sobrescriben la config global.
+- **Requisito:** el pago solo se registra si la factura se crea **validada** (no borrador). Si `EASYOCR_INVOICE_DRAFT=1`, el pago se omite y se deja aviso en el log del webhook. También se avisa si se pide marcar pagada sin cuenta bancaria.
+- Nuevas líneas de trazabilidad en el log del webhook (`create_payment`, `bank_id`, `payment_type`) y en `DEBUG-PARAMS`.
+- 7 claves nuevas traducidas a los 8 idiomas (ca/de/en/es/fr/gl/it/pt). Selectores nativos Dolibarr `select_comptes` / `select_types_paiements` (este último con `nooutput=1` para evitar imprimir el contador de cuentas).
+- Retrocompatible: con el toggle OFF y sin parámetros de URL, el comportamiento anterior (factura sin pago) se mantiene intacto.
 
 ### v2.5.4 — Rattachement de producto por referencia de proveedor (ref_fourn)
 - **Fix:** `fk_product` ahora se resuelve buscando el `code` OCR en `llx_product_fournisseur_price.ref_fourn` filtrado por `fk_soc` (el `code` ES la referencia del proveedor). Antes solo se buscaba en `product.ref`/`barcode`, por lo que productos existentes cuya ref interna difiere del `code` (p.ej. `S057` con `ref_fourn` `04810007`) nunca se enlazaban y `fk_product` quedaba `null` (issue cliente AU PETRIN — factura PROV853).

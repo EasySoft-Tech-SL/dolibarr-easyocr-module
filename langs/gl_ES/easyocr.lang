@@ -285,6 +285,13 @@ EasyOcrInvoiceDraft = Crear facturas como borrador
 EasyOcrInvoiceDraftDesc = Se se activa, as facturas creadas deixaranse en estado borrador en vez de validarse automaticamente
 EasyOcrAutoCreateProduct = Crear produtos automaticamente
 EasyOcrAutoCreateProductDesc = Cando o código OCR non coincide con ningún produto nin referencia de provedor existente, crea un produto novo. Desactivado por defecto: as liñas enlázanse a produtos existentes pola referencia de provedor (ref_fourn); os artigos descoñecidos quedan como liña libre.
+EasyOcrWebhookPaymentConfig = Pagamento automático (Webhook)
+EasyOcrWebhookMarkPaid = Marcar como pagadas as facturas do webhook
+EasyOcrWebhookMarkPaidDesc = Se se activa, as facturas creadas polo webhook rexístranse como pagadas polo seu importe total. Require que as facturas se creen validadas (non borrador) e que se indique unha conta bancaria.
+EasyOcrWebhookBankAccount = Conta bancaria do pagamento
+EasyOcrWebhookBankAccountDesc = Conta onde se rexistra o pagamento automático xerado polo webhook.
+EasyOcrWebhookPaymentType = Método de pagamento
+EasyOcrWebhookPaymentTypeDesc = Método de pagamento aplicado ao pagamento automático do webhook. Pódese sobrescribir por lote con ?pay=1&bank_id=N&payment_type=N na URL do webhook.
 EasyOcrAIConfiguration = Configuración IA OCR
 EasyOcrAIEnabled = Habilitar IA OCR
 EasyOcrAIUrl = URL do servizo OCR

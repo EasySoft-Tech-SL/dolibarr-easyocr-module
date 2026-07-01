@@ -5,6 +5,24 @@ Todos los cambios notables de EasyOcr se documentarán en este archivo.
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/),
 y este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 
+## [2.5.6] - 2026-07-01
+
+### Añadido — Pago automático de facturas creadas por el webhook
+- El receptor `webhook_batch.php` puede ahora **marcar como pagada** la factura que crea, registrando el pago en una **cuenta bancaria** y con un **método de pago** concretos (con su asiento en el libro de banco vía `addPaymentToBank`). La lógica ya existía en `easyocrCreateInvoiceFromOCR()`; hasta ahora el webhook pasaba `create_payment`/`payment_bank_id`/`payment_type_id` vacíos, por lo que la factura se creaba pero nunca se pagaba.
+- **Doble fuente de configuración (la URL tiene prioridad):**
+  - **Config del módulo** (`admin/setup.php` → nueva sección "Pago automático (Webhook)"): `EASYOCR_WEBHOOK_MARK_PAID` (Sí/No), `EASYOCR_WEBHOOK_BANK_ID` (selector de cuenta bancaria), `EASYOCR_WEBHOOK_PAYMENT_TYPE` (selector de método de pago).
+  - **Parámetros de URL** por lote que sobrescriben la config: `?pay=1&bank_id=N&payment_type=N`.
+- **Trazabilidad**: nuevas líneas en el log del webhook (`create_payment`, `bank_id`, `payment_type`) y en `DEBUG-PARAMS`. Se registra un aviso explícito cuando se pide marcar pagada pero no hay cuenta bancaria, o cuando el módulo está configurado para crear borradores (`EASYOCR_INVOICE_DRAFT=1`), caso en el que el pago no puede registrarse.
+
+### Requisito
+- El pago **solo se registra si la factura se crea validada** (no borrador). Con `EASYOCR_INVOICE_DRAFT=1` el pago se omite y queda constancia en el log.
+
+### Traducciones
+- **7 claves nuevas en los 8 idiomas** (ca_ES, de_DE, en_US, es_ES, fr_FR, gl_ES, it_IT, pt_PT): `EasyOcrWebhookPaymentConfig`, `EasyOcrWebhookMarkPaid(+Desc)`, `EasyOcrWebhookBankAccount(+Desc)`, `EasyOcrWebhookPaymentType(+Desc)`.
+
+### Compatibilidad
+- Retrocompatible: con el ajuste OFF y sin parámetros de URL, el comportamiento previo (factura sin pago) se mantiene intacto.
+
 ## [2.5.5] - 2026-06-11
 
 ### Corregido — CSS/JS con doble ruta en instalaciones sobre subcarpeta

@@ -90,6 +90,16 @@ if ($action == 'update') {
 	$res = dolibarr_set_const($db, 'EASYOCR_AI_AUTOCREATE_PRODUCT', GETPOST('EASYOCR_AI_AUTOCREATE_PRODUCT', 'int'), 'chaine', 0, '', $conf->entity);
 	if (!($res > 0)) $error++;
 
+	// Webhook auto-payment settings
+	$res = dolibarr_set_const($db, 'EASYOCR_WEBHOOK_MARK_PAID', GETPOST('EASYOCR_WEBHOOK_MARK_PAID', 'int'), 'chaine', 0, '', $conf->entity);
+	if (!($res > 0)) $error++;
+
+	$res = dolibarr_set_const($db, 'EASYOCR_WEBHOOK_BANK_ID', GETPOST('EASYOCR_WEBHOOK_BANK_ID', 'int'), 'chaine', 0, '', $conf->entity);
+	if (!($res > 0)) $error++;
+
+	$res = dolibarr_set_const($db, 'EASYOCR_WEBHOOK_PAYMENT_TYPE', GETPOST('EASYOCR_WEBHOOK_PAYMENT_TYPE', 'int'), 'chaine', 0, '', $conf->entity);
+	if (!($res > 0)) $error++;
+
 	// AI OCR settings
 	$res = dolibarr_set_const($db, 'EASYOCR_AI_ENABLED', GETPOST('EASYOCR_AI_ENABLED', 'int'), 'chaine', 0, '', $conf->entity);
 	if (!($res > 0)) $error++;
@@ -178,6 +188,46 @@ print '<td>'.$langs->trans("EasyOcrAutoCreateProduct").'</td>';
 print '<td>';
 print $form->selectyesno('EASYOCR_AI_AUTOCREATE_PRODUCT', !empty($conf->global->EASYOCR_AI_AUTOCREATE_PRODUCT) ? $conf->global->EASYOCR_AI_AUTOCREATE_PRODUCT : 0, 1);
 print '<br><span class="opacitymedium small">'.$langs->trans("EasyOcrAutoCreateProductDesc").'</span>';
+print '</td>';
+print '</tr>';
+
+print '</table>';
+print '</div>';
+
+print '<br>';
+
+// --- Webhook auto-payment configuration ---
+print '<div class="div-table-responsive-no-min">';
+print '<table class="noborder centpercent">';
+
+print '<tr class="liste_titre">';
+print '<td colspan="2">'.$langs->trans("EasyOcrWebhookPaymentConfig").'</td>';
+print '</tr>';
+
+// Mark invoices created via webhook as paid
+print '<tr class="oddeven">';
+print '<td>'.$langs->trans("EasyOcrWebhookMarkPaid").'</td>';
+print '<td>';
+print $form->selectyesno('EASYOCR_WEBHOOK_MARK_PAID', !empty($conf->global->EASYOCR_WEBHOOK_MARK_PAID) ? $conf->global->EASYOCR_WEBHOOK_MARK_PAID : 0, 1);
+print '<br><span class="opacitymedium small">'.$langs->trans("EasyOcrWebhookMarkPaidDesc").'</span>';
+print '</td>';
+print '</tr>';
+
+// Bank account for the auto-payment
+print '<tr class="oddeven">';
+print '<td>'.$langs->trans("EasyOcrWebhookBankAccount").'</td>';
+print '<td>';
+print $form->select_comptes(!empty($conf->global->EASYOCR_WEBHOOK_BANK_ID) ? $conf->global->EASYOCR_WEBHOOK_BANK_ID : '', 'EASYOCR_WEBHOOK_BANK_ID', 0, '', 1, '', 0, '', 1);
+print '<br><span class="opacitymedium small">'.$langs->trans("EasyOcrWebhookBankAccountDesc").'</span>';
+print '</td>';
+print '</tr>';
+
+// Payment method for the auto-payment
+print '<tr class="oddeven">';
+print '<td>'.$langs->trans("EasyOcrWebhookPaymentType").'</td>';
+print '<td>';
+print $form->select_types_paiements(!empty($conf->global->EASYOCR_WEBHOOK_PAYMENT_TYPE) ? $conf->global->EASYOCR_WEBHOOK_PAYMENT_TYPE : '', 'EASYOCR_WEBHOOK_PAYMENT_TYPE', '', 0, 1);
+print '<br><span class="opacitymedium small">'.$langs->trans("EasyOcrWebhookPaymentTypeDesc").'</span>';
 print '</td>';
 print '</tr>';
 

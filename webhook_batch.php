@@ -351,6 +351,34 @@ if ($_condEvent && $_condDoc && $_condStat) {
 			$totals   = isset($structuredData['totals']) ? $structuredData['totals'] : array();
 			$payment  = isset($structuredData['payment']) ? $structuredData['payment'] : array();
 
+			// ── Resolve payment settings (module config + URL override) ─────
+			// Marks the invoice as paid, registers the payment on a bank
+			// account and sets the payment method. Two sources, URL wins:
+			//   1) Module config:  EASYOCR_WEBHOOK_MARK_PAID (0/1),
+			//      EASYOCR_WEBHOOK_BANK_ID (int), EASYOCR_WEBHOOK_PAYMENT_TYPE (int)
+			//   2) URL query:      ?pay=1&bank_id=N&payment_type=N  (per-batch override)
+			// NOTE: the payment is only created when the invoice is VALIDATED
+			// (create_payment gate in easyocrCreateInvoiceFromOCR). If the module
+			// creates drafts (EASYOCR_INVOICE_DRAFT=1), no payment is registered.
+			$cfgMarkPaid = !empty($conf->global->EASYOCR_WEBHOOK_MARK_PAID) ? 1 : 0;
+			$cfgBankId   = !empty($conf->global->EASYOCR_WEBHOOK_BANK_ID) ? (int) $conf->global->EASYOCR_WEBHOOK_BANK_ID : 0;
+			$cfgPayType  = !empty($conf->global->EASYOCR_WEBHOOK_PAYMENT_TYPE) ? (int) $conf->global->EASYOCR_WEBHOOK_PAYMENT_TYPE : 0;
+
+			$whMarkPaid = isset($_GET['pay']) ? ((int) $_GET['pay'] === 1 ? 1 : 0) : $cfgMarkPaid;
+			$whBankId   = (isset($_GET['bank_id']) && (int) $_GET['bank_id'] > 0) ? (int) $_GET['bank_id'] : $cfgBankId;
+			$whPayType  = (isset($_GET['payment_type']) && (int) $_GET['payment_type'] > 0) ? (int) $_GET['payment_type'] : $cfgPayType;
+
+			// If the invoice will be created as draft, the payment cannot be
+			// registered — surface it in the log instead of failing silently.
+			$whWillBeDraft = !empty($conf->global->EASYOCR_INVOICE_DRAFT);
+			if ($whMarkPaid && $whBankId <= 0) {
+				@file_put_contents($logFile, date('H:i:s') . " | WARNING: mark-as-paid requested but no bank account set (config EASYOCR_WEBHOOK_BANK_ID or ?bank_id=) — payment skipped\n", FILE_APPEND | LOCK_EX);
+			} elseif ($whMarkPaid && $whWillBeDraft) {
+				@file_put_contents($logFile, date('H:i:s') . " | WARNING: mark-as-paid requested but module creates DRAFT invoices (EASYOCR_INVOICE_DRAFT=1) — payment skipped until validated\n", FILE_APPEND | LOCK_EX);
+			} elseif ($whMarkPaid) {
+				@file_put_contents($logFile, date('H:i:s') . " | INFO: mark-as-paid ON (bank_id=$whBankId, payment_type=$whPayType)\n", FILE_APPEND | LOCK_EX);
+			}
+
 			$params = array(
 				'fk_soc'           => 0, // Auto-detect from tax_id
 				'ref_supplier'     => isset($structuredData['document_number']) ? $structuredData['document_number'] : '',
@@ -376,9 +404,9 @@ if ($_condEvent && $_condDoc && $_condStat) {
 				'invoice_type'     => 0,
 				'journal_code'     => '',
 				'import_key'       => 'easyocr-wh',
-				'create_payment'   => '',
-				'payment_bank_id'  => 0,
-				'payment_type_id'  => 0,
+				'create_payment'   => $whMarkPaid ? '1' : '',
+				'payment_bank_id'  => $whBankId,
+				'payment_type_id'  => $whPayType,
 			);
 
 			// ── Extract original PDF from base64 if present ─────────────────
@@ -430,6 +458,9 @@ if ($_condEvent && $_condDoc && $_condStat) {
 				'items_sample' => !empty($params['items']) ? array_slice($params['items'], 0, 2) : [],
 				'has_pdf' => !empty($params['file_tmp_path']),
 				'pdf_filename' => isset($params['file_name']) ? $params['file_name'] : '',
+				'create_payment' => $params['create_payment'],
+				'payment_bank_id' => $params['payment_bank_id'],
+				'payment_type_id' => $params['payment_type_id'],
 			), JSON_UNESCAPED_UNICODE) . "\n", FILE_APPEND | LOCK_EX);
 
 			// Check globals before calling

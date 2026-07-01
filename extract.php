@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 $res = 0;
 if (!$res && !empty($_SERVER["CONTEXT_DOCUMENT_ROOT"])) {

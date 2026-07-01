@@ -15,6 +15,7 @@
   - Precio total
 - **Plantillas Reutilizables**: Guarda plantillas de selección por proveedor
 - **Generación Automática**: Crea facturas de proveedor automáticamente en Dolibarr
+- **Automatización vía Webhook**: Crea facturas de proveedor automáticamente al recibir la notificación de la API, con opción de dejarlas **marcadas como pagadas** (cuenta bancaria y método de pago configurables)
 - **Gestión de Historial**: Visualiza todas las facturas procesadas
 - **Integración Completa**: Se integra perfectamente con el sistema de terceros y facturas de Dolibarr
 - **Multi-idioma**: Soporte para 8 idiomas (español, inglés, francés, alemán, italiano, portugués, catalán, gallego)
