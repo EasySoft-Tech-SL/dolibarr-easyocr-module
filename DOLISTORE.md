@@ -16,7 +16,7 @@
 ## Palabras Clave / Keywords
 
 ```
-pdf, ocr, ai ocr, artificial intelligence, invoice automation, batch processing, supplier invoices, webhook, easyocr, pdf.js, text extraction, invoice processing, automation, pdf viewer, facturas, extracción de texto, procesamiento de facturas, facturas de proveedor, automatización, visor pdf, lotes, batch, inteligencia artificial, instrucciones personalizadas, document processing, auto invoice, supplier management, PDF processing, API OCR, multicompany, multisociete, multiempresa, multi-entity
+pdf, ocr, ai ocr, artificial intelligence, invoice automation, batch processing, supplier invoices, webhook, easyocr, pdf.js, text extraction, invoice processing, automation, pdf viewer, facturas, extracción de texto, procesamiento de facturas, facturas de proveedor, automatización, visor pdf, lotes, batch, inteligencia artificial, instrucciones personalizadas, document processing, auto invoice, supplier management, PDF processing, API OCR, multicompany, multisociete, multiempresa, multi-entity, expense, expenses, gastos, ticket, receipt, mobile, pwa, scan, expense report, expense scanning, nota de gastos, note de frais, spesen, nota spese, photo, foto, camera, cámara, escanear gasto, escaneo de gastos, mobile expense, reembolso, reimbursement
 ```
 
 ## Categorías (máximo 3)
@@ -38,7 +38,7 @@ EasyOcr - Extracción de PDFs e Automatización de Facturas
 ## Descripción breve [es]
 
 ```
-Herramienta para extracción de datos de facturas PDF y generación automática de facturas de proveedor en Dolibarr con plantillas reutilizables.
+Herramienta para extracción de datos de facturas PDF, generación automática de facturas de proveedor y escaneo de tickets de gasto desde el móvil (PWA) en Dolibarr con plantillas reutilizables e IA.
 ```
 
 ## Descripción larga [es] (HTML)
@@ -49,6 +49,14 @@ Herramienta para extracción de datos de facturas PDF y generación automática 
 <p><strong>EasyOcr</strong> es el módulo Dolibarr que elimina la entrada manual de datos en facturas de proveedor. Sube el PDF, deja que la IA extraiga proveedor, NIF, líneas y totales, y Dolibarr crea la factura validada automáticamente. Sin teclear. Sin errores.</p>
 
 <p>Disponible en <strong>dos modos</strong>: el <strong>Modo Clásico</strong> es completamente gratuito e incluido en el módulo; el <strong>Modo IA</strong> ofrece un <strong>plan gratuito de 10 páginas/mes</strong> para probar sin compromisos, y planes de pago para mayor volumen — consulta todos los planes en <a href="https://easyocr.es" target="_blank"><strong>easyocr.es</strong></a>.</p>
+
+<h3>🆕 Novedades v2.6.0 — Escaneo de tickets de gasto desde el móvil (PWA)</h3>
+<ul>
+    <li>📱 <strong>App instalable (PWA)</strong>: El empleado fotografía un ticket desde su móvil, la IA extrae los datos y lo registra en Dolibarr como nota de gastos, factura de compra o pago diverso (configurable por empresa).</li>
+    <li>🎯 <strong>Diana contable configurable</strong>: Nota de gastos (con reembolso nativo), factura de proveedor o pago diverso. Con validación opcional desde el móvil.</li>
+    <li>📎 <strong>Foto del ticket adjunta</strong> al ECM y enlazada a la línea. Asociación a proyecto (fk_project).</li>
+    <li>🔒 <strong>Solo IA</strong>: Verificación de créditos antes de subir la foto. Sin plan activo se muestra pantalla de bloqueo.</li>
+</ul>
 
 <h3>Comparativa de modos</h3>
 <table>
@@ -61,6 +69,7 @@ Herramienta para extracción de datos de facturas PDF y generación automática 
 <tr><td>OCR por Inteligencia Artificial</td><td>❌</td><td>✅</td></tr>
 <tr><td>Procesamiento en lotes (hasta 200 PDFs)</td><td>❌</td><td>✅</td></tr>
 <tr><td>Creación automática de facturas vía webhook</td><td>❌</td><td>✅</td></tr>
+<tr><td>Escaneo de gastos desde el móvil (PWA)</td><td>❌</td><td>✅</td></tr>
 <tr><td>Alta automática de proveedores</td><td>❌</td><td>✅</td></tr>
 <tr><td>Instrucciones IA personalizadas por proveedor</td><td>❌</td><td>✅</td></tr>
 <tr><td>Auto-corrección de importes, fechas y referencias</td><td>❌</td><td>✅</td></tr>
@@ -149,7 +158,7 @@ EasyOcr - PDF Text Extraction and Invoice Automation
 ## Short Description [en]
 
 ```
-Tool for extracting data from PDF invoices and automatically generating supplier invoices in Dolibarr with reusable templates.
+Tool for extracting data from PDF invoices, automatically generating supplier invoices and scanning expense receipts from mobile (PWA) in Dolibarr with reusable templates and AI.
 ```
 
 ## Long Description [en] (HTML)
@@ -160,6 +169,14 @@ Tool for extracting data from PDF invoices and automatically generating supplier
 <p><strong>EasyOcr</strong> is the Dolibarr module that eliminates manual data entry for supplier invoices. Upload the PDF, let AI extract supplier, VAT number, line items and totals, and Dolibarr automatically creates the validated invoice. No typing. No errors.</p>
 
 <p>Available in <strong>two modes</strong>: <strong>Classic Mode</strong> is completely free and included in the module; <strong>AI Mode</strong> offers a <strong>free plan with 10 pages/month</strong> to try at no cost, plus paid plans for higher volumes — check all plans at <a href="https://easyocr.es" target="_blank"><strong>easyocr.es</strong></a>.</p>
+
+<h3>🆕 What's New in v2.6.0 — Mobile Expense Receipt Scanning (PWA)</h3>
+<ul>
+    <li>📱 <strong>Installable App (PWA)</strong>: Employee photographs a receipt from their phone, AI extracts the data and registers it in Dolibarr as an expense report, purchase invoice or miscellaneous payment (company-configurable).</li>
+    <li>🎯 <strong>Configurable accounting target</strong>: Expense report (with native reimbursement), supplier invoice or miscellaneous payment. Optional validation from the mobile.</li>
+    <li>📎 <strong>Receipt photo attached</strong> to the ECM and linked to the line. Project association (fk_project).</li>
+    <li>🔒 <strong>AI-only</strong>: Credit check before uploading the photo. Lock screen shown when no active plan.</li>
+</ul>
 
 <h3>Feature Comparison</h3>
 <table>
@@ -172,6 +189,7 @@ Tool for extracting data from PDF invoices and automatically generating supplier
 <tr><td>Artificial Intelligence OCR</td><td>❌</td><td>✅</td></tr>
 <tr><td>Batch processing (up to 200 PDFs)</td><td>❌</td><td>✅</td></tr>
 <tr><td>Automatic invoice creation via webhook</td><td>❌</td><td>✅</td></tr>
+<tr><td>Mobile expense scanning (PWA)</td><td>❌</td><td>✅</td></tr>
 <tr><td>Automatic supplier creation</td><td>❌</td><td>✅</td></tr>
 <tr><td>Custom AI instructions per supplier</td><td>❌</td><td>✅</td></tr>
 <tr><td>Auto-correction of amounts, dates &amp; refs</td><td>❌</td><td>✅</td></tr>
@@ -260,7 +278,7 @@ EasyOcr - OCR IA et Automatisation des Factures Fournisseur
 ## Description courte [fr]
 
 ```
-Automatisez le traitement des factures fournisseur dans Dolibarr grâce à l'OCR par IA. Mode classique gratuit (PDF.js) + mode IA avancé avec abonnement easyocr.es pour le traitement en lots et la création automatique de factures.
+Automatisez le traitement des factures fournisseur et le scan de tickets de dépenses depuis le mobile (PWA) dans Dolibarr grâce à l'OCR par IA. Mode classique gratuit (PDF.js) + mode IA avancé avec abonnement easyocr.es.
 ```
 
 ## Description longue [fr] (HTML)
@@ -271,6 +289,14 @@ Automatisez le traitement des factures fournisseur dans Dolibarr grâce à l'OCR
 <p><strong>EasyOcr</strong> est le module Dolibarr qui supprime la saisie manuelle des données sur les factures fournisseur. Importez le PDF, laissez l'IA extraire fournisseur, numéro TVA, lignes et totaux, et Dolibarr crée automatiquement la facture validée. Sans frappe. Sans erreurs.</p>
 
 <p>Disponible en <strong>deux modes</strong> : le <strong>Mode Classique</strong> est entièrement gratuit et inclus dans le module ; le <strong>Mode IA</strong> propose un <strong>plan gratuit de 10 pages/mois</strong> pour tester sans engagement, plus des plans payants pour les volumes plus importants — consultez tous les plans sur <a href="https://easyocr.es" target="_blank"><strong>easyocr.es</strong></a>.</p>
+
+<h3>🆕 Nouveautés v2.6.0 — Scan de tickets de dépenses depuis le mobile (PWA)</h3>
+<ul>
+    <li>📱 <strong>Application installable (PWA)</strong> : L'employé photographie un ticket depuis son mobile, l'IA extrait les données et l'enregistre dans Dolibarr en note de frais, facture d'achat ou paiement divers (configurable par l'entreprise).</li>
+    <li>🎯 <strong>Cible comptable configurable</strong> : Note de frais (avec remboursement natif), facture fournisseur ou paiement divers. Validation optionnelle depuis le mobile.</li>
+    <li>📎 <strong>Photo du ticket jointe</strong> à l'ECM et liée à la ligne. Association à un projet (fk_project).</li>
+    <li>🔒 <strong>IA uniquement</strong> : Vérification des crédits avant l'envoi de la photo. Écran de blocage sans plan actif.</li>
+</ul>
 
 <h3>Comparatif des modes</h3>
 <table>
@@ -283,6 +309,7 @@ Automatisez le traitement des factures fournisseur dans Dolibarr grâce à l'OCR
 <tr><td>OCR par Intelligence Artificielle</td><td>❌</td><td>✅</td></tr>
 <tr><td>Traitement en lots (jusqu'à 200 PDF)</td><td>❌</td><td>✅</td></tr>
 <tr><td>Création automatique de factures via webhook</td><td>❌</td><td>✅</td></tr>
+<tr><td>Scan de dépenses sur mobile (PWA)</td><td>❌</td><td>✅</td></tr>
 <tr><td>Création automatique du fournisseur</td><td>❌</td><td>✅</td></tr>
 <tr><td>Instructions IA personnalisées par fournisseur</td><td>❌</td><td>✅</td></tr>
 <tr><td>Auto-correction montants, dates et références</td><td>❌</td><td>✅</td></tr>
@@ -372,7 +399,7 @@ EasyOcr - KI-OCR und automatische Lieferantenrechnungen
 ## Kurzbeschreibung [de]
 
 ```
-Verarbeitung von Lieferantenrechnungen in Dolibarr mit KI-OCR. Kostenloser klassischer Modus (PDF.js) + erweiterter KI-Modus mit easyocr.es-Abonnement für vollautomatische Batch-Verarbeitung.
+Verarbeitung von Lieferantenrechnungen und Scannen von Spesenbelegen vom Handy (PWA) in Dolibarr mit KI-OCR. Kostenloser klassischer Modus (PDF.js) + erweiterter KI-Modus mit easyocr.es-Abonnement.
 ```
 
 ## Lange Beschreibung [de] (HTML)
@@ -383,6 +410,14 @@ Verarbeitung von Lieferantenrechnungen in Dolibarr mit KI-OCR. Kostenloser klass
 <p><strong>EasyOcr</strong> ist das Dolibarr-Modul, das die manuelle Dateneingabe bei Lieferantenrechnungen eliminiert. Laden Sie das PDF hoch, lassen Sie die KI Lieferant, Steuernummer, Positionen und Summen extrahieren — und Dolibarr erstellt die validierte Rechnung automatisch. Kein Tippen. Keine Fehler.</p>
 
 <p>Verfügbar in <strong>zwei Modi</strong>: Der <strong>Klassische Modus</strong> ist vollständig kostenlos und im Modul enthalten; der <strong>KI-Modus</strong> bietet einen <strong>kostenlosen Plan mit 10 Seiten/Monat</strong> zum risikofreien Testen, plus kostenpflichtige Pläne für höhere Volumen — alle Pläne auf <a href="https://easyocr.es" target="_blank"><strong>easyocr.es</strong></a> einsehen.</p>
+
+<h3>🆕 Neu in v2.6.0 — Spesenbelege vom Handy scannen (PWA)</h3>
+<ul>
+    <li>📱 <strong>Installierbare App (PWA)</strong>: Der Mitarbeiter fotografiert einen Beleg mit dem Handy, die KI extrahiert die Daten und erfasst ihn in Dolibarr als Spesenabrechnung, Eingangsrechnung oder sonstige Zahlung (vom Unternehmen konfigurierbar).</li>
+    <li>🎯 <strong>Konfigurierbares Buchungsziel</strong>: Spesenabrechnung (mit nativer Rückerstattung), Lieferantenrechnung oder sonstige Zahlung. Optionale Validierung vom Handy aus.</li>
+    <li>📎 <strong>Belegfoto angehängt</strong> an das ECM und mit der Zeile verknüpft. Projektzuordnung (fk_project).</li>
+    <li>🔒 <strong>Nur KI</strong>: Guthabenprüfung vor dem Hochladen des Fotos. Sperrbildschirm ohne aktiven Plan.</li>
+</ul>
 
 <h3>Funktionsvergleich</h3>
 <table>
@@ -395,6 +430,7 @@ Verarbeitung von Lieferantenrechnungen in Dolibarr mit KI-OCR. Kostenloser klass
 <tr><td>Künstliche Intelligenz OCR</td><td>❌</td><td>✅</td></tr>
 <tr><td>Batch-Verarbeitung (bis 200 PDFs)</td><td>❌</td><td>✅</td></tr>
 <tr><td>Automatische Rechnungserstellung per Webhook</td><td>❌</td><td>✅</td></tr>
+<tr><td>Spesenscan vom Handy (PWA)</td><td>❌</td><td>✅</td></tr>
 <tr><td>Automatische Lieferantenerstellung</td><td>❌</td><td>✅</td></tr>
 <tr><td>Benutzerdefinierte KI-Anweisungen pro Lieferant</td><td>❌</td><td>✅</td></tr>
 <tr><td>Autokorrektur Beträge, Daten und Referenzen</td><td>❌</td><td>✅</td></tr>
@@ -484,7 +520,7 @@ EasyOcr - OCR con IA e Automazione Fatture Fornitori
 ## Descrizione breve [it]
 
 ```
-Automatizza l'elaborazione delle fatture fornitori in Dolibarr con OCR basato su IA. Modalità classica gratuita (PDF.js) + modalità IA avanzata con abbonamento easyocr.es per l'elaborazione in batch e la creazione automatica di fatture.
+Automatizza l'elaborazione delle fatture fornitori e la scansione di scontrini dal mobile (PWA) in Dolibarr con OCR basato su IA. Modalità classica gratuita (PDF.js) + modalità IA avanzata con abbonamento easyocr.es.
 ```
 
 ## Descrizione lunga [it] (HTML)
@@ -495,6 +531,14 @@ Automatizza l'elaborazione delle fatture fornitori in Dolibarr con OCR basato su
 <p><strong>EasyOcr</strong> è il modulo Dolibarr che elimina l'inserimento manuale dei dati nelle fatture fornitori. Carica il PDF, lascia che l'IA estragga fornitore, partita IVA, righe e totali — e Dolibarr crea automaticamente la fattura validata. Senza digitare. Senza errori.</p>
 
 <p>Disponibile in <strong>due modalità</strong>: la <strong>Modalità Classica</strong> è completamente gratuita e inclusa nel modulo; la <strong>Modalità IA</strong> offre un <strong>piano gratuito di 10 pagine/mese</strong> per provare senza impegno, più piani a pagamento per volumi maggiori — consulta tutti i piani su <a href="https://easyocr.es" target="_blank"><strong>easyocr.es</strong></a>.</p>
+
+<h3>🆕 Novità v2.6.0 — Scansione scontrini dal mobile (PWA)</h3>
+<ul>
+    <li>📱 <strong>App installabile (PWA)</strong>: Il dipendente fotografa uno scontrino dal telefono, l'IA estrae i dati e lo registra in Dolibarr come nota spese, fattura d'acquisto o pagamento diverso (configurabile dall'azienda).</li>
+    <li>🎯 <strong>Destinazione contabile configurabile</strong>: Nota spese (con rimborso nativo), fattura fornitore o pagamento diverso. Validazione opzionale dal mobile.</li>
+    <li>📎 <strong>Foto dello scontrino allegata</strong> all'ECM e collegata alla riga. Associazione a progetto (fk_project).</li>
+    <li>🔒 <strong>Solo IA</strong>: Verifica dei crediti prima di caricare la foto. Schermata di blocco senza piano attivo.</li>
+</ul>
 
 <h3>Confronto tra modalità</h3>
 <table>
@@ -507,6 +551,7 @@ Automatizza l'elaborazione delle fatture fornitori in Dolibarr con OCR basato su
 <tr><td>OCR con Intelligenza Artificiale</td><td>❌</td><td>✅</td></tr>
 <tr><td>Elaborazione batch (fino a 200 PDF)</td><td>❌</td><td>✅</td></tr>
 <tr><td>Creazione automatica fatture via webhook</td><td>❌</td><td>✅</td></tr>
+<tr><td>Scansione scontrini da mobile (PWA)</td><td>❌</td><td>✅</td></tr>
 <tr><td>Creazione automatica del fornitore</td><td>❌</td><td>✅</td></tr>
 <tr><td>Istruzioni IA personalizzate per fornitore</td><td>❌</td><td>✅</td></tr>
 <tr><td>Auto-correzione importi, date e riferimenti</td><td>❌</td><td>✅</td></tr>
