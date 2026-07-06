@@ -128,7 +128,7 @@ class EasyOcrAI
 	 * @param  string $customInstructions  Optional custom instructions for the AI model
 	 * @return array|false                 Parsed response array, or false on error
 	 */
-	public function processBase64($base64Data, $customInstructions = '')
+	public function processBase64($base64Data, $customInstructions = '', $filename = '', $preprocess = false)
 	{
 		if (!$this->isEnabled()) {
 			$this->error = 'AI OCR service is not enabled or not configured';
@@ -144,6 +144,15 @@ class EasyOcrAI
 
 		if (!empty($customInstructions)) {
 			$payload['custom_instructions'] = $customInstructions;
+		}
+		// Filename lets the API pick the right type (magic-byte validation).
+		// Without it the endpoint assumes .pdf → images (photos) are rejected (415).
+		if (!empty($filename)) {
+			$payload['filename'] = $filename;
+		}
+		// Preprocess (contrast/grayscale/sharpening) improves OCR on phone photos.
+		if ($preprocess) {
+			$payload['preprocess'] = true;
 		}
 
 		$jsonPayload = json_encode($payload);

@@ -84,7 +84,7 @@ class modEasyocr extends DolibarrModules
 		$this->editor_url = 'https://easysoft.es';
 
 		// Possible values for version are: 'development', 'experimental', 'dolibarr' or version
-		$this->version = '2.5.6';
+		$this->version = '2.6.0';
 		$this->url_last_version = 'https://sdl.easysoft.es/getLastModuleVersion?module=easyocr&for_url_last_version=1&version=' . $this->version;
 
 
@@ -121,7 +121,9 @@ class modEasyocr extends DolibarrModules
 
 		// Dependencies
 		$this->hidden = false;
-		$this->depends = array();
+		// modExpenseReport: la diana por defecto del escaneo de gastos (nota de gastos)
+		// lo necesita; declararlo como dependencia lo auto-activa al activar EasyOcr.
+		$this->depends = array('modExpenseReport');
 		$this->requiredby = array();
 		$this->conflictwith = array();
 
@@ -246,6 +248,23 @@ class modEasyocr extends DolibarrModules
 			'mainmenu' => 'easyocr',
 			'leftmenu' => 'easyocr_batch_history',
 			'url'      => '/easyocr/batch.php?tab=history&frommenu=1',
+			'langs'    => 'easyocr@easyocr',
+			'position' => 1000 + $r,
+			'enabled'  => '$conf->easyocr->enabled',
+			'perms'    => '$user->rights->easyocr->write',
+			'target'   => '',
+			'user'     => 2,
+		);
+
+		// Escanear gasto (móvil / PWA) — vista IA-only para empleados
+		$this->menu[$r++] = array(
+			'fk_menu'  => 'fk_mainmenu=easyocr',
+			'type'     => 'left',
+			'titre'    => 'EasyOcrMenuScanExpense',
+			'prefix'   => '<img src="' . dol_buildpath('/easyocr/img/easyocr.png', 1) . '" width="40px" height="40px">',
+			'mainmenu' => 'easyocr',
+			'leftmenu' => 'easyocr_scan_expense',
+			'url'      => '/easyocr/scan-expense.php',
 			'langs'    => 'easyocr@easyocr',
 			'position' => 1000 + $r,
 			'enabled'  => '$conf->easyocr->enabled',

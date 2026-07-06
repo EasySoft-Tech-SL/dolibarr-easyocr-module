@@ -277,6 +277,7 @@ llxHeader('', $title, $help_url, '', 0, 0, array(), array(), '', 'mod-easyocr pa
 .eo-card--inv   { --eo-c: #e65100; --eo-bg: #fff3e0; }
 .eo-card--admin { --eo-c: #546e7a; --eo-bg: #eceff1; }
 .eo-card--whlog { --eo-c: #00838f; --eo-bg: #e0f7fa; }
+.eo-card--scan  { --eo-c: #5b3cc4; --eo-bg: #ede7f6; }
 </style>
 
 <div class="eo-dashboard">
@@ -325,6 +326,13 @@ llxHeader('', $title, $help_url, '', 0, 0, array(), array(), '', 'mod-easyocr pa
 			<div class="eo-card-icon"><i class="fas fa-layer-group"></i></div>
 			<h3><?php echo $langs->trans('EasyOcrMenuBatch'); ?></h3>
 			<p><?php echo $langs->trans('EasyOcrIndexDescBatch'); ?></p>
+			<span class="eo-card-footer"><?php echo $langs->trans('EasyOcrIndexOpen'); ?> <i class="fas fa-arrow-right"></i></span>
+		</a>
+
+		<a href="<?php echo dol_buildpath('/easyocr/scan-expense.php', 1); ?>" class="eo-card eo-card--scan">
+			<div class="eo-card-icon"><i class="fas fa-receipt"></i></div>
+			<h3><?php echo $langs->trans('EasyOcrMenuScanExpense'); ?></h3>
+			<p><?php echo $langs->trans('EasyOcrIndexDescScanExpense'); ?></p>
 			<span class="eo-card-footer"><?php echo $langs->trans('EasyOcrIndexOpen'); ?> <i class="fas fa-arrow-right"></i></span>
 		</a>
 		<?php endif; ?>

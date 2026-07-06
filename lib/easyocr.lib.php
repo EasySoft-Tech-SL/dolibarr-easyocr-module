@@ -364,6 +364,9 @@ function easyocrCreateInvoiceFromOCR($params, $userObj = null)
 	$payment_bank_id = isset($params['payment_bank_id']) ? (int) $params['payment_bank_id'] : 0;
 	$payment_type_id = isset($params['payment_type_id']) ? (int) $params['payment_type_id'] : 0;
 
+	// Project link (optional) — column is fk_projet in DB, property fk_project in PHP
+	$project_id      = isset($params['project_id']) ? (int) $params['project_id'] : (isset($params['fk_projet']) ? (int) $params['fk_projet'] : 0);
+
 	// File upload params
 	$file_tmp_path = isset($params['file_tmp_path']) ? $params['file_tmp_path'] : '';
 	$file_name     = isset($params['file_name']) ? $params['file_name'] : '';
@@ -655,6 +658,9 @@ function easyocrCreateInvoiceFromOCR($params, $userObj = null)
 	$facture->multicurrency_code = $conf->currency;
 	$facture->special_code = 0;
 	$facture->import_key = $import_key;
+	if ($project_id > 0) {
+		$facture->fk_project = $project_id;
+	}
 
 	if ($supplier_payment_mode > 0) {
 		$facture->mode_reglement_id = $supplier_payment_mode;
@@ -985,6 +991,276 @@ function easyocrCreateInvoiceFromOCR($params, $userObj = null)
 		// Aliases for webhook compatibility
 		'invoice_id'       => $newId,
 		'invoice_ref'      => $ref,
+	];
+}
+
+/**
+ * Create a Dolibarr expense report (nota de gastos) from OCR/AI structured data.
+ *
+ * Mirror of easyocrCreateInvoiceFromOCR() but targeting the native ExpenseReport
+ * object — the correct model when an EMPLOYEE pays a receipt out of pocket and
+ * expects reimbursement. Used by the mobile scan-expense view (AI-only feature).
+ *
+ * The receipt is a single line: qty=1 with the paid total as unit price. Dolibarr's
+ * addline() uses a TTC base, so it derives HT/VAT internally from total + rate.
+ *
+ * Expected $params (receipt-oriented subset):
+ *   - datef            string Ticket date (Y-m-d or flexible); defaults to today
+ *   - total_ttc        string Total paid (TTC) — the line unit price
+ *   - vat_rate         float  VAT rate for the line (0 if unknown)
+ *   - merchant         string Merchant name / description (line comment)
+ *   - fk_c_type_fees   int    Expense type (dictionary c_type_fees); 0 if unknown
+ *   - project_id       int    Project to link the line to (optional)
+ *   - validate         bool   Validate the report after creation (else left Draft)
+ *   - file_tmp_path    string Temp path of the receipt photo
+ *   - file_name        string Original filename of the photo
+ * @param  array      $params
+ * @param  User|null  $userObj  The employee the expense is for (defaults to logged user)
+ * @return array                status, id, ref, is_draft, expense_id, expense_ref
+ */
+function easyocrCreateExpenseFromOCR($params, $userObj = null)
+{
+	global $db, $conf, $langs, $user;
+
+	if (empty($db) && !empty($GLOBALS['db'])) $db = $GLOBALS['db'];
+	if (empty($db) || !is_object($db)) {
+		return ['status' => 'error', 'message' => 'Database connection not available ($db is null)'];
+	}
+	if (empty($userObj) || !is_object($userObj)) {
+		$userObj = (isset($user) && is_object($user) && !empty($user->id)) ? $user : null;
+	}
+	if (empty($userObj) || empty($userObj->id)) {
+		return ['status' => 'error', 'message' => 'No user context for expense report'];
+	}
+	if (empty($conf->expensereport->enabled)) {
+		return ['status' => 'error', 'message' => 'ExpenseReport module not enabled'];
+	}
+
+	require_once DOL_DOCUMENT_ROOT . '/expensereport/class/expensereport.class.php';
+	require_once DOL_DOCUMENT_ROOT . '/ecm/class/ecmfiles.class.php';
+
+	// ExpenseReportLine::addline() uses the global $mysoc as the "seller" for the VAT
+	// calc. In the AJAX context $mysoc can be empty → PHP "Creating default object from
+	// empty value" warning that also pollutes the JSON response. Ensure it's a real object.
+	global $mysoc;
+	if (empty($mysoc) || !is_object($mysoc)) {
+		require_once DOL_DOCUMENT_ROOT . '/societe/class/societe.class.php';
+		$mysoc = new Societe($db);
+		$mysoc->setMysoc($conf);
+	}
+
+	// ── Parse inputs with the shared helpers ─────────────────────────────
+	$datef_str  = isset($params['datef']) ? trim($params['datef']) : '';
+	$dateParsed = !empty($datef_str) ? easyocrParseDate($datef_str) : date('Y-m-d');
+	$ticketTs   = dol_mktime(12, 0, 0, (int) date('m', strtotime($dateParsed)), (int) date('d', strtotime($dateParsed)), (int) date('Y', strtotime($dateParsed)));
+
+	$total_ttc  = isset($params['total_ttc']) ? easyocrParseNumber($params['total_ttc']) : 0;
+	$vat_rate   = isset($params['vat_rate']) ? (float) $params['vat_rate'] : 0;
+	$merchant   = isset($params['merchant']) ? trim($params['merchant']) : '';
+	$comments   = $merchant !== '' ? $merchant : (is_object($langs) ? $langs->trans('EasyOcrExpenseDefaultComment') : 'Gasto');
+	$fk_type    = isset($params['fk_c_type_fees']) ? (int) $params['fk_c_type_fees'] : 0;
+	$project_id = isset($params['project_id']) ? (int) $params['project_id'] : 0;
+	$doValidate = !empty($params['validate']);
+
+	if ($total_ttc <= 0) {
+		return ['status' => 'error', 'message' => 'Invalid or missing total amount'];
+	}
+
+	$db->begin();
+
+	$expense = new ExpenseReport($db);
+	$expense->fk_user_author = $userObj->id;   // the employee the report is FOR (see class note)
+	$expense->date_debut     = $ticketTs;
+	$expense->date_fin       = $ticketTs;
+	$expense->note_private   = 'EasyOCR scan-expense' . ($merchant !== '' ? ' — ' . $merchant : '');
+
+	$newId = $expense->create($userObj);
+	if ($newId <= 0) {
+		$db->rollback();
+		return ['status' => 'error', 'message' => 'Error creating expense report: ' . $expense->error];
+	}
+	// addline() requires the in-memory status to be DRAFT (create() leaves it unset)
+	$expense->status = ExpenseReport::STATUS_DRAFT;
+
+	// ── Attach the receipt photo (ECM) and link it to the line ───────────
+	$fk_ecm_files  = 0;
+	$file_tmp_path = isset($params['file_tmp_path']) ? $params['file_tmp_path'] : '';
+	$file_name     = isset($params['file_name']) ? $params['file_name'] : '';
+	if (!empty($file_tmp_path) && file_exists($file_tmp_path)) {
+		$ref_clean = dol_sanitizeFileName($expense->ref);
+		$reldir    = 'expensereport/' . $ref_clean;
+		$destDir   = DOL_DATA_ROOT . '/' . $reldir;
+		if (!@is_dir($destDir)) @mkdir($destDir, 0755, true); // native mkdir avoids open_basedir issue
+		$fileName     = dol_sanitizeFileName(basename($file_name !== '' ? $file_name : 'receipt.jpg'));
+		$destFullPath = $destDir . '/' . $fileName;
+		$fileMoved = @dol_move($file_tmp_path, $destFullPath, 0, 1, 0, 0);
+		if (!$fileMoved) $fileMoved = @copy($file_tmp_path, $destFullPath);
+		if ($fileMoved) {
+			$ecmfile = new EcmFiles($db);
+			$ecmfile->filepath        = $reldir;
+			$ecmfile->filename        = $fileName;
+			$ecmfile->fullpath_orig   = $fileName;
+			$ecmfile->gen_or_uploaded = 'uploaded';
+			$ecmfile->src_object_type = 'expensereport';
+			$ecmfile->src_object_id   = $newId;
+			$ecmfile->fk_user_c       = $userObj->id;
+			$resEcm = $ecmfile->create($userObj);
+			if ($resEcm > 0) $fk_ecm_files = $ecmfile->id;
+			else dol_syslog('EasyOCR-EXPENSE: ECM create failed: ' . $ecmfile->error, LOG_WARNING);
+		}
+	}
+
+	// ── Add the single expense line (TTC base -> HT/VAT derived) ─────────
+	$lineRes = $expense->addline(
+		1,             // qty
+		$total_ttc,    // unit price (addline uses a TTC base)
+		$fk_type,      // fk_c_type_fees
+		$vat_rate,     // vatrate
+		$ticketTs,     // date
+		$comments,     // comments
+		$project_id,   // fk_project
+		0,             // fk_c_exp_tax_cat
+		0,             // type
+		$fk_ecm_files  // fk_ecm_files (receipt photo)
+	);
+	if ($lineRes <= 0) {
+		$db->rollback();
+		return ['status' => 'error', 'message' => 'Error adding expense line: ' . $expense->error];
+	}
+
+	$db->commit();
+
+	// ── Optionally validate (only if the setting allows it) ──────────────
+	$isDraft = true;
+	if ($doValidate) {
+		$vres = $expense->setValidate($userObj);
+		if ($vres > 0) {
+			$isDraft = false;
+		} else {
+			dol_syslog('EasyOCR-EXPENSE: setValidate failed, left as draft: ' . $expense->error, LOG_WARNING);
+		}
+	}
+
+	dol_syslog('EasyOCR-EXPENSE: created id=' . $newId . ', ref=' . $expense->ref . ', user=' . $userObj->id . ', ttc=' . $total_ttc . ', draft=' . ($isDraft ? 'YES' : 'NO'), LOG_INFO);
+
+	return [
+		'status'      => 'ok',
+		'id'          => $newId,
+		'ref'         => $expense->ref,
+		'is_draft'    => $isDraft,
+		'expense_id'  => $newId,
+		'expense_ref' => $expense->ref,
+	];
+}
+
+/**
+ * Create a Dolibarr "various payment" (pago diverso) from OCR/AI data.
+ *
+ * Simplest target: a single bank movement without a third party. Chosen when the
+ * company doesn't use the Expense Reports module. Weaker model on purpose: NO
+ * employee/reimbursement link and NO VAT breakdown (a single amount out of a bank).
+ *
+ * Requires a configured bank account and payment mode (EASYOCR_EXPENSE_VARIOUS_*).
+ * The receipt VAT is not split — the paid total is recorded as the outgoing amount.
+ *
+ * Expected $params: datef, total_ttc, merchant, project_id, file_tmp_path, file_name
+ * @param  array      $params
+ * @param  User|null  $userObj
+ * @return array                status, id, ref, is_draft, ...
+ */
+function easyocrCreateVariousPaymentFromOCR($params, $userObj = null)
+{
+	global $db, $conf, $langs, $user;
+
+	if (empty($db) && !empty($GLOBALS['db'])) $db = $GLOBALS['db'];
+	if (empty($db) || !is_object($db)) {
+		return ['status' => 'error', 'message' => 'Database connection not available ($db is null)'];
+	}
+	if (empty($userObj) || !is_object($userObj)) {
+		$userObj = (isset($user) && is_object($user) && !empty($user->id)) ? $user : null;
+	}
+	if (empty($userObj) || empty($userObj->id)) {
+		return ['status' => 'error', 'message' => 'No user context for various payment'];
+	}
+
+	require_once DOL_DOCUMENT_ROOT . '/compta/bank/class/paymentvarious.class.php';
+	require_once DOL_DOCUMENT_ROOT . '/ecm/class/ecmfiles.class.php';
+
+	$bankId   = !empty($conf->global->EASYOCR_EXPENSE_VARIOUS_BANK_ID) ? (int) $conf->global->EASYOCR_EXPENSE_VARIOUS_BANK_ID : 0;
+	$payType  = !empty($conf->global->EASYOCR_EXPENSE_VARIOUS_PAYMENT_TYPE) ? (int) $conf->global->EASYOCR_EXPENSE_VARIOUS_PAYMENT_TYPE : 0;
+	$acctCode = !empty($conf->global->EASYOCR_EXPENSE_VARIOUS_ACCOUNT) ? trim($conf->global->EASYOCR_EXPENSE_VARIOUS_ACCOUNT) : '';
+
+	// With the Bank module on, create() requires a bank account + payment mode.
+	if (isModEnabled('banque') && ($bankId <= 0 || $payType <= 0)) {
+		return ['status' => 'error', 'message' => is_object($langs) ? $langs->trans('EasyOcrExpenseVariousNotConfigured') : 'Configure a bank account and payment mode for the various payment target'];
+	}
+
+	// Parse inputs with shared helpers
+	$datef_str  = isset($params['datef']) ? trim($params['datef']) : '';
+	$dateParsed = !empty($datef_str) ? easyocrParseDate($datef_str) : date('Y-m-d');
+	$ticketTs   = dol_mktime(12, 0, 0, (int) date('m', strtotime($dateParsed)), (int) date('d', strtotime($dateParsed)), (int) date('Y', strtotime($dateParsed)));
+	$total_ttc  = isset($params['total_ttc']) ? easyocrParseNumber($params['total_ttc']) : 0;
+	$merchant   = isset($params['merchant']) ? trim($params['merchant']) : '';
+	$project_id = isset($params['project_id']) ? (int) $params['project_id'] : 0;
+
+	if ($total_ttc <= 0) {
+		return ['status' => 'error', 'message' => 'Invalid or missing total amount'];
+	}
+
+	$label = 'EasyOCR' . ($merchant !== '' ? ' — ' . $merchant : ' — ' . (is_object($langs) ? $langs->trans('EasyOcrExpenseDefaultComment') : 'gasto'));
+
+	$pv = new PaymentVarious($db);
+	$pv->datep            = $ticketTs;
+	$pv->datev            = $ticketTs;
+	$pv->sens             = '0'; // 0 = money OUT of the bank (expense)
+	$pv->amount           = $total_ttc;
+	$pv->label            = $label;
+	$pv->type_payment     = $payType;
+	$pv->fk_account       = $bankId;
+	$pv->accountid        = $bankId; // legacy alias used by create()
+	$pv->accountancy_code = $acctCode;
+	$pv->fk_project       = $project_id;
+	$pv->fk_user_author   = $userObj->id;
+
+	$newId = $pv->create($userObj);
+	if ($newId <= 0) {
+		return ['status' => 'error', 'message' => 'Error creating various payment: ' . $pv->error];
+	}
+
+	// Attach the receipt photo (best-effort). Various payments have no standard
+	// document tab, but we store + ECM-link the file for traceability.
+	$file_tmp_path = isset($params['file_tmp_path']) ? $params['file_tmp_path'] : '';
+	$file_name     = isset($params['file_name']) ? $params['file_name'] : '';
+	if (!empty($file_tmp_path) && file_exists($file_tmp_path)) {
+		$reldir  = 'easyocr/expense_various/' . $newId;
+		$destDir = DOL_DATA_ROOT . '/' . $reldir;
+		if (!@is_dir($destDir)) @mkdir($destDir, 0755, true);
+		$fileName     = dol_sanitizeFileName(basename($file_name !== '' ? $file_name : 'receipt.jpg'));
+		$destFullPath = $destDir . '/' . $fileName;
+		$moved = @dol_move($file_tmp_path, $destFullPath, 0, 1, 0, 0);
+		if (!$moved) $moved = @copy($file_tmp_path, $destFullPath);
+		if ($moved) {
+			$ecmfile = new EcmFiles($db);
+			$ecmfile->filepath        = $reldir;
+			$ecmfile->filename        = $fileName;
+			$ecmfile->fullpath_orig   = $fileName;
+			$ecmfile->gen_or_uploaded = 'uploaded';
+			$ecmfile->src_object_type = 'payment_various';
+			$ecmfile->src_object_id   = $newId;
+			$ecmfile->fk_user_c       = $userObj->id;
+			$ecmfile->create($userObj);
+		}
+	}
+
+	dol_syslog('EasyOCR-VARIOUS: created id=' . $newId . ', amount=' . $total_ttc . ', bank=' . $bankId . ', payType=' . $payType, LOG_INFO);
+
+	return [
+		'status'      => 'ok',
+		'id'          => $newId,
+		'ref'         => $pv->ref ?: $newId,
+		'is_draft'    => false,
+		'expense_id'  => $newId,
+		'expense_ref' => $pv->ref ?: $newId,
 	];
 }
 

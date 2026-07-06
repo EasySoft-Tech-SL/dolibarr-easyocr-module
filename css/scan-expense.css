@@ -1,0 +1,214 @@
+/*
+ * EasyOCR — scan-expense.css
+ * Mobile expense scanner (PWA). Design: "Recibo" — warm paper + ink, a verified-green
+ * accent and monospaced amounts; capture screen uses a scanner framing target.
+ * Scoped under .eo-scan-wrap. Copyright (C) 2025-2026 EasySoft Tech S.L. — GPLv3
+ */
+
+.eo-scan-wrap {
+	--paper: #f7f6f3;
+	--ink: #1b1a17;
+	--ink-2: #413f38;
+	--muted: #807e75;
+	--card: #ffffff;
+	--line: #eae8e2;
+	--line-2: #d8d6cf;
+	--accent: #0f7b5a;
+	--accent-soft: #e4f1ec;
+	--danger: #b3261e;
+	--radius: 14px;
+	--radius-sm: 11px;
+	--shadow-sm: 0 1px 2px rgba(27, 26, 23, .05), 0 2px 8px rgba(27, 26, 23, .05);
+	--shadow-md: 0 12px 30px rgba(27, 26, 23, .12);
+	--sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+	--mono: ui-monospace, "SF Mono", "Cascadia Mono", "Roboto Mono", Menlo, Consolas, monospace;
+
+	max-width: 430px;
+	margin: 0 auto;
+	min-height: 100%;
+	padding: 26px 20px calc(26px + env(safe-area-inset-bottom, 0px));
+	box-sizing: border-box;
+	background: var(--paper);
+	font-family: var(--sans);
+	font-size: 16px;
+	color: var(--ink);
+	-webkit-font-smoothing: antialiased;
+	text-rendering: optimizeLegibility;
+}
+/* paint the page ground behind the wrap too */
+body.mod-easyocr, .eo-scan-wrap { background: var(--paper); }
+
+.eo-scan-wrap * { box-sizing: border-box; }
+.eo-scan-wrap .amt, .eo-scan-wrap .eo-line-amt,
+.eo-breakdown strong { font-variant-numeric: tabular-nums; }
+
+.eo-scan-screen { animation: eoScanFade .22s ease; }
+@keyframes eoScanFade { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: none; } }
+
+/* ── Capture screen (scanner target) ────────────────────────────────── */
+.eo-cap { display: flex; flex-direction: column; min-height: 78vh; }
+.eo-cap-head { text-align: center; padding: 14px 4px 4px; }
+.eo-cap-title { font-size: 1.5rem; font-weight: 640; letter-spacing: -.022em; margin: 0 0 5px; color: var(--ink); }
+.eo-cap-sub { font-size: .9rem; color: var(--muted); margin: 0; line-height: 1.5; }
+
+.eo-cap-target {
+	position: relative; flex: 1; min-height: 190px;
+	background: var(--card); border: 1.5px dashed var(--line-2); border-radius: 20px;
+	margin: 22px 4px; padding: 30px 22px;
+	display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px;
+}
+.eo-cap-target-ico { font-size: 40px; color: var(--accent); }
+.eo-cap-target-hint { font-size: .9rem; color: var(--muted); text-align: center; max-width: 22ch; line-height: 1.45; }
+.eo-c { position: absolute; width: 22px; height: 22px; border: 2px solid var(--ink); }
+.eo-c1 { top: -1px; left: -1px; border-right: 0; border-bottom: 0; border-radius: 10px 0 0 0; }
+.eo-c2 { top: -1px; right: -1px; border-left: 0; border-bottom: 0; border-radius: 0 10px 0 0; }
+.eo-c3 { bottom: -1px; left: -1px; border-right: 0; border-top: 0; border-radius: 0 0 0 10px; }
+.eo-c4 { bottom: -1px; right: -1px; border-left: 0; border-top: 0; border-radius: 0 0 10px 0; }
+
+.eo-cap-actions { display: flex; flex-direction: column; }
+
+/* ── Buttons ────────────────────────────────────────────────────────── */
+.eo-scan-wrap .eo-btn {
+	display: inline-flex; align-items: center; justify-content: center; gap: 9px;
+	padding: 14px 18px; border-radius: 12px; border: 1px solid transparent; cursor: pointer;
+	font-family: inherit; font-size: .96rem; font-weight: 560; letter-spacing: -.01em;
+	text-decoration: none; line-height: 1.1;
+	transition: transform .06s ease, box-shadow .18s ease, background .18s ease, border-color .18s ease;
+}
+.eo-scan-wrap .eo-btn:active { transform: scale(.985); }
+.eo-scan-wrap .eo-btn-primary { background: var(--accent); color: #fff; box-shadow: var(--shadow-sm); }
+.eo-scan-wrap .eo-btn-primary:hover { background: #0c6a4d; box-shadow: var(--shadow-md); }
+.eo-scan-wrap .eo-btn-ghost { background: var(--card); color: var(--ink); border-color: var(--line); }
+.eo-scan-wrap .eo-btn-ghost:hover { background: #fbfbf9; }
+.eo-scan-wrap .eo-btn-block { display: flex; width: 100%; }
+.eo-scan-wrap .eo-btn-lg { padding: 16px; font-size: 1rem; }
+.eo-scan-wrap .eo-btn[disabled] { opacity: .5; pointer-events: none; }
+.eo-scan-wrap .eo-scan-install-btn { margin-top: 12px; font-size: .9rem; padding: 12px; color: var(--muted); }
+.eo-scan-wrap .eo-scan-gallery-btn { margin-top: 10px; }
+
+/* ── Loading ────────────────────────────────────────────────────────── */
+.eo-scan-loading { text-align: center; padding: 64px 8px; }
+.eo-scan-loading p { color: var(--muted); font-size: .95rem; margin: 0; }
+.eo-scan-spinner {
+	width: 40px; height: 40px; margin: 0 auto 18px;
+	border: 3px solid var(--line); border-top-color: var(--accent); border-radius: 50%;
+	animation: eoScanSpin .7s linear infinite;
+}
+@keyframes eoScanSpin { to { transform: rotate(360deg); } }
+
+/* ── Confirm form ───────────────────────────────────────────────────── */
+.eo-scan-preview {
+	display: block; width: 100%; max-height: 168px; object-fit: cover;
+	border-radius: 12px; margin-bottom: 18px; background: var(--card);
+	border: 1px solid var(--line); cursor: zoom-in;
+}
+.eo-scan-screen h2 { font-size: 1.14rem; font-weight: 640; letter-spacing: -.015em; margin: 2px 0 16px; }
+
+.eo-field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 13px; font-size: .74rem; color: var(--muted); font-weight: 600; letter-spacing: .015em; text-transform: uppercase; }
+.eo-field > input, .eo-field > select,
+.eo-field-select select {
+	font-family: inherit; font-size: 1.02rem; font-weight: 420; padding: 12px 13px; text-transform: none; letter-spacing: normal;
+	border: 1px solid var(--line); border-radius: 10px; background: var(--card); color: var(--ink); width: 100%;
+	transition: border-color .15s ease, box-shadow .15s ease;
+}
+.eo-field > input:focus, .eo-field > select:focus, .eo-field-select select:focus {
+	outline: 0; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(15, 123, 90, .13);
+}
+.eo-field > #eo-exp-total { font-family: var(--mono); font-weight: 600; }
+.eo-field-row { display: flex; gap: 11px; }
+.eo-field-row .eo-field { flex: 1; }
+.eo-field-row .eo-field-sm { max-width: 38%; }
+.eo-field-select { margin-bottom: 13px; }
+.eo-field-select select { width: 100% !important; }
+
+.eo-check { display: flex; align-items: center; gap: 10px; margin: 4px 0 16px; font-size: .95rem; color: var(--ink-2); }
+.eo-check input { width: 19px; height: 19px; accent-color: var(--accent); }
+
+.eo-scan-actions { display: flex; gap: 11px; margin-top: 6px; }
+.eo-scan-actions .eo-btn { flex: 1; }
+
+/* perforated divider — receipt cue */
+.eo-perf {
+	height: 10px; margin: 2px 0 12px;
+	background: radial-gradient(circle at 5px 10px, transparent 4px, var(--line) 4px, var(--line) 5px, transparent 5px) repeat-x;
+	background-size: 12px 10px; opacity: .8;
+}
+
+/* ── Base/VAT/Total breakdown (receipt summary) ─────────────────────── */
+.eo-breakdown { display: flex; gap: 8px; margin: 0 0 16px; }
+.eo-breakdown > div {
+	flex: 1; background: var(--card); border: 1px solid var(--line);
+	border-radius: 11px; padding: 10px 6px; text-align: center;
+}
+.eo-breakdown > div span { display: block; font-size: .64rem; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 3px; }
+.eo-breakdown > div strong { font-family: var(--mono); font-size: 1rem; font-weight: 600; color: var(--ink); letter-spacing: -.02em; }
+.eo-breakdown .eo-breakdown-total { background: var(--accent); border-color: var(--accent); }
+.eo-breakdown .eo-breakdown-total span { color: rgba(255, 255, 255, .72); }
+.eo-breakdown .eo-breakdown-total strong { color: #fff; }
+
+/* ── Detected line items ────────────────────────────────────────────── */
+.eo-lines { border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; margin-bottom: 16px; background: var(--card); }
+.eo-lines-title { font-size: .7rem; font-weight: 640; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 8px; }
+.eo-lines ul { list-style: none; margin: 0; padding: 0; }
+.eo-lines li { display: flex; justify-content: space-between; gap: 10px; padding: 7px 0; border-top: 1px dashed var(--line); font-size: .88rem; }
+.eo-lines li:first-child { border-top: 0; }
+.eo-line-desc { color: var(--ink-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.eo-line-amt { color: var(--ink); font-weight: 600; flex-shrink: 0; font-family: var(--mono); }
+
+/* ── Locked / success ───────────────────────────────────────────────── */
+.eo-scan-locked, .eo-scan-success { text-align: center; padding: 54px 14px; }
+.eo-scan-locked h2, .eo-scan-success h2 { margin: 14px 0 8px; font-weight: 640; letter-spacing: -.015em; }
+.eo-scan-locked p, .eo-scan-success p { color: var(--muted); font-size: .95rem; line-height: 1.55; }
+.eo-scan-locked-icon { font-size: 34px; color: #b45309; }
+.eo-scan-locked .eo-btn { margin-top: 10px; }
+.eo-scan-success-icon { font-size: 58px; color: var(--accent); margin-bottom: 6px; line-height: 1; }
+
+/* ── Toast ──────────────────────────────────────────────────────────── */
+.eo-scan-toast {
+	position: fixed; left: 50%; bottom: 26px; transform: translate(-50%, 18px);
+	background: var(--ink); color: #fff; padding: 12px 18px; border-radius: 11px;
+	font-size: .92rem; max-width: 88%; z-index: 9999; opacity: 0;
+	transition: opacity .22s ease, transform .22s ease; box-shadow: var(--shadow-md);
+}
+.eo-scan-toast.show { opacity: 1; transform: translate(-50%, 0); }
+.eo-scan-toast-error { background: var(--danger); }
+
+/* ── Full-screen image zoom ─────────────────────────────────────────── */
+.eo-zoom {
+	position: fixed; inset: 0; z-index: 10000;
+	background: rgba(18, 17, 15, .94);
+	display: flex; align-items: center; justify-content: center;
+	padding: 14px; cursor: zoom-out;
+}
+.eo-zoom img { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 6px; }
+
+/* ── In-app camera (getUserMedia) with framing guide ────────────────── */
+.eo-cam { position: fixed; inset: 0; z-index: 10001; background: #000; overflow: hidden; }
+.eo-cam video { width: 100%; height: 100%; object-fit: cover; display: block; }
+.eo-cam-mask { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none; }
+.eo-cam-frame {
+	width: 82%; max-width: 440px; aspect-ratio: 3 / 4;
+	border: 2px solid rgba(255, 255, 255, .92); border-radius: 16px;
+	box-shadow: 0 0 0 9999px rgba(0, 0, 0, .5);
+}
+.eo-cam-hint {
+	position: absolute; left: 0; right: 0; top: 12%; padding: 0 24px;
+	text-align: center; color: #fff; font-size: 1rem; font-weight: 560;
+	text-shadow: 0 1px 5px rgba(0, 0, 0, .75); pointer-events: none;
+}
+.eo-cam-bar {
+	position: absolute; left: 0; right: 0; bottom: 0;
+	display: flex; align-items: center; justify-content: space-between;
+	padding: 22px 30px calc(28px + env(safe-area-inset-bottom, 0px));
+}
+.eo-cam-shutter {
+	width: 72px; height: 72px; border-radius: 50%;
+	background: #fff; border: 5px solid rgba(255, 255, 255, .4);
+	cursor: pointer; flex-shrink: 0; padding: 0;
+}
+.eo-cam-shutter:active { transform: scale(.94); }
+.eo-cam-cancel {
+	width: 48px; height: 48px; border-radius: 50%; padding: 0;
+	background: rgba(255, 255, 255, .16); color: #fff; border: 0; font-size: 1.2rem; cursor: pointer;
+}
+.eo-cam-spacer { width: 48px; flex-shrink: 0; }

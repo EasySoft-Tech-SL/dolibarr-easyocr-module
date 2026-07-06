@@ -875,6 +875,219 @@ if ($action == "createSupplierInvoice") {
 
 
 	// ============================================================
+	// EXPENSE (mobile scan) - CREATE from AI structured data
+	// Dispatch to expense report or supplier invoice per EASYOCR_EXPENSE_TARGET
+	// ============================================================
+} else if ($action == "newExpenseAI") {
+
+	if (!easyocrCheckRight($user, 'easyocr', 'write')) {
+		print json_encode(["status" => "error", "message" => "Sin permiso de escritura"]);
+		exit;
+	}
+
+	// Pre-flight gate (defense in depth; the mobile client also checks before capture)
+	$gate = easyocr_ajax_check_can_process();
+	if (!$gate['can_process']) {
+		print json_encode([
+			"status"     => "error",
+			"message"    => $gate['block_message'] ?: $langs->transnoentities('EasyOcrBlockGeneric'),
+			"block_code" => $gate['block_code'],
+		]);
+		exit;
+	}
+
+	require_once __DIR__ . '/../lib/easyocr.lib.php';
+
+	// Fields confirmed/edited by the employee on mobile
+	$total_ttc    = GETPOST('total_ttc', 'alphanohtml');
+	$vat_rate     = (float) GETPOST('vat_rate', 'alpha');
+	$merchant     = GETPOST('merchant', 'alphanohtml');
+	$datef        = GETPOST('datef', 'alpha');
+	$fk_type      = GETPOST('fk_c_type_fees', 'int');
+	$project_id   = GETPOST('project_id', 'int');
+	$wantValidate = GETPOST('validate', 'int') ? true : false;
+
+	// Receipt photo (required) — accepts data URL or raw base64
+	$imgB64  = GETPOST('image_base64', 'restricthtml');
+	$tmpFile = '';
+	if (!empty($imgB64)) {
+		if (strpos($imgB64, ',') !== false && strpos($imgB64, 'base64') !== false) {
+			$imgB64 = substr($imgB64, strpos($imgB64, ',') + 1);
+		}
+		$raw = base64_decode($imgB64, true);
+		if ($raw !== false && strlen($raw) > 0) {
+			$entity = (int) $conf->entity;
+			$tmpDir = DOL_DATA_ROOT . '/easyocr/entity_' . $entity . '/temp';
+			if (!@is_dir($tmpDir)) @mkdir($tmpDir, 0755, true);
+			$candidate = $tmpDir . '/receipt_' . uniqid() . '.jpg';
+			if (@file_put_contents($candidate, $raw) !== false) {
+				$tmpFile = $candidate;
+			}
+			unset($raw);
+		}
+	}
+
+	if (empty($tmpFile)) {
+		print json_encode(["status" => "error", "message" => $langs->transnoentities('EasyOcrExpensePhotoRequired')]);
+		exit;
+	}
+
+	// Resolve target + validation policy
+	$target        = !empty($conf->global->EASYOCR_EXPENSE_TARGET) ? $conf->global->EASYOCR_EXPENSE_TARGET : 'expensereport';
+	$allowValidate = !empty($conf->global->EASYOCR_EXPENSE_ALLOW_VALIDATE);
+	$doValidate    = ($allowValidate && $wantValidate);
+
+	// Expense-report target but the native module is off → clear message instead of
+	// silently falling back to a supplier invoice (which would then demand a supplier).
+	if ($target == 'expensereport' && empty($conf->expensereport->enabled)) {
+		if (!empty($tmpFile) && file_exists($tmpFile)) @unlink($tmpFile);
+		print json_encode(["status" => "error", "message" => $langs->transnoentities('EasyOcrExpenseModuleDisabledWarn')]);
+		exit;
+	}
+
+	if ($target == 'expensereport') {
+		$params = array(
+			'datef'          => $datef,
+			'total_ttc'      => $total_ttc,
+			'vat_rate'       => $vat_rate,
+			'merchant'       => $merchant,
+			'fk_c_type_fees' => $fk_type,
+			'project_id'     => $project_id,
+			'validate'       => $doValidate,
+			'file_tmp_path'  => $tmpFile,
+			'file_name'      => 'receipt.jpg',
+		);
+		$result = easyocrCreateExpenseFromOCR($params, $user);
+	} elseif ($target == 'various_payment') {
+		$params = array(
+			'datef'         => $datef,
+			'total_ttc'     => $total_ttc,
+			'merchant'      => $merchant,
+			'project_id'    => $project_id,
+			'file_tmp_path' => $tmpFile,
+			'file_name'     => 'receipt.jpg',
+		);
+		$result = easyocrCreateVariousPaymentFromOCR($params, $user);
+	} else {
+		// Supplier invoice branch: map the single-line receipt to an invoice
+		$ttc = easyocrParseNumber($total_ttc);
+		$ht  = ($vat_rate > 0) ? round($ttc / (1 + $vat_rate / 100), 2) : $ttc;
+		$tva = round($ttc - $ht, 2);
+		$desc = $merchant !== '' ? $merchant : $langs->trans('EasyOcrExpenseDefaultComment');
+		$params = array(
+			'fk_soc'         => 0,
+			'ref_supplier'   => '',
+			'datef'          => $datef,
+			'total_ttc'      => $ttc,
+			'total_ht'       => $ht,
+			'total_tva'      => $tva,
+			'supplier_name'  => $merchant !== '' ? $merchant : 'Gastos varios',
+			'invoice_status' => $doValidate ? 'validated' : 'draft',
+			'project_id'     => $project_id,
+			'import_key'     => 'easyocr-exp',
+			'file_tmp_path'  => $tmpFile,
+			'file_name'      => 'receipt.jpg',
+			'items'          => array(array(
+				'description' => $desc,
+				'item_type'   => 'service',
+				'quantity'    => 1,
+				'unit_price'  => $ht,
+				'net_amount'  => $ht,
+				'taxes'       => array(array('tax_rate' => $vat_rate, 'tax_amount' => $tva)),
+				'total'       => $ttc,
+			)),
+		);
+		$result = easyocrCreateInvoiceFromOCR($params, $user);
+	}
+
+	// Clean the temp photo (already copied into the object dir by the lib)
+	if (!empty($tmpFile) && file_exists($tmpFile)) @unlink($tmpFile);
+
+	if (!is_array($result) || !isset($result['status']) || $result['status'] !== 'ok') {
+		print json_encode([
+			"status"  => "error",
+			"message" => (is_array($result) && isset($result['message'])) ? $result['message'] : 'Error creating expense',
+		]);
+		exit;
+	}
+
+	print json_encode([
+		"status"   => "ok",
+		"target"   => $target,
+		"id"       => isset($result['id']) ? $result['id'] : null,
+		"ref"      => isset($result['ref']) ? $result['ref'] : null,
+		"is_draft" => isset($result['is_draft']) ? $result['is_draft'] : true,
+	]);
+
+
+	// ============================================================
+	// EXPENSE OCR - receipt photo (JPEG/PNG) -> OCR (base64)
+	// The microservice supports images natively; the only requirement is to
+	// send the correct `filename` so it validates the right magic bytes
+	// (without it the endpoint assumes .pdf and rejects photos with a 415).
+	// ============================================================
+} else if ($action == "expenseOcr") {
+
+	if (!easyocrCheckRight($user, 'easyocr', 'write')) {
+		print json_encode(["status" => "error", "message" => "Sin permiso de escritura"]);
+		exit;
+	}
+
+	$aiService = new EasyOcrAI($db);
+	if (!$aiService->isEnabled()) {
+		print json_encode(["status" => "error", "message" => $langs->transnoentities('EasyOcrAINotConfigured')]);
+		exit;
+	}
+
+	$gate = easyocr_ajax_check_can_process();
+	if (!$gate['can_process']) {
+		print json_encode([
+			"status"     => "error",
+			"message"    => $gate['block_message'] ?: $langs->transnoentities('EasyOcrBlockGeneric'),
+			"block_code" => $gate['block_code'],
+		]);
+		exit;
+	}
+
+	$imgB64 = GETPOST('image_base64', 'restricthtml');
+	if (empty($imgB64)) {
+		print json_encode(["status" => "error", "message" => "No image data provided"]);
+		exit;
+	}
+	if (strpos($imgB64, ',') !== false && strpos($imgB64, 'base64') !== false) {
+		$imgB64 = substr($imgB64, strpos($imgB64, ',') + 1);
+	}
+	$raw = base64_decode($imgB64, true);
+	if ($raw === false || strlen($raw) < 32) {
+		print json_encode(["status" => "error", "message" => "Invalid image data"]);
+		exit;
+	}
+
+	// Detect the real type from magic bytes and send the matching filename so the
+	// microservice validates it correctly (it handles pdf/png/jpg/tiff/bmp natively).
+	// The mobile client re-encodes to JPEG, so 'jpg' is the usual case.
+	$ext = 'jpg';
+	if (substr($raw, 0, 4) === '%PDF') {
+		$ext = 'pdf';
+	} elseif (substr($raw, 0, 4) === "\x89PNG") {
+		$ext = 'png';
+	} elseif (substr($raw, 0, 3) === "\xff\xd8\xff") {
+		$ext = 'jpg';
+	} elseif (substr($raw, 0, 2) === "BM") {
+		$ext = 'bmp';
+	}
+	$isImage = ($ext !== 'pdf');
+
+	// preprocess only for images (contrast/grayscale/sharpening → better OCR on photos)
+	$result = $aiService->processBase64($imgB64, '', 'receipt.' . $ext, $isImage);
+	if ($result === false) {
+		print json_encode(["status" => "error", "message" => $aiService->error]);
+		exit;
+	}
+	print json_encode(["status" => "ok", "data" => $result]);
+
+
+	// ============================================================
 	// AI OCR - SSE STREAM PROXY (avoids CORS, keeps apiKey server-side)
 	// ============================================================
 } else if ($action == "aiOcrStream") {

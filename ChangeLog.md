@@ -5,6 +5,28 @@ Todos los cambios notables de EasyOcr se documentarán en este archivo.
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/),
 y este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 
+## [2.6.0] - 2026-07-01
+
+### Añadido — Escaneo de tickets de gasto desde el móvil (vista PWA, solo IA)
+- **Nueva vista `scan-expense.php`** pensada para el **empleado en el móvil**: hace una foto del ticket, la IA extrae los datos y se registra el gasto en Dolibarr. Instalable como **PWA** (manifest + service worker) y con captura directa de **cámara** (`<input capture="environment">`).
+- **Diana contable CONFIGURABLE** (decisión de negocio, ajuste por entidad `EASYOCR_EXPENSE_TARGET`):
+  - **Nota de gastos** (`expensereport`) — **por defecto**; es lo correcto cuando el empleado adelanta el dinero (se vincula al empleado vía `fk_user_author`, flujo de aprobación y reembolso nativo, IVA y proyecto por línea).
+  - **Factura de compra** (factura de proveedor) — reutiliza `easyocrCreateInvoiceFromOCR()`.
+  - **Pago diverso** (`PaymentVarious`) — opción simple sin depender del módulo de gastos; requiere configurar cuenta bancaria + método de pago (y opcionalmente cuenta contable) en ajustes. No vincula al empleado ni desglosa IVA.
+- **Dependencia de módulo**: `$this->depends = array('modExpenseReport')` en el descriptor → al activar EasyOcr se auto-activa el módulo Notas de gastos (la diana por defecto). Requiere reactivar EasyOcr para aplicarse.
+- **Función nueva `easyocrCreateExpenseFromOCR()`** en `lib/easyocr.lib.php`: crea la nota de gastos (línea con base TTC → HT/IVA derivados por `calcul_price_total`), adjunta la **foto** al ECM y la enlaza a la línea (`fk_ecm_files`), soporta **proyecto** (`fk_project`) y validación opcional.
+- **Asociación a PROYECTO** en ambas dianas: añadido `fk_project` a `easyocrCreateInvoiceFromOCR()` (cabecera) y por línea en la nota de gastos; el empleado elige el proyecto en el móvil.
+- **Solo IA (gated):** sin plan con créditos la vista muestra pantalla de bloqueo (reutiliza la verdad operativa `/me` `can_process`); pre-flight de créditos antes de subir la foto y re-chequeo server-side en la creación. **Foto obligatoria**.
+- Ajuste **"Permitir validar gasto"** (`EASYOCR_EXPENSE_ALLOW_VALIDATE`): si está activo, el empleado puede validar desde el móvil; si no, el gasto se crea en **borrador** para revisión.
+- Nuevas acciones AJAX: `expenseOcr` (OCR de la **foto** — envía la imagen al microservicio con el `filename` correcto y `preprocess=1` para que la acepte de forma nativa) y `newExpenseAI` (crea el objeto con dispatch por diana). Pre-flight de créditos vía `getSubscriptionInfo`. Nueva entrada de menú y tarjeta en el dashboard "Escanear gasto".
+
+### Traducciones
+- **36 claves nuevas en los 8 idiomas** (ca/de/en/es/fr/gl/it/pt) para la vista, el ajuste de diana y los mensajes.
+
+### Notas / pendientes
+- La instalación PWA real (service worker) requiere **HTTPS con certificado válido** (en local Laragon usa cert self-signed: hay que confiar la CA en el móvil para pruebas).
+- OCR de imágenes confirmado con el microservicio: `/ocr/base64` acepta fotos si se envía `filename` (valida por magic bytes); el módulo manda `receipt.jpg` + `preprocess`. (El endpoint solo asumía `.pdf` cuando no se pasaba nombre, de ahí el 415 inicial.)
+
 ## [2.5.6] - 2026-07-01
 
 ### Añadido — Pago automático de facturas creadas por el webhook

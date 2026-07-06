@@ -100,6 +100,23 @@ if ($action == 'update') {
 	$res = dolibarr_set_const($db, 'EASYOCR_WEBHOOK_PAYMENT_TYPE', GETPOST('EASYOCR_WEBHOOK_PAYMENT_TYPE', 'int'), 'chaine', 0, '', $conf->entity);
 	if (!($res > 0)) $error++;
 
+	// Employee expense (mobile scan) settings
+	$res = dolibarr_set_const($db, 'EASYOCR_EXPENSE_TARGET', GETPOST('EASYOCR_EXPENSE_TARGET', 'aZ09'), 'chaine', 0, '', $conf->entity);
+	if (!($res > 0)) $error++;
+
+	$res = dolibarr_set_const($db, 'EASYOCR_EXPENSE_ALLOW_VALIDATE', GETPOST('EASYOCR_EXPENSE_ALLOW_VALIDATE', 'int'), 'chaine', 0, '', $conf->entity);
+	if (!($res > 0)) $error++;
+
+	// Various-payment target settings (bank account + payment mode + accounting code)
+	$res = dolibarr_set_const($db, 'EASYOCR_EXPENSE_VARIOUS_BANK_ID', GETPOST('EASYOCR_EXPENSE_VARIOUS_BANK_ID', 'int'), 'chaine', 0, '', $conf->entity);
+	if (!($res > 0)) $error++;
+
+	$res = dolibarr_set_const($db, 'EASYOCR_EXPENSE_VARIOUS_PAYMENT_TYPE', GETPOST('EASYOCR_EXPENSE_VARIOUS_PAYMENT_TYPE', 'int'), 'chaine', 0, '', $conf->entity);
+	if (!($res > 0)) $error++;
+
+	$res = dolibarr_set_const($db, 'EASYOCR_EXPENSE_VARIOUS_ACCOUNT', GETPOST('EASYOCR_EXPENSE_VARIOUS_ACCOUNT', 'alphanohtml'), 'chaine', 0, '', $conf->entity);
+	if (!($res > 0)) $error++;
+
 	// AI OCR settings
 	$res = dolibarr_set_const($db, 'EASYOCR_AI_ENABLED', GETPOST('EASYOCR_AI_ENABLED', 'int'), 'chaine', 0, '', $conf->entity);
 	if (!($res > 0)) $error++;
@@ -228,6 +245,75 @@ print '<td>'.$langs->trans("EasyOcrWebhookPaymentType").'</td>';
 print '<td>';
 print $form->select_types_paiements(!empty($conf->global->EASYOCR_WEBHOOK_PAYMENT_TYPE) ? $conf->global->EASYOCR_WEBHOOK_PAYMENT_TYPE : '', 'EASYOCR_WEBHOOK_PAYMENT_TYPE', '', 0, 1);
 print '<br><span class="opacitymedium small">'.$langs->trans("EasyOcrWebhookPaymentTypeDesc").'</span>';
+print '</td>';
+print '</tr>';
+
+print '</table>';
+print '</div>';
+
+print '<br>';
+
+// --- Employee expense (mobile scan) configuration ---
+print '<div class="div-table-responsive-no-min">';
+print '<table class="noborder centpercent">';
+
+print '<tr class="liste_titre">';
+print '<td colspan="2">'.$langs->trans("EasyOcrExpenseConfig").'</td>';
+print '</tr>';
+
+// Target object for scanned employee expenses
+$expenseTarget = !empty($conf->global->EASYOCR_EXPENSE_TARGET) ? $conf->global->EASYOCR_EXPENSE_TARGET : 'expensereport';
+print '<tr class="oddeven">';
+print '<td>'.$langs->trans("EasyOcrExpenseTarget").'</td>';
+print '<td>';
+$expenseTargets = array(
+	'expensereport'    => $langs->trans("EasyOcrExpenseTargetExpense"),
+	'supplier_invoice' => $langs->trans("EasyOcrExpenseTargetInvoice"),
+	'various_payment'  => $langs->trans("EasyOcrExpenseTargetVarious"),
+);
+print $form->selectarray('EASYOCR_EXPENSE_TARGET', $expenseTargets, $expenseTarget, 0);
+print '<br><span class="opacitymedium small">'.$langs->trans("EasyOcrExpenseTargetDesc").'</span>';
+if ($expenseTarget == 'expensereport' && empty($conf->expensereport->enabled)) {
+	print '<br><span class="error">'.$langs->trans("EasyOcrExpenseModuleDisabledWarn").'</span>';
+}
+print '</td>';
+print '</tr>';
+
+// Allow the employee to validate the expense from mobile
+print '<tr class="oddeven">';
+print '<td>'.$langs->trans("EasyOcrExpenseAllowValidate").'</td>';
+print '<td>';
+print $form->selectyesno('EASYOCR_EXPENSE_ALLOW_VALIDATE', !empty($conf->global->EASYOCR_EXPENSE_ALLOW_VALIDATE) ? $conf->global->EASYOCR_EXPENSE_ALLOW_VALIDATE : 0, 1);
+print '<br><span class="opacitymedium small">'.$langs->trans("EasyOcrExpenseAllowValidateDesc").'</span>';
+print '</td>';
+print '</tr>';
+
+// ── Various-payment target settings (only used when diana = Pago diverso) ──
+$vBank = !empty($conf->global->EASYOCR_EXPENSE_VARIOUS_BANK_ID) ? $conf->global->EASYOCR_EXPENSE_VARIOUS_BANK_ID : '';
+$vPay  = !empty($conf->global->EASYOCR_EXPENSE_VARIOUS_PAYMENT_TYPE) ? $conf->global->EASYOCR_EXPENSE_VARIOUS_PAYMENT_TYPE : '';
+$vAcct = !empty($conf->global->EASYOCR_EXPENSE_VARIOUS_ACCOUNT) ? $conf->global->EASYOCR_EXPENSE_VARIOUS_ACCOUNT : '';
+
+print '<tr class="oddeven"><td colspan="2"><span class="opacitymedium small">'.$langs->trans("EasyOcrExpenseVariousHint").'</span></td></tr>';
+
+print '<tr class="oddeven">';
+print '<td>'.$langs->trans("EasyOcrExpenseVariousBank").'</td>';
+print '<td>';
+print $form->select_comptes($vBank, 'EASYOCR_EXPENSE_VARIOUS_BANK_ID', 0, '', 1, '', 0, '', 1);
+print '</td>';
+print '</tr>';
+
+print '<tr class="oddeven">';
+print '<td>'.$langs->trans("EasyOcrExpenseVariousPaymentType").'</td>';
+print '<td>';
+print $form->select_types_paiements($vPay, 'EASYOCR_EXPENSE_VARIOUS_PAYMENT_TYPE', '', 0, 1);
+print '</td>';
+print '</tr>';
+
+print '<tr class="oddeven">';
+print '<td>'.$langs->trans("EasyOcrExpenseVariousAccount").'</td>';
+print '<td>';
+print '<input type="text" name="EASYOCR_EXPENSE_VARIOUS_ACCOUNT" class="width150" value="'.dol_escape_htmltag($vAcct).'" placeholder="629, 600...">';
+print '<br><span class="opacitymedium small">'.$langs->trans("EasyOcrExpenseVariousAccountDesc").'</span>';
 print '</td>';
 print '</tr>';
 

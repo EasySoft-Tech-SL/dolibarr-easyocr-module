@@ -2,7 +2,7 @@
 
 ## Información del módulo
 - **Nombre:** EasyOcr
-- **Versión:** 2.5.6
+- **Versión:** 2.6.0
 - **Número módulo:** 402020
 - **Empresa:** EasySoft Tech S.L. (info@easysoft.es)
 - **Autor:** Alberto Luque Rivas (aluquerivasdev@gmail.com)
@@ -92,6 +92,17 @@ easyocr/
 ---
 
 ## Historial de cambios
+
+### v2.6.0 — Escaneo de tickets de gasto desde el móvil (PWA, solo IA)
+- **Feat:** nueva vista **`scan-expense.php`** mobile-first para que un empleado fotografíe un ticket de gasto y quede registrado en Dolibarr. Instalable como **PWA** (`manifest.json.php` + `sw.js.php`) con captura de cámara. **Solo IA**: sin plan con créditos muestra pantalla de bloqueo (reutiliza `easyocr_ajax_check_can_process()` / verdad operativa `/me`), con pre-flight antes de subir la foto y re-chequeo server-side.
+- **Diana contable configurable** (`EASYOCR_EXPENSE_TARGET`, por entidad), 3 opciones: **nota de gastos** (`expensereport`, por defecto — correcto para "empleado que adelanta dinero", con reembolso nativo), **factura de compra** (reutiliza `easyocrCreateInvoiceFromOCR()`) o **pago diverso** (`easyocrCreateVariousPaymentFromOCR()` → `PaymentVarious`; requiere cuenta bancaria + método en ajustes; sin vínculo a empleado ni desglose de IVA).
+- **Dependencia**: el descriptor declara `$this->depends = array('modExpenseReport')` para auto-activar el módulo Notas de gastos al activar EasyOcr (la diana por defecto lo necesita). Requiere reactivar EasyOcr para que surta efecto.
+- Nueva **`easyocrCreateExpenseFromOCR()`** en `lib/easyocr.lib.php`: nota de gastos con `fk_user_author`=empleado, línea TTC→HT/IVA (`calcul_price_total`), foto adjunta al ECM y enlazada por línea (`fk_ecm_files`), proyecto (`fk_project`) y validación opcional.
+- **Asociar a proyecto** en ambas dianas: añadido `fk_project` a `easyocrCreateInvoiceFromOCR()` (cabecera) y por línea en la nota de gastos.
+- Ajuste **"Permitir validar gasto"** (`EASYOCR_EXPENSE_ALLOW_VALIDATE`): borrador por defecto; si se activa, el empleado puede validar desde el móvil. **Foto obligatoria.**
+- Acciones AJAX `expenseOcr` (OCR de la foto: envía la imagen a `/ocr/base64` con `filename` correcto + `preprocess`, el micro la acepta nativa) y `newExpenseAI` (crea con dispatch por diana). Entrada de menú y tarjeta en `index.php` "Escanear gasto", CSS móvil (`css/scan-expense.css`), JS (`js/scan-expense.js` con corrección EXIF + resize en cliente, botón "Instalar app" vía `beforeinstallprompt`, menús Dolibarr ocultos con `dol_hide_topmenu/leftmenu`).
+- 36 claves nuevas traducidas a los 8 idiomas (ca/de/en/es/fr/gl/it/pt).
+- **Requisito PWA:** la instalación/service worker requiere HTTPS con certificado válido (en local Laragon, confiar la CA en el móvil).
 
 ### v2.5.6 — Pago automático de facturas creadas por el webhook
 - **Feat:** el webhook (`webhook_batch.php`) puede ahora **marcar la factura como pagada**, registrando el pago en una **cuenta bancaria** y con un **método de pago**. Antes los parámetros `create_payment` / `payment_bank_id` / `payment_type_id` se pasaban vacíos/en cero, por lo que la factura se creaba pero nunca se pagaba (la lógica ya existía en `easyocrCreateInvoiceFromOCR()`, solo faltaba cablearla desde el webhook).

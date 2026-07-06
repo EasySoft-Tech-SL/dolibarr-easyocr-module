@@ -4,7 +4,7 @@
 
 | Campo | Valor |
 |-------|-------|
-| **Versión del módulo** | 2.5.6 |
+| **Versión del módulo** | 2.6.0 |
 | **Compatibilidad Min** | V16 |
 | **Compatibilidad Max** | V23 |
 | **PHP Min** | 7.4 |
@@ -76,6 +76,7 @@ Herramienta para extracción de datos de facturas PDF y generación automática 
     <li>🚀 <strong>Procesamiento en lotes</strong>: Sube hasta 200 facturas PDF de una sola vez y procésalas con un clic. Ideal para cierres de mes o altos volúmenes de proveedores.</li>
     <li>🧠 <strong>OCR por Inteligencia Artificial avanzada</strong>: Extrae automáticamente proveedor, NIF/CIF, dirección, fecha, número de factura, líneas de detalle, impuestos y totales con una precisión muy superior al OCR clásico.</li>
     <li>⚡ <strong>Automatización total vía webhook</strong>: Una vez procesado el PDF, Dolibarr recibe los datos automáticamente y crea la factura de proveedor validada. Cero intervención humana, cero errores de transcripción. Opcionalmente, la factura puede quedar <strong>marcada como pagada</strong>, con su cuenta bancaria y método de pago.</li>
+    <li>📱 <strong>Escaneo de gastos desde el móvil (PWA)</strong>: App instalable para que el empleado fotografíe un ticket; la IA lo registra en Dolibarr como <strong>nota de gastos</strong> o <strong>factura de compra</strong> (configurable por la empresa), con asociación a <strong>proyecto</strong>.</li>
     <li>🏭 <strong>Alta automática de proveedores</strong>: Si el proveedor no existe en Dolibarr, el módulo lo crea con todos los datos fiscales extraídos del PDF.</li>
     <li>📋 <strong>Instrucciones IA personalizadas por proveedor</strong>: Define reglas específicas para cada proveedor o plantilla (ej. "el IVA siempre es 21%", "ignorar líneas de descuento", "la moneda es USD"). La IA las aplica en cada procesamiento.</li>
     <li>🔧 <strong>Auto-corrección inteligente</strong>: El motor IA detecta y corrige automáticamente importes mal reconocidos, formatos de fecha inconsistentes y referencias duplicadas.</li>
@@ -186,6 +187,7 @@ Tool for extracting data from PDF invoices and automatically generating supplier
     <li>🚀 <strong>Batch processing</strong>: Upload up to 200 PDF invoices at once and process them in a single click. Perfect for month-end closing or high supplier volumes.</li>
     <li>🧠 <strong>Advanced AI OCR</strong>: Automatically extracts supplier name, VAT/tax number, address, invoice date, invoice number, line items, taxes and totals — with far greater accuracy than classic OCR.</li>
     <li>⚡ <strong>Full automation via webhook</strong>: Once the PDF is processed, Dolibarr receives the data automatically and creates the validated supplier invoice. Zero human intervention, zero transcription errors. Optionally, the invoice can be <strong>marked as paid</strong>, with its bank account and payment method.</li>
+    <li>📱 <strong>Mobile expense scanning (PWA)</strong>: Installable app for the employee to photograph a receipt; the AI registers it in Dolibarr as an <strong>expense report</strong> or a <strong>purchase invoice</strong> (company-configurable), linked to a <strong>project</strong>.</li>
     <li>🏭 <strong>Automatic supplier creation</strong>: If the supplier doesn't exist in Dolibarr, the module creates it with all fiscal data extracted from the PDF.</li>
     <li>📋 <strong>Custom AI instructions per supplier</strong>: Set specific rules for each supplier or template (e.g. "VAT is always 20%", "ignore discount lines", "currency is USD"). AI applies them on every processing run.</li>
     <li>🔧 <strong>Smart auto-correction</strong>: The AI engine automatically detects and corrects misread amounts, inconsistent date formats and duplicate references.</li>
@@ -296,6 +298,7 @@ Automatisez le traitement des factures fournisseur dans Dolibarr grâce à l'OCR
     <li>🚀 <strong>Traitement en lots</strong> : Envoyez jusqu'à 200 factures PDF d'un seul clic. Parfait pour les clôtures mensuelles ou les volumes élevés de fournisseurs.</li>
     <li>🧠 <strong>OCR par IA avancée</strong> : Extrait automatiquement le fournisseur, numéro TVA, adresse, date, numéro de facture, lignes de détail, taxes et totaux — avec une précision bien supérieure à l'OCR classique.</li>
     <li>⚡ <strong>Automatisation totale via webhook</strong> : Une fois le PDF traité, Dolibarr reçoit les données automatiquement et crée la facture fournisseur validée. Zéro intervention humaine, zéro erreur de transcription. En option, la facture peut être <strong>marquée comme payée</strong>, avec son compte bancaire et son mode de règlement.</li>
+    <li>📱 <strong>Scan de dépenses sur mobile (PWA)</strong> : Application installable pour que l'employé photographie un ticket ; l'IA l'enregistre dans Dolibarr en <strong>note de frais</strong> ou en <strong>facture d'achat</strong> (configurable par l'entreprise), rattaché à un <strong>projet</strong>.</li>
     <li>🏭 <strong>Création automatique du fournisseur</strong> : Si le fournisseur n'existe pas dans Dolibarr, le module le crée avec toutes les données fiscales extraites du PDF.</li>
     <li>📋 <strong>Instructions IA personnalisées par fournisseur</strong> : Définissez des règles spécifiques pour chaque fournisseur ou modèle (ex. « TVA toujours à 20% », « ignorer les lignes de remise », « devise en EUR »). L'IA les applique à chaque traitement.</li>
     <li>🔧 <strong>Auto-correction intelligente</strong> : Le moteur IA détecte et corrige automatiquement les montants mal reconnus, les formats de date incohérents et les références dupliquées.</li>
@@ -407,6 +410,7 @@ Verarbeitung von Lieferantenrechnungen in Dolibarr mit KI-OCR. Kostenloser klass
     <li>🚀 <strong>Batch-Verarbeitung</strong>: Laden Sie bis zu 200 PDF-Rechnungen auf einmal hoch und verarbeiten Sie sie mit einem Klick. Ideal für Monatsabschlüsse oder hohe Lieferantenvolumen.</li>
     <li>🧠 <strong>Fortschrittliches KI-OCR</strong>: Extrahiert automatisch Lieferantenname, Steuernummer, Adresse, Rechnungsdatum, Rechnungsnummer, Positionen, Steuern und Summen — mit deutlich höherer Genauigkeit als klassisches OCR.</li>
     <li>⚡ <strong>Vollautomatisierung per Webhook</strong>: Nach der PDF-Verarbeitung empfängt Dolibarr die Daten automatisch und erstellt die validierte Lieferantenrechnung. Null menschlicher Eingriff, null Übertragungsfehler. Optional kann die Rechnung <strong>als bezahlt markiert</strong> werden — mit Bankkonto und Zahlungsart.</li>
+    <li>📱 <strong>Spesenerfassung per Handy (PWA)</strong>: Installierbare App, mit der der Mitarbeiter einen Beleg fotografiert; die KI erfasst ihn in Dolibarr als <strong>Spesenabrechnung</strong> oder <strong>Eingangsrechnung</strong> (vom Unternehmen konfigurierbar), einem <strong>Projekt</strong> zugeordnet.</li>
     <li>🏭 <strong>Automatische Lieferantenerstellung</strong>: Existiert der Lieferant nicht in Dolibarr, erstellt das Modul ihn mit allen aus dem PDF extrahierten Steuerdaten.</li>
     <li>📋 <strong>Benutzerdefinierte KI-Anweisungen pro Lieferant</strong>: Legen Sie spezifische Regeln für jeden Lieferanten oder jede Vorlage fest (z.B. „MwSt. immer 19%", „Rabattzeilen ignorieren", „Währung ist USD"). Die KI wendet sie bei jeder Verarbeitung an.</li>
     <li>🔧 <strong>Intelligente Autokorrektur</strong>: Die KI-Engine erkennt und korrigiert automatisch fehlerhafte Beträge, inkonsistente Datumsformate und doppelte Referenzen.</li>
@@ -518,6 +522,7 @@ Automatizza l'elaborazione delle fatture fornitori in Dolibarr con OCR basato su
     <li>🚀 <strong>Elaborazione in batch</strong>: Carica fino a 200 fatture PDF in una volta sola e processale con un clic. Ideale per chiusure mensili o alti volumi di fornitori.</li>
     <li>🧠 <strong>OCR con IA avanzata</strong>: Estrae automaticamente ragione sociale, P.IVA, indirizzo, data fattura, numero fattura, righe di dettaglio, imposte e totali — con precisione nettamente superiore all'OCR classico.</li>
     <li>⚡ <strong>Automazione totale via webhook</strong>: Una volta elaborato il PDF, Dolibarr riceve i dati automaticamente e crea la fattura fornitore validata. Zero intervento umano, zero errori di trascrizione. Facoltativamente, la fattura può essere <strong>contrassegnata come pagata</strong>, con conto bancario e metodo di pagamento.</li>
+    <li>📱 <strong>Scansione spese da mobile (PWA)</strong>: App installabile con cui il dipendente fotografa uno scontrino; l'IA lo registra in Dolibarr come <strong>nota spese</strong> o <strong>fattura d'acquisto</strong> (configurabile dall'azienda), collegato a un <strong>progetto</strong>.</li>
     <li>🏭 <strong>Creazione automatica del fornitore</strong>: Se il fornitore non esiste in Dolibarr, il modulo lo crea con tutti i dati fiscali estratti dal PDF.</li>
     <li>📋 <strong>Istruzioni IA personalizzate per fornitore</strong>: Definisci regole specifiche per ogni fornitore o modello (es. «IVA sempre al 22%», «ignora le righe sconto», «valuta in EUR»). L'IA le applica ad ogni elaborazione.</li>
     <li>🔧 <strong>Auto-correzione intelligente</strong>: Il motore IA rileva e corregge automaticamente importi mal riconosciuti, formati data incoerenti e riferimenti duplicati.</li>
@@ -610,12 +615,12 @@ info@easysoft.es | https://www.easysoft.es | https://easyocr.es
 
 - [ ] Archivo .zip generado con estructura correcta (`easyocr/`)
 - [ ] Imagen de portada preparada (800x600 o 1200x630 px)
-- [x] README.md actualizado (v2.5.6)
-- [x] ChangeLog.md actualizado (v2.5.6)
-- [x] Versión en module descriptor coincide (2.5.6)
+- [x] README.md actualizado (v2.6.0)
+- [x] ChangeLog.md actualizado (v2.6.0)
+- [x] Versión en module descriptor coincide (2.6.0)
 - [x] Todos los archivos .lang completos en 8 idiomas
 - [x] Licencia GPL v3 incluida
 - [ ] Sin archivos de desarrollo (.git, .vscode, etc.)
 - [x] Pestañas administrativas con iconos consistentes
 - [x] Contenido legal y GDPR completo (Copying, Telemetry)
-- [x] DOLISTORE.md actualizado a v2.5.6
+- [x] DOLISTORE.md actualizado a v2.6.0
