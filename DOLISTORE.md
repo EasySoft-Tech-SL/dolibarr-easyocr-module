@@ -11,6 +11,7 @@
 | **PHP Max** | 8.3 |
 | **Duración acceso actualizaciones** | 730 días |
 | **Precio de venta** | 0 (libre) |
+| **Dolistore product_id** | 2798 |
 | **Cómo contactar al soporte** | info@easysoft.es |
 
 ## Palabras Clave / Keywords
