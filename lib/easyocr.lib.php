@@ -173,6 +173,16 @@ function easyocrParseDate($input)
  */
 function easyocrParseNumber($value)
 {
+	// Native numbers arrive already normalized (the AI service returns JSON
+	// numbers). Running them through the string heuristics below would read
+	// 3.434 as a thousands separator and turn 3,434 € into 3434 €.
+	if (is_int($value) || is_float($value)) {
+		return (float) $value;
+	}
+	if (is_bool($value) || $value === null) {
+		return 0.0;
+	}
+
 	$raw = trim($value);
 	if ($raw === '') {
 		return 0.0;
@@ -235,6 +245,762 @@ function easyocrCalcTaxRate($base, $tax)
 		return 0.0;
 	}
 	return round($t / $b * 100, 2);
+}
+
+/**
+ * Resolve the discount percentage of an OCR line.
+ *
+ * The AI returns discounts in several shapes depending on the document layout,
+ * and sometimes not at all (the discount is then only visible as a gap between
+ * qty * unit_price and net_amount). This resolves them in order of reliability:
+ *
+ *   1. discount_percent      — explicit percentage from the document
+ *   2. discount_amount       — absolute amount, converted against the gross line
+ *   3. implicit gap          — qty * unit_price vs net_amount (tolerance 0.02)
+ *
+ * Values outside 0-90% are discarded: they almost always mean the OCR misread
+ * unit_price, quantity or net_amount, and a bogus discount corrupts the line.
+ *
+ * Lines whose gross amount is <= 0 (separate "discount" lines carrying negative
+ * amounts) never get an inferred discount — their negative total IS the discount.
+ *
+ * @param  array      $item       OCR line item
+ * @param  float      $qty        Parsed quantity
+ * @param  float      $unitPrice  Parsed unit price as printed on the document (gross, pre-discount)
+ * @return float                  Discount percentage (0 when none applies)
+ */
+function easyocrResolveLineDiscount($item, $qty, $unitPrice)
+{
+	// 1) Explicit percentage — trust it as-is
+	if (isset($item['discount_percent']) && $item['discount_percent'] !== null && $item['discount_percent'] !== '') {
+		$pct = easyocrParseNumber($item['discount_percent']);
+		if ($pct > 0 && $pct <= 90) {
+			return round($pct, 4);
+		}
+		// An explicit 0 means "no discount": stop here, do not try to infer one.
+		if ($pct == 0) {
+			return 0.0;
+		}
+	}
+
+	$gross = floatval($qty) * floatval($unitPrice);
+	if ($gross <= 0) {
+		return 0.0;
+	}
+
+	// 2) Absolute discount amount → percentage over the gross line
+	if (isset($item['discount_amount']) && $item['discount_amount'] !== null && $item['discount_amount'] !== '') {
+		$amount = abs(easyocrParseNumber($item['discount_amount']));
+		if ($amount > 0) {
+			$pct = $amount / $gross * 100;
+			if ($pct > 0 && $pct <= 90) {
+				return round($pct, 4);
+			}
+			return 0.0;
+		}
+	}
+
+	// 3) Implicit discount — the net line total is lower than qty * unit_price
+	$net = null;
+	if (isset($item['net_amount']) && $item['net_amount'] !== null && $item['net_amount'] !== '') {
+		$net = easyocrParseNumber($item['net_amount']);
+	}
+	if ($net === null) {
+		return 0.0;
+	}
+	// The AI reports unit prices rounded to 2 decimals, so a line billed at
+	// 0.347 €/unit arrives as 0.35. Multiplied by the quantity that alone opens
+	// a gap of up to qty * 0.005 — on 1000 units, 5 €. Attributing it to a
+	// discount would invent one that is not on the document.
+	$roundingSlack = abs($qty) * 0.005 + 0.01;
+
+	// Three guards, because rounding noise scales with the size of the line:
+	//   - absolute (0.02)      small lines printed to 2 decimals
+	//   - unit-price rounding  large quantities with 3+ decimal unit prices
+	//   - relative (0.5%)      a real commercial discount is always well above
+	if ($net > 0 && $net < $gross && abs($gross - $net) > 0.02 && abs($gross - $net) > $roundingSlack) {
+		$pct = (1 - $net / $gross) * 100;
+		if ($pct >= 0.5 && $pct <= 90) {
+			return round($pct, 4);
+		}
+	}
+
+	return 0.0;
+}
+
+/**
+ * Resolve the gross unit price to hand to Dolibarr's addline().
+ *
+ * addline() expects a PRE-discount unit price and applies remise_percent
+ * itself, so any amount derived from a net figure has to be un-discounted
+ * first — otherwise the discount is applied twice.
+ *
+ * Order: printed unit price (reconciled against net_amount) -> derive from
+ * net_amount -> derive from total minus its taxes.
+ *
+ * @param  array $item      OCR line item
+ * @param  float $qty       Parsed quantity
+ * @param  float $discount  Discount percentage already resolved for this line
+ * @param  float $unitPrice Unit price as printed (0 when absent)
+ * @return float            Gross unit price to hand to addline()
+ */
+function easyocrResolveLineUnitPrice($item, $qty, $discount, $unitPrice)
+{
+	$unitPrice = (float) $unitPrice;
+	$divisor = ($qty > 0) ? $qty : 1;
+	// A 100% discount would divide by zero; nothing sensible to reconstruct
+	$undiscount = ($discount > 0 && $discount < 100) ? (1 - $discount / 100) : 1;
+
+	$net = null;
+	if (isset($item['net_amount']) && $item['net_amount'] !== null && $item['net_amount'] !== '') {
+		$net = easyocrParseNumber($item['net_amount']);
+	}
+
+	if ($unitPrice != 0) {
+		// The AI rounds unit prices to 2 decimals. On large quantities the
+		// printed price no longer reproduces the line total the document
+		// states (1500 x 3.434 arrives as 1500 x 3.43 = 5145, not 5150.50),
+		// which would create an invoice whose lines do not add up to its own
+		// total. The net amount is the figure the document's totals agree
+		// with, so it wins and the unit price is derived back from it.
+		if ($net !== null && $net != 0) {
+			$reproduced = $divisor * $unitPrice * $undiscount;
+			if (abs($reproduced - $net) > 0.01) {
+				return $net / $divisor / $undiscount;
+			}
+		}
+
+		return $unitPrice;
+	}
+
+	// 1) From the net line amount (already discounted on the document)
+	if ($net !== null && $net != 0) {
+		return $net / $divisor / $undiscount;
+	}
+
+	// 2) From the line total, stripping its taxes — also a net figure, so it
+	//    needs the same un-discounting as branch 1.
+	if (isset($item['total']) && $item['total'] !== null && $item['total'] !== '') {
+		$lineTotal = easyocrParseNumber($item['total']);
+		if ($lineTotal != 0) {
+			$lineTaxAmt = 0;
+			if (!empty($item['taxes']) && is_array($item['taxes'])) {
+				foreach ($item['taxes'] as $tax) {
+					if (is_array($tax) && isset($tax['tax_amount'])) {
+						$lineTaxAmt += easyocrParseNumber($tax['tax_amount']);
+					}
+				}
+			} elseif (isset($item['tax_amount']) && $item['tax_amount'] !== '') {
+				$lineTaxAmt = easyocrParseNumber($item['tax_amount']);
+			}
+			return ($lineTotal - $lineTaxAmt) / $divisor / $undiscount;
+		}
+	}
+
+	return 0.0;
+}
+
+/**
+ * Normalize a tax id (CIF/NIF/VAT) for comparison: uppercase, no separators.
+ *
+ * @param  string $taxId Raw tax id
+ * @return string        Normalized tax id ('' when empty)
+ */
+function easyocrNormalizeTaxId($taxId)
+{
+	return strtoupper(preg_replace('/[^A-Za-z0-9]/', '', (string) $taxId));
+}
+
+/**
+ * Collect every tax id identifying the Dolibarr company itself (the invoice receiver).
+ *
+ * Returns both the raw normalized value and, for country-prefixed ids such as
+ * "ESB12345678", the bare number — suppliers print either form.
+ *
+ * @return array Normalized tax ids, deduplicated, empty values removed
+ */
+function easyocrGetOwnTaxIds()
+{
+	global $conf, $mysoc;
+
+	$raw = array();
+
+	if (!empty($mysoc) && is_object($mysoc)) {
+		foreach (array('idprof1', 'idprof2', 'idprof3', 'idprof4', 'idprof5', 'idprof6', 'tva_intra') as $prop) {
+			if (!empty($mysoc->{$prop})) {
+				$raw[] = $mysoc->{$prop};
+			}
+		}
+	}
+
+	// Fall back to the raw constants — $mysoc may be un-initialized in NOLOGIN context
+	if (!empty($conf) && is_object($conf) && !empty($conf->global)) {
+		foreach (array('MAIN_INFO_SIREN', 'MAIN_INFO_SIRET', 'MAIN_INFO_APE', 'MAIN_INFO_RCS', 'MAIN_INFO_PROFID5', 'MAIN_INFO_PROFID6', 'MAIN_INFO_TVAINTRA') as $key) {
+			if (!empty($conf->global->{$key})) {
+				$raw[] = $conf->global->{$key};
+			}
+		}
+	}
+
+	$out = array();
+	foreach ($raw as $value) {
+		$norm = easyocrNormalizeTaxId($value);
+		if ($norm === '') {
+			continue;
+		}
+		$out[] = $norm;
+		// Country-prefixed VAT number → also keep the bare id
+		if (preg_match('/^[A-Z]{2}([A-Z0-9]{5,})$/', $norm, $m)) {
+			$out[] = $m[1];
+		}
+	}
+
+	return array_values(array_unique($out));
+}
+
+/**
+ * Check whether a tax id belongs to the Dolibarr company itself.
+ *
+ * Used to catch the classic OCR failure where the model reads the invoice
+ * RECEIVER as the supplier, which would otherwise create the user's own
+ * company as a supplier in llx_societe.
+ *
+ * @param  string $taxId Tax id extracted by the AI
+ * @return bool          True when it matches one of our own tax ids
+ */
+function easyocrIsOwnCompanyTaxId($taxId)
+{
+	$norm = easyocrNormalizeTaxId($taxId);
+	// Below 5 chars a match is far more likely to be noise than a real id
+	if ($norm === '' || strlen($norm) < 5) {
+		return false;
+	}
+
+	foreach (easyocrGetOwnTaxIds() as $own) {
+		if ($own === $norm) {
+			return true;
+		}
+		// Country prefix present on one side only (ESB1234 vs B1234)
+		if (strlen($own) > 2 && substr($own, 2) === $norm) {
+			return true;
+		}
+		if (strlen($norm) > 2 && substr($norm, 2) === $own) {
+			return true;
+		}
+	}
+
+	return false;
+}
+
+/**
+ * Build the "receiver context" block appended to the AI custom instructions.
+ *
+ * Deliberately DECLARATIVE and short: it states who the receiver is and nothing
+ * else. An earlier version asked the model to "verify before returning the JSON"
+ * and to "re-read the document" on a mismatch; against a structured-output model
+ * with reasoning disabled that turned a ~10 s extraction into minutes, because
+ * the model cannot deliberate and instead runs to the output-token ceiling and
+ * times out (the service then retries). Facts are cheap, procedures are not.
+ *
+ * Can be switched off entirely with EASYOCR_AI_RECEIVER_CONTEXT=0 — the
+ * post-OCR guard in easyocrCreateInvoiceFromOCR() still catches the bad case.
+ *
+ * @return string Instruction block, or '' when disabled / identity unknown
+ */
+function easyocrBuildReceiverContext()
+{
+	global $conf, $mysoc;
+
+	// OPT-IN, off by default. This is the only feature of v2.7.0 that alters the
+	// request sent to the AI service, and getting its wording wrong has already
+	// caused two production regressions (see the comment further down). The
+	// guard that actually prevents the bad write lives in
+	// easyocrCreateInvoiceFromOCR() and works regardless of this setting, so
+	// the default carries no prompt risk: with it off, the payload sent to the
+	// service is byte-for-byte the one v2.6.0 sent.
+	if (!is_object($conf) || empty($conf->global->EASYOCR_AI_RECEIVER_CONTEXT)) {
+		return '';
+	}
+
+	$name = '';
+	if (!empty($mysoc) && is_object($mysoc) && !empty($mysoc->name)) {
+		$name = $mysoc->name;
+	} elseif (!empty($conf) && is_object($conf) && !empty($conf->global->MAIN_INFO_SOCIETE_NOM)) {
+		$name = $conf->global->MAIN_INFO_SOCIETE_NOM;
+	}
+
+	$taxIds = easyocrGetOwnTaxIds();
+
+	if ($name === '' && empty($taxIds)) {
+		return '';
+	}
+
+	// States WHO WE ARE and nothing else. Two earlier versions were harmful:
+	//
+	//  1. A verification procedure ("verify before returning the JSON",
+	//     "re-read the document") — expensive against a structured-output
+	//     model with reasoning disabled.
+	//  2. A claim about the document itself ("the supplier is the OTHER
+	//     company on the document") — false whenever issuer and receiver are
+	//     the same party. Faced with an unsatisfiable instruction the model
+	//     degenerated, repeating newlines until it hit the output-token
+	//     ceiling, which both burned ~75 s and truncated the JSON.
+	//
+	// So: never assert anything about what the document contains, and always
+	// leave the model an instruction it can satisfy ("extract as printed").
+	$parts = array();
+	if ($name !== '') {
+		$parts[] = '"' . $name . '"';
+	}
+	if (!empty($taxIds)) {
+		$parts[] = 'tax id ' . implode(' / ', $taxIds);
+	}
+
+	$block  = 'Context, for telling the parties apart: this document is being processed by ' . implode(', ', $parts) . '. ';
+	$block .= 'Extract supplier and customer exactly as printed on the document.';
+
+	return $block;
+}
+
+/**
+ * Prepend the receiver context to user-supplied custom instructions.
+ *
+ * @param  string $customInstructions Instructions coming from the template / UI
+ * @return string                     Combined instructions
+ */
+function easyocrAugmentInstructions($customInstructions)
+{
+	$context = easyocrBuildReceiverContext();
+	if ($context === '') {
+		return $customInstructions;
+	}
+	$customInstructions = trim((string) $customInstructions);
+	if ($customInstructions === '') {
+		return $context;
+	}
+
+	return $context . "\n\n" . $customInstructions;
+}
+
+/**
+ * Resolve payment defaults for a supplier.
+ *
+ * The supplier record's own defaults are usually empty, so fall back to what
+ * actually happened on that supplier's recent invoices: the most frequent
+ * payment term, payment mode and bank account of the last invoices wins.
+ *
+ * @param  int $fk_soc  Supplier id
+ * @param  int $history Number of recent invoices to inspect (default 3)
+ * @return array        cond_reglement_id, mode_reglement_id, fk_account (0 when unknown)
+ */
+function easyocrGetSupplierPaymentDefaults($fk_soc, $history = 3)
+{
+	global $db;
+
+	if (empty($db) && !empty($GLOBALS['db'])) {
+		$db = $GLOBALS['db'];
+	}
+
+	$out = array(
+		'cond_reglement_id' => 0,
+		'mode_reglement_id' => 0,
+		'fk_account'        => 0,
+		'source'            => 'none',
+	);
+
+	$fk_soc = (int) $fk_soc;
+	if ($fk_soc <= 0 || empty($db) || !is_object($db)) {
+		return $out;
+	}
+
+	// 1) Supplier record defaults — explicit configuration wins over history
+	require_once DOL_DOCUMENT_ROOT . '/societe/class/societe.class.php';
+	$soc = new Societe($db);
+	if ($soc->fetch($fk_soc) > 0) {
+		if (!empty($soc->cond_reglement_supplier_id)) {
+			$out['cond_reglement_id'] = (int) $soc->cond_reglement_supplier_id;
+		}
+		if (!empty($soc->mode_reglement_supplier_id)) {
+			$out['mode_reglement_id'] = (int) $soc->mode_reglement_supplier_id;
+		}
+		if ($out['cond_reglement_id'] || $out['mode_reglement_id']) {
+			$out['source'] = 'supplier';
+		}
+	}
+
+	// 2) Fill the gaps from the most frequent values of the last invoices
+	$history = max(1, (int) $history);
+	$sql  = "SELECT f.fk_cond_reglement, f.fk_mode_reglement, f.fk_account";
+	$sql .= " FROM " . MAIN_DB_PREFIX . "facture_fourn as f";
+	$sql .= " WHERE f.fk_soc = " . $fk_soc;
+	$sql .= " AND f.entity IN (" . getEntity('supplier_invoice') . ")";
+	$sql .= " ORDER BY f.datef DESC, f.rowid DESC";
+	$sql .= " LIMIT " . $history;
+
+	$resql = $db->query($sql);
+	if (!$resql) {
+		return $out;
+	}
+
+	$counts = array('cond_reglement_id' => array(), 'mode_reglement_id' => array(), 'fk_account' => array());
+	$rows = 0;
+	while ($obj = $db->fetch_object($resql)) {
+		$rows++;
+		$map = array(
+			'cond_reglement_id' => (int) $obj->fk_cond_reglement,
+			'mode_reglement_id' => (int) $obj->fk_mode_reglement,
+			'fk_account'        => (int) $obj->fk_account,
+		);
+		foreach ($map as $key => $value) {
+			if ($value <= 0) {
+				continue;
+			}
+			if (!isset($counts[$key][$value])) {
+				$counts[$key][$value] = 0;
+			}
+			$counts[$key][$value]++;
+		}
+	}
+	$db->free($resql);
+
+	if ($rows === 0) {
+		return $out;
+	}
+
+	$usedHistory = false;
+	foreach ($counts as $key => $values) {
+		if ($out[$key] > 0 || empty($values)) {
+			continue;
+		}
+		// arsort keeps the first-inserted value on ties, i.e. the most recent invoice
+		arsort($values);
+		$out[$key] = (int) array_keys($values)[0];
+		$usedHistory = true;
+	}
+
+	if ($usedHistory) {
+		$out['source'] = ($out['source'] === 'supplier') ? 'mixed' : 'history';
+	}
+
+	return $out;
+}
+
+/**
+ * Compare the sum of OCR line items against the OCR document totals.
+ *
+ * The invoice is stored with the document totals forced by SQL, so a line that
+ * the AI misread stays invisible: Dolibarr shows correct totals over incorrect
+ * lines. This surfaces the gap so the user can fix it before creating.
+ *
+ * @param  array $items     OCR line items
+ * @param  array $totals    Document totals: total_ht, total_tva, total_ttc
+ * @param  float $tolerance Absolute tolerance in currency units (default 0.05)
+ * @return array            List of warnings: field, expected, computed, diff
+ */
+function easyocrCheckTotalsConsistency($items, $totals, $tolerance = 0.05)
+{
+	$warnings = array();
+
+	if (!is_array($items) || empty($items)) {
+		return $warnings;
+	}
+
+	$sumNet = 0.0;
+	$sumTax = 0.0;
+	foreach ($items as $item) {
+		if (!is_array($item)) {
+			continue;
+		}
+
+		$qty = isset($item['quantity']) && $item['quantity'] !== '' ? easyocrParseNumber($item['quantity']) : 1;
+		$unitPrice = isset($item['unit_price']) && $item['unit_price'] !== '' ? easyocrParseNumber($item['unit_price']) : 0;
+
+		if (isset($item['net_amount']) && $item['net_amount'] !== '' && $item['net_amount'] !== null) {
+			$net = easyocrParseNumber($item['net_amount']);
+		} else {
+			$discount = easyocrResolveLineDiscount($item, $qty, $unitPrice);
+			$net = $qty * $unitPrice * (1 - $discount / 100);
+		}
+		$sumNet += $net;
+
+		// Only IVA/VAT counts toward total_tva — RE and IRPF have their own totals
+		if (!empty($item['taxes']) && is_array($item['taxes'])) {
+			foreach ($item['taxes'] as $tax) {
+				if (!is_array($tax)) {
+					continue;
+				}
+				$type = strtolower(trim($tax['tax_type'] ?? ''));
+				if (!in_array($type, array('tva', 'iva', 'vat'), true)) {
+					continue;
+				}
+				if (isset($tax['tax_amount']) && $tax['tax_amount'] !== '' && $tax['tax_amount'] !== null && easyocrParseNumber($tax['tax_amount']) != 0) {
+					$sumTax += easyocrParseNumber($tax['tax_amount']);
+				} elseif (!empty($tax['tax_rate'])) {
+					$sumTax += $net * easyocrParseNumber($tax['tax_rate']) / 100;
+				}
+			}
+		}
+	}
+
+	$checks = array(
+		'total_ht'  => $sumNet,
+		'total_tva' => $sumTax,
+	);
+
+	foreach ($checks as $field => $computed) {
+		if (!isset($totals[$field]) || $totals[$field] === '' || $totals[$field] === null) {
+			continue;
+		}
+		$expected = easyocrParseNumber($totals[$field]);
+		// A zero declared total is "not reported", not a real mismatch
+		if (abs($expected) < 0.005) {
+			continue;
+		}
+		$diff = $computed - $expected;
+		if (abs($diff) > $tolerance) {
+			$warnings[] = array(
+				'field'    => $field,
+				'expected' => round($expected, 2),
+				'computed' => round($computed, 2),
+				'diff'     => round($diff, 2),
+			);
+		}
+	}
+
+	return $warnings;
+}
+
+
+// ============================================================
+// Processed-file fingerprints (avoid spending AI credits twice)
+// ============================================================
+
+/**
+ * Fingerprint a document's raw bytes.
+ *
+ * @param  string $content Raw file content
+ * @return string          Lowercase sha256 hex digest
+ */
+function easyocrComputeFileHash($content)
+{
+	return hash('sha256', (string) $content);
+}
+
+/**
+ * Whether an AI response actually carries usable structured data.
+ *
+ * The service answers HTTP 200 with status "success" even when the model failed
+ * to produce valid JSON — in that case structured_data is {raw, parse_error}
+ * instead of the document fields. Treating that as a success charges the user
+ * for nothing AND, worse, fingerprints the document so the retry is refused as
+ * a duplicate.
+ *
+ * @param  mixed $result Decoded service response
+ * @return bool          True when structured data can be used
+ */
+function easyocrAiResultIsUsable($result)
+{
+	if (!is_array($result)) {
+		return false;
+	}
+	if (!empty($result['error_code']) || !empty($result['structuring_error'])) {
+		return false;
+	}
+
+	$data = isset($result['structured_data']) ? $result['structured_data'] : null;
+	if (!is_array($data) || empty($data)) {
+		return false;
+	}
+	if (isset($data['parse_error'])) {
+		return false;
+	}
+
+	// A payload with none of the identifying fields is not worth showing either
+	$signals = array('document_number', 'issue_date', 'supplier', 'items', 'totals');
+	foreach ($signals as $key) {
+		if (!empty($data[$key])) {
+			return true;
+		}
+	}
+
+	return false;
+}
+
+/**
+ * Whether the duplicate-document check is active.
+ *
+ * On by default: re-processing a document the module has already seen costs AI
+ * credits for nothing. EASYOCR_DUPLICATE_CHECK=0 disables it entirely.
+ *
+ * @return bool
+ */
+function easyocrDuplicateCheckEnabled()
+{
+	global $conf;
+
+	if (!is_object($conf) || !isset($conf->global->EASYOCR_DUPLICATE_CHECK)) {
+		return true;
+	}
+
+	return !empty($conf->global->EASYOCR_DUPLICATE_CHECK);
+}
+
+/**
+ * How far back the duplicate check looks, in days. 0 = no limit (default).
+ *
+ * Useful for recurring documents: a supplier whose monthly invoice is byte
+ * identical would otherwise be flagged forever.
+ *
+ * @return int Days, or 0 for unlimited
+ */
+function easyocrDuplicateWindowDays()
+{
+	global $conf;
+
+	if (!is_object($conf) || empty($conf->global->EASYOCR_DUPLICATE_WINDOW_DAYS)) {
+		return 0;
+	}
+
+	return max(0, (int) $conf->global->EASYOCR_DUPLICATE_WINDOW_DAYS);
+}
+
+/**
+ * Look up a previously processed document by fingerprint, in the current entity.
+ *
+ * @param  string $hash        sha256 digest
+ * @param  bool   $applyWindow Honour EASYOCR_DUPLICATE_WINDOW_DAYS (false when
+ *                             checking for an existing row before inserting)
+ * @return array|null          Record data (filename, date_creation, invoice_id, invoice_ref) or null
+ */
+function easyocrLookupProcessedFile($hash, $applyWindow = true)
+{
+	global $db, $conf;
+
+	if (empty($db) && !empty($GLOBALS['db'])) {
+		$db = $GLOBALS['db'];
+	}
+	$hash = trim((string) $hash);
+	if ($hash === '' || empty($db) || !is_object($db)) {
+		return null;
+	}
+
+	$sql  = "SELECT p.rowid, p.filename, p.file_size, p.date_creation, p.fk_facture_fourn, f.ref as invoice_ref";
+	$sql .= " FROM " . MAIN_DB_PREFIX . "easyocr_processed_files as p";
+	$sql .= " LEFT JOIN " . MAIN_DB_PREFIX . "facture_fourn as f ON f.rowid = p.fk_facture_fourn";
+	$sql .= " WHERE p.file_hash = '" . $db->escape($hash) . "'";
+	$sql .= " AND p.entity = " . ((int) $conf->entity);
+	if ($applyWindow) {
+		$windowDays = easyocrDuplicateWindowDays();
+		if ($windowDays > 0) {
+			// Bound computed in PHP, not with NOW(): rows are written in GMT via
+			// idate(), while NOW() returns the database server's local time.
+			$sql .= " AND p.date_creation >= '" . $db->idate(dol_now() - ($windowDays * 86400)) . "'";
+		}
+	}
+	$sql .= " LIMIT 1";
+
+	$resql = $db->query($sql);
+	if (!$resql || $db->num_rows($resql) < 1) {
+		return null;
+	}
+
+	$obj = $db->fetch_object($resql);
+	$db->free($resql);
+
+	return array(
+		'id'            => (int) $obj->rowid,
+		'filename'      => $obj->filename,
+		'file_size'     => (int) $obj->file_size,
+		'date_creation' => $db->jdate($obj->date_creation),
+		'invoice_id'    => (int) $obj->fk_facture_fourn,
+		'invoice_ref'   => $obj->invoice_ref,
+	);
+}
+
+/**
+ * Record a document fingerprint after it has been sent to the AI service.
+ *
+ * Idempotent: re-registering the same hash refreshes the filename instead of
+ * failing on the unique index.
+ *
+ * @param  string $hash     sha256 digest
+ * @param  string $filename Original filename
+ * @param  int    $fileSize Size in bytes
+ * @param  int    $userId   Author user id
+ * @return int              >0 on success, <=0 on failure
+ */
+function easyocrRegisterProcessedFile($hash, $filename = '', $fileSize = 0, $userId = 0)
+{
+	global $db, $conf;
+
+	if (empty($db) && !empty($GLOBALS['db'])) {
+		$db = $GLOBALS['db'];
+	}
+	$hash = trim((string) $hash);
+	if ($hash === '' || empty($db) || !is_object($db)) {
+		return -1;
+	}
+
+	// Ignore the time window here: an existing row must be found whatever its
+	// age, or the INSERT below would collide with the unique index. Refresh its
+	// date so the window is measured from the LAST time we processed the file.
+	$existing = easyocrLookupProcessedFile($hash, false);
+	if ($existing !== null) {
+		$sqlTouch  = "UPDATE " . MAIN_DB_PREFIX . "easyocr_processed_files";
+		$sqlTouch .= " SET date_creation = '" . $db->idate(dol_now()) . "'";
+		$sqlTouch .= " WHERE rowid = " . ((int) $existing['id']);
+		$db->query($sqlTouch);
+
+		return $existing['id'];
+	}
+
+	$sql  = "INSERT INTO " . MAIN_DB_PREFIX . "easyocr_processed_files";
+	$sql .= " (entity, file_hash, filename, file_size, fk_user, date_creation)";
+	$sql .= " VALUES (" . ((int) $conf->entity);
+	$sql .= ", '" . $db->escape($hash) . "'";
+	$sql .= ", '" . $db->escape(dol_trunc((string) $filename, 250, 'right', 'UTF-8', 1)) . "'";
+	$sql .= ", " . ((int) $fileSize);
+	$sql .= ", " . ((int) $userId > 0 ? (int) $userId : "NULL");
+	$sql .= ", '" . $db->idate(dol_now()) . "')";
+
+	if (!$db->query($sql)) {
+		// Concurrent insert hit the unique index — treat as success
+		$existing = easyocrLookupProcessedFile($hash, false);
+		if ($existing !== null) {
+			return $existing['id'];
+		}
+		dol_syslog('EasyOCR: could not register processed file hash — ' . $db->lasterror(), LOG_WARNING);
+		return -1;
+	}
+
+	return (int) $db->last_insert_id(MAIN_DB_PREFIX . 'easyocr_processed_files');
+}
+
+/**
+ * Attach a created supplier invoice to a document fingerprint.
+ *
+ * @param  string $hash      sha256 digest
+ * @param  int    $invoiceId Supplier invoice id
+ * @return bool              True when a row was updated
+ */
+function easyocrLinkProcessedFileToInvoice($hash, $invoiceId)
+{
+	global $db, $conf;
+
+	if (empty($db) && !empty($GLOBALS['db'])) {
+		$db = $GLOBALS['db'];
+	}
+	$hash = trim((string) $hash);
+	if ($hash === '' || (int) $invoiceId <= 0 || empty($db) || !is_object($db)) {
+		return false;
+	}
+
+	$sql  = "UPDATE " . MAIN_DB_PREFIX . "easyocr_processed_files";
+	$sql .= " SET fk_facture_fourn = " . ((int) $invoiceId);
+	$sql .= " WHERE file_hash = '" . $db->escape($hash) . "'";
+	$sql .= " AND entity = " . ((int) $conf->entity);
+
+	return (bool) $db->query($sql);
 }
 
 
@@ -347,7 +1113,10 @@ function easyocrCreateInvoiceFromOCR($params, $userObj = null)
 	$invoice_status    = isset($params['invoice_status']) ? $params['invoice_status'] : '';
 	$invoice_type      = isset($params['invoice_type']) ? (int) $params['invoice_type'] : 0;
 	$journal_code      = isset($params['journal_code']) ? trim($params['journal_code']) : '';
+	// facture_fourn.import_key is varchar(14): a longer value makes the UPDATE
+	// below fail outright under STRICT_TRANS_TABLES instead of being truncated.
 	$import_key        = isset($params['import_key']) ? $params['import_key'] : 'easyocr-ai';
+	$import_key        = dol_trunc((string) $import_key, 14, 'right', 'UTF-8', 1);
 
 	// Supplier data
 	$supplier_name    = isset($params['supplier_name']) ? trim($params['supplier_name']) : '';
@@ -384,6 +1153,32 @@ function easyocrCreateInvoiceFromOCR($params, $userObj = null)
 	$supplier_created_name = '';
 
 	dol_syslog('EasyOCR-CREATE: Params — fk_soc=' . $fk_soc . ', ref_supplier=' . $ref_supplier . ', supplier_name=' . $supplier_name . ', supplier_tax_id=' . $supplier_tax_id . ', datef=' . $datef_str . ', total_ht=' . $total_ht_str . ', total_ttc=' . $total_ttc_str . ', items=' . (is_array($items) ? count($items) : 'N/A'), LOG_INFO);
+
+	// ── Receiver-as-supplier guard ───────────────────────────────────────
+	// Classic OCR failure: the model reads the invoice RECEIVER (us) as the
+	// supplier. Without this check we would look up — or worse, create — our
+	// own company as a supplier in llx_societe.
+	// Only applies when no supplier was chosen explicitly: with fk_soc set the
+	// user already decided and the OCR tax id is not used to resolve anything.
+	if (empty($fk_soc) && !empty($supplier_tax_id) && empty($conf->global->EASYOCR_ALLOW_SELF_SUPPLIER)) {
+		if (easyocrIsOwnCompanyTaxId($supplier_tax_id)) {
+			$msg = is_object($langs) ? $langs->trans('EasyOcrSupplierIsReceiver', $supplier_tax_id) : 'The extracted supplier tax id (' . $supplier_tax_id . ') is your own company: the OCR read the invoice receiver as the supplier. Fix the supplier before creating the invoice.';
+			dol_syslog('EasyOCR-CREATE: ABORT — supplier_tax_id=' . $supplier_tax_id . ' matches our own company tax ids', LOG_ERR);
+			return ['status' => 'error', 'message' => $msg, 'error_code' => 'supplier_is_receiver'];
+		}
+
+		// Same id on both sides means the model duplicated one party
+		$customer_tax_id = isset($params['customer_tax_id']) ? trim($params['customer_tax_id']) : '';
+		if (!empty($customer_tax_id)) {
+			$normSup = easyocrNormalizeTaxId($supplier_tax_id);
+			$normCus = easyocrNormalizeTaxId($customer_tax_id);
+			if ($normSup !== '' && $normSup === $normCus) {
+				$msg = is_object($langs) ? $langs->trans('EasyOcrSupplierEqualsCustomer', $supplier_tax_id) : 'Supplier and customer share the same tax id (' . $supplier_tax_id . '): the OCR could not tell them apart. Fix the supplier before creating the invoice.';
+				dol_syslog('EasyOCR-CREATE: ABORT — supplier_tax_id equals customer_tax_id (' . $supplier_tax_id . ')', LOG_ERR);
+				return ['status' => 'error', 'message' => $msg, 'error_code' => 'supplier_equals_customer'];
+			}
+		}
+	}
 
 	// ── Advisory lock to prevent race condition on concurrent webhooks ──
 	// Serializes BOTH supplier search/creation AND invoice duplicate check.
@@ -633,15 +1428,17 @@ function easyocrCreateInvoiceFromOCR($params, $userObj = null)
 	$socTmp = new Societe($db);
 	$socTmp->fetch($fk_soc);
 
+	// Payment defaults: supplier record first, then the most frequent values of
+	// its recent invoices (the supplier record is usually left empty).
 	$supplier_payment_mode = 0;
 	$supplier_payment_cond = 0;
+	$supplier_payment_account = 0;
 	if (!empty($socTmp->id)) {
-		if (!empty($socTmp->mode_reglement_supplier_id)) {
-			$supplier_payment_mode = $socTmp->mode_reglement_supplier_id;
-		}
-		if (!empty($socTmp->cond_reglement_supplier_id)) {
-			$supplier_payment_cond = $socTmp->cond_reglement_supplier_id;
-		}
+		$paymentDefaults = easyocrGetSupplierPaymentDefaults($fk_soc);
+		$supplier_payment_mode    = (int) $paymentDefaults['mode_reglement_id'];
+		$supplier_payment_cond    = (int) $paymentDefaults['cond_reglement_id'];
+		$supplier_payment_account = (int) $paymentDefaults['fk_account'];
+		dol_syslog('EasyOCR-CREATE: Payment defaults (' . $paymentDefaults['source'] . ') — cond=' . $supplier_payment_cond . ', mode=' . $supplier_payment_mode . ', account=' . $supplier_payment_account, LOG_DEBUG);
 	}
 
 	// ── Create invoice ───────────────────────────────────────────────────
@@ -697,7 +1494,10 @@ function easyocrCreateInvoiceFromOCR($params, $userObj = null)
 		$sql_upd .= ", fk_account = (SELECT rowid FROM " . MAIN_DB_PREFIX . "accounting_journal WHERE code = '" . $db->escape($journal_code) . "' AND entity = " . ((int) $conf->entity) . " LIMIT 1)";
 	}
 	$sql_upd .= " WHERE rowid = " . ((int) $newId);
-	$db->query($sql_upd);
+	if (!$db->query($sql_upd)) {
+		// Not fatal, but it used to fail silently and lose the origin tag
+		dol_syslog('EasyOCR-CREATE: could not set import_key/journal — ' . $db->lasterror(), LOG_WARNING);
+	}
 
 	// ── Add lines — full tax support (IVA/TVA, RE, IRPF) + product matching ─
 	$lineErrors = array();
@@ -706,9 +1506,16 @@ function easyocrCreateInvoiceFromOCR($params, $userObj = null)
 		foreach ($items as $item) {
 			$lineIndex++;
 			$desc = !empty($item['description']) ? $item['description'] : 'Línea';
-			$qty = !empty($item['quantity']) ? floatval($item['quantity']) : 1;
+			// easyocrParseNumber, not floatval: a hand-edited "3,5" would become 3
+			$qty = !empty($item['quantity']) ? easyocrParseNumber($item['quantity']) : 1;
+			if ($qty == 0) {
+				$qty = 1;
+			}
 			$unit_price = isset($item['unit_price']) && $item['unit_price'] !== '' ? easyocrParseNumber($item['unit_price']) : 0;
-			$discount = !empty($item['discount_percent']) ? floatval($item['discount_percent']) : 0;
+			// Discount cascade: explicit % -> absolute amount -> implicit gap between
+			// qty*unit_price and net_amount. Resolved against the unit price as printed
+			// on the document, before any reconstruction below.
+			$discount = easyocrResolveLineDiscount($item, $qty, $unit_price);
 			$itemType = isset($item['item_type']) ? strtolower(trim($item['item_type'])) : '';
 			// Réf. produit fournisseur (CODE OCR): capturar SIEMPRE, antes del gate de producto,
 			// para conservarla también en líneas service/discount/surcharge/other. Se persiste abajo en addline().
@@ -740,26 +1547,8 @@ function easyocrCreateInvoiceFromOCR($params, $userObj = null)
 			$localtax1_rate = get_localtax($tva_rate, 1, $mysoc, $socTmp);
 			$localtax2_rate = get_localtax($tva_rate, 2, $mysoc, $socTmp);
 
-			// Calculate unit_price from net_amount or total if missing
-			if ($unit_price == 0 && !empty($item['net_amount'])) {
-				$net = easyocrParseNumber($item['net_amount']);
-				$unit_price = $net / ($qty > 0 ? $qty : 1);
-				if ($discount > 0) {
-					$unit_price = $unit_price / (1 - $discount / 100);
-				}
-			}
-			if ($unit_price == 0 && !empty($item['total'])) {
-				$lineTotal = easyocrParseNumber($item['total']);
-				$lineTaxAmt = 0;
-				if (!empty($item['taxes']) && is_array($item['taxes'])) {
-					foreach ($item['taxes'] as $tax) {
-						$lineTaxAmt += floatval($tax['tax_amount'] ?? 0);
-					}
-				} elseif (!empty($item['tax_amount'])) {
-					$lineTaxAmt = easyocrParseNumber($item['tax_amount']);
-				}
-				$unit_price = ($lineTotal - $lineTaxAmt) / ($qty > 0 ? $qty : 1);
-			}
+			// Reconstruct the gross unit price when the document did not print one
+			$unit_price = easyocrResolveLineUnitPrice($item, $qty, $discount, $unit_price);
 
 			// Product matching — skip for discount/surcharge/other types.
 			// The OCR "code" is the SUPPLIER's article reference, so fk_product is resolved in order:
@@ -768,6 +1557,24 @@ function easyocrCreateInvoiceFromOCR($params, $userObj = null)
 			//   3) auto-create product                                                  -> opt-in only (EASYOCR_AI_AUTOCREATE_PRODUCT), OFF by default
 			$fk_product = 0;
 			$skipProductMatch = in_array($itemType, ['discount', 'surcharge', 'other', '']);
+
+			// A product picked by hand in the review screen wins over any lookup:
+			// the user has seen the document and the match, we have not.
+			if (!empty($item['fk_product']) && (int) $item['fk_product'] > 0) {
+				$explicitProductId = (int) $item['fk_product'];
+				$sqlChk = "SELECT rowid FROM " . MAIN_DB_PREFIX . "product";
+				$sqlChk .= " WHERE rowid = " . $explicitProductId;
+				$sqlChk .= " AND entity IN (" . getEntity('product') . ") LIMIT 1";
+				$resChk = $db->query($sqlChk);
+				if ($resChk && $db->num_rows($resChk) > 0) {
+					$fk_product = $explicitProductId;
+					$skipProductMatch = true;
+					dol_syslog("EasyOCR: line #$lineIndex uses user-selected fk_product=$fk_product", LOG_DEBUG);
+				} else {
+					dol_syslog("EasyOCR: line #$lineIndex ignored out-of-entity fk_product=$explicitProductId", LOG_WARNING);
+				}
+			}
+
 			if (!$skipProductMatch && $lineRef !== '') {
 				// 1) PRIMARY: supplier reference (ref_fourn) registered for this supplier
 				$sqlPfp = "SELECT fk_product FROM " . MAIN_DB_PREFIX . "product_fournisseur_price";
@@ -953,6 +1760,12 @@ function easyocrCreateInvoiceFromOCR($params, $userObj = null)
 	}
 
 	// ── Create payment ───────────────────────────────────────────────────
+	// No explicit bank account: reuse the one this supplier's recent invoices
+	// were paid into, so the webhook does not need it configured up front.
+	if ($create_payment == '1' && $payment_bank_id <= 0 && $supplier_payment_account > 0) {
+		$payment_bank_id = $supplier_payment_account;
+		dol_syslog('EasyOCR-CREATE: payment_bank_id defaulted to ' . $payment_bank_id . ' from supplier payment history', LOG_INFO);
+	}
 	if ($create_payment == '1' && $payment_bank_id > 0 && $invoice_status !== 'draft') {
 		if ($payment_type_id <= 0) $payment_type_id = 6;
 		$paymentAmount = $facture->total_ttc;
@@ -977,8 +1790,19 @@ function easyocrCreateInvoiceFromOCR($params, $userObj = null)
 	// ── Release advisory lock ────────────────────────────────────────────
 	if ($lockAcquired) $db->query("SELECT RELEASE_LOCK('" . $db->escape($lockName) . "')");
 
+	// ── Totals consistency ───────────────────────────────────────────────
+	// Document totals are forced by SQL above, so a misread line stays hidden:
+	// Dolibarr would show correct totals over incorrect lines. Report the gap.
+	$totalsWarnings = easyocrCheckTotalsConsistency(
+		$items,
+		array('total_ht' => $total_ht, 'total_tva' => $total_tva)
+	);
+	foreach ($totalsWarnings as $tw) {
+		dol_syslog('EasyOCR-CREATE: TOTALS MISMATCH on invoice ' . $ref . ' — ' . $tw['field'] . ': lines=' . $tw['computed'] . ', document=' . $tw['expected'] . ', diff=' . $tw['diff'], LOG_WARNING);
+	}
+
 	// ── Return result ────────────────────────────────────────────────────
-	dol_syslog('EasyOCR-CREATE: SUCCESS — id=' . $newId . ', ref=' . $ref . ', fk_soc=' . $fk_soc . ', draft=' . ($invoice_status === 'draft' ? 'YES' : 'NO') . ', line_errors=' . count($lineErrors), LOG_INFO);
+	dol_syslog('EasyOCR-CREATE: SUCCESS — id=' . $newId . ', ref=' . $ref . ', fk_soc=' . $fk_soc . ', draft=' . ($invoice_status === 'draft' ? 'YES' : 'NO') . ', line_errors=' . count($lineErrors) . ', totals_warnings=' . count($totalsWarnings), LOG_INFO);
 	return [
 		'status'           => 'ok',
 		'id'               => $newId,
@@ -988,6 +1812,7 @@ function easyocrCreateInvoiceFromOCR($params, $userObj = null)
 		'supplier_name'    => $supplier_created_name,
 		'is_draft'         => ($invoice_status === 'draft'),
 		'line_errors'      => $lineErrors,
+		'totals_warnings'  => $totalsWarnings,
 		// Aliases for webhook compatibility
 		'invoice_id'       => $newId,
 		'invoice_ref'      => $ref,

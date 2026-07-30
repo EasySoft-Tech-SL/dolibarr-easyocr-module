@@ -34,7 +34,9 @@ const EasyOcr = (function () {
         aiResult: null,       // Último resultado AI OCR
         defaultTaxRate: 0,    // Tasa IVA por defecto del documento (de totals.taxes)
         customInstructions: '', // Instrucciones personalizadas para IA (por plantilla/proveedor)
-        selectedSupplierID: null // Proveedor seleccionado/detectado por CIF en modal AI
+        selectedSupplierID: null, // Proveedor seleccionado/detectado por CIF en modal AI
+        lastFileHash: '',     // Huella del documento procesado (dedupe + vínculo con factura)
+        aiPayloadViewer: null // Instancia del visor JSON del modal IA (botón JSON)
     };
 
     // Historial para undo
@@ -1682,6 +1684,7 @@ const EasyOcr = (function () {
         state.activeTag = null;
         state.isDrawing = false;
         state.pages = [];
+        state.lastFileHash = '';
         history.length = 0;
         Object.keys(textCache).forEach(k => delete textCache[k]);
 
@@ -1764,7 +1767,7 @@ const EasyOcr = (function () {
     }
 
     /* ---------- SSE via PHP proxy (same origin, no CORS) ---------- */
-    function runAIOcrSSE(base64) {
+    function runAIOcrSSE(base64, force) {
         var btn = document.getElementById('eo-btn-ai-ocr');
         var progressEl = document.getElementById('eo-ai-progress');
         var fillEl = document.getElementById('eo-ai-progress-fill');
@@ -1792,6 +1795,9 @@ const EasyOcr = (function () {
         if (state.customInstructions) {
             formData.append('custom_instructions', state.customInstructions);
         }
+        if (force) {
+            formData.append('force_reprocess', '1');
+        }
 
         var gotRealEvent = false;
 
@@ -1802,6 +1808,8 @@ const EasyOcr = (function () {
             if (!response.ok) {
                 throw new Error('HTTP ' + response.status);
             }
+            // Fingerprint comes back as a header so older cached clients ignore it
+            state.lastFileHash = response.headers.get('X-EasyOcr-File-Hash') || '';
             return readSSEStream(response, fillEl, textEl, function() {
                 // Called on first real SSE event — stop simulated progress
                 if (!gotRealEvent) {
@@ -1812,6 +1820,23 @@ const EasyOcr = (function () {
         }).then(function (resultData) {
             stopSimulatedProgress();
             resetAIProgress();
+            if (resultData && resultData.__duplicate) {
+                // Already processed: re-run only if the user accepts the cost
+                var info = resultData.info || {};
+                confirmReprocess(info, function () {
+                    runAIOcrSSE(base64, true);
+                }, function () {
+                    state.lastFileHash = info.file_hash || '';
+                    toast(info.message || (L.aiDuplicateFile || 'Document already processed'), 'warn');
+                });
+                return;
+            }
+            if (resultData && !aiPayloadIsUsable(resultData)) {
+                // The model answered but could not produce JSON. Showing an empty
+                // review modal would look like the document had no data in it.
+                toast(L.aiUnreadable || 'The service could not read this document. Try again.', 'error');
+                return;
+            }
             if (resultData) {
                 state.aiResult = resultData;
                 displayAIResult(resultData);
@@ -1891,6 +1916,10 @@ const EasyOcr = (function () {
                             result = data;
                             if (fillEl) fillEl.style.width = '100%';
                             if (textEl) textEl.textContent = L.aiOcrSuccess || 'Completado';
+                        } else if (eventType === 'duplicate') {
+                            // Server refused to spend credits on a known document
+                            resolve({ __duplicate: true, info: data });
+                            return;
                         } else if (eventType === 'error') {
                             reject(new Error(data.message || 'SSE error'));
                             return;
@@ -1903,8 +1932,30 @@ const EasyOcr = (function () {
         });
     }
 
+    /**
+     * Ask the user whether to re-run the AI on a document already processed.
+     * Re-processing spends credits again, so it is never automatic.
+     * Asynchronous: the answer arrives through onAccept / onDecline.
+     */
+    function confirmReprocess(info, onAccept, onDecline) {
+        eoConfirm({
+            title: L.aiDuplicateTitle || 'Document already processed',
+            message: info.message || (L.aiDuplicateFile || 'This document was already processed.'),
+            meta: [
+                { label: L.aiDuplicateFileLabel || 'File', value: info.filename },
+                { label: L.aiDuplicateProcessedOn || 'Processed on', value: info.processed_on },
+                { label: L.aiLinkedInvoice || 'Invoice', value: info.invoice_ref }
+            ],
+            question: L.aiReprocessAnyway || 'Process it again anyway? This will consume AI credits.',
+            confirmLabel: L.aiReprocessConfirm || 'Process again',
+            cancelLabel: L.cancel || 'Cancel',
+            onConfirm: onAccept,
+            onCancel: onDecline
+        });
+    }
+
     /* ---------- Classic AJAX fallback with simulated progress ---------- */
-    function runAIOcrClassic(base64) {
+    function runAIOcrClassic(base64, force) {
         var progressEl = document.getElementById('eo-ai-progress');
         var fillEl = document.getElementById('eo-ai-progress-fill');
         var textEl = document.getElementById('eo-ai-progress-text');
@@ -1924,14 +1975,31 @@ const EasyOcr = (function () {
             url: "ajax/ajax_easyocr.php",
             type: 'POST',
             dataType: 'json',
-            data: { action: "aiOcr", base64_data: base64, custom_instructions: state.customInstructions || '' },
+            data: {
+                action: "aiOcr",
+                base64_data: base64,
+                custom_instructions: state.customInstructions || '',
+                file_name: (state.file && state.file.name) || '',
+                force_reprocess: force ? 1 : 0
+            },
             success: function (response) {
                 stopSimulatedProgress();
                 if (fillEl) fillEl.style.width = '100%';
                 if (textEl) textEl.textContent = '';
                 resetAIProgress();
+                if (response.status === 'duplicate') {
+                    // Already processed: re-run only if the user accepts the cost
+                    confirmReprocess(response, function () {
+                        runAIOcrClassic(base64, true);
+                    }, function () {
+                        state.lastFileHash = response.file_hash || '';
+                        toast(response.message || (L.aiDuplicateFile || 'Document already processed'), 'warn');
+                    });
+                    return;
+                }
                 if (response.status === 'ok' && response.data) {
                     state.aiResult = response.data;
+                    state.lastFileHash = response.file_hash || '';
                     displayAIResult(response.data);
                     toast(L.aiOcrSuccess || 'AI extraction complete', 'success');
                 } else {
@@ -2052,7 +2120,7 @@ const EasyOcr = (function () {
         if (tbody) {
             tbody.innerHTML = '';
             if (items.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="11" class="eo-ai-empty-lines">' + (L.aiNoLines || 'No line items') + '</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="12" class="eo-ai-empty-lines">' + (L.aiNoLines || 'No line items') + '</td></tr>';
             } else {
                 items.forEach(function (item, idx) {
                     tbody.appendChild(createLineRow(item, idx));
@@ -2129,8 +2197,286 @@ const EasyOcr = (function () {
             }
         }
 
+        // Resolve OCR codes against the catalogue so the user sees which lines
+        // will actually be linked to a product, and can fix the ones that won't.
+        resolveLineProducts();
+
+        // Surface any gap between the line items and the document totals
+        refreshTotalsMismatch();
+
         // Show modal
         document.getElementById('eo-modal-ai').style.display = 'flex';
+    }
+
+    /**
+     * Parse a number the user may have typed with a comma as decimal mark.
+     * parseFloat("21,5") returns 21, silently dropping the decimals.
+     */
+    function eoParseNum(value) {
+        if (typeof value === 'number') return value;
+        if (value === null || value === undefined) return 0;
+        var n = parseFloat(String(value).trim().replace(',', '.'));
+        return isNaN(n) ? 0 : n;
+    }
+
+    // ---- Line ↔ product linking ----
+
+    function currentSupplierId() {
+        return state.selectedSupplierID || $('#eo-supplier').val() || '';
+    }
+
+    function resolveLineProducts() {
+        var rows = document.querySelectorAll('#eo-ai-lines-tbody tr[data-ai-line-idx]');
+        if (!rows.length) return;
+
+        var codes = [];
+        rows.forEach(function (row) {
+            var codeInput = row.querySelector('[data-ai-line-key="code"]');
+            var code = codeInput ? codeInput.value.trim() : '';
+            if (code && codes.indexOf(code) === -1) codes.push(code);
+        });
+        if (!codes.length) {
+            rows.forEach(function (row) { paintProductCell(row, null); });
+            return;
+        }
+
+        $.ajax({
+            url: 'ajax/ajax_easyocr.php',
+            type: 'POST',
+            dataType: 'json',
+            data: {
+                action: 'resolveProductCodes',
+                fk_soc: currentSupplierId(),
+                codes: JSON.stringify(codes)
+            },
+            success: function (res) {
+                var matches = (res && res.matches) || {};
+                rows.forEach(function (row) {
+                    var codeInput = row.querySelector('[data-ai-line-key="code"]');
+                    var code = codeInput ? codeInput.value.trim() : '';
+                    paintProductCell(row, (code && matches[code]) ? matches[code] : null);
+                });
+            },
+            error: function () {
+                // Lookup is advisory: leave the cells in their "unknown" state
+            }
+        });
+    }
+
+    function paintProductCell(row, match) {
+        var cell = row.querySelector('.eo-ai-td-product');
+        if (!cell) return;
+        var hidden = cell.querySelector('[data-ai-line-key="fk_product"]');
+        var badge = cell.querySelector('.eo-ai-prod-badge');
+        if (!hidden || !badge) return;
+
+        // Never overwrite a product the user picked by hand
+        if (cell.getAttribute('data-manual') === '1') return;
+
+        if (match && match.rowid) {
+            hidden.value = match.rowid;
+            badge.textContent = match.ref || '✔';
+            badge.title = (L.aiProductLinked || 'Linked to') + ' ' + (match.ref || '') + ' — ' + (match.label || '');
+            cell.setAttribute('data-state', 'linked');
+        } else {
+            hidden.value = '';
+            badge.textContent = '—';
+            badge.title = L.aiProductNotLinked || 'No product linked — the line will be created as a free-text line';
+            cell.setAttribute('data-state', 'none');
+        }
+    }
+
+    function buildProductCell(row) {
+        var td = document.createElement('td');
+        td.className = 'eo-ai-td-product';
+        td.setAttribute('data-state', 'none');
+
+        var hidden = document.createElement('input');
+        hidden.type = 'hidden';
+        hidden.className = 'eo-ai-td-input';
+        hidden.setAttribute('data-ai-line-key', 'fk_product');
+        hidden.value = '';
+        td.appendChild(hidden);
+
+        var badge = document.createElement('button');
+        badge.type = 'button';
+        badge.className = 'eo-ai-prod-badge';
+        badge.textContent = '—';
+        badge.title = L.aiProductNotLinked || 'No product linked';
+        td.appendChild(badge);
+
+        var box = document.createElement('div');
+        box.className = 'eo-ai-prod-search';
+        box.style.display = 'none';
+
+        var search = document.createElement('input');
+        search.type = 'text';
+        search.className = 'eo-ai-prod-input';
+        search.placeholder = L.aiProductSearch || 'Search product…';
+        box.appendChild(search);
+
+        var results = document.createElement('ul');
+        results.className = 'eo-ai-prod-results';
+        box.appendChild(results);
+
+        td.appendChild(box);
+
+        badge.addEventListener('click', function (e) {
+            e.preventDefault();
+            var open = box.style.display !== 'none';
+            closeAllProductSearches();
+            if (!open) {
+                box.style.display = 'block';
+                // Seed the search with the OCR code so the common case is one click
+                var codeInput = row.querySelector('[data-ai-line-key="code"]');
+                search.value = codeInput ? codeInput.value.trim() : '';
+                search.focus();
+                runProductSearch(search, results, td, row);
+            }
+        });
+
+        var debounce = null;
+        search.addEventListener('input', function () {
+            clearTimeout(debounce);
+            debounce = setTimeout(function () {
+                runProductSearch(search, results, td, row);
+            }, 250);
+        });
+
+        return td;
+    }
+
+    function closeAllProductSearches() {
+        document.querySelectorAll('.eo-ai-prod-search').forEach(function (b) {
+            b.style.display = 'none';
+        });
+    }
+
+    function runProductSearch(searchInput, resultsEl, cell, row) {
+        var term = searchInput.value.trim();
+        resultsEl.innerHTML = '';
+        if (term.length < 2) return;
+
+        $.ajax({
+            url: 'ajax/ajax_easyocr.php',
+            type: 'POST',
+            dataType: 'json',
+            data: { action: 'searchProducts', term: term, fk_soc: currentSupplierId() },
+            success: function (list) {
+                resultsEl.innerHTML = '';
+                if (!list || !list.length) {
+                    var none = document.createElement('li');
+                    none.className = 'eo-ai-prod-none';
+                    none.textContent = L.aiProductNoResults || 'No products found';
+                    resultsEl.appendChild(none);
+                    return;
+                }
+                list.forEach(function (p) {
+                    var li = document.createElement('li');
+                    li.className = 'eo-ai-prod-item';
+                    var label = p.ref + ' — ' + (p.label || '');
+                    if (p.ref_fourn) label += ' [' + p.ref_fourn + ']';
+                    li.textContent = label;
+                    li.title = label;
+                    li.addEventListener('click', function () {
+                        applyProductToLine(cell, row, p);
+                        closeAllProductSearches();
+                    });
+                    resultsEl.appendChild(li);
+                });
+
+                // Let the user detach a product they linked by mistake
+                var clear = document.createElement('li');
+                clear.className = 'eo-ai-prod-item eo-ai-prod-clear';
+                clear.textContent = L.aiProductUnlink || 'Unlink product';
+                clear.addEventListener('click', function () {
+                    cell.removeAttribute('data-manual');
+                    paintProductCell(row, null);
+                    closeAllProductSearches();
+                });
+                resultsEl.appendChild(clear);
+            },
+            error: function () {
+                resultsEl.innerHTML = '';
+            }
+        });
+    }
+
+    function applyProductToLine(cell, row, product) {
+        var hidden = cell.querySelector('[data-ai-line-key="fk_product"]');
+        var badge = cell.querySelector('.eo-ai-prod-badge');
+        if (!hidden || !badge) return;
+
+        hidden.value = product.rowid;
+        badge.textContent = product.ref || '✔';
+        badge.title = (L.aiProductLinked || 'Linked to') + ' ' + (product.ref || '') + ' — ' + (product.label || '');
+        cell.setAttribute('data-state', 'linked');
+        cell.setAttribute('data-manual', '1');
+
+        // Fill an empty description, never overwrite what the OCR read
+        var descInput = row.querySelector('[data-ai-line-key="description"]');
+        if (descInput && descInput.value.trim() === '' && product.label) {
+            descInput.value = product.label;
+        }
+    }
+
+    // ---- Totals coherence ----
+
+    function refreshTotalsMismatch() {
+        var banner = document.getElementById('eo-ai-totals-warning');
+        if (!banner) return;
+
+        var rows = document.querySelectorAll('#eo-ai-lines-tbody tr[data-ai-line-idx]');
+        if (!rows.length) {
+            banner.style.display = 'none';
+            return;
+        }
+
+        var sumNet = 0, sumTax = 0;
+        rows.forEach(function (row) {
+            var has = function (key) {
+                var el = row.querySelector('[data-ai-line-key="' + key + '"]');
+                return el && String(el.value).trim() !== '';
+            };
+            var get = function (key) {
+                var el = row.querySelector('[data-ai-line-key="' + key + '"]');
+                return el ? eoParseNum(el.value) : 0;
+            };
+            var qty = has('quantity') ? get('quantity') : 1;
+            var price = get('unit_price');
+            var disc = get('discount_percent');
+            var net = has('total') ? get('total') : qty * price * (1 - disc / 100);
+            sumNet += net;
+            sumTax += net * get('tax_rate') / 100;
+        });
+
+        var docNetRaw = getTotalsFieldValue('subtotal');
+        var docTaxRaw = getTotalsFieldValue('tax');
+        var docNet = docNetRaw === '' ? NaN : eoParseNum(docNetRaw);
+        var docTax = docTaxRaw === '' ? NaN : eoParseNum(docTaxRaw);
+
+        var msgs = [];
+        // 0.05 absorbs per-line rounding; anything larger is a real misread
+        if (!isNaN(docNet) && Math.abs(docNet) > 0.005 && Math.abs(sumNet - docNet) > 0.05) {
+            msgs.push((L.aiTotalsMismatchHT || 'Net') + ': ' + sumNet.toFixed(2) + ' ≠ ' + docNet.toFixed(2));
+        }
+        if (!isNaN(docTax) && Math.abs(docTax) > 0.005 && Math.abs(sumTax - docTax) > 0.05) {
+            msgs.push((L.aiTotalsMismatchTVA || 'Tax') + ': ' + sumTax.toFixed(2) + ' ≠ ' + docTax.toFixed(2));
+        }
+
+        if (msgs.length) {
+            banner.innerHTML = '<strong>' + (L.aiTotalsMismatch || 'Lines do not match document totals') + '</strong> ' + msgs.join(' · ');
+            banner.style.display = 'block';
+        } else {
+            banner.style.display = 'none';
+        }
+    }
+
+    function getTotalsFieldValue(key) {
+        var container = document.getElementById('eo-ai-totals-fields');
+        if (!container) return '';
+        var input = container.querySelector('[data-ai-key="' + key + '"]');
+        return input ? String(input.value).trim() : '';
     }
 
     function toggleCard(cardId, hasData) {
@@ -2271,7 +2617,10 @@ const EasyOcr = (function () {
                             state.selectedSupplierID = String(data.suppliers[0].id);
                             sel.addEventListener('change', function() {
                                 state.selectedSupplierID = this.value || null;
+                                // Supplier article refs are per-supplier: re-resolve
+                                resolveLineProducts();
                             });
+                            resolveLineProducts();
                             selectorDiv.innerHTML = '';
                             selectorDiv.appendChild(sel);
                             selectorDiv.style.display = '';
@@ -2285,6 +2634,8 @@ const EasyOcr = (function () {
                             indicator.title = (L.supplierAutoDetected || 'Proveedor detectado') + ': ' + (data.name || '');
                         }
                         if (selectorDiv) selectorDiv.style.display = 'none';
+                        // Now that the supplier is known, its ref_fourn codes can match
+                        resolveLineProducts();
                     }
                 } else {
                     state.selectedSupplierID = null;
@@ -2406,9 +2757,18 @@ const EasyOcr = (function () {
                 input.className = 'eo-ai-td-input ' + f.cls;
                 input.value = String(f.val);
                 input.setAttribute('data-ai-line-key', f.key);
+                // Any edit can change whether the lines still add up
+                if (['quantity', 'unit_price', 'discount_percent', 'tax_rate', 'total'].indexOf(f.key) !== -1) {
+                    input.addEventListener('change', refreshTotalsMismatch);
+                }
                 td.appendChild(input);
             }
             tr.appendChild(td);
+
+            // Product column sits right after the OCR code it is resolved from
+            if (f.key === 'code') {
+                tr.appendChild(buildProductCell(tr));
+            }
         });
 
         // Delete button
@@ -2424,6 +2784,7 @@ const EasyOcr = (function () {
             setTimeout(function () {
                 tr.remove();
                 updateLineCount();
+                refreshTotalsMismatch();
             }, 200);
         };
         tdDel.appendChild(btnDel);
@@ -2465,6 +2826,7 @@ const EasyOcr = (function () {
         // Close payload panel if open
         var panel = document.getElementById('eo-ai-payload-panel');
         var btn = document.getElementById('eo-btn-show-payload');
+        destroyAIPayloadViewer();
         if (panel) panel.style.display = 'none';
         if (btn) btn.classList.remove('active');
         // Reset supplier selection from CIF lookup
@@ -2511,16 +2873,17 @@ const EasyOcr = (function () {
                 }
             });
             if (line.description || line.quantity || line.unit_price || line.total) {
-                // Reconstruct taxes array from flat columns
+                // Reconstruct taxes array from flat columns. eoParseNum, not
+                // parseFloat: a hand-typed "21,5" would otherwise become 21.
                 line.taxes = [];
-                if (line.tax_rate && parseFloat(line.tax_rate) !== 0) {
-                    line.taxes.push({ tax_type: 'iva', tax_rate: parseFloat(line.tax_rate) || 0, tax_amount: 0 });
+                if (line.tax_rate && eoParseNum(line.tax_rate) !== 0) {
+                    line.taxes.push({ tax_type: 'iva', tax_rate: eoParseNum(line.tax_rate), tax_amount: 0 });
                 }
-                if (line.re_rate && parseFloat(line.re_rate) !== 0) {
-                    line.taxes.push({ tax_type: 're', tax_rate: parseFloat(line.re_rate) || 0, tax_amount: 0 });
+                if (line.re_rate && eoParseNum(line.re_rate) !== 0) {
+                    line.taxes.push({ tax_type: 're', tax_rate: eoParseNum(line.re_rate), tax_amount: 0 });
                 }
-                if (line.irpf_rate && parseFloat(line.irpf_rate) !== 0) {
-                    line.taxes.push({ tax_type: 'irpf', tax_rate: parseFloat(line.irpf_rate) || 0, tax_amount: 0 });
+                if (line.irpf_rate && eoParseNum(line.irpf_rate) !== 0) {
+                    line.taxes.push({ tax_type: 'irpf', tax_rate: eoParseNum(line.irpf_rate), tax_amount: 0 });
                 }
                 result.items.push(line);
             }
@@ -2555,18 +2918,19 @@ const EasyOcr = (function () {
         }
 
         // Calculate totals
-        var subtotal = parseFloat(editedData.totals.subtotal) || 0;
-        var totalTax = parseFloat(editedData.totals.tax) || 0;
-        var totalFinal = parseFloat(editedData.totals.total) || 0;
+        // eoParseNum throughout: these fields are hand-editable in the modal
+        var subtotal = eoParseNum(editedData.totals.subtotal);
+        var totalTax = eoParseNum(editedData.totals.tax);
+        var totalFinal = eoParseNum(editedData.totals.total);
 
         if (editedData.items.length > 0 && subtotal === 0) {
             var computedSubtotal = 0;
             var computedTax = 0;
             editedData.items.forEach(function (item) {
-                var qty = parseFloat(item.quantity) || 1;
-                var price = parseFloat(item.unit_price) || 0;
-                var lineTotal = parseFloat(item.total) || (qty * price);
-                var lineTax = parseFloat(item.tax_amount) || 0;
+                var qty = eoParseNum(item.quantity) || 1;
+                var price = eoParseNum(item.unit_price);
+                var lineTotal = eoParseNum(item.total) || (qty * price);
+                var lineTax = eoParseNum(item.tax_amount);
                 computedSubtotal += (lineTotal - lineTax) || lineTotal;
                 computedTax += lineTax;
             });
@@ -2607,8 +2971,8 @@ const EasyOcr = (function () {
         closeAIModal();
 
         // Parse surcharge (RE) and withholding (IRPF) totals
-        var surchargeTotal = parseFloat(editedData.totals.surcharge) || 0;
-        var withholdingTotal = parseFloat(editedData.totals.withholding) || 0;
+        var surchargeTotal = eoParseNum(editedData.totals.surcharge);
+        var withholdingTotal = eoParseNum(editedData.totals.withholding);
 
         var postData = {
             action: 'newInvoiceAI',
@@ -2637,7 +3001,11 @@ const EasyOcr = (function () {
             supplier_zip: editedData.supplier.postal_code || '',
             supplier_country: editedData.supplier.country || '',
             supplier_phone: editedData.supplier.phone || '',
-            supplier_email: editedData.supplier.email || ''
+            supplier_email: editedData.supplier.email || '',
+            // Lets the backend detect that the AI could not tell the two apart
+            customer_tax_id: (editedData.customer && editedData.customer.tax_id) || '',
+            // Ties the source document fingerprint to the invoice it creates
+            file_hash: state.lastFileHash || ''
         };
 
         if (doPayment) {
@@ -2725,13 +3093,24 @@ const EasyOcr = (function () {
         if (!panel) return;
         if (panel.style.display === 'none') {
             if (state.aiResult && content) {
-                content.textContent = JSON.stringify(state.aiResult, null, 2);
+                // Rebuilt on every open: the payload changes when lines are
+                // re-extracted, and the old instance holds a keydown listener.
+                destroyAIPayloadViewer();
+                state.aiPayloadViewer = new EoJsonViewer(content, state.aiResult, { expandDepth: 3 });
             }
             panel.style.display = 'block';
             if (btn) btn.classList.add('active');
         } else {
+            destroyAIPayloadViewer();
             panel.style.display = 'none';
             if (btn) btn.classList.remove('active');
+        }
+    }
+
+    function destroyAIPayloadViewer() {
+        if (state.aiPayloadViewer) {
+            state.aiPayloadViewer.destroy();
+            state.aiPayloadViewer = null;
         }
     }
 
@@ -2796,6 +3175,375 @@ const EasyOcr = (function () {
         return div.innerHTML;
     }
 
+    /**
+     * Whether an AI response carries usable structured data.
+     *
+     * The service reports success even when the model failed to emit valid JSON;
+     * in that case structured_data is {raw, parse_error}. The non-streaming path
+     * is filtered server-side, but the SSE proxy is a pass-through, so the check
+     * has to exist here too. Accepts either the full response or structured_data.
+     */
+    function aiPayloadIsUsable(payload) {
+        if (!payload || typeof payload !== 'object') return false;
+        if (payload.error_code || payload.structuring_error) return false;
+
+        var data = payload.structured_data || payload;
+        if (!data || typeof data !== 'object') return false;
+        if (data.parse_error !== undefined) return false;
+
+        var signals = ['document_number', 'issue_date', 'supplier', 'items', 'totals'];
+        for (var i = 0; i < signals.length; i++) {
+            if (data[signals[i]]) return true;
+        }
+        return false;
+    }
+
+    /* ==========================================================
+     * Confirm modal
+     * ----------------------------------------------------------
+     * window.confirm() is synchronous and looks nothing like the
+     * module, so decisions that carry a cost (spending AI credits,
+     * cancelling a batch) get a real modal instead. Callback-based,
+     * because there is nothing to block on.
+     *
+     * opts: title, message, meta [{label,value}], question, note,
+     *       confirmLabel, cancelLabel, danger, onConfirm, onCancel
+     * ========================================================== */
+    function eoConfirm(opts) {
+        opts = opts || {};
+
+        var overlay = document.createElement('div');
+        overlay.className = 'eo-confirm-overlay' + (opts.danger ? ' eo-confirm-danger' : '');
+
+        var icon = opts.danger
+            ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M8 6V4h8v2m-9 0 1 14h8l1-14"/></svg>'
+            : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.01"/></svg>';
+
+        var html = '';
+        html += '<div class="eo-modal">';
+        html += '  <div class="eo-modal-header">';
+        html += '    <h4>' + escapeHtml(opts.title || L.confirmTitle || 'Confirm') + '</h4>';
+        html += '    <button type="button" class="eo-modal-close" data-eo-confirm="cancel">&times;</button>';
+        html += '  </div>';
+        html += '  <div class="eo-confirm-body">';
+        html += '    <div class="eo-confirm-icon">' + icon + '</div>';
+        html += '    <div class="eo-confirm-text">';
+        if (opts.message) {
+            html += '<p class="eo-confirm-msg">' + escapeHtml(opts.message) + '</p>';
+        }
+        if (opts.meta && opts.meta.length) {
+            html += '<ul class="eo-confirm-meta">';
+            for (var i = 0; i < opts.meta.length; i++) {
+                // Only empty values are dropped — a numeric 0 is information
+                if (!opts.meta[i] || opts.meta[i].value == null || opts.meta[i].value === '') continue;
+                html += '<li><span class="eo-confirm-meta-label">' + escapeHtml(opts.meta[i].label) + '</span>';
+                html += '<span class="eo-confirm-meta-value">' + escapeHtml(String(opts.meta[i].value)) + '</span></li>';
+            }
+            html += '</ul>';
+        }
+        if (opts.question) {
+            html += '<p class="eo-confirm-question">' + escapeHtml(opts.question) + '</p>';
+        }
+        if (opts.note) {
+            html += '<p class="eo-confirm-note">' + escapeHtml(opts.note) + '</p>';
+        }
+        html += '    </div>';
+        html += '  </div>';
+        html += '  <div class="eo-modal-footer">';
+        html += '    <button type="button" class="eo-btn eo-btn-outline" data-eo-confirm="cancel">' + escapeHtml(opts.cancelLabel || L.cancel || 'Cancel') + '</button>';
+        html += '    <button type="button" class="eo-btn eo-btn-primary" data-eo-confirm="ok">' + escapeHtml(opts.confirmLabel || L.confirmLabel || 'Confirm') + '</button>';
+        html += '  </div>';
+        html += '</div>';
+        overlay.innerHTML = html;
+
+        var done = false;
+        function close(accepted) {
+            if (done) return;
+            done = true;
+            document.removeEventListener('keydown', onKey, true);
+            if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+            if (accepted) {
+                if (typeof opts.onConfirm === 'function') opts.onConfirm();
+            } else if (typeof opts.onCancel === 'function') {
+                opts.onCancel();
+            }
+        }
+        function onKey(e) {
+            if (e.key === 'Escape') {
+                e.stopPropagation();
+                close(false);
+            } else if (e.key === 'Enter') {
+                e.preventDefault();
+                close(true);
+            }
+        }
+
+        overlay.addEventListener('click', function (e) {
+            // Clicking the backdrop cancels; clicks inside the card do not
+            if (e.target === overlay) {
+                close(false);
+                return;
+            }
+            var btn = e.target.closest ? e.target.closest('[data-eo-confirm]') : null;
+            if (btn) close(btn.getAttribute('data-eo-confirm') === 'ok');
+        });
+        document.addEventListener('keydown', onKey, true);
+
+        document.body.appendChild(overlay);
+        var okBtn = overlay.querySelector('[data-eo-confirm="ok"]');
+        if (okBtn) okBtn.focus();
+
+        return overlay;
+    }
+
+    /* ==========================================================
+     * EoJsonViewer — collapsible JSON tree
+     * ----------------------------------------------------------
+     * Port of the easyOCR panel's viewer (Catppuccin Mocha), kept
+     * in ES5 like the rest of this file and with no webfont fetch:
+     * the monospace stack in the CSS resolves locally.
+     * ========================================================== */
+    function EoJsonViewer(el, data, opts) {
+        this.el = typeof el === 'string' ? document.getElementById(el) : el;
+        this.data = data;
+        this.opts = { expandDepth: (opts && opts.expandDepth != null) ? opts.expandDepth : 3 };
+        if (this.el && data !== null && data !== undefined) this.render();
+    }
+
+    EoJsonViewer.prototype.render = function () {
+        var stats = this.countStats(this.data, { keys: 0, values: 0 });
+        var self = this;
+
+        // esc() also escapes double quotes, so a translation containing one
+        // cannot break out of the title/placeholder attributes below.
+        function t(key, fallback) {
+            return self.esc(L[key] || fallback);
+        }
+
+        this.el.classList.add('eo-jv');
+        this.el.innerHTML = '';
+
+        var toolbar = document.createElement('div');
+        toolbar.className = 'jv-toolbar';
+        toolbar.innerHTML = ''
+            + '<button type="button" class="jv-btn jv-btn-expand" title="' + t('jvExpand', 'Expand') + '">'
+            + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0-4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>'
+            + t('jvExpand', 'Expand') + '</button>'
+            + '<button type="button" class="jv-btn jv-btn-collapse" title="' + t('jvCollapse', 'Collapse') + '">'
+            + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 4v1.5M9 4H4m5 0L4 9m11-5v1.5m0-1.5h5m-5 0l5 5M9 20v-1.5M9 20H4m5 0l-5-5m11 5v-1.5m0 1.5h5m-5 0l5-5"/></svg>'
+            + t('jvCollapse', 'Collapse') + '</button>'
+            + '<button type="button" class="jv-btn jv-btn-copy" title="' + t('jvCopy', 'Copy') + ' JSON">'
+            + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>'
+            + t('jvCopy', 'Copy') + '</button>'
+            + '<span class="jv-stats">' + stats.keys + ' ' + t('jvKeys', 'keys') + ' &middot; ' + stats.values + ' ' + t('jvValues', 'values') + '</span>'
+            + '<span class="jv-spacer"></span>'
+            + '<span class="jv-match-count" style="display:none"></span>'
+            + '<input type="text" class="jv-search" placeholder="' + t('jvSearch', 'Search...') + '">'
+            + '<button type="button" class="jv-btn jv-btn-fs" title="' + t('jvFullscreen', 'Fullscreen') + '">'
+            + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 00-2 2v3m18 0V5a2 2 0 00-2-2h-3m0 18h3a2 2 0 002-2v-3M3 16v3a2 2 0 002 2h3"/></svg>'
+            + '</button>';
+
+        var body = document.createElement('div');
+        body.className = 'jv-body';
+        body.innerHTML = this.renderValue(this.data, 0);
+        this.body = body;
+
+        this.el.appendChild(toolbar);
+        this.el.appendChild(body);
+        this.bindEvents(toolbar);
+    };
+
+    EoJsonViewer.prototype.countStats = function (val, s) {
+        if (val === null || val === undefined || typeof val !== 'object') {
+            s.values++;
+            return s;
+        }
+        var self = this;
+        if (Object.prototype.toString.call(val) === '[object Array]') {
+            for (var i = 0; i < val.length; i++) self.countStats(val[i], s);
+        } else {
+            Object.keys(val).forEach(function (k) {
+                s.keys++;
+                self.countStats(val[k], s);
+            });
+        }
+        return s;
+    };
+
+    EoJsonViewer.prototype.renderValue = function (val, depth) {
+        if (val === null) return '<span class="jv-null">null</span>';
+        if (val === undefined) return '<span class="jv-null">undefined</span>';
+        switch (typeof val) {
+            case 'boolean': return '<span class="jv-bool">' + val + '</span>';
+            case 'number': return '<span class="jv-num">' + val + '</span>';
+            case 'string': return this.renderString(val);
+            case 'object':
+                return Object.prototype.toString.call(val) === '[object Array]'
+                    ? this.renderArray(val, depth)
+                    : this.renderObject(val, depth);
+            default: return '<span class="jv-str">' + this.esc(String(val)) + '</span>';
+        }
+    };
+
+    EoJsonViewer.prototype.renderString = function (str) {
+        var escaped = this.esc(str).replace(/\n/g, '\\n').replace(/\t/g, '\\t').replace(/\r/g, '\\r');
+        return '<span class="jv-str">"' + escaped + '"</span>';
+    };
+
+    EoJsonViewer.prototype.renderArray = function (arr, depth) {
+        if (arr.length === 0) return '<span class="jv-bracket">[ ]</span>';
+        var coll = depth >= this.opts.expandDepth ? ' jv-collapsed' : '';
+        var self = this;
+        var items = arr.map(function (item, i) {
+            var comma = i < arr.length - 1 ? '<span class="jv-comma">,</span>' : '';
+            return '<div class="jv-row"><span class="jv-idx">' + i + '</span> ' + self.renderValue(item, depth + 1) + comma + '</div>';
+        }).join('');
+        return '<div class="jv-node' + coll + '"><span class="jv-toggle"><span class="jv-arrow">&#9662;</span> '
+            + '<span class="jv-bracket">[</span><span class="jv-ellipsis">' + arr.length + ' ' + this.esc(L.jvItems || 'items') + '</span></span>'
+            + '<div class="jv-children">' + items + '</div><span class="jv-end jv-bracket">]</span></div>';
+    };
+
+    EoJsonViewer.prototype.renderObject = function (obj, depth) {
+        var keys = Object.keys(obj);
+        if (keys.length === 0) return '<span class="jv-bracket">{ }</span>';
+        var coll = depth >= this.opts.expandDepth ? ' jv-collapsed' : '';
+        var self = this;
+        var items = keys.map(function (key, i) {
+            var comma = i < keys.length - 1 ? '<span class="jv-comma">,</span>' : '';
+            return '<div class="jv-row"><span class="jv-key">"' + self.esc(key) + '"</span><span class="jv-colon">: </span>'
+                + self.renderValue(obj[key], depth + 1) + comma + '</div>';
+        }).join('');
+        return '<div class="jv-node' + coll + '"><span class="jv-toggle"><span class="jv-arrow">&#9662;</span> '
+            + '<span class="jv-bracket">{</span><span class="jv-ellipsis">' + keys.length + ' ' + this.esc(L.jvProps || 'properties') + '</span></span>'
+            + '<div class="jv-children">' + items + '</div><span class="jv-end jv-bracket">}</span></div>';
+    };
+
+    EoJsonViewer.prototype.esc = function (s) {
+        return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    };
+
+    EoJsonViewer.prototype.bindEvents = function (toolbar) {
+        var self = this;
+
+        this.body.addEventListener('click', function (e) {
+            var toggle = e.target.closest ? e.target.closest('.jv-toggle') : null;
+            if (toggle) {
+                toggle.parentNode.classList.toggle('jv-collapsed');
+                e.stopPropagation();
+            }
+        });
+        toolbar.querySelector('.jv-btn-expand').addEventListener('click', function () {
+            var nodes = self.body.querySelectorAll('.jv-node');
+            for (var i = 0; i < nodes.length; i++) nodes[i].classList.remove('jv-collapsed');
+        });
+        toolbar.querySelector('.jv-btn-collapse').addEventListener('click', function () {
+            var nodes = self.body.querySelectorAll('.jv-node');
+            for (var i = 0; i < nodes.length; i++) nodes[i].classList.add('jv-collapsed');
+        });
+        toolbar.querySelector('.jv-btn-copy').addEventListener('click', function () {
+            self.copyToClipboard(JSON.stringify(self.data, null, 2));
+        });
+        toolbar.querySelector('.jv-btn-fs').addEventListener('click', function () {
+            self.el.classList.toggle('jv-fullscreen');
+            document.body.style.overflow = self.el.classList.contains('jv-fullscreen') ? 'hidden' : '';
+        });
+
+        var debounce = null;
+        var searchInput = toolbar.querySelector('.jv-search');
+        var matchLabel = toolbar.querySelector('.jv-match-count');
+        searchInput.addEventListener('input', function (e) {
+            var value = e.target.value;
+            clearTimeout(debounce);
+            debounce = setTimeout(function () {
+                var count = self.search(value);
+                if (value.length >= 2) {
+                    matchLabel.style.display = 'inline';
+                    matchLabel.textContent = count + ' ' + (L.jvResults || 'results');
+                } else {
+                    matchLabel.style.display = 'none';
+                }
+            }, 250);
+        });
+
+        // Escape leaves fullscreen. Registered in the capture phase so the AI
+        // modal does not close underneath while the viewer is expanded.
+        this.onKey = function (e) {
+            if (e.key === 'Escape' && self.el.classList.contains('jv-fullscreen')) {
+                e.stopPropagation();
+                self.el.classList.remove('jv-fullscreen');
+                document.body.style.overflow = '';
+            }
+        };
+        document.addEventListener('keydown', this.onKey, true);
+    };
+
+    EoJsonViewer.prototype.search = function (query) {
+        var previous = this.body.querySelectorAll('.jv-match');
+        for (var i = 0; i < previous.length; i++) previous[i].classList.remove('jv-match');
+        if (!query || query.length < 2) return 0;
+
+        var lower = query.toLowerCase();
+        var count = 0;
+        var rows = this.body.querySelectorAll('.jv-row');
+        for (var r = 0; r < rows.length; r++) {
+            if (rows[r].textContent.toLowerCase().indexOf(lower) === -1) continue;
+            rows[r].classList.add('jv-match');
+            count++;
+            // Un-collapse every ancestor so the hit is actually visible
+            var p = rows[r].parentNode;
+            while (p && p !== this.body) {
+                if (p.classList && p.classList.contains('jv-node')) p.classList.remove('jv-collapsed');
+                p = p.parentNode;
+            }
+        }
+        var first = this.body.querySelector('.jv-match');
+        if (first && first.scrollIntoView) first.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return count;
+    };
+
+    EoJsonViewer.prototype.copyToClipboard = function (text) {
+        var self = this;
+        function fallback() {
+            // navigator.clipboard needs a secure context; plain HTTP installs
+            // fall back to the legacy path rather than silently doing nothing.
+            var ta = document.createElement('textarea');
+            ta.value = text;
+            ta.style.position = 'fixed';
+            ta.style.opacity = '0';
+            document.body.appendChild(ta);
+            ta.select();
+            try { document.execCommand('copy'); } catch (err) { /* nothing else to try */ }
+            document.body.removeChild(ta);
+            self.showToast(L.jvCopied || 'Copied to clipboard');
+        }
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(function () {
+                self.showToast(L.jvCopied || 'Copied to clipboard');
+            }).catch(fallback);
+        } else {
+            fallback();
+        }
+    };
+
+    EoJsonViewer.prototype.showToast = function (msg) {
+        var t = document.createElement('div');
+        t.className = 'eo-jv-toast';
+        t.textContent = '✓ ' + msg;
+        document.body.appendChild(t);
+        setTimeout(function () {
+            if (t.parentNode) t.parentNode.removeChild(t);
+        }, 2200);
+    };
+
+    EoJsonViewer.prototype.destroy = function () {
+        if (this.onKey) document.removeEventListener('keydown', this.onKey, true);
+        if (this.el) {
+            this.el.classList.remove('jv-fullscreen', 'eo-jv');
+            this.el.innerHTML = '';
+        }
+        document.body.style.overflow = '';
+    };
+
     // Arrancar
     document.addEventListener('DOMContentLoaded', init);
 
@@ -2824,6 +3572,13 @@ const EasyOcr = (function () {
         toggleAIPayload,
         closeAIModal,
         aiAddLine,
+        // Compartidos con batch.php / otras vistas del módulo
+        confirm: eoConfirm,
+        JsonViewer: EoJsonViewer,
     };
 
 })();
+
+// `const` at top level does not create a property on window, and other views
+// (batch.php) feature-detect the shared helpers before using them.
+window.EasyOcr = EasyOcr;

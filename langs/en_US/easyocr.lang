@@ -778,3 +778,56 @@ EasyOcrBatchTrash = Trash
 EasyOcrBatchTrashConfirm = Move this batch to trash? It will be cancelled and cannot be restored.
 EasyOcrBatchTrashEmpty = Trash is empty
 EasyOcrBatchBackToHistory = Back to history
+
+# --- v2.7.0: Product linking, totals mismatch and duplicate guard ---
+EasyOcrAIProduct = Product
+EasyOcrAIProductLinked = Linked to
+EasyOcrAIProductNotLinked = No product linked — the line will be created as a free-text line
+EasyOcrAIProductSearch = Search product…
+EasyOcrAIProductNoResults = No products found
+EasyOcrAIProductUnlink = Unlink product
+EasyOcrAITotalsMismatch = Line items do not match the document totals:
+EasyOcrAITotalsMismatchHT = Net amount
+EasyOcrAITotalsMismatchTVA = VAT
+EasyOcrAIDuplicateFile = This document has already been processed
+EasyOcrAIReprocessAnyway = Process it again? This will consume AI credits.
+EasyOcrAILinkedInvoice = Invoice
+EasyOcrFileAlreadyProcessed = This document was already processed on %s. It was not sent to the AI again, to avoid spending credits.
+EasyOcrSupplierIsReceiver = The tax id extracted as supplier (%s) belongs to your own company: the AI read the invoice receiver as the issuer. Fix the supplier before creating the invoice.
+EasyOcrSupplierEqualsCustomer = Supplier and customer share the same tax id (%s): the AI could not tell them apart. Fix the supplier before creating the invoice.
+EasyOcrAllowSelfSupplier = Allow your own company as supplier
+EasyOcrAllowSelfSupplierDesc = When off, invoices whose supplier tax id matches your own company are blocked (the classic OCR mix-up between issuer and receiver). Enable only if you really invoice between entities sharing the same tax id.
+
+# --- v2.7.0: Duplicados en lote ---
+EasyOcrBatchDuplicatesFound = document(s) in this batch were already processed and were not included.
+EasyOcrBatchDuplicatesAsk = Do you want to process them anyway? AI credits will be spent on them.
+EasyOcrBatchAllDuplicates = Every selected document had already been processed. No batch was created.
+EasyOcrReceiverContext = Send your company identity to the AI
+EasyOcrReceiverContextDesc = EXPERIMENTAL, off by default. Adds your company name and tax id to the instructions sent to the AI. Turn it on only if you want to try it: it alters the request sent to the service and may affect processing time. When off, the request is identical to v2.6.0 and the server-side guard still applies.
+
+# --- v2.7.0 - Configurable duplicate guard, native modal and JSON viewer ---
+EasyOcrDuplicateCheck = Detect duplicate documents
+EasyOcrDuplicateCheckDesc = Before a document is sent to the AI, the module checks whether it has already been processed (SHA-256 fingerprint of the file). It is never discarded silently: you are asked and can process it anyway. Turn it off only if re-processing identical documents is part of your routine.
+EasyOcrDuplicateWindow = Duplicate detection window
+EasyOcrDuplicateWindowDesc = How many days back to look. 0 = no limit (every document is remembered). Useful for identical recurring invoices: with 30 days, next month's copy is no longer flagged as a duplicate.
+EasyOcrAIDuplicateTitle = Document already processed
+EasyOcrAIDuplicateFileLabel = File
+EasyOcrAIDuplicateProcessedOn = Processed on
+EasyOcrAIReprocessConfirm = Process again
+EasyOcrBatchDuplicatesTitle = Duplicate documents in the batch
+EasyOcrBatchDuplicatesCount = Duplicates
+EasyOcrBatchQueuedCount = Queued
+EasyOcrBatchSkipDuplicates = Skip them
+EasyOcrJsonExpand = Expand
+EasyOcrJsonCollapse = Collapse
+EasyOcrJsonCopy = Copy
+EasyOcrJsonSearch = Search the JSON...
+EasyOcrJsonFullscreen = Fullscreen
+EasyOcrJsonKeys = keys
+EasyOcrJsonValues = values
+EasyOcrJsonItems = items
+EasyOcrJsonProperties = properties
+EasyOcrJsonResults = results
+EasyOcrJsonCopied = JSON copied to clipboard
+
+EasyOcrAIUnreadableDocument = The service could not read this document (the AI returned no structured data). It has not been marked as processed, so you can try again.

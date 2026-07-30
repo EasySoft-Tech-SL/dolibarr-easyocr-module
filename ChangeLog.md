@@ -5,6 +5,129 @@ Todos los cambios notables de EasyOcr se documentarán en este archivo.
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/),
 y este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 
+## [2.7.0] - 2026-07-29
+
+### Corregido — Precios unitarios multiplicados por 1000 (crítico)
+
+- **`easyocrParseNumber()` inflaba los números nativos del JSON.** El microservicio devuelve los importes como números JSON, no como texto. Al decodificarlos, PHP entrega un `float` que la función convertía a cadena y volvía a interpretar con sus heurísticas de formato europeo: como tres dígitos tras el separador se leen como separador de millar, un precio unitario de **3,434 € se convertía en 3.434 €**.
+- Afectaba a los proveedores que facturan con 3 o más decimales por unidad (el propio prompt del microservicio contempla ese caso explícitamente) y llegaba tanto a la creación desde la vista de extracción como al webhook.
+- Los valores numéricos nativos (`int`, `float`) se devuelven ahora tal cual; la interpretación de formatos europeos sigue aplicándose únicamente a las cadenas. `null` y booleanos devuelven 0.
+- Detectado por los tests de integración de línea añadidos en esta versión.
+
+### Corregido — Líneas que no cuadraban con su propio importe
+
+- El servicio de IA devuelve los precios unitarios **redondeados a 2 decimales**: un artículo facturado a 3,434 €/ud llega como 3,43. Multiplicado por la cantidad, ese redondeo abre un hueco que crecía con el tamaño de la línea: 1.500 × 3,43 = 5.145,00 € frente a los 5.150,50 € impresos en el documento. Como los totales de la factura se fuerzan con los del documento, el resultado era una factura cuyas líneas no sumaban su propio total.
+- `easyocrResolveLineUnitPrice()` reconcilia ahora el precio impreso con el importe neto de la línea: si no lo reproduce, deriva el precio desde el neto (que es la cifra con la que cuadran los totales). De paso se recupera la precisión perdida — 0,35 vuelve a ser 0,347 y 3,43 vuelve a ser 3,4337.
+- `easyocrResolveLineDiscount()` incorpora un tercer guardarraíl, `cantidad × 0,005`, que es el hueco máximo que el redondeo del precio unitario puede explicar por sí solo. Sin él se inventaba un descuento del 0,857 % en una línea de 1.000 unidades que no lleva ninguno. Un descuento comercial real sobre esa misma línea se sigue detectando.
+- Ambos comportamientos están fijados con las ocho líneas reales que el servicio devolvió para el documento de prueba: cada una debe reproducir su importe neto y las ocho deben sumar la base imponible impresa.
+
+### Corregido — Cantidades y tasas con coma decimal
+
+- La cantidad de línea se leía con `floatval()`, de modo que una cantidad corregida a mano como `3,5` se quedaba en `3`. Pasa a usar `easyocrParseNumber()`.
+- En el modal de revisión, las tasas de IVA/RE/IRPF y los totales editados a mano se leían con `parseFloat()`, que trunca en la coma (`21,5` → `21`). Nueva función `eoParseNum()` en el cliente, aplicada a todos los campos editables.
+
+### Corregido — Descuentos de línea y precio unitario
+
+- **`discount_amount` se ignoraba.** El microservicio devuelve el descuento de línea en euros además de en porcentaje, pero `easyocrCreateInvoiceFromOCR()` solo leía `discount_percent`. En las facturas cuyo descuento se imprime en euros, el descuento se perdía por completo y el precio unitario reconstruido desde `net_amount` quedaba mal.
+- Nueva `easyocrResolveLineDiscount()` con tres fuentes en orden de fiabilidad: porcentaje explícito → importe absoluto sobre la línea bruta → hueco implícito entre `qty × unit_price` y `net_amount`.
+- Doble umbral anti-ruido: absoluto (0,02 €) para líneas pequeñas y relativo (0,5 %) para líneas grandes con precios unitarios de 3+ decimales. Se descartan descuentos > 90 %: casi siempre significan que el OCR leyó mal la cantidad o el importe.
+- Las líneas de descuento independientes (importes negativos) nunca reciben descuento inferido.
+- **Doble descuento latente.** Al reconstruir el precio unitario desde `total`, el importe resultante era neto pero se pasaba a `addline()` junto a `remise_percent`, que Dolibarr aplica de nuevo. Extraído a `easyocrResolveLineUnitPrice()`, que garantiza precio bruto (pre-descuento) en todas las ramas.
+
+### Añadido — Salvaguarda emisor / receptor
+
+- `easyocrIsOwnCompanyTaxId()` bloquea la creación de la factura cuando el CIF/NIF extraído como proveedor coincide con el de la propia empresa: el fallo clásico del OCR al leer al receptor como emisor, que hasta ahora daba de alta tu empresa como proveedor en `llx_societe`.
+- También se detecta que `supplier.tax_id` y `customer.tax_id` sean el mismo.
+- Ajuste `EASYOCR_ALLOW_SELF_SUPPLIER` (desactivado por defecto) como escape para quien factura entre entidades con el mismo CIF.
+- `easyocrBuildReceiverContext()` antepone a las instrucciones enviadas a la IA la identidad del receptor (nombre y IDs fiscales de `$mysoc`, con y sin prefijo de país) en `aiOcr`, `aiOcrStream` y lotes. Se añade después del filtro por plan: es una salvaguarda del ERP, no una instrucción del usuario.
+- El bloque se limita a **declarar quién eres** (una línea, ~176 caracteres) y cierra con «extrae proveedor y cliente exactamente como aparecen en el documento». Dos redacciones anteriores resultaron dañinas y ambas están cubiertas por tests que impiden reintroducirlas:
+  1. Pedir al modelo *verificar antes de devolver el JSON* y *volver a leer el documento*. Contra un modelo de salida estructurada con el razonamiento desactivado, un procedimiento es mucho más caro que un hecho.
+  2. Afirmar que *«el proveedor es la otra empresa del documento»*. Es **falso** cuando emisor y receptor son la misma parte: ante una instrucción imposible de cumplir el modelo degeneró, repitiendo saltos de línea dentro de `supplier.address` hasta agotar los 8.192 tokens de salida. Resultado: ~75 s de proceso y JSON truncado que el servicio ya no puede parsear (`parse_error`), con el documento perdido.
+- Regla que se deriva de esto: el bloque **nunca debe afirmar nada sobre el contenido del documento**, solo sobre la identidad del receptor, y siempre debe dejar al modelo una instrucción satisfacible.
+- Nuevo ajuste `EASYOCR_AI_RECEIVER_CONTEXT`, **desactivado por defecto**. Es la única función de esta versión que altera la petición enviada al servicio de IA, y su redacción ya ha provocado dos regresiones, así que la configuración por defecto no la incluye: con el ajuste apagado el contenido enviado al servicio es **idéntico al de la v2.6.0**. La salvaguarda que impide dar de alta tu propia empresa como proveedor vive en el servidor y funciona con el ajuste apagado.
+
+### Añadido — Preselección de forma de pago por histórico
+
+- `easyocrGetSupplierPaymentDefaults()` completa lo que falta en la ficha del proveedor con la moda de las **3 últimas facturas** de ese proveedor: condiciones de pago, modo de pago y cuenta bancaria.
+- El pago automático del webhook usa esa cuenta cuando no se ha indicado ninguna en la configuración ni en la URL.
+- La acción `getSupplierPaymentInfo` devuelve además `payment_account_id`, `payment_account_label` y el origen del dato (`supplier`, `history`, `mixed`).
+
+### Añadido — Vinculación de producto por línea en la revisión IA
+
+- Columna **Producto** en la tabla de líneas con badge de estado: referencia vinculada o `—` cuando la línea se creará como línea libre. Hasta ahora el emparejamiento por `ref_fourn` era invisible y no se podía corregir, lo que dolía especialmente con `EASYOCR_AI_AUTOCREATE_PRODUCT` desactivado.
+- Nueva acción `resolveProductCodes`, que replica el orden de resolución de la creación de factura (`ref_fourn` del proveedor → `ref`/`barcode`) para que el badge sea fiable.
+- Buscador inline por línea, precargado con el código OCR. `searchProducts` busca ahora también por `ref_fourn` acotado al proveedor y devuelve esa referencia.
+- Un `fk_product` seleccionado a mano prevalece sobre cualquier búsqueda automática (se valida que pertenezca a la entidad).
+- La resolución se repite al detectarse o cambiarse el proveedor, porque las referencias de artículo son por proveedor.
+
+### Añadido — Aviso de descuadre entre líneas y totales
+
+- Los totales del documento se fuerzan por SQL, de modo que una línea mal leída quedaba oculta: Dolibarr mostraba totales correctos sobre líneas incorrectas.
+- Banner en el modal de revisión cuando la suma de líneas no cuadra con la base imponible o el IVA declarados (tolerancia 0,05), recalculado al editar o borrar líneas.
+- En servidor, `easyocrCheckTotalsConsistency()` deja aviso en `dol_syslog` y devuelve `totals_warnings` en el resultado de la creación. RE e IRPF no se cuentan como IVA.
+
+### Añadido — Anti-duplicados por huella de documento
+
+- Nueva tabla `llx_easyocr_processed_files`: huella sha256 por documento y entidad, con la factura que generó.
+- Antes de enviar nada al microservicio se comprueba la huella en `aiOcr`, `aiOcrStream` y `batchUploadFile`, evitando pagar créditos dos veces por el mismo fichero.
+- Nunca se descarta en silencio: en la vista individual se pide confirmación; en los lotes se retienen los duplicados y se pregunta una sola vez al terminar la subida, con opción de incluirlos igualmente (`force_reprocess`).
+- La huella viaja al cliente por la cabecera `X-EasyOcr-File-Hash` en el flujo SSE, para que un JS cacheado antiguo no la interprete como un evento de progreso.
+- **Parametrizable** desde los ajustes del módulo, con dos controles:
+  - `EASYOCR_DUPLICATE_CHECK` (**activado por defecto**): desactivarlo salta la comprobación en los tres puntos de entrada. El registro de huellas se sigue guardando, de modo que al reactivarlo el histórico está completo.
+  - `EASYOCR_DUPLICATE_WINDOW_DAYS` (**0 = sin límite**, por defecto): días hacia atrás que se consideran. Pensado para facturas recurrentes byte a byte idénticas, que de otro modo quedarían marcadas como duplicadas para siempre. El límite se calcula en PHP con `dol_now()`, no con `NOW()` de SQL, porque las fechas se guardan en GMT y el servidor de base de datos puede estar en otra zona.
+  - Volver a ver un documento ya conocido **refresca su `date_creation`**: la ventana se mide desde la última vez que se procesó, no desde la primera.
+
+### Cambiado — Diálogos propios en lugar de los del navegador
+
+- Las decisiones que cuestan dinero o destruyen trabajo ya no se preguntan con `window.confirm()`. Nuevo `EasyOcr.confirm()` en `js/scripts.js`: modal construido con las clases del propio módulo (`eo-modal`, `eo-btn`), con título, tabla de datos, pregunta, botones etiquetados según la acción, cierre con Escape o clic fuera, y foco inicial en el botón de confirmar.
+- El aviso de documento duplicado muestra ahora **archivo, fecha de proceso y factura vinculada** en lugar de un párrafo concatenado con `\n`. Al ser un modal, el flujo pasa a ser asíncrono: `confirmReprocess()` recibe callbacks en vez de devolver un booleano.
+- `batch.php` lo reutiliza para los duplicados del lote, para cancelar un lote y para enviarlo a la papelera (estos dos en variante `danger`). Si `scripts.js` no llegara a cargarse, `eoBatchConfirm()` recae en el diálogo del navegador: una decisión nunca se pierde en silencio.
+- `window.EasyOcr` se expone explícitamente al final del IIFE: `const EasyOcr = ...` en el ámbito global **no** crea la propiedad en `window`, así que las otras vistas no podían detectarlo.
+
+### Cambiado — Visor JSON del modal de revisión
+
+- El botón «JSON» abría un `<pre>` con el volcado plano. Ahora abre el **mismo visor de árbol del panel de easyOCR** (tema Catppuccin Mocha), portado a `css/easyocr.css` y `js/scripts.js`: plegado y desplegado por nodo, expandir/contraer todo, búsqueda con resaltado que abre los nodos donde hay coincidencias, contador de claves y valores, copiar al portapapeles y pantalla completa.
+- Portado en ES5 como el resto del archivo y **sin dependencias externas**: se elimina la carga de la fuente desde `fonts.bunny.net` del original (la pila `JetBrains Mono → Fira Code → Consolas → monospace` resuelve en local) para no filtrar peticiones a terceros desde el ERP.
+- El copiado recae en `document.execCommand('copy')` cuando `navigator.clipboard` no está disponible, cosa que ocurre en instalaciones servidas por HTTP plano.
+- El visor se reconstruye en cada apertura y se destruye al cerrar el modal, para no acumular escuchadores de teclado.
+- El panel ocupa ahora aproximadamente media altura del modal (`52vh`, `46vh` en pantallas bajas). El modal de revisión es un contenedor flex en columna y el panel, sin `flex: 0 0 auto`, quedaba aplastado a un par de líneas por el formulario de abajo. El cuerpo de revisión recibe `min-height: 0` para que su `overflow-y` siga funcionando cuando el visor está abierto.
+
+### Corregido — Un documento que la IA no logra estructurar quedaba marcado como procesado
+
+- El servicio responde **HTTP 200 con `status: "success"` aunque el modelo no haya conseguido emitir JSON**: en ese caso `structured_data` no trae los campos del documento sino `{raw, parse_error}`. El módulo lo tomaba por bueno, así que (a) abría el modal de revisión vacío y (b) —lo grave— **registraba la huella del fichero**. Resultado: se gastaban créditos, no se obtenía nada, y al reintentar el mismo PDF el anti-duplicados lo rechazaba por «ya procesado».
+- Nueva `easyocrAiResultIsUsable()`: descarta `parse_error`, `error_code`, `structuring_error`, `structured_data` vacío y payloads sin ningún campo identificativo. Basta un campo (p. ej. solo el número de documento) para considerar la extracción revisable — una extracción parcial sigue siendo útil.
+- Aplicada en `aiOcr` (mensaje de error claro en lugar de un modal vacío) y en `aiOcrStream`. El proxy SSE es *pass-through*, así que vigila el flujo en busca del marcador `"parse_error"` sin dejar de reenviar los chunks, con una cola de 16 bytes por si el marcador cae partido entre dos. En ambos casos, **si el resultado no es utilizable no se registra la huella**, de modo que el reintento siempre es posible.
+- El cliente (`aiPayloadIsUsable()` en `js/scripts.js`) hace la misma comprobación sobre el evento `result` del SSE, que no pasa por el filtro de servidor.
+- ⚠️ Las huellas registradas **antes** de este arreglo siguen ahí. Un documento que falló con `parse_error` seguirá dando «ya procesado» hasta que se borre su fila de `llx_easyocr_processed_files` (o se acepte reprocesar desde el aviso).
+
+### Corregido — `import_key` demasiado largo rompía la sentencia en silencio
+
+- `facture_fourn.import_key` es `varchar(14)`. Con `STRICT_TRANS_TABLES` (el modo por defecto de MySQL 5.7+), un valor más largo no se trunca: **la sentencia falla entera** y la factura se quedaba sin marca de origen. El `UPDATE` no comprobaba el resultado, así que no quedaba rastro.
+- El valor se trunca ahora a 14 caracteres y el fallo del `UPDATE` se registra en el log. Los valores que usa el módulo (`easyocr`, `easyocr-ai`, `easyocr-exp`, `easyocr-wh`) ya cabían; esto protege a quien pase el suyo desde el webhook.
+
+### Cambiado
+
+- `eoBatchNotify()` distingue ahora avisos (`warn`) de éxitos: un lote omitido ya no se pinta en verde.
+
+### Notas de actualización
+
+- **Requiere reactivar el módulo** para crear `llx_easyocr_processed_files` (`sql/llx_easyocr_processed_files.sql` y su `.key.sql`).
+- 44 claves nuevas traducidas a los 8 idiomas (ca/de/en/es/fr/gl/it/pt).
+- Cuatro suites de tests, ninguna con dependencias externas:
+  | Suite | Qué cubre | Coste |
+  |---|---|---|
+  | `php tests/easyocr_lib_test.php` | 152 aserciones sobre funciones puras (números, descuentos, precios, guards) | ninguno |
+  | `node tests/easyocr_jsonviewer_test.js` | 26 aserciones sobre el visor JSON, extraídas del `scripts.js` real (incluye escapado de payloads hostiles) | ninguno |
+  | `php tests/easyocr_integration_test.php` | 75 aserciones: crea proveedor y factura en Dolibarr y relee las líneas de la BD | BD (todo en transacción con *rollback*) |
+  Las dos que necesitan base de datos comprueban primero que el puerto responde y salen con código 1 si no: `master.inc.php` imprime su página de error y termina con código **0**, de modo que sin base de datos la suite parecía haber pasado sin comprobar nada.
+  | `php tests/easyocr_e2e_test.php --spend-credits` | 65 aserciones: PDF real → servicio de IA real → factura real | **gasta créditos** |
+
+### Notas sobre el rendimiento del servicio (medido, no del módulo)
+
+- Con el módulo v2.7.0 y `EASYOCR_AI_RECEIVER_CONTEXT` apagado —es decir, con la petición byte a byte idéntica a la de v2.6.0— el documento de prueba completo se procesa en **~10 s / 1.567 tokens de salida**.
+- Dos documentos de prueba (emisor = receptor, y el de descuadre) hacen que el modelo **corra hasta su techo de salida: ~77 s y 19.985 tokens**, devolviendo `parse_error`. Ocurre igual llamando al servicio **sin ninguna instrucción**, así que no lo provoca el módulo: es comportamiento del servicio ante esos documentos. Lo único que le toca al módulo es fallar limpiamente y no cobrar dos veces, que es lo que arregla esta versión.
+- Retrocompatible: sin `discount_amount` ni hueco implícito el cálculo de líneas no cambia; con `EASYOCR_ALLOW_SELF_SUPPLIER` activado se recupera el comportamiento anterior de la creación de proveedor.
+
 ## [2.6.0] - 2026-07-01
 
 ### Añadido — Escaneo de tickets de gasto desde el móvil (vista PWA, solo IA)

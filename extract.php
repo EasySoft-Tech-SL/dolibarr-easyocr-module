@@ -567,10 +567,13 @@ llxHeader("", "EasyOcr", '', '', 0, 0, $arrayofjs, $arrayofcss);
 
     <!-- Payload viewer -->
     <div id="eo-ai-payload-panel" class="eo-ai-payload-panel" style="display:none">
-      <pre id="eo-ai-payload-content" class="eo-ai-payload-content"></pre>
+      <div id="eo-ai-payload-content"></div>
     </div>
 
     <div class="eo-modal-ai-body">
+      <!-- Aviso de descuadre entre líneas y totales del documento -->
+      <div id="eo-ai-totals-warning" class="eo-ai-totals-warning" style="display:none"></div>
+
       <!-- Sección Documento -->
       <div class="eo-ai-card">
         <div class="eo-ai-card-header" onclick="this.parentElement.classList.toggle('collapsed')">
@@ -629,6 +632,7 @@ llxHeader("", "EasyOcr", '', '', 0, 0, $arrayofjs, $arrayofcss);
               <thead>
                 <tr>
                   <th class="eo-ai-th-code"><?php echo $langs->trans('EasyOcrAICode') ?: 'Código'; ?></th>
+                  <th class="eo-ai-th-product"><?php echo $langs->trans('EasyOcrAIProduct'); ?></th>
                   <th class="eo-ai-th-desc"><?php echo $langs->trans('EasyOcrAILineDesc'); ?></th>
                   <th class="eo-ai-th-type"><?php echo $langs->trans('EasyOcrAIType') ?: 'Tipo'; ?></th>
                   <th class="eo-ai-th-qty"><?php echo $langs->trans('EasyOcrAIQty'); ?></th>

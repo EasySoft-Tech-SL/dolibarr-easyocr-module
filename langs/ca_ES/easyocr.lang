@@ -760,3 +760,56 @@ EasyOcrBatchTrash = Paperera
 EasyOcrBatchTrashConfirm = Moure aquest lot a la paperera? Es cancel·larà i no es podrà restaurar.
 EasyOcrBatchTrashEmpty = La paperera és buida
 EasyOcrBatchBackToHistory = Tornar a l'historial
+
+# --- v2.7.0: Vinculació de producte, descquadraments i anti-duplicats ---
+EasyOcrAIProduct = Producte
+EasyOcrAIProductLinked = Vinculat a
+EasyOcrAIProductNotLinked = Sense producte vinculat — la línia es crearà com a línia lliure
+EasyOcrAIProductSearch = Cerca producte…
+EasyOcrAIProductNoResults = Cap producte trobat
+EasyOcrAIProductUnlink = Desvincula el producte
+EasyOcrAITotalsMismatch = Les línies no quadren amb els totals del document:
+EasyOcrAITotalsMismatchHT = Base imposable
+EasyOcrAITotalsMismatchTVA = IVA
+EasyOcrAIDuplicateFile = Aquest document ja s'ha processat anteriorment
+EasyOcrAIReprocessAnyway = Voleu processar-lo de nou? Es consumiran crèdits d'IA.
+EasyOcrAILinkedInvoice = Factura
+EasyOcrFileAlreadyProcessed = Aquest document ja es va processar el %s. No s'ha tornat a enviar a la IA per no consumir crèdits.
+EasyOcrSupplierIsReceiver = El CIF/NIF extret com a proveïdor (%s) és el de la teva pròpia empresa: la IA ha llegit el receptor de la factura com a emissor. Corregeix el proveïdor abans de crear la factura.
+EasyOcrSupplierEqualsCustomer = Proveïdor i client comparteixen el mateix CIF/NIF (%s): la IA no els ha sabut distingir. Corregeix el proveïdor abans de crear la factura.
+EasyOcrAllowSelfSupplier = Permet la teva pròpia empresa com a proveïdor
+EasyOcrAllowSelfSupplierDesc = Desactivat, es bloqueja la creació de factures el CIF/NIF de proveïdor de les quals coincideix amb el de la teva empresa (error típic de l'OCR en confondre emissor i receptor). Activa'l només si factures realment entre entitats amb el mateix CIF.
+
+# --- v2.7.0: Duplicados en lote ---
+EasyOcrBatchDuplicatesFound = document(s) del lot ja s'havien processat i no s'han inclòs.
+EasyOcrBatchDuplicatesAsk = Vols processar-los igualment? Es consumiran crèdits d'IA.
+EasyOcrBatchAllDuplicates = Tots els documents seleccionats ja s'havien processat. No s'ha creat cap lot.
+EasyOcrReceiverContext = Envia la identitat de la teva empresa a la IA
+EasyOcrReceiverContextDesc = EXPERIMENTAL, desactivat per defecte. Afegeix el nom i el CIF/NIF de la teva empresa a les instruccions enviades a la IA. Activa-ho només si vols provar-ho: modifica la petició al servei i pot afectar el temps de procés. Desactivat, la petició és idèntica a la de la v2.6.0 i el bloqueig del servidor continua funcionant.
+
+# --- v2.7.0 - Duplicats parametritzables, modal propi i visor JSON ---
+EasyOcrDuplicateCheck = Detectar documents duplicats
+EasyOcrDuplicateCheckDesc = Abans d'enviar un document a la IA es comprova si ja s'ha processat (empremta SHA-256 del fitxer). Mai no es descarta en silenci: se't pregunta i el pots processar igualment. Desactiva-ho només si necessites reprocessar documents idèntics de manera habitual.
+EasyOcrDuplicateWindow = Finestra de detecció de duplicats
+EasyOcrDuplicateWindowDesc = Dies enrere que es tenen en compte. 0 = sense límit (es recorden tots els documents). Útil per a factures recurrents idèntiques: amb 30 dies, la mateixa factura del mes següent ja no es marca com a duplicada.
+EasyOcrAIDuplicateTitle = Document ja processat
+EasyOcrAIDuplicateFileLabel = Fitxer
+EasyOcrAIDuplicateProcessedOn = Processat el
+EasyOcrAIReprocessConfirm = Processar de nou
+EasyOcrBatchDuplicatesTitle = Documents duplicats al lot
+EasyOcrBatchDuplicatesCount = Duplicats
+EasyOcrBatchQueuedCount = A la cua
+EasyOcrBatchSkipDuplicates = Ometre'ls
+EasyOcrJsonExpand = Desplegar
+EasyOcrJsonCollapse = Plegar
+EasyOcrJsonCopy = Copiar
+EasyOcrJsonSearch = Cerca al JSON...
+EasyOcrJsonFullscreen = Pantalla completa
+EasyOcrJsonKeys = claus
+EasyOcrJsonValues = valors
+EasyOcrJsonItems = elements
+EasyOcrJsonProperties = propietats
+EasyOcrJsonResults = resultats
+EasyOcrJsonCopied = JSON copiat al porta-retalls
+
+EasyOcrAIUnreadableDocument = El servei no ha pogut llegir aquest document (la IA no ha retornat dades estructurades). No s' ha marcat com a processat: pots tornar-ho a provar.

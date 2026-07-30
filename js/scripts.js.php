@@ -205,7 +205,40 @@ window.EasyOcrLang = {
   typeSurcharge: <?php echo transJson('EasyOcrTypeSurcharge'); ?>,
   typeFee: <?php echo transJson('EasyOcrTypeFee'); ?>,
   typeDiscount: <?php echo transJson('EasyOcrTypeDiscount'); ?>,
-  typeOther: <?php echo transJson('EasyOcrTypeOther'); ?>
+  typeOther: <?php echo transJson('EasyOcrTypeOther'); ?>,
+  aiProduct: <?php echo transJson('EasyOcrAIProduct'); ?>,
+  aiProductLinked: <?php echo transJson('EasyOcrAIProductLinked'); ?>,
+  aiProductNotLinked: <?php echo transJson('EasyOcrAIProductNotLinked'); ?>,
+  aiProductSearch: <?php echo transJson('EasyOcrAIProductSearch'); ?>,
+  aiProductNoResults: <?php echo transJson('EasyOcrAIProductNoResults'); ?>,
+  aiProductUnlink: <?php echo transJson('EasyOcrAIProductUnlink'); ?>,
+  aiTotalsMismatch: <?php echo transJson('EasyOcrAITotalsMismatch'); ?>,
+  aiTotalsMismatchHT: <?php echo transJson('EasyOcrAITotalsMismatchHT'); ?>,
+  aiTotalsMismatchTVA: <?php echo transJson('EasyOcrAITotalsMismatchTVA'); ?>,
+  aiDuplicateFile: <?php echo transJson('EasyOcrAIDuplicateFile'); ?>,
+  aiReprocessAnyway: <?php echo transJson('EasyOcrAIReprocessAnyway'); ?>,
+  aiLinkedInvoice: <?php echo transJson('EasyOcrAILinkedInvoice'); ?>,
+  // Confirm modal (replaces window.confirm)
+  confirmTitle: <?php echo transJson('EasyOcrConfirm'); ?>,
+  confirmLabel: <?php echo transJson('EasyOcrConfirm'); ?>,
+  cancel: <?php echo transJson('EasyOcrCancel'); ?>,
+  aiDuplicateTitle: <?php echo transJson('EasyOcrAIDuplicateTitle'); ?>,
+  aiDuplicateFileLabel: <?php echo transJson('EasyOcrAIDuplicateFileLabel'); ?>,
+  aiDuplicateProcessedOn: <?php echo transJson('EasyOcrAIDuplicateProcessedOn'); ?>,
+  aiReprocessConfirm: <?php echo transJson('EasyOcrAIReprocessConfirm'); ?>,
+  // JSON tree viewer
+  jvExpand: <?php echo transJson('EasyOcrJsonExpand'); ?>,
+  jvCollapse: <?php echo transJson('EasyOcrJsonCollapse'); ?>,
+  jvCopy: <?php echo transJson('EasyOcrJsonCopy'); ?>,
+  jvSearch: <?php echo transJson('EasyOcrJsonSearch'); ?>,
+  jvFullscreen: <?php echo transJson('EasyOcrJsonFullscreen'); ?>,
+  jvKeys: <?php echo transJson('EasyOcrJsonKeys'); ?>,
+  jvValues: <?php echo transJson('EasyOcrJsonValues'); ?>,
+  jvItems: <?php echo transJson('EasyOcrJsonItems'); ?>,
+  jvProps: <?php echo transJson('EasyOcrJsonProperties'); ?>,
+  jvResults: <?php echo transJson('EasyOcrJsonResults'); ?>,
+  jvCopied: <?php echo transJson('EasyOcrJsonCopied'); ?>,
+  aiUnreadable: <?php echo transJson('EasyOcrAIUnreadableDocument'); ?>
 };
 <?php
 

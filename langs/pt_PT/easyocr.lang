@@ -758,3 +758,56 @@ EasyOcrBatchTrash = Lixeira
 EasyOcrBatchTrashConfirm = Mover este lote para a lixeira? Será cancelado e não poderá ser restaurado.
 EasyOcrBatchTrashEmpty = A lixeira está vazia
 EasyOcrBatchBackToHistory = Voltar ao histórico
+
+# --- v2.7.0: Ligação de produto, divergências de totais e anti-duplicados ---
+EasyOcrAIProduct = Produto
+EasyOcrAIProductLinked = Ligado a
+EasyOcrAIProductNotLinked = Sem produto ligado — a linha será criada como linha livre
+EasyOcrAIProductSearch = Procurar produto…
+EasyOcrAIProductNoResults = Nenhum produto encontrado
+EasyOcrAIProductUnlink = Desligar produto
+EasyOcrAITotalsMismatch = As linhas não coincidem com os totais do documento:
+EasyOcrAITotalsMismatchHT = Valor líquido
+EasyOcrAITotalsMismatchTVA = IVA
+EasyOcrAIDuplicateFile = Este documento já foi processado
+EasyOcrAIReprocessAnyway = Processar novamente? Serão consumidos créditos de IA.
+EasyOcrAILinkedInvoice = Fatura
+EasyOcrFileAlreadyProcessed = Este documento já foi processado em %s. Não foi reenviado para a IA, para não consumir créditos.
+EasyOcrSupplierIsReceiver = O NIF extraído como fornecedor (%s) é o da sua própria empresa: a IA leu o destinatário da fatura como emissor. Corrija o fornecedor antes de criar a fatura.
+EasyOcrSupplierEqualsCustomer = Fornecedor e cliente partilham o mesmo NIF (%s): a IA não os conseguiu distinguir. Corrija o fornecedor antes de criar a fatura.
+EasyOcrAllowSelfSupplier = Permitir a sua própria empresa como fornecedor
+EasyOcrAllowSelfSupplierDesc = Se desativado, são bloqueadas as faturas cujo NIF de fornecedor coincide com o da sua empresa (a típica troca do OCR entre emissor e destinatário). Ative apenas se faturar realmente entre entidades com o mesmo NIF.
+
+# --- v2.7.0: Duplicados en lote ---
+EasyOcrBatchDuplicatesFound = documento(s) deste lote já foram processados e não foram incluídos.
+EasyOcrBatchDuplicatesAsk = Quer processá-los mesmo assim? Serão consumidos créditos de IA.
+EasyOcrBatchAllDuplicates = Todos os documentos selecionados já tinham sido processados. Não foi criado nenhum lote.
+EasyOcrReceiverContext = Enviar a identidade da sua empresa para a IA
+EasyOcrReceiverContextDesc = EXPERIMENTAL, desativado por predefinição. Adiciona o nome e o NIF da sua empresa às instruções enviadas para a IA. Ative apenas para experimentar: altera o pedido enviado ao serviço e pode afetar o tempo de processamento. Desativado, o pedido é idêntico ao da v2.6.0 e a proteção do lado do servidor continua ativa.
+
+# --- v2.7.0 - Duplicados configuráveis, modal nativa e visualizador JSON ---
+EasyOcrDuplicateCheck = Detetar documentos duplicados
+EasyOcrDuplicateCheckDesc = Antes de enviar um documento para a IA, o módulo verifica se já foi processado (impressão SHA-256 do ficheiro). Nunca é descartado em silêncio: é-lhe perguntado e pode processá-lo mesmo assim. Desative apenas se reprocessar documentos idênticos fizer parte da sua rotina.
+EasyOcrDuplicateWindow = Janela de deteção de duplicados
+EasyOcrDuplicateWindowDesc = Dias a considerar para trás. 0 = sem limite (todos os documentos são recordados). Útil para faturas recorrentes idênticas: com 30 dias, a fatura do mês seguinte deixa de ser assinalada como duplicada.
+EasyOcrAIDuplicateTitle = Documento já processado
+EasyOcrAIDuplicateFileLabel = Ficheiro
+EasyOcrAIDuplicateProcessedOn = Processado em
+EasyOcrAIReprocessConfirm = Processar novamente
+EasyOcrBatchDuplicatesTitle = Documentos duplicados no lote
+EasyOcrBatchDuplicatesCount = Duplicados
+EasyOcrBatchQueuedCount = Em fila
+EasyOcrBatchSkipDuplicates = Ignorá-los
+EasyOcrJsonExpand = Expandir
+EasyOcrJsonCollapse = Recolher
+EasyOcrJsonCopy = Copiar
+EasyOcrJsonSearch = Pesquisar no JSON...
+EasyOcrJsonFullscreen = Ecrã inteiro
+EasyOcrJsonKeys = chaves
+EasyOcrJsonValues = valores
+EasyOcrJsonItems = elementos
+EasyOcrJsonProperties = propriedades
+EasyOcrJsonResults = resultados
+EasyOcrJsonCopied = JSON copiado para a área de transferência
+
+EasyOcrAIUnreadableDocument = O serviço não conseguiu ler este documento (a IA não devolveu dados estruturados). Não foi marcado como processado: pode tentar novamente.

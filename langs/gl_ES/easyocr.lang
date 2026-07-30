@@ -762,3 +762,56 @@ EasyOcrBatchTrash = Papeleira
 EasyOcrBatchTrashConfirm = Mover este lote á papeleira? Cancelarase e non se poderá restaurar.
 EasyOcrBatchTrashEmpty = A papeleira está baleira
 EasyOcrBatchBackToHistory = Volver ao historial
+
+# --- v2.7.0: Vinculación de produto, descadramentos e anti-duplicados ---
+EasyOcrAIProduct = Produto
+EasyOcrAIProductLinked = Vinculado a
+EasyOcrAIProductNotLinked = Sen produto vinculado — a liña crearase como liña libre
+EasyOcrAIProductSearch = Buscar produto…
+EasyOcrAIProductNoResults = Ningún produto atopado
+EasyOcrAIProductUnlink = Desvincular produto
+EasyOcrAITotalsMismatch = As liñas non cadran cos totais do documento:
+EasyOcrAITotalsMismatchHT = Base impoñible
+EasyOcrAITotalsMismatchTVA = IVE
+EasyOcrAIDuplicateFile = Este documento xa se procesou anteriormente
+EasyOcrAIReprocessAnyway = Procesalo de novo? Consumiranse créditos de IA.
+EasyOcrAILinkedInvoice = Factura
+EasyOcrFileAlreadyProcessed = Este documento xa se procesou o %s. Non se volveu enviar á IA para non consumir créditos.
+EasyOcrSupplierIsReceiver = O CIF/NIF extraído como provedor (%s) é o da túa propia empresa: a IA leu o receptor da factura como emisor. Corrixe o provedor antes de crear a factura.
+EasyOcrSupplierEqualsCustomer = Provedor e cliente comparten o mesmo CIF/NIF (%s): a IA non soubo distinguilos. Corrixe o provedor antes de crear a factura.
+EasyOcrAllowSelfSupplier = Permitir a túa propia empresa como provedor
+EasyOcrAllowSelfSupplierDesc = Desactivado, bloquéase a creación de facturas cuxo CIF/NIF de provedor coincide co da túa empresa (erro típico do OCR ao confundir emisor e receptor). Actívao só se facturas realmente entre entidades co mesmo CIF.
+
+# --- v2.7.0: Duplicados en lote ---
+EasyOcrBatchDuplicatesFound = documento(s) do lote xa se procesaron anteriormente e non se incluíron.
+EasyOcrBatchDuplicatesAsk = Queres procesalos igualmente? Consumiranse créditos de IA.
+EasyOcrBatchAllDuplicates = Todos os documentos seleccionados xa se procesaran. Non se creou ningún lote.
+EasyOcrReceiverContext = Enviar a identidade da túa empresa á IA
+EasyOcrReceiverContextDesc = EXPERIMENTAL, desactivado por defecto. Engade o nome e o CIF/NIF da túa empresa ás instrucións enviadas á IA. Actívao só se queres probalo: modifica a petición ao servizo e pode afectar ao tempo de proceso. Desactivado, a petición é idéntica á da v2.6.0 e o bloqueo do servidor segue funcionando.
+
+# --- v2.7.0 - Duplicados parametrizables, modal propio e visor JSON ---
+EasyOcrDuplicateCheck = Detectar documentos duplicados
+EasyOcrDuplicateCheckDesc = Antes de enviar un documento á IA compróbase se xa se procesou (pegada SHA-256 do ficheiro). Nunca se descarta en silencio: pregúntaseche e podes procesalo igualmente. Desactívao só se precisas reprocesar documentos idénticos de xeito habitual.
+EasyOcrDuplicateWindow = Xanela de detección de duplicados
+EasyOcrDuplicateWindowDesc = Días cara atrás que se teñen en conta. 0 = sen límite (lémbranse todos os documentos). Útil para facturas recorrentes idénticas: con 30 días, a mesma factura do mes seguinte xa non se marca como duplicada.
+EasyOcrAIDuplicateTitle = Documento xa procesado
+EasyOcrAIDuplicateFileLabel = Ficheiro
+EasyOcrAIDuplicateProcessedOn = Procesado o
+EasyOcrAIReprocessConfirm = Procesar de novo
+EasyOcrBatchDuplicatesTitle = Documentos duplicados no lote
+EasyOcrBatchDuplicatesCount = Duplicados
+EasyOcrBatchQueuedCount = Na cola
+EasyOcrBatchSkipDuplicates = Omitilos
+EasyOcrJsonExpand = Despregar
+EasyOcrJsonCollapse = Pregar
+EasyOcrJsonCopy = Copiar
+EasyOcrJsonSearch = Buscar no JSON...
+EasyOcrJsonFullscreen = Pantalla completa
+EasyOcrJsonKeys = chaves
+EasyOcrJsonValues = valores
+EasyOcrJsonItems = elementos
+EasyOcrJsonProperties = propiedades
+EasyOcrJsonResults = resultados
+EasyOcrJsonCopied = JSON copiado ao portapapeis
+
+EasyOcrAIUnreadableDocument = O servizo non puido ler este documento (a IA non devolveu datos estruturados). Non se marcou como procesado: podes tentalo de novo.

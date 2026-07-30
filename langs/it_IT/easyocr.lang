@@ -757,3 +757,56 @@ EasyOcrBatchTrash = Cestino
 EasyOcrBatchTrashConfirm = Spostare questo lotto nel cestino? Verrà annullato e non potrà essere ripristinato.
 EasyOcrBatchTrashEmpty = Il cestino è vuoto
 EasyOcrBatchBackToHistory = Torna alla cronologia
+
+# --- v2.7.0: Collegamento prodotto, scostamenti totali e anti-duplicati ---
+EasyOcrAIProduct = Prodotto
+EasyOcrAIProductLinked = Collegato a
+EasyOcrAIProductNotLinked = Nessun prodotto collegato — la riga sarà creata come riga libera
+EasyOcrAIProductSearch = Cerca prodotto…
+EasyOcrAIProductNoResults = Nessun prodotto trovato
+EasyOcrAIProductUnlink = Scollega prodotto
+EasyOcrAITotalsMismatch = Le righe non corrispondono ai totali del documento:
+EasyOcrAITotalsMismatchHT = Imponibile
+EasyOcrAITotalsMismatchTVA = IVA
+EasyOcrAIDuplicateFile = Questo documento è già stato elaborato
+EasyOcrAIReprocessAnyway = Elaborarlo di nuovo? Consumerà crediti IA.
+EasyOcrAILinkedInvoice = Fattura
+EasyOcrFileAlreadyProcessed = Questo documento è già stato elaborato il %s. Non è stato inviato di nuovo all'IA, per non consumare crediti.
+EasyOcrSupplierIsReceiver = La partita IVA estratta come fornitore (%s) è quella della tua azienda: l'IA ha letto il destinatario della fattura come emittente. Correggi il fornitore prima di creare la fattura.
+EasyOcrSupplierEqualsCustomer = Fornitore e cliente hanno la stessa partita IVA (%s): l'IA non è riuscita a distinguerli. Correggi il fornitore prima di creare la fattura.
+EasyOcrAllowSelfSupplier = Consenti la tua azienda come fornitore
+EasyOcrAllowSelfSupplierDesc = Se disattivato, vengono bloccate le fatture la cui partita IVA fornitore coincide con quella della tua azienda (il classico scambio OCR tra emittente e destinatario). Attivalo solo se fatturi realmente tra entità con la stessa partita IVA.
+
+# --- v2.7.0: Duplicados en lote ---
+EasyOcrBatchDuplicatesFound = documento/i di questo lotto sono già stati elaborati e non sono stati inclusi.
+EasyOcrBatchDuplicatesAsk = Vuoi elaborarli comunque? Verranno consumati crediti IA.
+EasyOcrBatchAllDuplicates = Tutti i documenti selezionati erano già stati elaborati. Nessun lotto è stato creato.
+EasyOcrReceiverContext = Invia l'identità della tua azienda all'IA
+EasyOcrReceiverContextDesc = SPERIMENTALE, disattivato per impostazione predefinita. Aggiunge nome e partita IVA della tua azienda alle istruzioni inviate all’IA. Attivalo solo per provarlo: modifica la richiesta inviata al servizio e può incidere sui tempi di elaborazione. Disattivato, la richiesta è identica alla v2.6.0 e il controllo lato server resta attivo.
+
+# --- v2.7.0 - Duplicati configurabili, modale nativa e visualizzatore JSON ---
+EasyOcrDuplicateCheck = Rileva documenti duplicati
+EasyOcrDuplicateCheckDesc = Prima di inviare un documento all'IA il modulo verifica se è già stato elaborato (impronta SHA-256 del file). Non viene mai scartato in silenzio: ti viene chiesto e puoi elaborarlo comunque. Disattivalo solo se rielaborare documenti identici fa parte della tua routine.
+EasyOcrDuplicateWindow = Finestra di rilevamento dei duplicati
+EasyOcrDuplicateWindowDesc = Giorni all'indietro da considerare. 0 = nessun limite (tutti i documenti vengono ricordati). Utile per fatture ricorrenti identiche: con 30 giorni, la fattura del mese successivo non viene più segnalata come duplicato.
+EasyOcrAIDuplicateTitle = Documento già elaborato
+EasyOcrAIDuplicateFileLabel = File
+EasyOcrAIDuplicateProcessedOn = Elaborato il
+EasyOcrAIReprocessConfirm = Elabora di nuovo
+EasyOcrBatchDuplicatesTitle = Documenti duplicati nel lotto
+EasyOcrBatchDuplicatesCount = Duplicati
+EasyOcrBatchQueuedCount = In coda
+EasyOcrBatchSkipDuplicates = Ignorali
+EasyOcrJsonExpand = Espandi
+EasyOcrJsonCollapse = Comprimi
+EasyOcrJsonCopy = Copia
+EasyOcrJsonSearch = Cerca nel JSON...
+EasyOcrJsonFullscreen = Schermo intero
+EasyOcrJsonKeys = chiavi
+EasyOcrJsonValues = valori
+EasyOcrJsonItems = elementi
+EasyOcrJsonProperties = proprietà
+EasyOcrJsonResults = risultati
+EasyOcrJsonCopied = JSON copiato negli appunti
+
+EasyOcrAIUnreadableDocument = Il servizio non è riuscito a leggere questo documento (l'IA non ha restituito dati strutturati). Non è stato contrassegnato come elaborato: puoi riprovare.

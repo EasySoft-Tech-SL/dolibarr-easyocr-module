@@ -782,3 +782,56 @@ EasyOcrBatchTrash = Papelera
 EasyOcrBatchTrashConfirm = ¿Mover este lote a la papelera? Se cancelará y no se podrá restaurar.
 EasyOcrBatchTrashEmpty = La papelera está vacía
 EasyOcrBatchBackToHistory = Volver al historial
+
+# --- v2.7.0: Vinculación de producto, descuadres y anti-duplicados ---
+EasyOcrAIProduct = Producto
+EasyOcrAIProductLinked = Vinculado a
+EasyOcrAIProductNotLinked = Sin producto vinculado — la línea se creará como línea libre
+EasyOcrAIProductSearch = Buscar producto…
+EasyOcrAIProductNoResults = Ningún producto encontrado
+EasyOcrAIProductUnlink = Desvincular producto
+EasyOcrAITotalsMismatch = Las líneas no cuadran con los totales del documento:
+EasyOcrAITotalsMismatchHT = Base imponible
+EasyOcrAITotalsMismatchTVA = IVA
+EasyOcrAIDuplicateFile = Este documento ya se procesó anteriormente
+EasyOcrAIReprocessAnyway = ¿Procesarlo de nuevo? Se consumirán créditos de IA.
+EasyOcrAILinkedInvoice = Factura
+EasyOcrFileAlreadyProcessed = Este documento ya se procesó el %s. No se ha vuelto a enviar a la IA para no consumir créditos.
+EasyOcrSupplierIsReceiver = El CIF/NIF extraído como proveedor (%s) es el de tu propia empresa: la IA ha leído al receptor de la factura como emisor. Corrige el proveedor antes de crear la factura.
+EasyOcrSupplierEqualsCustomer = Proveedor y cliente comparten el mismo CIF/NIF (%s): la IA no ha sabido distinguirlos. Corrige el proveedor antes de crear la factura.
+EasyOcrAllowSelfSupplier = Permitir tu propia empresa como proveedor
+EasyOcrAllowSelfSupplierDesc = Desactivado, se bloquea la creación de facturas cuyo CIF/NIF de proveedor coincide con el de tu empresa (error típico del OCR al confundir emisor y receptor). Actívalo solo si facturas realmente entre entidades con el mismo CIF.
+
+# --- v2.7.0: Duplicados en lote ---
+EasyOcrBatchDuplicatesFound = documento(s) del lote ya se procesaron anteriormente y no se han incluido.
+EasyOcrBatchDuplicatesAsk = ¿Quieres procesarlos igualmente? Se consumirán créditos de IA por ellos.
+EasyOcrBatchAllDuplicates = Todos los documentos seleccionados ya se habían procesado. No se ha creado ningún lote.
+EasyOcrReceiverContext = Enviar identidad de tu empresa a la IA
+EasyOcrReceiverContextDesc = EXPERIMENTAL, desactivado por defecto. Añade el nombre y CIF/NIF de tu empresa a las instrucciones enviadas a la IA. Actívalo solo si quieres probarlo: modifica la petición al servicio y puede afectar al tiempo de proceso. Desactivado, la petición es idéntica a la de v2.6.0 y el bloqueo de seguridad del servidor sigue funcionando igual.
+
+# --- v2.7.0 - Duplicados parametrizables, modal propio y visor JSON ---
+EasyOcrDuplicateCheck = Detectar documentos duplicados
+EasyOcrDuplicateCheckDesc = Antes de enviar un documento a la IA se comprueba si ya se procesó (huella SHA-256 del archivo). Nunca se descarta en silencio: se te pregunta y puedes procesarlo igualmente. Desactívalo solo si necesitas reprocesar documentos idénticos de forma habitual.
+EasyOcrDuplicateWindow = Ventana de detección de duplicados
+EasyOcrDuplicateWindowDesc = Días hacia atrás que se tienen en cuenta. 0 = sin límite (se recuerdan todos los documentos). Útil para facturas recurrentes idénticas: con 30 días, la misma factura del mes siguiente ya no se marca como duplicada.
+EasyOcrAIDuplicateTitle = Documento ya procesado
+EasyOcrAIDuplicateFileLabel = Archivo
+EasyOcrAIDuplicateProcessedOn = Procesado el
+EasyOcrAIReprocessConfirm = Procesar de nuevo
+EasyOcrBatchDuplicatesTitle = Documentos duplicados en el lote
+EasyOcrBatchDuplicatesCount = Duplicados
+EasyOcrBatchQueuedCount = En cola
+EasyOcrBatchSkipDuplicates = Omitirlos
+EasyOcrJsonExpand = Expandir
+EasyOcrJsonCollapse = Contraer
+EasyOcrJsonCopy = Copiar
+EasyOcrJsonSearch = Buscar en el JSON...
+EasyOcrJsonFullscreen = Pantalla completa
+EasyOcrJsonKeys = claves
+EasyOcrJsonValues = valores
+EasyOcrJsonItems = elementos
+EasyOcrJsonProperties = propiedades
+EasyOcrJsonResults = resultados
+EasyOcrJsonCopied = JSON copiado al portapapeles
+
+EasyOcrAIUnreadableDocument = El servicio no ha podido leer este documento (la IA no devolvió datos estructurados). No se ha marcado como procesado: puedes volver a intentarlo.

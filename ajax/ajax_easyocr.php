@@ -792,6 +792,8 @@ if ($action == "createSupplierInvoice") {
 		'supplier_country' => GETPOST('supplier_country', 'alphanohtml'),
 		'supplier_phone'   => GETPOST('supplier_phone', 'alphanohtml'),
 		'supplier_email'   => GETPOST('supplier_email', 'alphanohtml'),
+		// Used only to detect that the AI could not tell supplier from customer
+		'customer_tax_id'  => GETPOST('customer_tax_id', 'alphanohtml'),
 		'invoice_status'   => GETPOST('invoice_status', 'alpha'),
 		'invoice_type'     => GETPOST('invoice_type', 'int'),
 		'journal_code'     => GETPOST('journal_code', 'alphanohtml'),
@@ -810,6 +812,14 @@ if ($action == "createSupplierInvoice") {
 
 	// Call shared invoice creation function
 	$result = easyocrCreateInvoiceFromOCR($params, $user);
+
+	// Tie the source document fingerprint to the invoice it produced, so a later
+	// re-upload can point at the existing invoice instead of just saying "seen".
+	$postedHash = GETPOST('file_hash', 'alphanohtml');
+	if (!empty($postedHash) && !empty($result['id'])) {
+		easyocrLinkProcessedFileToInvoice($postedHash, $result['id']);
+	}
+
 	print json_encode($result);
 
 
@@ -864,6 +874,30 @@ if ($action == "createSupplierInvoice") {
 		}
 	}
 
+	// Duplicate guard — a re-uploaded document would spend AI credits again.
+	// Runs server-side on the decoded bytes so it matches the batch flow hash.
+	$fileBytes = base64_decode(preg_replace('#^data:[^;]+;base64,#', '', $base64Data), true);
+	$fileHash = ($fileBytes !== false && $fileBytes !== '') ? easyocrComputeFileHash($fileBytes) : '';
+	if ($fileHash !== '' && easyocrDuplicateCheckEnabled() && !GETPOST('force_reprocess', 'int')) {
+		$known = easyocrLookupProcessedFile($fileHash);
+		if ($known !== null) {
+			print json_encode([
+				"status"        => "duplicate",
+				"file_hash"     => $fileHash,
+				"message"       => $langs->trans('EasyOcrFileAlreadyProcessed', dol_print_date($known['date_creation'], 'dayhour')),
+				"processed_on"  => dol_print_date($known['date_creation'], 'dayhour'),
+				"filename"      => $known['filename'],
+				"invoice_id"    => $known['invoice_id'],
+				"invoice_ref"   => $known['invoice_ref'],
+			]);
+			exit;
+		}
+	}
+
+	// Receiver identity always travels: it is a correctness guard owned by the
+	// ERP, not a user-authored instruction, so it survives the plan strip above.
+	$customInstructions = easyocrAugmentInstructions($customInstructions);
+
 	$result = $aiService->processBase64($base64Data, $customInstructions);
 
 	if ($result === false) {
@@ -871,7 +905,22 @@ if ($action == "createSupplierInvoice") {
 		exit;
 	}
 
-	print json_encode(["status" => "ok", "data" => $result]);
+	// The service answers 200/"success" even when the model could not produce
+	// valid JSON. Fingerprinting that would refuse the retry as a duplicate.
+	if (!easyocrAiResultIsUsable($result)) {
+		dol_syslog('EasyOcr aiOcr: unusable AI payload (parse_error) — not fingerprinting so the retry is allowed', LOG_WARNING);
+		print json_encode([
+			"status"  => "error",
+			"message" => $langs->transnoentities('EasyOcrAIUnreadableDocument'),
+		]);
+		exit;
+	}
+
+	if ($fileHash !== '') {
+		easyocrRegisterProcessedFile($fileHash, GETPOST('file_name', 'alphanohtml'), strlen($fileBytes), $user->id);
+	}
+
+	print json_encode(["status" => "ok", "data" => $result, "file_hash" => $fileHash]);
 
 
 	// ============================================================
@@ -1079,7 +1128,9 @@ if ($action == "createSupplierInvoice") {
 	$isImage = ($ext !== 'pdf');
 
 	// preprocess only for images (contrast/grayscale/sharpening → better OCR on photos)
-	$result = $aiService->processBase64($imgB64, '', 'receipt.' . $ext, $isImage);
+	// Receipts also carry our own tax id: tell the model who the receiver is so
+	// it does not return the employer as the supplier.
+	$result = $aiService->processBase64($imgB64, easyocrAugmentInstructions(''), 'receipt.' . $ext, $isImage);
 	if ($result === false) {
 		print json_encode(["status" => "error", "message" => $aiService->error]);
 		exit;
@@ -1148,6 +1199,31 @@ if ($action == "createSupplierInvoice") {
 		exit;
 	}
 
+	// Duplicate guard — same fingerprint logic as the non-streaming aiOcr path
+	$fileBytes = base64_decode(preg_replace('#^data:[^;]+;base64,#', '', $base64Data), true);
+	$fileHash = ($fileBytes !== false && $fileBytes !== '') ? easyocrComputeFileHash($fileBytes) : '';
+	if ($fileHash !== '' && easyocrDuplicateCheckEnabled() && !GETPOST('force_reprocess', 'int')) {
+		$known = easyocrLookupProcessedFile($fileHash);
+		if ($known !== null) {
+			dol_syslog('EasyOcr aiOcrStream: duplicate file hash ' . substr($fileHash, 0, 12) . ' — skipping AI call', LOG_WARNING);
+			header('Content-Type: text/event-stream; charset=utf-8');
+			header('Cache-Control: no-cache, no-store, must-revalidate');
+			header('Pragma: no-cache');
+			echo "event: duplicate\ndata: " . json_encode([
+				"file_hash"    => $fileHash,
+				"message"      => $langs->transnoentities('EasyOcrFileAlreadyProcessed', dol_print_date($known['date_creation'], 'dayhour')),
+				"processed_on" => dol_print_date($known['date_creation'], 'dayhour'),
+				"filename"     => $known['filename'],
+				"invoice_id"   => $known['invoice_id'],
+				"invoice_ref"  => $known['invoice_ref'],
+			]) . "\n\n";
+			exit;
+		}
+	}
+
+	// Receiver identity always travels (ERP-owned correctness guard, not a plan feature)
+	$customInstructions = easyocrAugmentInstructions($customInstructions);
+
 	// SSE headers
 	header('Content-Type: text/event-stream; charset=utf-8');
 	header('Cache-Control: no-cache, no-store, must-revalidate');
@@ -1155,6 +1231,12 @@ if ($action == "createSupplierInvoice") {
 	header('Connection: keep-alive');
 	header('X-Accel-Buffering: no');          // nginx
 	header('Content-Encoding: none');         // disable mod_deflate
+
+	// Document fingerprint travels as a header, not as an SSE event: a cached
+	// older client would mistake an unknown event for upstream progress.
+	if ($fileHash !== '') {
+		header('X-EasyOcr-File-Hash: ' . $fileHash);
+	}
 
 	// Close session to prevent session lock blocking output
 	if (function_exists('session_write_close')) {
@@ -1184,6 +1266,9 @@ if ($action == "createSupplierInvoice") {
 	$url    = $aiService->getBaseUrl() . '/api/v1/ocr/base64/stream';
 	$apiKey = $aiService->getApiKey();
 
+	$sawParseError = false;
+	$chunkTail     = '';
+
 	$ch = curl_init($url);
 	curl_setopt_array($ch, [
 		CURLOPT_POST           => true,
@@ -1202,7 +1287,15 @@ if ($action == "createSupplierInvoice") {
 		})),
 		CURLOPT_RETURNTRANSFER => false,
 		CURLOPT_TIMEOUT        => 120,
-		CURLOPT_WRITEFUNCTION  => function ($ch, $chunk) {
+		// Pure pass-through, but watch the stream for the marker the service
+		// emits when the model failed to produce JSON. Fingerprinting such a
+		// document below would make the user's retry look like a duplicate.
+		CURLOPT_WRITEFUNCTION  => function ($ch, $chunk) use (&$sawParseError, &$chunkTail) {
+			if (!$sawParseError && strpos($chunkTail . $chunk, '"parse_error"') !== false) {
+				$sawParseError = true;
+			}
+			// Keep a short tail so a marker split across two chunks is still seen
+			$chunkTail = substr($chunk, -16);
 			echo $chunk;
 			if (ob_get_level()) ob_flush();
 			flush();
@@ -1219,7 +1312,17 @@ if ($action == "createSupplierInvoice") {
 		flush();
 	}
 
+	$httpCode = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
 	curl_close($ch);
+
+	// Fingerprint the document only when the service actually processed it AND
+	// returned something usable: a parse_error means the credits were spent for
+	// nothing, so the user must be able to retry without hitting the duplicate guard.
+	if ($fileHash !== '' && $ok && $httpCode >= 200 && $httpCode < 300 && !$sawParseError) {
+		easyocrRegisterProcessedFile($fileHash, $filename, strlen($fileBytes), $user->id);
+	} elseif ($sawParseError) {
+		dol_syslog('EasyOcr aiOcrStream: parse_error in the stream — not fingerprinting so the retry is allowed', LOG_WARNING);
+	}
 	exit;
 
 
@@ -1246,11 +1349,12 @@ if ($action == "createSupplierInvoice") {
 		exit;
 	}
 
-	$soc = new Societe($db);
-	$soc->fetch($fk_soc);
-
-	$payment_mode_id = !empty($soc->mode_reglement_supplier_id) ? $soc->mode_reglement_supplier_id : 0;
-	$payment_cond_id = !empty($soc->cond_reglement_supplier_id) ? $soc->cond_reglement_supplier_id : 0;
+	// Supplier record defaults, completed with the most frequent values seen on
+	// that supplier's recent invoices (the record itself is usually empty).
+	$paymentDefaults = easyocrGetSupplierPaymentDefaults($fk_soc);
+	$payment_mode_id = (int) $paymentDefaults['mode_reglement_id'];
+	$payment_cond_id = (int) $paymentDefaults['cond_reglement_id'];
+	$payment_account_id = (int) $paymentDefaults['fk_account'];
 
 	// Get payment mode label
 	$payment_mode_label = '';
@@ -1274,12 +1378,26 @@ if ($action == "createSupplierInvoice") {
 		}
 	}
 
+	// Bank account label (only set when resolved from invoice history)
+	$payment_account_label = '';
+	if ($payment_account_id > 0) {
+		$sql = "SELECT label, number FROM " . MAIN_DB_PREFIX . "bank_account WHERE rowid = " . ((int) $payment_account_id);
+		$sql .= " AND entity IN (" . getEntity('bank_account') . ")";
+		$res = $db->query($sql);
+		if ($res && $db->num_rows($res) > 0) {
+			$payment_account_label = $db->fetch_object($res)->label;
+		}
+	}
+
 	print json_encode([
 		"status" => "ok",
 		"payment_mode_id" => $payment_mode_id,
 		"payment_mode_label" => $payment_mode_label,
 		"payment_cond_id" => $payment_cond_id,
-		"payment_cond_label" => $payment_cond_label
+		"payment_cond_label" => $payment_cond_label,
+		"payment_account_id" => $payment_account_id,
+		"payment_account_label" => $payment_account_label,
+		"source" => $paymentDefaults['source']
 	]);
 
 
@@ -1294,11 +1412,31 @@ if ($action == "createSupplierInvoice") {
 		exit;
 	}
 
-	$sql = "SELECT p.rowid, p.ref, p.label, p.price, p.tva_tx, p.localtax1_tx, p.localtax2_tx, p.type";
+	// When a supplier is known, its own article references (ref_fourn) are part
+	// of the searchable space — that is what the OCR "code" usually contains.
+	$fk_soc = GETPOST("fk_soc", "int");
+	$escaped = $db->escape($term);
+
+	// The supplier-price join is only added when a supplier is known: without it
+	// the join would fan out one row per supplier tariff and repeat products.
+	$sql = "SELECT DISTINCT p.rowid, p.ref, p.label, p.price, p.tva_tx, p.localtax1_tx, p.localtax2_tx, p.type";
+	if ($fk_soc > 0) {
+		$sql .= ", pfp.ref_fourn";
+	} else {
+		$sql .= ", NULL as ref_fourn";
+	}
 	$sql .= " FROM " . MAIN_DB_PREFIX . "product p";
+	if ($fk_soc > 0) {
+		$sql .= " LEFT JOIN " . MAIN_DB_PREFIX . "product_fournisseur_price pfp";
+		$sql .= " ON pfp.fk_product = p.rowid AND pfp.fk_soc = " . ((int) $fk_soc);
+	}
 	$sql .= " WHERE p.entity IN (" . getEntity('product') . ")";
 	$sql .= " AND p.tobuy = 1";
-	$sql .= " AND (p.ref LIKE '%" . $db->escape($term) . "%' OR p.label LIKE '%" . $db->escape($term) . "%' OR p.barcode = '" . $db->escape($term) . "')";
+	$sql .= " AND (p.ref LIKE '%" . $escaped . "%' OR p.label LIKE '%" . $escaped . "%' OR p.barcode = '" . $escaped . "'";
+	if ($fk_soc > 0) {
+		$sql .= " OR pfp.ref_fourn LIKE '%" . $escaped . "%'";
+	}
+	$sql .= ")";
 	$sql .= " ORDER BY p.ref LIMIT 20";
 
 	$result = array();
@@ -1309,6 +1447,7 @@ if ($action == "createSupplierInvoice") {
 				'rowid' => $obj->rowid,
 				'ref' => $obj->ref,
 				'label' => $obj->label,
+				'ref_fourn' => $obj->ref_fourn,
 				'price' => $obj->price,
 				'tva_tx' => $obj->tva_tx,
 				'localtax1_tx' => $obj->localtax1_tx,
@@ -1319,6 +1458,73 @@ if ($action == "createSupplierInvoice") {
 	}
 
 	print json_encode($result);
+
+
+	// ============================================================
+	// RESOLVE OCR LINE CODES TO PRODUCTS (same order as invoice creation)
+	// ============================================================
+} else if ($action == "resolveProductCodes") {
+
+	if (!easyocrCheckRight($user, 'easyocr', 'read')) {
+		print json_encode(["status" => "error", "message" => $langs->trans('EasyOcrAccessDenied')]);
+		exit;
+	}
+
+	$fk_soc = GETPOST("fk_soc", "int");
+	$codesRaw = GETPOST("codes", "restricthtml");
+	$codes = json_decode($codesRaw, true);
+	if (!is_array($codes)) {
+		print json_encode(["status" => "ok", "matches" => new stdClass()]);
+		exit;
+	}
+
+	// Mirrors easyocrCreateInvoiceFromOCR(): supplier ref first, then internal
+	// ref/barcode. Keeping both in sync is what makes the badge trustworthy.
+	$matches = array();
+	$seen = array();
+	foreach ($codes as $code) {
+		$code = trim((string) $code);
+		if ($code === '' || isset($seen[$code]) || count($seen) >= 200) {
+			continue;
+		}
+		$seen[$code] = true;
+
+		$found = null;
+
+		if ($fk_soc > 0) {
+			$sql = "SELECT p.rowid, p.ref, p.label, p.type FROM " . MAIN_DB_PREFIX . "product_fournisseur_price pfp";
+			$sql .= " INNER JOIN " . MAIN_DB_PREFIX . "product p ON p.rowid = pfp.fk_product";
+			$sql .= " WHERE pfp.fk_soc = " . ((int) $fk_soc);
+			$sql .= " AND pfp.ref_fourn = '" . $db->escape($code) . "'";
+			$sql .= " AND p.entity IN (" . getEntity('product') . ") LIMIT 1";
+			$res = $db->query($sql);
+			if ($res && $db->num_rows($res) > 0) {
+				$obj = $db->fetch_object($res);
+				$found = array('rowid' => (int) $obj->rowid, 'ref' => $obj->ref, 'label' => $obj->label, 'type' => (int) $obj->type, 'via' => 'ref_fourn');
+			}
+		}
+
+		if ($found === null) {
+			$sql = "SELECT rowid, ref, label, fk_product_type as type FROM " . MAIN_DB_PREFIX . "product";
+			$sql .= " WHERE (ref = '" . $db->escape($code) . "' OR barcode = '" . $db->escape($code) . "')";
+			$sql .= " AND entity IN (" . getEntity('product') . ") LIMIT 1";
+			$res = $db->query($sql);
+			if ($res && $db->num_rows($res) > 0) {
+				$obj = $db->fetch_object($res);
+				$found = array('rowid' => (int) $obj->rowid, 'ref' => $obj->ref, 'label' => $obj->label, 'type' => (int) $obj->type, 'via' => 'ref');
+			}
+		}
+
+		if ($found !== null) {
+			$matches[$code] = $found;
+		}
+	}
+
+	print json_encode([
+		"status" => "ok",
+		"matches" => empty($matches) ? new stdClass() : $matches,
+		"autocreate" => !empty($conf->global->EASYOCR_AI_AUTOCREATE_PRODUCT) ? 1 : 0
+	]);
 
 
 	// ============================================================
@@ -1467,6 +1673,30 @@ if ($action == "createSupplierInvoice") {
 		exit;
 	}
 
+	// Duplicate guard — batches are where credits go fastest, so a file already
+	// processed is reported back instead of being queued. The client decides.
+	$uploadHash = '';
+	if (is_readable($receivedFile['tmp_name'])) {
+		$uploadHash = easyocrComputeFileHash(file_get_contents($receivedFile['tmp_name']));
+	}
+	if ($uploadHash !== '' && easyocrDuplicateCheckEnabled() && !GETPOST('force_reprocess', 'int')) {
+		$known = easyocrLookupProcessedFile($uploadHash);
+		if ($known !== null) {
+			print json_encode([
+				"status"       => "ok",
+				"skipped"      => true,
+				"duplicate"    => true,
+				"file"         => $receivedFile['name'],
+				"file_hash"    => $uploadHash,
+				"processed_on" => dol_print_date($known['date_creation'], 'dayhour'),
+				"invoice_id"   => $known['invoice_id'],
+				"invoice_ref"  => $known['invoice_ref'],
+				"message"      => $langs->transnoentities('EasyOcrFileAlreadyProcessed', dol_print_date($known['date_creation'], 'dayhour')),
+			]);
+			exit;
+		}
+	}
+
 	$tempDir = DOL_DATA_ROOT . '/easyocr/temp/' . $sessionId;
 	if (!is_dir($tempDir)) {
 		dol_mkdir($tempDir);
@@ -1561,12 +1791,22 @@ if ($action == "createSupplierInvoice") {
 	if (!empty($language)) $options['language'] = $language;
 
 	$customInstructions = GETPOST('custom_instructions', 'restricthtml');
+	// Receiver identity always travels (ERP-owned correctness guard, not a plan feature)
+	$customInstructions = easyocrAugmentInstructions($customInstructions);
 	if (!empty($customInstructions)) $options['custom_instructions'] = $customInstructions;
-	/* var_dump($options);
-	die(); */
+
 	try {
 		$client = new \EasySoft\EasyOCR\EasyOCRClient($apiKey, ['base_url' => $apiUrl]);
 		$result = $client->batch()->create($filePaths, $options);
+
+		// Fingerprint the files that were actually submitted, so a later batch
+		// can warn instead of paying for them twice. Done before cleanup.
+		foreach ($filePaths as $fp) {
+			$content = @file_get_contents($fp);
+			if ($content !== false && $content !== '') {
+				easyocrRegisterProcessedFile(easyocrComputeFileHash($content), basename($fp), strlen($content), $user->id);
+			}
+		}
 
 		// Cleanup temp files
 		foreach ($filePaths as $fp) {

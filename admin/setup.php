@@ -88,6 +88,15 @@ if ($action == 'update') {
 	if (!($res > 0)) $error++;
 
 	$res = dolibarr_set_const($db, 'EASYOCR_AI_AUTOCREATE_PRODUCT', GETPOST('EASYOCR_AI_AUTOCREATE_PRODUCT', 'int'), 'chaine', 0, '', $conf->entity);
+	$res = dolibarr_set_const($db, 'EASYOCR_ALLOW_SELF_SUPPLIER', GETPOST('EASYOCR_ALLOW_SELF_SUPPLIER', 'int'), 'chaine', 0, '', $conf->entity);
+	$res = dolibarr_set_const($db, 'EASYOCR_AI_RECEIVER_CONTEXT', GETPOST('EASYOCR_AI_RECEIVER_CONTEXT', 'int'), 'chaine', 0, '', $conf->entity);
+	if (!($res > 0)) $error++;
+
+	// Duplicate-document guard
+	$res = dolibarr_set_const($db, 'EASYOCR_DUPLICATE_CHECK', GETPOST('EASYOCR_DUPLICATE_CHECK', 'int'), 'chaine', 0, '', $conf->entity);
+	if (!($res > 0)) $error++;
+
+	$res = dolibarr_set_const($db, 'EASYOCR_DUPLICATE_WINDOW_DAYS', max(0, GETPOST('EASYOCR_DUPLICATE_WINDOW_DAYS', 'int')), 'chaine', 0, '', $conf->entity);
 	if (!($res > 0)) $error++;
 
 	// Webhook auto-payment settings
@@ -205,6 +214,42 @@ print '<td>'.$langs->trans("EasyOcrAutoCreateProduct").'</td>';
 print '<td>';
 print $form->selectyesno('EASYOCR_AI_AUTOCREATE_PRODUCT', !empty($conf->global->EASYOCR_AI_AUTOCREATE_PRODUCT) ? $conf->global->EASYOCR_AI_AUTOCREATE_PRODUCT : 0, 1);
 print '<br><span class="opacitymedium small">'.$langs->trans("EasyOcrAutoCreateProductDesc").'</span>';
+print '</td>';
+print '</tr>';
+
+// Send our own identity to the AI so it does not return us as the supplier
+print '<tr class="oddeven">';
+print '<td>'.$langs->trans("EasyOcrReceiverContext").'</td>';
+print '<td>';
+print $form->selectyesno('EASYOCR_AI_RECEIVER_CONTEXT', !empty($conf->global->EASYOCR_AI_RECEIVER_CONTEXT) ? 1 : 0, 1);
+print '<br><span class="opacitymedium small">'.$langs->trans("EasyOcrReceiverContextDesc").'</span>';
+print '</td>';
+print '</tr>';
+
+// Allow the extracted supplier to be our own company (escape hatch for the guard)
+print '<tr class="oddeven">';
+print '<td>'.$langs->trans("EasyOcrAllowSelfSupplier").'</td>';
+print '<td>';
+print $form->selectyesno('EASYOCR_ALLOW_SELF_SUPPLIER', !empty($conf->global->EASYOCR_ALLOW_SELF_SUPPLIER) ? $conf->global->EASYOCR_ALLOW_SELF_SUPPLIER : 0, 1);
+print '<br><span class="opacitymedium small">'.$langs->trans("EasyOcrAllowSelfSupplierDesc").'</span>';
+print '</td>';
+print '</tr>';
+
+// Duplicate-document guard: skip files already sent to the AI service
+print '<tr class="oddeven">';
+print '<td>'.$langs->trans("EasyOcrDuplicateCheck").'</td>';
+print '<td>';
+print $form->selectyesno('EASYOCR_DUPLICATE_CHECK', isset($conf->global->EASYOCR_DUPLICATE_CHECK) ? (empty($conf->global->EASYOCR_DUPLICATE_CHECK) ? 0 : 1) : 1, 1);
+print '<br><span class="opacitymedium small">'.$langs->trans("EasyOcrDuplicateCheckDesc").'</span>';
+print '</td>';
+print '</tr>';
+
+// How far back the duplicate guard looks (0 = forever)
+print '<tr class="oddeven">';
+print '<td>'.$langs->trans("EasyOcrDuplicateWindow").'</td>';
+print '<td>';
+print '<input type="number" min="0" step="1" class="flat width75" name="EASYOCR_DUPLICATE_WINDOW_DAYS" value="'.(int) (!empty($conf->global->EASYOCR_DUPLICATE_WINDOW_DAYS) ? $conf->global->EASYOCR_DUPLICATE_WINDOW_DAYS : 0).'"> '.$langs->trans("Days");
+print '<br><span class="opacitymedium small">'.$langs->trans("EasyOcrDuplicateWindowDesc").'</span>';
 print '</td>';
 print '</tr>';
 

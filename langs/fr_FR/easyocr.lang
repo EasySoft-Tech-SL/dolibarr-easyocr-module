@@ -777,3 +777,56 @@ EasyOcrBatchTrash = Corbeille
 EasyOcrBatchTrashConfirm = Déplacer ce lot vers la corbeille ? Il sera annulé et ne pourra pas être restauré.
 EasyOcrBatchTrashEmpty = La corbeille est vide
 EasyOcrBatchBackToHistory = Retour à l'historique
+
+# --- v2.7.0 : Liaison produit, écarts de totaux et anti-doublons ---
+EasyOcrAIProduct = Produit
+EasyOcrAIProductLinked = Lié à
+EasyOcrAIProductNotLinked = Aucun produit lié — la ligne sera créée en ligne libre
+EasyOcrAIProductSearch = Rechercher un produit…
+EasyOcrAIProductNoResults = Aucun produit trouvé
+EasyOcrAIProductUnlink = Délier le produit
+EasyOcrAITotalsMismatch = Les lignes ne correspondent pas aux totaux du document :
+EasyOcrAITotalsMismatchHT = Montant HT
+EasyOcrAITotalsMismatchTVA = TVA
+EasyOcrAIDuplicateFile = Ce document a déjà été traité
+EasyOcrAIReprocessAnyway = Le traiter à nouveau ? Cela consommera des crédits IA.
+EasyOcrAILinkedInvoice = Facture
+EasyOcrFileAlreadyProcessed = Ce document a déjà été traité le %s. Il n'a pas été renvoyé à l'IA, afin de ne pas consommer de crédits.
+EasyOcrSupplierIsReceiver = Le numéro fiscal extrait comme fournisseur (%s) est celui de votre propre société : l'IA a pris le destinataire de la facture pour l'émetteur. Corrigez le fournisseur avant de créer la facture.
+EasyOcrSupplierEqualsCustomer = Le fournisseur et le client partagent le même numéro fiscal (%s) : l'IA n'a pas su les distinguer. Corrigez le fournisseur avant de créer la facture.
+EasyOcrAllowSelfSupplier = Autoriser votre propre société comme fournisseur
+EasyOcrAllowSelfSupplierDesc = Désactivé, les factures dont le numéro fiscal fournisseur correspond à votre société sont bloquées (confusion classique de l'OCR entre émetteur et destinataire). À activer uniquement si vous facturez réellement entre entités partageant le même numéro fiscal.
+
+# --- v2.7.0: Duplicados en lote ---
+EasyOcrBatchDuplicatesFound = document(s) de ce lot ont déjà été traités et n'ont pas été inclus.
+EasyOcrBatchDuplicatesAsk = Voulez-vous les traiter quand même ? Des crédits IA seront consommés.
+EasyOcrBatchAllDuplicates = Tous les documents sélectionnés avaient déjà été traités. Aucun lot n'a été créé.
+EasyOcrReceiverContext = Envoyer l'identité de votre société à l'IA
+EasyOcrReceiverContextDesc = EXPÉRIMENTAL, désactivé par défaut. Ajoute le nom et le numéro fiscal de votre société aux instructions envoyées à l’IA. À activer uniquement pour essai : cela modifie la requête envoyée au service et peut affecter le temps de traitement. Désactivé, la requête est identique à la v2.6.0 et la protection côté serveur reste active.
+
+# --- v2.7.0 - Doublons paramétrables, modale native et visionneuse JSON ---
+EasyOcrDuplicateCheck = Détecter les documents en double
+EasyOcrDuplicateCheckDesc = Avant d'envoyer un document à l'IA, le module vérifie s'il a déjà été traité (empreinte SHA-256 du fichier). Il n'est jamais écarté en silence : la question vous est posée et vous pouvez le traiter quand même. Ne le désactivez que si retraiter des documents identiques fait partie de votre routine.
+EasyOcrDuplicateWindow = Fenêtre de détection des doublons
+EasyOcrDuplicateWindowDesc = Nombre de jours pris en compte. 0 = sans limite (tous les documents sont mémorisés). Utile pour les factures récurrentes identiques : avec 30 jours, la facture du mois suivant n'est plus signalée comme doublon.
+EasyOcrAIDuplicateTitle = Document déjà traité
+EasyOcrAIDuplicateFileLabel = Fichier
+EasyOcrAIDuplicateProcessedOn = Traité le
+EasyOcrAIReprocessConfirm = Traiter à nouveau
+EasyOcrBatchDuplicatesTitle = Documents en double dans le lot
+EasyOcrBatchDuplicatesCount = Doublons
+EasyOcrBatchQueuedCount = En file
+EasyOcrBatchSkipDuplicates = Les ignorer
+EasyOcrJsonExpand = Déplier
+EasyOcrJsonCollapse = Replier
+EasyOcrJsonCopy = Copier
+EasyOcrJsonSearch = Rechercher dans le JSON...
+EasyOcrJsonFullscreen = Plein écran
+EasyOcrJsonKeys = clés
+EasyOcrJsonValues = valeurs
+EasyOcrJsonItems = éléments
+EasyOcrJsonProperties = propriétés
+EasyOcrJsonResults = résultats
+EasyOcrJsonCopied = JSON copié dans le presse-papiers
+
+EasyOcrAIUnreadableDocument = Le service n'a pas pu lire ce document (l'IA n'a renvoyé aucune donnée structurée). Il n'a pas été marqué comme traité : vous pouvez réessayer.

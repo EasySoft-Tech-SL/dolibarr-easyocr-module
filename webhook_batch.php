@@ -400,6 +400,8 @@ if ($_condEvent && $_condDoc && $_condStat) {
 				'supplier_country' => isset($supplier['country']) ? $supplier['country'] : '',
 				'supplier_phone'   => isset($supplier['phone']) ? $supplier['phone'] : '',
 				'supplier_email'   => isset($supplier['email']) ? $supplier['email'] : '',
+				// Only used to detect that the AI mixed up issuer and receiver
+				'customer_tax_id'  => isset($structuredData['customer']['tax_id']) ? $structuredData['customer']['tax_id'] : '',
 				'invoice_status'   => '', // Use module config default
 				'invoice_type'     => 0,
 				'journal_code'     => '',

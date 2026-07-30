@@ -762,3 +762,56 @@ EasyOcrBatchTrash = Papierkorb
 EasyOcrBatchTrashConfirm = Diesen Stapel in den Papierkorb verschieben? Er wird storniert und kann nicht wiederhergestellt werden.
 EasyOcrBatchTrashEmpty = Der Papierkorb ist leer
 EasyOcrBatchBackToHistory = Zurück zur Übersicht
+
+# --- v2.7.0: Produktverknüpfung, Summenabweichungen und Duplikatschutz ---
+EasyOcrAIProduct = Produkt
+EasyOcrAIProductLinked = Verknüpft mit
+EasyOcrAIProductNotLinked = Kein Produkt verknüpft — die Zeile wird als freie Zeile angelegt
+EasyOcrAIProductSearch = Produkt suchen…
+EasyOcrAIProductNoResults = Keine Produkte gefunden
+EasyOcrAIProductUnlink = Produktverknüpfung aufheben
+EasyOcrAITotalsMismatch = Die Positionen stimmen nicht mit den Belegsummen überein:
+EasyOcrAITotalsMismatchHT = Nettobetrag
+EasyOcrAITotalsMismatchTVA = USt.
+EasyOcrAIDuplicateFile = Dieses Dokument wurde bereits verarbeitet
+EasyOcrAIReprocessAnyway = Erneut verarbeiten? Dabei werden KI-Credits verbraucht.
+EasyOcrAILinkedInvoice = Rechnung
+EasyOcrFileAlreadyProcessed = Dieses Dokument wurde bereits am %s verarbeitet. Es wurde nicht erneut an die KI gesendet, um keine Credits zu verbrauchen.
+EasyOcrSupplierIsReceiver = Die als Lieferant erkannte Steuernummer (%s) gehört zu Ihrem eigenen Unternehmen: Die KI hat den Rechnungsempfänger als Aussteller gelesen. Korrigieren Sie den Lieferanten, bevor Sie die Rechnung anlegen.
+EasyOcrSupplierEqualsCustomer = Lieferant und Kunde haben dieselbe Steuernummer (%s): Die KI konnte sie nicht unterscheiden. Korrigieren Sie den Lieferanten, bevor Sie die Rechnung anlegen.
+EasyOcrAllowSelfSupplier = Eigenes Unternehmen als Lieferant zulassen
+EasyOcrAllowSelfSupplierDesc = Wenn deaktiviert, werden Rechnungen blockiert, deren Lieferanten-Steuernummer mit der Ihres Unternehmens übereinstimmt (die klassische OCR-Verwechslung von Aussteller und Empfänger). Nur aktivieren, wenn Sie tatsächlich zwischen Einheiten mit derselben Steuernummer abrechnen.
+
+# --- v2.7.0: Duplicados en lote ---
+EasyOcrBatchDuplicatesFound = Dokument(e) dieses Stapels wurden bereits verarbeitet und nicht aufgenommen.
+EasyOcrBatchDuplicatesAsk = Trotzdem verarbeiten? Dafür werden KI-Credits verbraucht.
+EasyOcrBatchAllDuplicates = Alle ausgewählten Dokumente wurden bereits verarbeitet. Es wurde kein Stapel erstellt.
+EasyOcrReceiverContext = Eigene Firmenidentität an die KI senden
+EasyOcrReceiverContextDesc = EXPERIMENTELL, standardmäßig aus. Fügt Name und Steuernummer Ihres Unternehmens den an die KI gesendeten Anweisungen hinzu. Nur zum Ausprobieren aktivieren: Es verändert die Anfrage an den Dienst und kann die Verarbeitungszeit beeinflussen. Ausgeschaltet ist die Anfrage identisch mit v2.6.0 und die serverseitige Prüfung bleibt aktiv.
+
+# --- v2.7.0 - Konfigurierbare Duplikatsprüfung, eigener Dialog und JSON-Viewer ---
+EasyOcrDuplicateCheck = Doppelte Dokumente erkennen
+EasyOcrDuplicateCheckDesc = Bevor ein Dokument an die KI geht, prüft das Modul, ob es bereits verarbeitet wurde (SHA-256-Prüfsumme der Datei). Es wird nie stillschweigend verworfen: Sie werden gefragt und können es trotzdem verarbeiten. Nur abschalten, wenn das erneute Verarbeiten identischer Dokumente zu Ihrem Alltag gehört.
+EasyOcrDuplicateWindow = Zeitfenster der Duplikatsprüfung
+EasyOcrDuplicateWindowDesc = Wie viele Tage zurück geprüft wird. 0 = unbegrenzt (alle Dokumente werden gemerkt). Nützlich bei identischen wiederkehrenden Rechnungen: Mit 30 Tagen wird die Rechnung des Folgemonats nicht mehr als Duplikat markiert.
+EasyOcrAIDuplicateTitle = Dokument bereits verarbeitet
+EasyOcrAIDuplicateFileLabel = Datei
+EasyOcrAIDuplicateProcessedOn = Verarbeitet am
+EasyOcrAIReprocessConfirm = Erneut verarbeiten
+EasyOcrBatchDuplicatesTitle = Doppelte Dokumente im Stapel
+EasyOcrBatchDuplicatesCount = Duplikate
+EasyOcrBatchQueuedCount = In Warteschlange
+EasyOcrBatchSkipDuplicates = Überspringen
+EasyOcrJsonExpand = Ausklappen
+EasyOcrJsonCollapse = Einklappen
+EasyOcrJsonCopy = Kopieren
+EasyOcrJsonSearch = Im JSON suchen...
+EasyOcrJsonFullscreen = Vollbild
+EasyOcrJsonKeys = Schlüssel
+EasyOcrJsonValues = Werte
+EasyOcrJsonItems = Elemente
+EasyOcrJsonProperties = Eigenschaften
+EasyOcrJsonResults = Treffer
+EasyOcrJsonCopied = JSON in die Zwischenablage kopiert
+
+EasyOcrAIUnreadableDocument = Der Dienst konnte dieses Dokument nicht lesen (die KI lieferte keine strukturierten Daten). Es wurde nicht als verarbeitet markiert, Sie können es erneut versuchen.

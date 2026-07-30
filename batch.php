@@ -773,18 +773,37 @@ if (!$fromMenu) {
       updateUI();
     };
 
+    // Confirmation dialog shared with extract.php (js/scripts.js). Falls back to
+    // the browser prompt if scripts.js failed to load, so a decision is never lost.
+    window.eoBatchConfirm = function(opts) {
+      if (typeof EasyOcr !== 'undefined' && typeof EasyOcr.confirm === 'function') {
+        EasyOcr.confirm(opts);
+        return;
+      }
+      var msg = (opts.message || '') + (opts.question ? '\n\n' + opts.question : '');
+      if (window.confirm(msg)) {
+        if (typeof opts.onConfirm === 'function') opts.onConfirm();
+      } else if (typeof opts.onCancel === 'function') {
+        opts.onCancel();
+      }
+    };
+
     // Form submission — AJAX chunked upload (bypasses PHP max_file_uploads)
     var form = document.getElementById('eo-batch-form');
     if (form) {
       // Simple inline notification helper (Dolibarr style)
       function eoBatchNotify(msg, type) {
-        var cls = (type === 'error') ? 'error' : 'ok';
-        var icon = (type === 'error') ? 'fa-exclamation-triangle' : 'fa-check-circle';
-        var color = (type === 'error') ? '#bc0000' : '#28a745';
+        // 'warn' must not look like success — a skipped batch is not a done batch
+        var styles = {
+          error: { cls: 'error', icon: 'fa-exclamation-triangle', color: '#bc0000', bg: '#fff5f5' },
+          warn:  { cls: 'warn',  icon: 'fa-exclamation-circle',   color: '#b8860b', bg: '#fffbea' },
+          ok:    { cls: 'ok',    icon: 'fa-check-circle',         color: '#28a745', bg: '#f0fff4' }
+        };
+        var s = styles[type] || styles.ok;
         var el = document.createElement('div');
         el.className = 'jnotify-container';
-        el.innerHTML = '<div class="jnotify-notification jnotify-notification-' + cls + '" style="padding:12px 16px; margin:8px 0; border-radius:4px; background:' + (type === 'error' ? '#fff5f5' : '#f0fff4') + '; border:1px solid ' + color + ';">' +
-          '<span class="fas ' + icon + '" style="margin-right:8px; color:' + color + '"></span>' + msg +
+        el.innerHTML = '<div class="jnotify-notification jnotify-notification-' + s.cls + '" style="padding:12px 16px; margin:8px 0; border-radius:4px; background:' + s.bg + '; border:1px solid ' + s.color + ';">' +
+          '<span class="fas ' + s.icon + '" style="margin-right:8px; color:' + s.color + '"></span>' + msg +
           '</div>';
         var target = document.getElementById('eo-batch-form');
         if (target) target.parentNode.insertBefore(el, target);
@@ -810,9 +829,17 @@ if (!$fromMenu) {
           submitText.textContent = msg || ('<?php echo addslashes($langs->trans('EasyOcrBatchUploading')); ?> ' + done + '/' + total);
         }
 
-        function uploadFile(index) {
+        // Files the server recognised as already processed. They are held back
+        // instead of being queued, and the user is asked once at the end.
+        var duplicateIdx = [];
+
+        function uploadFile(index, force) {
           if (hadError) return;
           if (index >= totalFiles) {
+            if (duplicateIdx.length && !force) {
+              askAboutDuplicates();
+              return;
+            }
             // All files uploaded — now create the batch
             createBatch(sessionId);
             return;
@@ -824,6 +851,7 @@ if (!$fromMenu) {
           fd.append('action', 'batchUploadFile');
           fd.append('session_id', sessionId);
           fd.append('file', selectedFiles[index]);
+          if (force) fd.append('force_reprocess', '1');
 
           jQuery.ajax({
             url: ajaxUrl,
@@ -833,14 +861,78 @@ if (!$fromMenu) {
             contentType: false,
             dataType: 'json',
             success: function(res) {
-              if (res.status === 'ok') {
+              if (res.status === 'ok' && res.skipped) {
+                // Not queued: remember it and carry on with the rest
+                duplicateIdx.push(index);
+                uploadFile(index + 1, force);
+              } else if (res.status === 'ok') {
                 uploaded++;
-                uploadFile(index + 1);
+                uploadFile(index + 1, force);
               } else {
                 hadError = true;
                 resetBtn();
                 eoBatchNotify(res.message || '<?php echo addslashes($langs->trans('EasyOcrBatchUploadError', '')); ?>', 'error');
               }
+            },
+            error: function() {
+              hadError = true;
+              resetBtn();
+              eoBatchNotify('<?php echo addslashes($langs->trans('EasyOcrBatchApiError')); ?>', 'error');
+            }
+          });
+        }
+
+        // Duplicates are never dropped silently: ask once, then either re-upload
+        // them with force or send the batch without them.
+        function askAboutDuplicates() {
+          var n = duplicateIdx.length;
+          eoBatchConfirm({
+            title: '<?php echo addslashes($langs->trans('EasyOcrBatchDuplicatesTitle')); ?>',
+            message: n + ' <?php echo addslashes($langs->trans('EasyOcrBatchDuplicatesFound')); ?>',
+            meta: [
+              { label: '<?php echo addslashes($langs->trans('EasyOcrBatchDuplicatesCount')); ?>', value: n },
+              { label: '<?php echo addslashes($langs->trans('EasyOcrBatchQueuedCount')); ?>', value: uploaded }
+            ],
+            question: '<?php echo addslashes($langs->trans('EasyOcrBatchDuplicatesAsk')); ?>',
+            confirmLabel: '<?php echo addslashes($langs->trans('EasyOcrAIReprocessConfirm')); ?>',
+            cancelLabel: '<?php echo addslashes($langs->trans('EasyOcrBatchSkipDuplicates')); ?>',
+            onConfirm: function () {
+              var pending = duplicateIdx.slice();
+              duplicateIdx = [];
+              reuploadForced(pending, 0);
+            },
+            onCancel: function () {
+              if (uploaded > 0) {
+                createBatch(sessionId);
+              } else {
+                resetBtn();
+                eoBatchNotify('<?php echo addslashes($langs->trans('EasyOcrBatchAllDuplicates')); ?>', 'warn');
+              }
+            }
+          });
+        }
+
+        function reuploadForced(list, i) {
+          if (i >= list.length) {
+            createBatch(sessionId);
+            return;
+          }
+          var fd = new FormData();
+          fd.append('action', 'batchUploadFile');
+          fd.append('session_id', sessionId);
+          fd.append('file', selectedFiles[list[i]]);
+          fd.append('force_reprocess', '1');
+
+          jQuery.ajax({
+            url: ajaxUrl,
+            type: 'POST',
+            data: fd,
+            processData: false,
+            contentType: false,
+            dataType: 'json',
+            success: function(res) {
+              if (res.status === 'ok') uploaded++;
+              reuploadForced(list, i + 1);
             },
             error: function() {
               hadError = true;
@@ -999,7 +1091,10 @@ if (!$fromMenu) {
     trash: '<?php echo addslashes($langs->trans('EasyOcrBatchTrash')); ?>',
     trashConfirm: '<?php echo addslashes($langs->trans('EasyOcrBatchTrashConfirm')); ?>',
     trashEmpty: '<?php echo addslashes($langs->trans('EasyOcrBatchTrashEmpty')); ?>',
-    backToHistory: '<?php echo addslashes($langs->trans('EasyOcrBatchBackToHistory')); ?>'
+    backToHistory: '<?php echo addslashes($langs->trans('EasyOcrBatchBackToHistory')); ?>',
+    confirmTitle: '<?php echo addslashes($langs->trans('EasyOcrConfirm')); ?>',
+    confirmYes: '<?php echo addslashes($langs->trans('Yes')); ?>',
+    confirmNo: '<?php echo addslashes($langs->trans('EasyOcrCancel')); ?>'
   };
 
   var eoBatchCurrentPage = 1;
@@ -1894,9 +1989,8 @@ if (!$fromMenu) {
     }
   }
 
-  function eoBatchCancelBatch(uuid) {
-    if (!confirm(eoBatchI18n.cancelConfirm)) return;
-
+  // Cancel and trash both hit batchCancel; only the wording of the prompt differs.
+  function eoBatchRequestCancel(uuid) {
     jQuery.ajax({
       url: eoBatchAjaxUrl,
       type: 'POST',
@@ -1921,6 +2015,19 @@ if (!$fromMenu) {
     });
   }
 
+  function eoBatchCancelBatch(uuid) {
+    eoBatchConfirm({
+      title: eoBatchI18n.confirmTitle,
+      question: eoBatchI18n.cancelConfirm,
+      confirmLabel: eoBatchI18n.confirmYes,
+      cancelLabel: eoBatchI18n.confirmNo,
+      danger: true,
+      onConfirm: function() {
+        eoBatchRequestCancel(uuid);
+      }
+    });
+  }
+
   function eoBatchCloseDetail() {
     var overlay = document.getElementById('eo-batch-detail-overlay');
     if (overlay) overlay.style.display = 'none';
@@ -1929,27 +2036,14 @@ if (!$fromMenu) {
   // ─── Trash / Papelera functions ─────────────────────────────────────────
 
   function eoBatchTrashBatch(uuid) {
-    if (!confirm(eoBatchI18n.trashConfirm)) return;
-
-    jQuery.ajax({
-      url: eoBatchAjaxUrl,
-      type: 'POST',
-      data: {
-        action: 'batchCancel',
-        uuid: uuid
-      },
-      dataType: 'json',
-      success: function(res) {
-        if (res.status === 'ok') {
-          eoBatchLoadList(eoBatchCurrentPage);
-          eoBatchCloseDetail();
-          eoBatchUpdateTrashBadge();
-        } else {
-          alert(res.message || eoBatchI18n.errorLoading);
-        }
-      },
-      error: function() {
-        alert(eoBatchI18n.errorLoading);
+    eoBatchConfirm({
+      title: eoBatchI18n.trash,
+      question: eoBatchI18n.trashConfirm,
+      confirmLabel: eoBatchI18n.confirmYes,
+      cancelLabel: eoBatchI18n.confirmNo,
+      danger: true,
+      onConfirm: function() {
+        eoBatchRequestCancel(uuid);
       }
     });
   }
