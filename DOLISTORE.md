@@ -4,15 +4,25 @@
 
 | Campo | Valor |
 |-------|-------|
-| **Versión del módulo** | 2.6.0 |
-| **Compatibilidad Min** | V16 |
-| **Compatibilidad Max** | V23 |
+| **Versión del módulo** | 2.7.0 |
+| **Compatibilidad Min** | V16 (id 95) |
+| **Compatibilidad Max** | V23 (id 116) |
 | **PHP Min** | 7.4 |
-| **PHP Max** | 8.3 |
-| **Duración acceso actualizaciones** | 730 días |
+| **PHP Max** | 8.2 |
+| **Duración acceso actualizaciones** | 365 días |
 | **Precio de venta** | 0 (libre) |
 | **Dolistore product_id** | 2798 |
+| **ERP product_id** | 61 (ref `MD-EASYOCR`, categoría 3 Módulos Dolibarr) |
 | **Cómo contactar al soporte** | info@easysoft.es |
+
+> ⚠️ **Las descripciones largas de este fichero son históricas.** Desde la 2.7.0 las
+> cinco fichas de Dolistore siguen `PLANTILLA_FICHA.html` (sistema de diseño EasySoft:
+> cabecera negra con KPIs, tabla problema→coste, capturas, comparativa de modos, FAQ y
+> CTA) y **se publican con `dolistore.py describe`**, nunca desde el editor web de
+> Dolistore, porque CKEditor borra los estilos inline. Para partir del HTML vivo:
+> `python dolistore.py get --id 2798`. La descripción del producto en el ERP usa el otro
+> formato obligatorio, la **tabla dorada** (cabecera `#daa520`, filas de sección,
+> destacados verdes, pie gris, acentos como entidades y sin emojis).
 
 ## Palabras Clave / Keywords
 
