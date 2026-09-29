@@ -365,6 +365,73 @@ if ($tableExists) {
 	unset($conf->global->EASYOCR_DUPLICATE_WINDOW_DAYS);
 }
 
+// ── Supplier proposal: same extraction, different document ───────────────
+eo_group('supplier proposal from OCR');
+
+$resPT = $db->query("SHOW TABLES LIKE '" . MAIN_DB_PREFIX . "supplier_proposal'");
+$hasProposalTable = $resPT && $db->num_rows($resPT) > 0;
+eo_assert('llx_supplier_proposal exists', $hasProposalTable, true);
+
+if ($hasProposalTable) {
+	if (empty($conf->supplier_proposal->enabled)) {
+		// The module is off in this instance: it is switched on for the test only, so the
+		// pipeline is still exercised. Nothing is written outside the transaction.
+		$conf->supplier_proposal->enabled = 1;
+		eo_info('supplier_proposal was disabled in this instance; enabled for the test only');
+	}
+	// The user of the test may not carry the rights of that module: hasRight() returns 0
+	// when the module branch is missing, so it is created here (transaction-only change).
+	if (empty($user->rights)) {
+		$user->rights = new stdClass();
+	}
+	if (empty($user->rights->supplier_proposal)) {
+		$user->rights->supplier_proposal = new stdClass();
+	}
+	$user->rights->supplier_proposal->creer = 1;
+
+	$proposalRef = 'EASYOCR-PROP-' . substr(md5(microtime(true)), 0, 6);
+	$proposalParams = $params;
+	$proposalParams['ref_supplier']  = $proposalRef;
+	$proposalParams['document_type'] = 'supplier_proposal';
+	$proposalParams['valid_until']   = '2026-08-31';
+
+	$propResult = easyocrCreateInvoiceFromOCR($proposalParams, $user);
+	eo_assert('the proposal is created', isset($propResult['status']) ? $propResult['status'] : 'missing', 'ok');
+	if (!isset($propResult['status']) || $propResult['status'] !== 'ok') {
+		eo_info('message: ' . (isset($propResult['message']) ? $propResult['message'] : '(none)'));
+	}
+	eo_assert('and it is reported as a proposal', isset($propResult['document_type']) ? $propResult['document_type'] : '', 'supplier_proposal');
+
+	$proposalId = isset($propResult['id']) ? (int) $propResult['id'] : 0;
+
+	if ($proposalId > 0) {
+		$resP = $db->query("SELECT fk_soc, ref_ext, ref, fk_statut, note_private FROM " . MAIN_DB_PREFIX . "supplier_proposal WHERE rowid = " . $proposalId);
+		$propRow = $resP ? $db->fetch_object($resP) : null;
+		eo_assert('the row is readable', is_object($propRow), true);
+		if (is_object($propRow)) {
+			eo_assert('it hangs from the supplier of the document', (int) $propRow->fk_soc, (int) $supplierId);
+			eo_assert('the supplier number is kept in ref_ext', $propRow->ref_ext, $proposalRef);
+			eo_assert('it stays in draft', (int) $propRow->fk_statut, 0);
+			eo_assert('the note keeps the supplier number', strpos((string) $propRow->note_private, $proposalRef) !== false, true);
+			eo_assert('the note keeps the validity date', strpos((string) $propRow->note_private, '2026-08-31') !== false, true);
+		}
+
+		$resPL = $db->query("SELECT COUNT(*) n FROM " . MAIN_DB_PREFIX . "supplier_proposaldet WHERE fk_supplier_proposal = " . $proposalId);
+		eo_assert('all eight lines were persisted', $resPL ? (int) $db->fetch_object($resPL)->n : 0, 8);
+
+		$resPF = $db->query("SELECT COUNT(*) n FROM " . MAIN_DB_PREFIX . "facture_fourn WHERE ref_supplier = '" . $db->escape($proposalRef) . "'");
+		eo_assert('no supplier invoice was created instead', $resPF ? (int) $db->fetch_object($resPF)->n : -1, 0);
+
+		$resPP = $db->query("SELECT COUNT(*) n FROM " . MAIN_DB_PREFIX . "paiementfourn WHERE num_paiement = '" . $db->escape($proposalRef) . "'");
+		eo_assert('a proposal is never paid', $resPP ? (int) $db->fetch_object($resPP)->n : -1, 0);
+
+		// The same document from the same supplier is not registered twice
+		$again = easyocrCreateInvoiceFromOCR($proposalParams, $user);
+		eo_assert('the same document is refused as a duplicate', isset($again['status']) ? $again['status'] : '', 'repeat');
+		eo_assert('and it points at the existing proposal', isset($again['existing_id']) ? (int) $again['existing_id'] : 0, $proposalId);
+	}
+}
+
 // ── Roll back, always ────────────────────────────────────────────────────
 $db->rollback();
 

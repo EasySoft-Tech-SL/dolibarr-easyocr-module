@@ -66,6 +66,9 @@ require_once DOL_DOCUMENT_ROOT . '/ecm/class/ecmfiles.class.php';
 require_once DOL_DOCUMENT_ROOT . '/societe/class/societe.class.php';
 require_once DOL_DOCUMENT_ROOT . '/product/class/product.class.php';
 require_once DOL_DOCUMENT_ROOT . '/core/lib/date.lib.php';
+// getCountry() lives here and Societe::create() calls it on 21.0.x when a supplier is
+// created with a country code but no country id. Not loaded by main.inc.php in ajax.
+require_once DOL_DOCUMENT_ROOT . '/core/lib/company.lib.php';
 require_once __DIR__ . '/../lib/easyocr.lib.php';
 require_once __DIR__ . '/../lib/easyocr_ai.class.php';
 dol_include_once('/easyocr/lib/easyocr_autoload.php');
@@ -150,6 +153,35 @@ if ($action == "createSupplierInvoice") {
 
 	if (!easyocrCheckRight($user, 'easyocr', 'write')) {
 		print json_encode(["status" => "error", "message" => "Sin permiso de escritura"]);
+		exit;
+	}
+
+	// Supplier proposal: the same extraction, a different Dolibarr document. It goes
+	// through the shared function, which resolves the supplier, links products, keeps
+	// the supplier's number and date in the note and checks for a previous proposal.
+	if (GETPOST('document_type', 'aZ09') === 'supplier_proposal') {
+		$paramsProposal = array(
+			'fk_soc'           => GETPOST('fk_soc', 'int'),
+			'ref_supplier'     => GETPOST('ref_supplier', 'alphanohtml'),
+			'datef'            => GETPOST('datef', 'alphanohtml'),
+			'total_ttc'        => GETPOST('total_ttc', 'alphanohtml'),
+			'total_ht'         => GETPOST('total_ht', 'alphanohtml'),
+			'total_tva'        => GETPOST('total_tva', 'alphanohtml'),
+			'total_localtax1'  => GETPOST('total_localtax1', 'alphanohtml'),
+			'total_localtax2'  => GETPOST('total_localtax2', 'alphanohtml'),
+			'notes'            => GETPOST('description', 'restricthtml'),
+			'valid_until'      => GETPOST('valid_until', 'alphanohtml'),
+			'document_type'    => 'supplier_proposal',
+			'import_key'       => 'easyocr',
+		);
+
+		$receivedProposalFile = isset($_FILES['file']) ? $_FILES['file'] : null;
+		if (!empty($receivedProposalFile) && $receivedProposalFile['error'] === UPLOAD_ERR_OK) {
+			$paramsProposal['file_tmp_path'] = $receivedProposalFile['tmp_name'];
+			$paramsProposal['file_name'] = $receivedProposalFile['name'];
+		}
+
+		print json_encode(easyocrCreateInvoiceFromOCR($paramsProposal, $user));
 		exit;
 	}
 
@@ -761,6 +793,48 @@ if ($action == "createSupplierInvoice") {
 
 
 	// ============================================================
+	// SUPPLIER BY NAME - preselect the supplier whose name was read from the document
+	// ============================================================
+} else if ($action == "findSupplierByName") {
+
+	$name = GETPOST("supplier_name", "alphanohtml");
+	if (trim($name) === '') {
+		print json_encode(["status" => "error", "message" => "supplier_name required"]);
+		exit;
+	}
+
+	$found = easyocrFindSuppliersByName($name);
+
+	// One exact match, or a single partial one, is preselected. With several candidates
+	// nothing is chosen: two suppliers with a similar name are a decision for the user.
+	if (count($found['exact']) == 1) {
+		print json_encode([
+			"status"      => "ok",
+			"fk_soc"      => $found['exact'][0]['id'],
+			"name"        => $found['exact'][0]['name'],
+			"match"       => "exact",
+			"found_count" => 1,
+		]);
+	} elseif (empty($found['exact']) && count($found['partial']) == 1) {
+		print json_encode([
+			"status"      => "ok",
+			"fk_soc"      => $found['partial'][0]['id'],
+			"name"        => $found['partial'][0]['name'],
+			"match"       => "partial",
+			"found_count" => 1,
+		]);
+	} else {
+		$candidates = !empty($found['exact']) ? $found['exact'] : $found['partial'];
+		print json_encode([
+			"status"      => "ok",
+			"found_count" => count($candidates),
+			"suppliers"   => $candidates,
+			"match"       => !empty($found['exact']) ? "exact" : "partial",
+		]);
+	}
+
+
+	// ============================================================
 	// AI OCR - CREATE INVOICE FROM AI STRUCTURED DATA (multi-line)
 	// ============================================================
 } else if ($action == "newInvoiceAI") {
@@ -775,6 +849,8 @@ if ($action == "createSupplierInvoice") {
 		'fk_soc'           => GETPOST('fk_soc', 'int'),
 		'ref_supplier'     => GETPOST('ref_supplier', 'alphanohtml'),
 		'datef'            => GETPOST('datef', 'alphanohtml'),
+		'document_type'    => GETPOST('document_type', 'aZ09'),
+		'valid_until'      => GETPOST('valid_until', 'alphanohtml'),
 		'total_ttc'        => GETPOST('total_ttc', 'alphanohtml'),
 		'total_ht'         => GETPOST('total_ht', 'alphanohtml'),
 		'total_tva'        => GETPOST('total_tva', 'alphanohtml'),
@@ -815,8 +891,9 @@ if ($action == "createSupplierInvoice") {
 
 	// Tie the source document fingerprint to the invoice it produced, so a later
 	// re-upload can point at the existing invoice instead of just saying "seen".
+	// A supplier proposal has no column there: only invoices are linked.
 	$postedHash = GETPOST('file_hash', 'alphanohtml');
-	if (!empty($postedHash) && !empty($result['id'])) {
+	if (!empty($postedHash) && !empty($result['id']) && (!isset($result['document_type']) || $result['document_type'] === 'supplier_invoice')) {
 		easyocrLinkProcessedFileToInvoice($postedHash, $result['id']);
 	}
 

@@ -41,6 +41,46 @@ function easyocrCheckRight($user, $module, $perm)
 }
 
 /**
+ * Filter that lists suppliers only, ready to be passed to Form::select_company().
+ * Works from v14 to v24+.
+ *
+ * From v16 on, Dolibarr parses that filter with the universal search syntax as soon as
+ * it contains parentheses, and from v24 it parses it always. Raw SQL such as
+ * "s.fournisseur = 1" is then rejected and the error text ends up inside the query, so
+ * the dropdown shows a technical error. Where the parser does not exist (v14-v15) the
+ * filter is used as plain SQL and the universal syntax is unknown, so we keep that form
+ * there.
+ *
+ * @return string Filter to pass to Form::select_company()
+ */
+function easyocrSupplierFilter()
+{
+	if (function_exists('forgeSQLFromUniversalSearchCriteria')) {
+		return '(s.fournisseur:=:1)';
+	}
+	return 's.fournisseur = 1';
+}
+
+/**
+ * Is the supplier proposals module on?
+ *
+ * $conf->supplier_proposal->enabled is filled on some versions and not on others
+ * (v16 fills it, v21 does not), so the answer comes from isModEnabled() where it
+ * exists, which reads $conf->modules.
+ *
+ * @return bool True when a supplier proposal can be created
+ */
+function easyocrProposalModuleEnabled()
+{
+	global $conf;
+
+	if (function_exists('isModEnabled')) {
+		return isModEnabled('supplier_proposal');
+	}
+	return !empty($conf->supplier_proposal->enabled);
+}
+
+/**
  * Prepare admin pages header
  *
  * @return array Array of tabs
@@ -401,6 +441,77 @@ function easyocrResolveLineUnitPrice($item, $qty, $discount, $unitPrice)
 }
 
 /**
+ * Add a line to the document being created from OCR data.
+ *
+ * The document classes do not agree on the order of the arguments:
+ * FactureFournisseur::addline() takes the VAT rates before the quantity and
+ * SupplierProposal::addline() takes the quantity before the VAT rates, so the same
+ * values cannot go through one positional call. Everything else (unit price already
+ * resolved, discount, product link, local taxes) is shared.
+ *
+ * @param  CommonObject $doc        Document being created
+ * @param  bool         $isProposal True when the document is a supplier proposal
+ * @param  array        $line       desc, pu, qty, txtva, tx1, tx2, fk_product, remise, type, ref
+ * @return int                      Line id (>0) or negative on error
+ */
+function easyocrAddDocumentLine($doc, $isProposal, array $line)
+{
+	$l = array_merge(array(
+		'desc' => '', 'pu' => 0, 'qty' => 1, 'txtva' => 0, 'tx1' => 0, 'tx2' => 0,
+		'fk_product' => 0, 'remise' => 0, 'type' => 0, 'ref' => '',
+	), $line);
+
+	if ($isProposal) {
+		return $doc->addline(
+			$l['desc'],        // description
+			$l['pu'],          // pu_ht
+			$l['qty'],         // qty
+			$l['txtva'],       // txtva
+			$l['tx1'],         // txlocaltax1 (RE)
+			$l['tx2'],         // txlocaltax2 (IRPF)
+			$l['fk_product'],  // fk_product
+			$l['remise'],      // remise_percent
+			'HT',              // price_base_type
+			0,                 // pu_ttc
+			0,                 // info_bits
+			$l['type'],        // type (0=product, 1=service)
+			-1,                // rang
+			0,                 // special_code
+			0,                 // fk_parent_line
+			0,                 // fk_fournprice
+			0,                 // pa_ht
+			'',                // label
+			array(),           // array_options
+			$l['ref']          // ref_supplier -> llx_supplier_proposaldet.ref
+		);
+	}
+
+	return $doc->addline(
+		$l['desc'],        // description
+		$l['pu'],          // pu (unit price HT)
+		$l['txtva'],       // txtva
+		$l['tx1'],         // txlocaltax1 (RE)
+		$l['tx2'],         // txlocaltax2 (IRPF)
+		$l['qty'],         // qty
+		$l['fk_product'],  // fk_product
+		$l['remise'],      // remise_percent
+		'',                // date_start
+		'',                // date_end
+		0,                 // ventil
+		'',                // info_bits
+		'HT',              // price_base_type
+		$l['type'],        // type (0=product, 1=service)
+		-1,                // rang
+		false,             // notrigger
+		array(),           // array_options (is_array()-guarded en core v14-v23 -> seguro)
+		null,              // fk_unit
+		0,                 // origin_id
+		0,                 // pu_devise
+		$l['ref']          // ref_supplier -> llx_facture_fourn_det.ref
+	);
+}
+
+/**
  * Normalize a tax id (CIF/NIF/VAT) for comparison: uppercase, no separators.
  *
  * @param  string $taxId Raw tax id
@@ -681,6 +792,101 @@ function easyocrGetSupplierPaymentDefaults($fk_soc, $history = 3)
 	if ($usedHistory) {
 		$out['source'] = ($out['source'] === 'supplier') ? 'mixed' : 'history';
 	}
+
+	return $out;
+}
+
+/**
+ * Build the comparison key used to match a supplier name read from a document.
+ *
+ * The name printed on an invoice rarely matches the name stored in Dolibarr: accents
+ * appear and disappear, and "S.L." is written with or without dots. The key is
+ * unaccented, uppercase and keeps only letters and digits, so the comparison ignores
+ * all of that. Spaces are kept for the word comparison and removed by the caller when
+ * it needs the compact form.
+ *
+ * @param  string $name Raw name (from the document or from the database)
+ * @return string       Normalised key
+ */
+function easyocrSupplierNameKey($name)
+{
+	$key = trim((string) $name);
+	if (function_exists('dol_string_unaccent')) {
+		$key = dol_string_unaccent($key);
+	}
+	$key = function_exists('mb_strtoupper') ? mb_strtoupper($key, 'UTF-8') : strtoupper($key);
+	$key = preg_replace('/[^A-Z0-9]+/', ' ', $key);
+
+	return trim(preg_replace('/\s+/', ' ', $key));
+}
+
+/**
+ * Find suppliers whose name matches the one read from a document.
+ *
+ * Does not touch the database structure and works on MySQL and PostgreSQL alike: the
+ * rows of the entity are compared in PHP, so the matching rules are the same
+ * everywhere. An exact match (same key, spaces ignored) beats a partial one, and a
+ * partial match needs every significant word of the read name to be present.
+ *
+ * @param  string $name  Name read from the document
+ * @param  int    $limit Maximum number of candidates to return
+ * @return array{exact: array<int, array{id: int, name: string}>, partial: array<int, array{id: int, name: string}>}
+ */
+function easyocrFindSuppliersByName($name, $limit = 10)
+{
+	global $db;
+
+	$out = array('exact' => array(), 'partial' => array());
+
+	$needle = easyocrSupplierNameKey($name);
+	if ($needle === '') {
+		return $out;
+	}
+	$needleCompact = str_replace(' ', '', $needle);
+	$needleWords = array_values(array_filter(explode(' ', $needle), function ($w) {
+		return dol_strlen($w) >= 3;
+	}));
+	if (empty($needleWords)) {
+		$needleWords = array($needleCompact);
+	}
+
+	$sql = "SELECT rowid, nom FROM " . MAIN_DB_PREFIX . "societe";
+	$sql .= " WHERE fournisseur = 1 AND status = 1 AND entity IN (" . getEntity('societe') . ")";
+	$sql .= " ORDER BY nom";
+	$resql = $db->query($sql);
+	if (!$resql) {
+		return $out;
+	}
+
+	while ($obj = $db->fetch_object($resql)) {
+		$key = easyocrSupplierNameKey($obj->nom);
+		if ($key === '') {
+			continue;
+		}
+
+		$candidate = array('id' => (int) $obj->rowid, 'name' => $obj->nom);
+
+		if (str_replace(' ', '', $key) === $needleCompact) {
+			$out['exact'][] = $candidate;
+			continue;
+		}
+
+		$keyWords = explode(' ', $key);
+		$foundAll = true;
+		foreach ($needleWords as $word) {
+			if (!in_array($word, $keyWords, true)) {
+				$foundAll = false;
+				break;
+			}
+		}
+		if ($foundAll) {
+			$out['partial'][] = $candidate;
+		}
+	}
+	$db->free($resql);
+
+	$out['exact'] = array_slice($out['exact'], 0, $limit);
+	$out['partial'] = array_slice($out['partial'], 0, $limit);
 
 	return $out;
 }
@@ -1025,6 +1231,8 @@ function easyocrLinkProcessedFileToInvoice($hash, $invoiceId)
  *   - supplier_*        string Supplier data (name, tax_id, address, city, zip, country, phone, email)
  *   - invoice_status    string 'draft' or 'validated'
  *   - invoice_type      int    0=standard, 2=credit_note
+ *   - document_type     string 'invoice' (default) or 'supplier_proposal'
+ *   - valid_until       string Validity date printed by the supplier (proposals only)
  *   - journal_code      string Accounting journal code
  *   - import_key        string Import key tag (default: 'easyocr-ai')
  *   - create_payment    string '1' to auto-create payment
@@ -1033,7 +1241,7 @@ function easyocrLinkProcessedFileToInvoice($hash, $invoiceId)
  *   - file_tmp_path     string Temp path of uploaded PDF
  *   - file_name         string Original filename of PDF
  * @param  User|null  $userObj  User object (null = auto-detect first admin)
- * @return array                Result: status, id, ref, supplier_created, supplier_name, is_draft, line_errors
+ * @return array                Result: status, id, ref, document_type, supplier_created, supplier_name, is_draft, line_errors
  */
 function easyocrCreateInvoiceFromOCR($params, $userObj = null)
 {
@@ -1072,6 +1280,9 @@ function easyocrCreateInvoiceFromOCR($params, $userObj = null)
 	require_once DOL_DOCUMENT_ROOT . '/ecm/class/ecmfiles.class.php';
 	require_once DOL_DOCUMENT_ROOT . '/core/lib/files.lib.php';
 	require_once DOL_DOCUMENT_ROOT . '/core/lib/date.lib.php';
+	// getCountry() lives here and Societe::create() calls it on 21.0.x whenever a country
+	// code is set without a country id. This context (ajax, NOLOGIN) does not load it.
+	require_once DOL_DOCUMENT_ROOT . '/core/lib/company.lib.php';
 
 	if (is_object($langs)) {
 		$langs->load('easyocr@easyocr');
@@ -1441,62 +1652,148 @@ function easyocrCreateInvoiceFromOCR($params, $userObj = null)
 		dol_syslog('EasyOCR-CREATE: Payment defaults (' . $paymentDefaults['source'] . ') — cond=' . $supplier_payment_cond . ', mode=' . $supplier_payment_mode . ', account=' . $supplier_payment_account, LOG_DEBUG);
 	}
 
-	// ── Create invoice ───────────────────────────────────────────────────
-	$facture = new FactureFournisseur($db);
+	// ── Which document: supplier invoice (default) or supplier proposal ────
+	// One pipeline, two Dolibarr documents. The supplier proposal needs its own module
+	// and its own permission, and Dolibarr keeps no field for the supplier's document
+	// number there, so that number travels in ref_ext.
+	$document_type = isset($params['document_type']) ? strtolower(trim((string) $params['document_type'])) : '';
+	$is_proposal = in_array($document_type, array('supplier_proposal', 'proposal', 'presupuesto'), true);
+	if ($is_proposal) {
+		if (!easyocrProposalModuleEnabled()) {
+			$msg = is_object($langs) ? $langs->trans('EasyOcrErrorProposalModuleOff') : 'The supplier proposals module is not enabled';
+			return ['status' => 'error', 'message' => $msg];
+		}
+		if (!easyocrCheckRight($userObj, 'supplier_proposal', 'creer')) {
+			$msg = is_object($langs) ? $langs->trans('EasyOcrErrorProposalNoPermission') : 'No permission to create supplier proposals';
+			return ['status' => 'error', 'message' => $msg];
+		}
+
+		// Same document from the same supplier = same proposal. The supplier's number is
+		// kept in ref_ext, which is the only field a proposal has for a foreign reference.
+		if ($ref_supplier !== '') {
+			$sql_dup_p = "SELECT rowid, ref FROM " . MAIN_DB_PREFIX . "supplier_proposal";
+			$sql_dup_p .= " WHERE fk_soc = " . ((int) $fk_soc);
+			$sql_dup_p .= " AND ref_ext = '" . $db->escape(dol_trunc($ref_supplier, 250, 'right', 'UTF-8', 1)) . "'";
+			$sql_dup_p .= " AND entity IN (" . getEntity('supplier_proposal') . ")";
+			$resql_dup_p = $db->query($sql_dup_p);
+			if ($resql_dup_p && $db->num_rows($resql_dup_p) > 0) {
+				$existingProposal = $db->fetch_object($resql_dup_p);
+				$msg = is_object($langs) ? $langs->trans('EasyOcrDuplicateRefSupplier', $ref_supplier, $existingProposal->ref) : 'Duplicate ref_supplier: ' . $ref_supplier . ' (existing: ' . $existingProposal->ref . ')';
+				dol_syslog('EasyOCR-CREATE: DUPLICATE proposal ref_ext=' . $ref_supplier . ' for fk_soc=' . $fk_soc . ' => existing id=' . $existingProposal->rowid, LOG_WARNING);
+				if ($lockAcquired) $db->query("SELECT RELEASE_LOCK('" . $db->escape($lockName) . "')");
+				return [
+					'status' => 'repeat',
+					'message' => $msg,
+					'existing_id' => $existingProposal->rowid,
+					'existing_ref' => $existingProposal->ref,
+					'existing_ref_supplier' => $ref_supplier,
+					'document_type' => 'supplier_proposal',
+					'supplier_id' => $fk_soc,
+				];
+			}
+		}
+	}
+
+	// A supplier proposal cannot be paid and its totals are the sum of its lines: the
+	// gap between the printed totals and the lines is reported, not forced.
+	$totalsWarnings = easyocrCheckTotalsConsistency(
+		$items,
+		array('total_ht' => $total_ht, 'total_tva' => $total_tva)
+	);
+
+	// ── Create invoice / supplier proposal ───────────────────────────────
+	if ($is_proposal) {
+		require_once DOL_DOCUMENT_ROOT . '/supplier_proposal/class/supplier_proposal.class.php';
+		$facture = new SupplierProposal($db);
+	} else {
+		$facture = new FactureFournisseur($db);
+	}
 	$facture->socid = $fk_soc;
-	$facture->ref_supplier = $ref_supplier;
-	$facture->type = (!empty($invoice_type) && in_array((int) $invoice_type, [0, 2, 3, 5])) ? (int) $invoice_type : 0;
+	$facture->multicurrency_code = $conf->currency;
 	$facture->date = dol_mktime(
 		12, 0, 0,
 		date('m', strtotime($datef_str)),
 		date('d', strtotime($datef_str)),
 		date('Y', strtotime($datef_str))
 	);
-	$facture->multicurrency_code = $conf->currency;
-	$facture->special_code = 0;
-	$facture->import_key = $import_key;
 	if ($project_id > 0) {
 		$facture->fk_project = $project_id;
 	}
 
-	if ($supplier_payment_mode > 0) {
-		$facture->mode_reglement_id = $supplier_payment_mode;
-	}
-	if ($supplier_payment_cond > 0) {
-		$facture->cond_reglement_id = $supplier_payment_cond;
-	}
-	if (!empty($notes)) {
-		$facture->note_private = $notes;
-	}
-	if (!empty($date_echeance_str)) {
-		$date_ech = easyocrParseDate($date_echeance_str);
-		$facture->date_echeance = dol_mktime(
-			12, 0, 0,
-			date('m', strtotime($date_ech)),
-			date('d', strtotime($date_ech)),
-			date('Y', strtotime($date_ech))
-		);
+	if ($is_proposal) {
+		// The supplier's own number has no column in a supplier proposal: ref_ext is the
+		// native field for a reference that comes from outside Dolibarr.
+		if ($ref_supplier !== '') {
+			$facture->ref_ext = dol_trunc($ref_supplier, 250);
+		}
+		$noteLines = array();
+		if ($ref_supplier !== '') {
+			$noteLines[] = $langs->trans('EasyOcrProposalSupplierRef', $ref_supplier);
+		}
+		$noteLines[] = $langs->trans('EasyOcrProposalSupplierDate', dol_print_date($facture->date, 'day'));
+		$validUntil = isset($params['valid_until']) ? trim((string) $params['valid_until']) : '';
+		if ($validUntil !== '') {
+			$noteLines[] = $langs->trans('EasyOcrProposalValidUntil', $validUntil);
+		}
+		foreach ($totalsWarnings as $tw) {
+			$noteLines[] = $langs->trans('EasyOcrTotalsMismatchNote', $tw['field'], price($tw['computed']), price($tw['expected']));
+		}
+		$facture->note_private = (!empty($notes) ? $notes . "\n" : '') . implode("\n", $noteLines);
+	} else {
+		$facture->ref_supplier = $ref_supplier;
+		$facture->type = (!empty($invoice_type) && in_array((int) $invoice_type, [0, 2, 3, 5])) ? (int) $invoice_type : 0;
+		$facture->special_code = 0;
+		$facture->import_key = $import_key;
+
+		if ($supplier_payment_mode > 0) {
+			$facture->mode_reglement_id = $supplier_payment_mode;
+		}
+		if ($supplier_payment_cond > 0) {
+			$facture->cond_reglement_id = $supplier_payment_cond;
+		}
+		if (!empty($notes)) {
+			$facture->note_private = $notes;
+		}
+		if (!empty($date_echeance_str)) {
+			$date_ech = easyocrParseDate($date_echeance_str);
+			$facture->date_echeance = dol_mktime(
+				12, 0, 0,
+				date('m', strtotime($date_ech)),
+				date('d', strtotime($date_ech)),
+				date('Y', strtotime($date_ech))
+			);
+		}
 	}
 
-	dol_syslog('EasyOCR-CREATE: Creating invoice — socid=' . $facture->socid . ', ref_supplier=' . $facture->ref_supplier . ', date=' . date('Y-m-d', $facture->date) . ', type=' . $facture->type, LOG_INFO);
+	dol_syslog('EasyOCR-CREATE: Creating ' . ($is_proposal ? 'supplier proposal' : 'invoice') . ' — socid=' . $facture->socid . ', ref_supplier=' . $ref_supplier . ', date=' . date('Y-m-d', $facture->date), LOG_INFO);
 	$newId = $facture->create($userObj);
 	if ($newId <= 0) {
-		$msg = is_object($langs) ? $langs->trans('EasyOcrErrorCreatingInvoice') : 'Error creating invoice';
-		dol_syslog('EasyOCR-CREATE: ERROR creating invoice: ' . $facture->error . ' | errors: ' . implode(', ', $facture->errors ?? []), LOG_ERR);
+		$msg = is_object($langs) ? $langs->trans($is_proposal ? 'EasyOcrErrorCreatingProposal' : 'EasyOcrErrorCreatingInvoice') : 'Error creating document';
+		dol_syslog('EasyOCR-CREATE: ERROR creating document: ' . $facture->error . ' | errors: ' . implode(', ', $facture->errors ?? []), LOG_ERR);
 		if ($lockAcquired) $db->query("SELECT RELEASE_LOCK('" . $db->escape($lockName) . "')");
 		return ['status' => 'error', 'message' => $msg . ': ' . $facture->error];
 	}
-	dol_syslog('EasyOCR-CREATE: Invoice created OK — id=' . $newId, LOG_INFO);
+	dol_syslog('EasyOCR-CREATE: Document created OK — id=' . $newId, LOG_INFO);
 
-	// Set import_key and journal code
-	$sql_upd = "UPDATE " . MAIN_DB_PREFIX . "facture_fourn SET import_key = '" . $db->escape($import_key) . "'";
-	if (!empty($journal_code)) {
-		$sql_upd .= ", fk_account = (SELECT rowid FROM " . MAIN_DB_PREFIX . "accounting_journal WHERE code = '" . $db->escape($journal_code) . "' AND entity = " . ((int) $conf->entity) . " LIMIT 1)";
-	}
-	$sql_upd .= " WHERE rowid = " . ((int) $newId);
-	if (!$db->query($sql_upd)) {
-		// Not fatal, but it used to fail silently and lose the origin tag
-		dol_syslog('EasyOCR-CREATE: could not set import_key/journal — ' . $db->lasterror(), LOG_WARNING);
+	// Set import_key and journal code (invoice only: the proposal table has neither)
+	if (!$is_proposal) {
+		$sql_upd = "UPDATE " . MAIN_DB_PREFIX . "facture_fourn SET import_key = '" . $db->escape($import_key) . "'";
+		if (!empty($journal_code)) {
+			$sql_upd .= ", fk_account = (SELECT rowid FROM " . MAIN_DB_PREFIX . "accounting_journal WHERE code = '" . $db->escape($journal_code) . "' AND entity = " . ((int) $conf->entity) . " LIMIT 1)";
+		}
+		$sql_upd .= " WHERE rowid = " . ((int) $newId);
+		if (!$db->query($sql_upd)) {
+			// Not fatal, but it used to fail silently and lose the origin tag
+			dol_syslog('EasyOCR-CREATE: could not set import_key/journal — ' . $db->lasterror(), LOG_WARNING);
+		}
+	} elseif ($ref_supplier !== '') {
+		// SupplierProposal::create() does not insert ref_ext even though the column exists,
+		// so the supplier's number has to be written afterwards. It is the key the
+		// duplicate check reads.
+		$sql_upd_ref = "UPDATE " . MAIN_DB_PREFIX . "supplier_proposal SET ref_ext = '" . $db->escape(dol_trunc($ref_supplier, 250, 'right', 'UTF-8', 1)) . "' WHERE rowid = " . ((int) $newId);
+		if (!$db->query($sql_upd_ref)) {
+			dol_syslog('EasyOCR-CREATE: could not set ref_ext on the proposal — ' . $db->lasterror(), LOG_WARNING);
+		}
 	}
 
 	// ── Add lines — full tax support (IVA/TVA, RE, IRPF) + product matching ─
@@ -1632,29 +1929,18 @@ function easyocrCreateInvoiceFromOCR($params, $userObj = null)
 
 			dol_syslog("EasyOCR addline #$lineIndex: ref=$lineRef, desc=$desc, pu=$unit_price, tva=$tva_rate, ltx1=$localtax1_rate, ltx2=$localtax2_rate, qty=$qty, fk_prod=$fk_product, disc=$discount, type=$line_type", LOG_DEBUG);
 
-			$addLineResult = $facture->addline(
-				$desc,              // description
-				$unit_price,         // pu (unit price HT)
-				$tva_rate,           // txtva
-				$localtax1_rate,     // txlocaltax1 (RE)
-				$localtax2_rate,     // txlocaltax2 (IRPF)
-				$qty,                // qty
-				$fk_product,         // fk_product
-				$discount,           // remise_percent
-				'',                  // date_start
-				'',                  // date_end
-				0,                   // ventil
-				'',                  // info_bits
-				'HT',               // price_base_type
-				$line_type,          // 14 type (0=product, 1=service)
-				-1,                  // 15 rang
-				false,               // 16 notrigger
-				array(),             // 17 array_options (is_array()-guarded en core v14-v23 -> seguro)
-				null,                // 18 fk_unit
-				0,                   // 19 origin_id
-				0,                   // 20 pu_devise (pu_ht_devise en v10/v14; posicional, valor sin cambio)
-				$lineRef             // 21 ref_supplier -> llx_facture_fourn_det.ref ("Réf. produit fournisseur")
-			);
+			$addLineResult = easyocrAddDocumentLine($facture, $is_proposal, array(
+				'desc'       => $desc,
+				'pu'         => $unit_price,
+				'qty'        => $qty,
+				'txtva'      => $tva_rate,
+				'tx1'        => $localtax1_rate,
+				'tx2'        => $localtax2_rate,
+				'fk_product' => $fk_product,
+				'remise'     => $discount,
+				'type'       => $line_type,
+				'ref'        => $lineRef,
+			));
 
 			if ($addLineResult < 0) {
 				dol_syslog("EasyOCR addline #$lineIndex FAILED: " . $facture->error, LOG_ERR);
@@ -1667,43 +1953,51 @@ function easyocrCreateInvoiceFromOCR($params, $userObj = null)
 		$localtax1_tx = get_localtax($tva_tx, 1, $mysoc, $socTmp);
 		$localtax2_tx = get_localtax($tva_tx, 2, $mysoc, $socTmp);
 		$lineDesc = is_object($langs) ? $langs->trans('EasyOcrInvoiceLineDesc') : 'Invoice total';
-		$facture->addline(
-			$lineDesc, $total_ht, $tva_tx,
-			$localtax1_tx, $localtax2_tx,
-			1, 0, 0, '', '', 0, '', 'HT', 0
-		);
+		easyocrAddDocumentLine($facture, $is_proposal, array(
+			'desc'  => $lineDesc,
+			'pu'    => $total_ht,
+			'qty'   => 1,
+			'txtva' => $tva_tx,
+			'tx1'   => $localtax1_tx,
+			'tx2'   => $localtax2_tx,
+		));
 	}
 
 	// ── Override totals with OCR values (before validation) ──────────────
+	// Invoice only: a supplier proposal keeps the sum of its own lines, so a misread
+	// line stays visible instead of being hidden under the printed total.
 	$ocr_total_ht  = $total_ht;
 	$ocr_total_tva = $total_tva;
 	$ocr_total_ttc = $total_ttc;
 	$ocr_localtax1 = easyocrParseNumber($total_localtax1);
 	$ocr_localtax2 = easyocrParseNumber($total_localtax2);
 
-	$sql_totals = "UPDATE " . MAIN_DB_PREFIX . "facture_fourn SET";
-	$sql_totals .= " total_ht = " . ((float) $ocr_total_ht);
-	$sql_totals .= ", tva = " . ((float) $ocr_total_tva);
-	$sql_totals .= ", total_ttc = " . ((float) $ocr_total_ttc);
-	if ($ocr_localtax1 != 0) {
-		$sql_totals .= ", localtax1 = " . ((float) $ocr_localtax1);
-	}
-	if ($ocr_localtax2 != 0) {
-		$sql_totals .= ", localtax2 = " . ((float) -abs($ocr_localtax2));
-	}
-	$sql_totals .= " WHERE rowid = " . ((int) $newId);
-	$db->query($sql_totals);
+	if (!$is_proposal) {
+		$sql_totals = "UPDATE " . MAIN_DB_PREFIX . "facture_fourn SET";
+		$sql_totals .= " total_ht = " . ((float) $ocr_total_ht);
+		$sql_totals .= ", tva = " . ((float) $ocr_total_tva);
+		$sql_totals .= ", total_ttc = " . ((float) $ocr_total_ttc);
+		if ($ocr_localtax1 != 0) {
+			$sql_totals .= ", localtax1 = " . ((float) $ocr_localtax1);
+		}
+		if ($ocr_localtax2 != 0) {
+			$sql_totals .= ", localtax2 = " . ((float) -abs($ocr_localtax2));
+		}
+		$sql_totals .= " WHERE rowid = " . ((int) $newId);
+		$db->query($sql_totals);
 
-	dol_syslog("EasyOCR: Updated invoice totals - HT: $ocr_total_ht, TVA: $ocr_total_tva, TTC: $ocr_total_ttc, LTX1: $ocr_localtax1, LTX2: $ocr_localtax2", LOG_DEBUG);
+		dol_syslog("EasyOCR: Updated invoice totals - HT: $ocr_total_ht, TVA: $ocr_total_tva, TTC: $ocr_total_ttc, LTX1: $ocr_localtax1, LTX2: $ocr_localtax2", LOG_DEBUG);
+	}
 
 	// ── Validate or leave as draft ───────────────────────────────────────
 	$ref = '(PROV' . $newId . ')';
 	if (empty($invoice_status)) {
 		$invoice_status = !empty($conf->global->EASYOCR_INVOICE_DRAFT) ? 'draft' : 'validated';
 	}
-	dol_syslog('EasyOCR-CREATE: Invoice status target=' . $invoice_status . ', EASYOCR_INVOICE_DRAFT=' . ($conf->global->EASYOCR_INVOICE_DRAFT ?? 'NOT_SET'), LOG_INFO);
+	dol_syslog('EasyOCR-CREATE: Document status target=' . $invoice_status . ', EASYOCR_INVOICE_DRAFT=' . ($conf->global->EASYOCR_INVOICE_DRAFT ?? 'NOT_SET'), LOG_INFO);
 	if ($invoice_status !== 'draft') {
-		$result = $facture->validate($userObj);
+		// A supplier proposal is validated with valid(), not with validate()
+		$result = $is_proposal ? $facture->valid($userObj) : $facture->validate($userObj);
 		if ($result <= 0) {
 			$msg = is_object($langs) ? $langs->trans('EasyOcrErrorValidating') : 'Error validating';
 			$errMsg = $msg . ': ' . $facture->error;
@@ -1720,10 +2014,14 @@ function easyocrCreateInvoiceFromOCR($params, $userObj = null)
 		$facture->fetch($newId);
 	}
 
-	// ── Attach PDF to invoice ────────────────────────────────────────────
+	// ── Attach PDF to the document ───────────────────────────────────────
 	if (!empty($file_tmp_path) && file_exists($file_tmp_path)) {
 		$ref_clean = dol_sanitizeFileName($ref);
-		$reldir = 'fournisseur/facture/' . get_exdir($newId, 2, 0, 0, $facture, 'invoice_supplier') . $ref_clean;
+		if ($is_proposal) {
+			$reldir = 'supplier_proposal/' . get_exdir($newId, 2, 0, 0, $facture, 'supplier_proposal') . $ref_clean;
+		} else {
+			$reldir = 'fournisseur/facture/' . get_exdir($newId, 2, 0, 0, $facture, 'invoice_supplier') . $ref_clean;
+		}
 		$destDir = DOL_DATA_ROOT . '/' . $reldir;
 
 		if (!@is_dir($destDir)) {
@@ -1752,21 +2050,21 @@ function easyocrCreateInvoiceFromOCR($params, $userObj = null)
 			$ecmfile->filename = $destFileName;
 			$ecmfile->fullpath_orig = $fileName;
 			$ecmfile->gen_or_uploaded = 'uploaded';
-			$ecmfile->src_object_type = 'supplier_invoice';
+			$ecmfile->src_object_type = $is_proposal ? 'supplier_proposal' : 'supplier_invoice';
 			$ecmfile->src_object_id = $newId;
 			$ecmfile->fk_user_c = $userObj->id;
 			$ecmfile->create($userObj);
 		}
 	}
 
-	// ── Create payment ───────────────────────────────────────────────────
+	// ── Create payment (invoice only: a proposal has nothing to pay) ─────
 	// No explicit bank account: reuse the one this supplier's recent invoices
 	// were paid into, so the webhook does not need it configured up front.
-	if ($create_payment == '1' && $payment_bank_id <= 0 && $supplier_payment_account > 0) {
+	if (!$is_proposal && $create_payment == '1' && $payment_bank_id <= 0 && $supplier_payment_account > 0) {
 		$payment_bank_id = $supplier_payment_account;
 		dol_syslog('EasyOCR-CREATE: payment_bank_id defaulted to ' . $payment_bank_id . ' from supplier payment history', LOG_INFO);
 	}
-	if ($create_payment == '1' && $payment_bank_id > 0 && $invoice_status !== 'draft') {
+	if (!$is_proposal && $create_payment == '1' && $payment_bank_id > 0 && $invoice_status !== 'draft') {
 		if ($payment_type_id <= 0) $payment_type_id = 6;
 		$paymentAmount = $facture->total_ttc;
 
@@ -1791,14 +2089,11 @@ function easyocrCreateInvoiceFromOCR($params, $userObj = null)
 	if ($lockAcquired) $db->query("SELECT RELEASE_LOCK('" . $db->escape($lockName) . "')");
 
 	// ── Totals consistency ───────────────────────────────────────────────
-	// Document totals are forced by SQL above, so a misread line stays hidden:
-	// Dolibarr would show correct totals over incorrect lines. Report the gap.
-	$totalsWarnings = easyocrCheckTotalsConsistency(
-		$items,
-		array('total_ht' => $total_ht, 'total_tva' => $total_tva)
-	);
+	// On an invoice the document totals are forced by SQL, so a misread line stays
+	// hidden: Dolibarr would show correct totals over incorrect lines. Both documents
+	// report the gap (the proposal also carries it in its private note).
 	foreach ($totalsWarnings as $tw) {
-		dol_syslog('EasyOCR-CREATE: TOTALS MISMATCH on invoice ' . $ref . ' — ' . $tw['field'] . ': lines=' . $tw['computed'] . ', document=' . $tw['expected'] . ', diff=' . $tw['diff'], LOG_WARNING);
+		dol_syslog('EasyOCR-CREATE: TOTALS MISMATCH on ' . $ref . ' — ' . $tw['field'] . ': lines=' . $tw['computed'] . ', document=' . $tw['expected'] . ', diff=' . $tw['diff'], LOG_WARNING);
 	}
 
 	// ── Return result ────────────────────────────────────────────────────
@@ -1807,6 +2102,7 @@ function easyocrCreateInvoiceFromOCR($params, $userObj = null)
 		'status'           => 'ok',
 		'id'               => $newId,
 		'ref'              => $ref,
+		'document_type'    => $is_proposal ? 'supplier_proposal' : 'supplier_invoice',
 		'supplier_id'      => $fk_soc,
 		'supplier_created' => $supplier_created,
 		'supplier_name'    => $supplier_created_name,

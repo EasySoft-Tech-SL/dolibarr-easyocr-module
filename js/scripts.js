@@ -53,6 +53,7 @@ const EasyOcr = (function () {
         { label: L.labelDesc || "Description", color: "#27ae60" },
         { label: L.labelCIF || "Tax ID", color: "#16a085" },
         { label: L.labelDueDate || "Due date", color: "#f39c12" },
+        { label: L.labelSupplier || "Supplier", color: "#5d6d7e" },
     ];
 
     // Toast stacking
@@ -696,6 +697,11 @@ const EasyOcr = (function () {
             sel.text = hits.map(h => h.text).join(' ').trim();
             hideLoader();
             renderSelections();
+
+            // The supplier tag does more than reading text: it preselects the supplier
+            if (sel.label === L.labelSupplier && sel.text) {
+                autoDetectSupplierByName(sel.text);
+            }
         });
     }
 
@@ -1299,6 +1305,10 @@ const EasyOcr = (function () {
             formData.append('payment_type_id', $('#eo-payment-type').val());
         }
 
+        // Factura o presupuesto de proveedor
+        const docType = selectedDocumentType();
+        formData.append('document_type', docType);
+
         $.ajax({
             url: "ajax/ajax_easyocr.php",
             type: 'POST',
@@ -1309,11 +1319,13 @@ const EasyOcr = (function () {
             success: function (data) {
                 hideLoader();
                 if (data.status === 'ok') {
-                    showInvoicePreview(data.id, data.ref || '');
-                    toast(L.invoiceCreatedOk, 'success');
+                    const tipo = data.document_type || docType;
+                    showInvoicePreview(data.id, data.ref || '', tipo);
+                    toast(tipo === 'supplier_proposal' ? (L.proposalCreatedOk || 'Presupuesto creado') : L.invoiceCreatedOk, 'success');
                     resetWorkspace();
                 } else if (data.status === 'repeat') {
-                    var msg = L.invoiceAlreadyExists || 'La factura ya existe';
+                    var esPresupuesto = (data.document_type || docType) === 'supplier_proposal';
+                    var msg = esPresupuesto ? (L.proposalAlreadyExists || 'El presupuesto ya existe') : (L.invoiceAlreadyExists || 'La factura ya existe');
                     if (data.existing_ref) {
                         msg += ': ' + data.existing_ref;
                     }
@@ -1321,7 +1333,10 @@ const EasyOcr = (function () {
                         msg += ' (Ref: ' + data.existing_ref_supplier + ')';
                     }
                     if (data.existing_id) {
-                        msg += ' <a href="../../fourn/facture/card.php?facid=' + data.existing_id + '" target="_blank" style="color:#fff;text-decoration:underline;">' + (L.viewInvoice || 'Ver factura') + '</a>';
+                        var url = esPresupuesto
+                            ? '../../supplier_proposal/card.php?id=' + data.existing_id
+                            : '../../fourn/facture/card.php?facid=' + data.existing_id;
+                        msg += ' <a href="' + url + '" target="_blank" style="color:#fff;text-decoration:underline;">' + (esPresupuesto ? (L.viewProposal || 'Ver presupuesto') : (L.viewInvoice || 'Ver factura')) + '</a>';
                     }
                     toast(msg, 'warn');
                 } else {
@@ -1351,6 +1366,26 @@ const EasyOcr = (function () {
         document.getElementById('eo-payment-options').style.display = checked ? 'block' : 'none';
     }
 
+    // ---- Tipo de documento: una factura se paga, un presupuesto no ----
+    function onDocumentTypeChange() {
+        const tipo = document.getElementById('eo-document-type');
+        const esPresupuesto = tipo && tipo.value === 'supplier_proposal';
+        const seccionPago = document.getElementById('eo-payment-section');
+        if (seccionPago) {
+            seccionPago.style.display = esPresupuesto ? 'none' : 'block';
+        }
+        if (esPresupuesto) {
+            const check = document.getElementById('eo-create-payment');
+            if (check) { check.checked = false; }
+            togglePaymentOptions();
+        }
+    }
+
+    function selectedDocumentType() {
+        const tipo = document.getElementById('eo-document-type');
+        return tipo ? tipo.value : 'invoice';
+    }
+
     // ---- Auto-detect supplier by CIF/NIF ----
     function autoDetectSupplierByCIF(cif) {
         if (!cif || state._lastCIFSearch === cif) return;
@@ -1366,6 +1401,36 @@ const EasyOcr = (function () {
                     $('#eo-supplier').val(data.fk_soc);
                     toast(L.supplierAutoDetected || 'Supplier auto-detected by Tax ID', 'success');
                     updateReadiness();
+                }
+            }
+        });
+    }
+
+    // ---- Preseleccionar proveedor por el nombre leido del documento ----
+    // El nombre de una factura no siempre coincide letra por letra con el del ERP, asi
+    // que el emparejamiento lo decide el servidor (tildes y signos aparte). Con varios
+    // candidatos no se elige ninguno: eso lo decide la persona que esta revisando.
+    function autoDetectSupplierByName(name) {
+        const leido = (name || '').trim();
+        if (leido === '' || state._lastSupplierName === leido) return;
+        state._lastSupplierName = leido;
+
+        $.ajax({
+            url: "ajax/ajax_easyocr.php",
+            type: 'POST',
+            dataType: 'json',
+            data: { action: 'findSupplierByName', supplier_name: leido },
+            success: function (data) {
+                if (!data || data.status !== 'ok') return;
+
+                if (data.fk_soc) {
+                    $('#eo-supplier').val(String(data.fk_soc)).trigger('change');
+                    toast(L.supplierByName || 'Supplier preselected from the document', 'success');
+                    updateReadiness();
+                } else if (data.found_count > 1) {
+                    toast(L.supplierByNameAmbiguous || 'Several suppliers match that name: pick one', 'warn');
+                } else {
+                    toast(L.supplierByNameNotFound || 'No supplier matches that name', 'warn');
                 }
             }
         });
@@ -1661,11 +1726,20 @@ const EasyOcr = (function () {
     }
 
     // ---- Preview de factura creada en iframe ----
-    function showInvoicePreview(facId, ref) {
-        const url = '../../fourn/facture/card.php?mainmenu=billing&facid=' + facId;
+    function showInvoicePreview(facId, ref, documentType) {
+        const esPresupuesto = documentType === 'supplier_proposal';
+        const url = esPresupuesto
+            ? '../../supplier_proposal/card.php?mainmenu=billing&id=' + facId
+            : '../../fourn/facture/card.php?mainmenu=billing&facid=' + facId;
         document.getElementById('eo-invoice-iframe').src = url;
         document.getElementById('eo-invoice-link').href = url;
-        document.getElementById('eo-invoice-title').textContent = ref ? (L.invoiceCreatedWithRef || 'Factura %s creada').replace('%s', ref) : (L.invoiceCreatedOk || 'Factura creada');
+        let titulo;
+        if (esPresupuesto) {
+            titulo = ref ? (L.proposalCreatedWithRef || 'Presupuesto %s creado').replace('%s', ref) : (L.proposalCreatedOk || 'Presupuesto creado');
+        } else {
+            titulo = ref ? (L.invoiceCreatedWithRef || 'Factura %s creada').replace('%s', ref) : (L.invoiceCreatedOk || 'Factura creada');
+        }
+        document.getElementById('eo-invoice-title').textContent = titulo;
         showModal('eo-modal-invoice');
     }
 
@@ -2896,6 +2970,10 @@ const EasyOcr = (function () {
         var statusRadio = document.querySelector('input[name="eo-ai-invoice-status"]:checked');
         result.invoice_status = statusRadio ? statusRadio.value : 'validated';
 
+        // Factura o presupuesto de proveedor
+        var tipoSel = document.getElementById('eo-ai-document-type');
+        result.document_type = tipoSel ? tipoSel.value : 'invoice';
+
         return result;
     }
 
@@ -2989,6 +3067,8 @@ const EasyOcr = (function () {
             notes: editedData.notes || '',
             // Invoice options
             invoice_status: editedData.invoice_status || 'validated',
+            document_type: editedData.document_type || 'invoice',
+            valid_until: editedData.document.valid_until || '',
             journal_code: editedData.journal_code || '',
             invoice_type: '0', // Standard supplier invoice
             // Default tax rate from document totals (fallback for lines with empty taxes)
@@ -3044,6 +3124,7 @@ const EasyOcr = (function () {
 
     function handleAIInvoiceResult(data) {
         hideLoader();
+        const esPresupuesto = (data.document_type === 'supplier_proposal');
         if (data.status === 'ok') {
             if (data.supplier_created) {
                 toast((L.aiSupplierCreated || 'Proveedor creado: ') + (data.supplier_name || ''), 'success');
@@ -3053,14 +3134,14 @@ const EasyOcr = (function () {
                 toast((L.aiLineErrors || 'Errores en líneas: ') + data.line_errors.join('; '), 'warn');
             }
             if (data.is_draft) {
-                toast(L.invoiceDraftOk || 'Factura creada en borrador', 'success');
+                toast(esPresupuesto ? (L.proposalDraftOk || 'Presupuesto creado en borrador') : (L.invoiceDraftOk || 'Factura creada en borrador'), 'success');
             } else {
-                toast(L.invoiceCreatedOk, 'success');
+                toast(esPresupuesto ? (L.proposalCreatedOk || 'Presupuesto creado') : L.invoiceCreatedOk, 'success');
             }
-            showInvoicePreview(data.id, data.ref || '');
+            showInvoicePreview(data.id, data.ref || '', data.document_type || 'invoice');
             resetWorkspace();
         } else if (data.status === 'repeat') {
-            var msg = L.invoiceAlreadyExists || 'La factura ya existe';
+            var msg = esPresupuesto ? (L.proposalAlreadyExists || 'El presupuesto ya existe') : (L.invoiceAlreadyExists || 'La factura ya existe');
             if (data.existing_ref) {
                 msg += ': ' + data.existing_ref;
             }
@@ -3068,7 +3149,10 @@ const EasyOcr = (function () {
                 msg += ' (Ref: ' + data.existing_ref_supplier + ')';
             }
             if (data.existing_id) {
-                msg += ' <a href="../../fourn/facture/card.php?facid=' + data.existing_id + '" target="_blank" style="color:#fff;text-decoration:underline;">' + (L.viewInvoice || 'Ver factura') + '</a>';
+                var url = esPresupuesto
+                    ? '../../supplier_proposal/card.php?id=' + data.existing_id
+                    : '../../fourn/facture/card.php?facid=' + data.existing_id;
+                msg += ' <a href="' + url + '" target="_blank" style="color:#fff;text-decoration:underline;">' + (esPresupuesto ? (L.viewProposal || 'Ver presupuesto') : (L.viewInvoice || 'Ver factura')) + '</a>';
             }
             toast(msg, 'warn');
         } else {
@@ -3084,6 +3168,19 @@ const EasyOcr = (function () {
     function toggleAIPayment() {
         var checked = document.getElementById('eo-ai-create-payment').checked;
         document.getElementById('eo-ai-payment-options').style.display = checked ? 'flex' : 'none';
+    }
+
+    // ---- Tipo de documento en el modal de IA ----
+    function onAIDocumentTypeChange() {
+        var sel = document.getElementById('eo-ai-document-type');
+        var esPresupuesto = sel && sel.value === 'supplier_proposal';
+        var filaPago = document.getElementById('eo-ai-payment-row');
+        var check = document.getElementById('eo-ai-create-payment');
+        if (filaPago) filaPago.style.display = esPresupuesto ? 'none' : 'flex';
+        if (esPresupuesto && check) {
+            check.checked = false;
+            toggleAIPayment();
+        }
     }
 
     function toggleAIPayload() {
@@ -3562,6 +3659,7 @@ const EasyOcr = (function () {
         confirmGenerateInvoice,
         closeInvoicePreview,
         togglePaymentOptions,
+        onDocumentTypeChange,
         undo,
         zoomIn,
         zoomOut,
@@ -3569,6 +3667,7 @@ const EasyOcr = (function () {
         applyAIResult,
         createAIInvoice,
         toggleAIPayment,
+        onAIDocumentTypeChange,
         toggleAIPayload,
         closeAIModal,
         aiAddLine,

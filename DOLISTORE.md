@@ -4,7 +4,7 @@
 
 | Campo | Valor |
 |-------|-------|
-| **Versión del módulo** | 2.7.0 |
+| **Versión del módulo** | 2.7.1 |
 | **Compatibilidad Min** | V16 (id 95) |
 | **Compatibilidad Max** | V23 (id 116) |
 | **PHP Min** | 7.4 |
@@ -27,7 +27,7 @@
 ## Palabras Clave / Keywords
 
 ```
-pdf, ocr, ai ocr, artificial intelligence, invoice automation, batch processing, supplier invoices, webhook, easyocr, pdf.js, text extraction, invoice processing, automation, pdf viewer, facturas, extracción de texto, procesamiento de facturas, facturas de proveedor, automatización, visor pdf, lotes, batch, inteligencia artificial, instrucciones personalizadas, document processing, auto invoice, supplier management, PDF processing, API OCR, multicompany, multisociete, multiempresa, multi-entity, expense, expenses, gastos, ticket, receipt, mobile, pwa, scan, expense report, expense scanning, nota de gastos, note de frais, spesen, nota spese, photo, foto, camera, cámara, escanear gasto, escaneo de gastos, mobile expense, reembolso, reimbursement
+pdf, ocr, ai ocr, artificial intelligence, invoice automation, batch processing, supplier invoices, webhook, easyocr, pdf.js, text extraction, invoice processing, automation, pdf viewer, facturas, extracción de texto, procesamiento de facturas, facturas de proveedor, automatización, visor pdf, lotes, batch, inteligencia artificial, instrucciones personalizadas, document processing, auto invoice, supplier management, PDF processing, API OCR, multicompany, multisociete, multiempresa, multi-entity, expense, expenses, gastos, ticket, receipt, mobile, pwa, scan, expense report, expense scanning, nota de gastos, note de frais, spesen, nota spese, photo, foto, camera, cámara, escanear gasto, escaneo de gastos, mobile expense, reembolso, reimbursement, presupuesto de proveedor, presupuestos proveedor, supplier proposal, supplier quotation, devis fournisseur, Lieferantenangebot, preventivo fornitore
 ```
 
 ## Categorías (máximo 3)

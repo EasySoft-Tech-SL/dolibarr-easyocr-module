@@ -13,8 +13,10 @@
   - Número de factura
   - Totales HT (sin impuestos)
   - Precio total
+  - **Proveedor**: al marcar el nombre en el PDF, lo busca en el registro y lo deja seleccionado
 - **Plantillas Reutilizables**: Guarda plantillas de selección por proveedor
 - **Generación Automática**: Crea facturas de proveedor automáticamente en Dolibarr
+- **Presupuestos de proveedor**: la misma extracción puede registrarse como factura de proveedor o como presupuesto, en borrador o validado; el número del documento del proveedor queda como referencia externa del presupuesto y su nota privada recoge la fecha, la validez y los avisos de descuadre (requiere el módulo Presupuestos de proveedor)
 - **Automatización vía Webhook**: Crea facturas de proveedor automáticamente al recibir la notificación de la API, con opción de dejarlas **marcadas como pagadas** (cuenta bancaria y método de pago configurables)
 - **Escaneo de gastos desde el móvil (PWA)**: Vista instalable para que el empleado fotografíe un ticket y se registre como **nota de gastos** o **factura de compra** (configurable), con asociación a **proyecto**. Requiere el modo IA.
 - **Gestión de Historial**: Visualiza todas las facturas procesadas

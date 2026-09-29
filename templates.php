@@ -346,7 +346,7 @@ print '</td>';
 
 // Supplier
 print '<td class="liste_titre">';
-print $form->select_company($search_supplier, 'search_supplier', 's.fournisseur=1', $langs->trans('EasyOcrAllSuppliers'), 0, 0, array(), 0, 'flat maxwidth200');
+print $form->select_company($search_supplier, 'search_supplier', easyocrSupplierFilter(), $langs->trans('EasyOcrAllSuppliers'), 0, 0, array(), 0, 'flat maxwidth200');
 print '</td>';
 
 // Custom Instructions

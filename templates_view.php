@@ -331,7 +331,7 @@ if ($action != 'edit') {
 	print '<tr><td>'.$langs->trans("EasyOcrSupplier").'</td>';
 	print '<td>';
 	$selectedSoc = GETPOSTISSET('fk_soc') ? GETPOST('fk_soc', 'int') : $obj->fk_soc;
-	print $form->select_company($selectedSoc, 'fk_soc', 's.fournisseur = 1', 1, 0, 0, array(), 0, 'minwidth300');
+	print $form->select_company($selectedSoc, 'fk_soc', easyocrSupplierFilter(), 1, 0, 0, array(), 0, 'minwidth300');
 	print '</td></tr>';
 
 	// Scale (read-only)

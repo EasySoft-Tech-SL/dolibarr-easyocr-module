@@ -5,6 +5,44 @@ Todos los cambios notables de EasyOcr se documentarán en este archivo.
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/),
 y este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 
+## [2.7.1] - 2026-09-29
+
+### Corregido — desplegable de proveedores en Dolibarr 24 (pantalla de error técnico)
+
+- **Facturas, plantillas y vista de plantilla rompían en Dolibarr 24.** El filtro del desplegable de proveedores se enviaba como SQL suelto (`s.fournisseur = 1`). Hasta la 23, `Form::select_thirdparty_list()` solo pasa el filtro por el analizador de sintaxis universal cuando lleva paréntesis, así que el SQL suelto llegaba entero a la consulta. La 24 quitó esa rama: todo filtro pasa por el analizador, que lo rechaza y deja el texto del error dentro del SQL (`Bad syntax of the search string`), con MySQL devolviendo `DB_ERROR_SYNTAX` y la pantalla en «error técnico».
+- Nueva `easyocrSupplierFilter()`: sintaxis universal `(s.fournisseur:=:1)` donde existe el analizador (16 en adelante) y SQL suelto solo por debajo (14 y 15, que no la conocen). Medido con el código real de cada versión: en la 14 el SQL suelto funciona y la sintaxis universal no; de la 16 a la 23 funcionan los dos; en la 24 solo la universal.
+- Reproducido y comprobado en el navegador sobre Dolibarr 24.0.1: con el filtro antiguo el desplegable no llega ni a pintarse; con el nuevo trae los proveedores.
+
+### Corregido — alta de proveedor desde la extracción en Dolibarr 21.0.x
+
+- **«Call to undefined function getCountry()» cuando el módulo crea el proveedor que falta.** Nuestro código pone `country_code` con las dos primeras letras del CIF cuando este empieza por dos letras; si ese par no corresponde a ningún país activo, `country_id` queda vacío y `Societe::create()` de la 21.0.x entra en la rama que llama a `getCountry()`. Esa función vive en `core/lib/company.lib.php`, que no carga ni `main.inc.php` en un contexto ajax ni los arranques ligeros (consola, cron, integraciones de terceros).
+- Reproducido con el alta real del módulo: `Fatal error: Call to undefined function getCountry() in societe.class.php:1014`, apilado desde `ajax/ajax_easyocr.php`. Cargando la librería a mano, el alta termina bien. Comprobado además que la llamada está dentro de `create()` en la 21.0.x y que en la 22 y en la 24 solo aparece en `update()`, así que el fallo es de esa línea de versión.
+- `lib/easyocr.lib.php` y `ajax/ajax_easyocr.php` cargan ahora `core/lib/company.lib.php`. Donde ya venía cargada, el añadido no cambia nada.
+
+### Añadido — etiqueta «Proveedor»: el rectángulo preselecciona el proveedor
+
+- **Novena etiqueta** del panel del visor. Al dibujar el rectángulo sobre el nombre del proveedor, el módulo lo busca entre los proveedores del registro y lo deja seleccionado en el desplegable, sin tocar nada más. Solo actúa en el flujo de plantillas; en el flujo con IA el proveedor ya venía por el CIF.
+- La comparación la hace el servidor (`easyocrFindSuppliersByName()`, acción `findSupplierByName`): tildes, mayúsculas, puntos y sufijos societarios aparte («S.L.» con y sin puntos, «SL», «SA»), de modo que el nombre impreso en la factura no tiene que coincidir letra por letra con el del ERP. Si el nombre leído es un trozo del registrado (sin el sufijo, por ejemplo), también lo encuentra.
+- Con **varios candidatos** no elige ninguno y avisa de cuántos coinciden: eso lo decide quien revisa. Nunca crea un tercero por su cuenta.
+
+### Añadido — presupuestos de proveedor
+
+- **La extracción puede terminar en factura de proveedor o en presupuesto de proveedor.** Se elige en la ventana de confirmación (flujo de plantillas) y en el pie del modal de revisión (flujo con IA). Si el módulo Presupuestos de proveedor está apagado o al usuario le falta el permiso de creación, esa opción se muestra en gris con el motivo al lado, en lugar de desaparecer sin explicación.
+- Los presupuestos usan el mismo camino que las facturas: mismo alta de proveedor, misma vinculación de artículos, mismos descuentos y mismas tasas. Lo que cambia es el documento:
+  - El **número del proveedor** va a `ref_ext`, que es el campo nativo para una referencia de fuera (el presupuesto no tiene `ref_supplier`, solo lo tienen sus líneas). Es también la clave del anti-duplicados: mismo proveedor + mismo número = mismo presupuesto, y se avisa en vez de registrarlo dos veces.
+  - La **nota privada** guarda número, fecha y validez del documento del proveedor, y el descuadre entre líneas y totales cuando lo hay.
+  - Los **totales no se fuerzan** (a diferencia de la factura): un presupuesto suma sus líneas, de modo que una línea mal leída se ve en lugar de quedar tapada por el total impreso.
+  - Nace en **borrador o validada** según el ajuste de siempre (`EASYOCR_INVOICE_DRAFT`).
+  - Un presupuesto **no se paga** nunca: el bloque de pago desaparece de la ventana al elegirlo.
+  - El PDF se archiva en la carpeta del presupuesto y queda enlazado al documento.
+- `SupplierProposal::create()` del core **no persiste `ref_ext`** aunque la columna existe: el número del proveedor se escribe con un `UPDATE` después del alta.
+- Probado: 14 aserciones nuevas en la suite de integración (89 en total, todas en verde, sin regresión en la factura) y el alta completa desde el navegador en Dolibarr 21, verificada en base de datos: referencia, `ref_ext`, nota, líneas, ninguna factura creada por error y ningún pago.
+
+### Notas
+
+- **Dolibarr 24**: verificadas en el navegador las pantallas de facturas, plantillas y vista de plantilla, el visor y el alta manual. Queda pendiente el barrido del resto (lotes, webhook, PWA), así que la compatibilidad declarada sigue siendo V23.
+- Los idiomas reciben las claves nuevas: 15 en los ocho locales (es, en, fr, de, it, pt, ca, gl).
+
 ## [2.7.0] - 2026-07-29
 
 ### Corregido — Precios unitarios multiplicados por 1000 (crítico)

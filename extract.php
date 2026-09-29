@@ -484,8 +484,23 @@ llxHeader("", "EasyOcr", '', '', 0, 0, $arrayofjs, $arrayofcss);
       <p class="eo-confirm-intro"><?php echo $langs->trans('EasyOcrConfirmIntro'); ?></p>
       <div id="eo-confirm-body"></div>
 
+      <!-- Documento que se va a crear -->
+      <div class="eo-field">
+        <label class="eo-label" for="eo-document-type"><?php echo $langs->trans('EasyOcrDocumentType'); ?></label>
+        <select id="eo-document-type" class="eo-select" onchange="EasyOcr.onDocumentTypeChange()">
+          <option value="invoice"><?php echo $langs->trans('EasyOcrDocumentInvoice'); ?></option>
+<?php if (easyocrProposalModuleEnabled()) { ?>
+          <option value="supplier_proposal"><?php echo $langs->trans('EasyOcrDocumentSupplierProposal'); ?></option>
+<?php } else { ?>
+          <option value="supplier_proposal" disabled title="<?php echo dol_escape_htmltag($langs->trans('EasyOcrErrorProposalModuleOff')); ?>">
+            <?php echo $langs->trans('EasyOcrDocumentSupplierProposal'); ?> — <?php echo $langs->trans('EasyOcrErrorProposalModuleOff'); ?>
+          </option>
+<?php } ?>
+        </select>
+      </div>
+
       <!-- Opción de pago asociado -->
-      <div class="eo-payment-section">
+      <div class="eo-payment-section" id="eo-payment-section">
         <label class="eo-checkbox-label">
           <input type="checkbox" id="eo-create-payment" onchange="EasyOcr.togglePaymentOptions()">
           <?php echo $langs->trans('EasyOcrCreatePayment'); ?>
@@ -707,6 +722,20 @@ llxHeader("", "EasyOcr", '', '', 0, 0, $arrayofjs, $arrayofcss);
             <span class="eo-ai-option-sep"></span>
             <select id="eo-ai-journal" class="eo-select eo-select-sm">
               <option value=""><?php echo $langs->trans('EasyOcrAIJournalAuto') ?: '-- Automático --'; ?></option>
+            </select>
+          </div>
+          <div class="eo-ai-option-group">
+            <span class="eo-ai-option-label"><?php echo $langs->trans('EasyOcrDocumentType'); ?></span>
+            <span class="eo-ai-option-sep"></span>
+            <select id="eo-ai-document-type" class="eo-select eo-select-sm" onchange="EasyOcr.onAIDocumentTypeChange()">
+              <option value="invoice"><?php echo $langs->trans('EasyOcrDocumentInvoice'); ?></option>
+<?php if (easyocrProposalModuleEnabled()) { ?>
+              <option value="supplier_proposal"><?php echo $langs->trans('EasyOcrDocumentSupplierProposal'); ?></option>
+<?php } else { ?>
+              <option value="supplier_proposal" disabled title="<?php echo dol_escape_htmltag($langs->trans('EasyOcrErrorProposalModuleOff')); ?>">
+                <?php echo $langs->trans('EasyOcrDocumentSupplierProposal'); ?> — <?php echo $langs->trans('EasyOcrErrorProposalModuleOff'); ?>
+              </option>
+<?php } ?>
             </select>
           </div>
         </div>
