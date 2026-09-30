@@ -1499,8 +1499,12 @@ const EasyOcr = (function () {
 
     // ---- Inicialización ----
     function init() {
+        // Este script lo carga tambien batch.php, que no trae el DOM del visor. Sin las guardas
+        // de abajo, el primer addEventListener sobre null lanzaba un TypeError que abortaba
+        // init() entero y dejaba la pagina a medias (medido en Dolibarr 24 el 30-sep-2026).
         // Upload
-        document.getElementById('pdfInput').addEventListener('change', function (e) {
+        const pdfInput = document.getElementById('pdfInput');
+        if (pdfInput) pdfInput.addEventListener('change', function (e) {
             const file = e.target.files[0];
             if (!file) return;
             if (file.type !== 'application/pdf') {
@@ -1512,9 +1516,9 @@ const EasyOcr = (function () {
 
         // Hacer clickeable el empty state
         const emptyState = document.getElementById('eo-empty-state');
-        if (emptyState) {
+        if (emptyState && pdfInput) {
             emptyState.addEventListener('click', function() {
-                document.getElementById('pdfInput').click();
+                pdfInput.click();
             });
         }
 
@@ -1522,36 +1526,41 @@ const EasyOcr = (function () {
         const canvasArea = document.getElementById('eo-canvas-area');
         let dragCounter = 0;
 
-        canvasArea.addEventListener('dragenter', function (e) {
-            e.preventDefault();
-            dragCounter++;
-            canvasArea.classList.add('eo-drag-over');
-        });
-        canvasArea.addEventListener('dragover', function (e) {
-            e.preventDefault();
-            e.dataTransfer.dropEffect = 'copy';
-        });
-        canvasArea.addEventListener('dragleave', function () {
-            dragCounter--;
-            if (dragCounter <= 0) {
+        if (canvasArea) {
+            canvasArea.addEventListener('dragenter', function (e) {
+                e.preventDefault();
+                dragCounter++;
+                canvasArea.classList.add('eo-drag-over');
+            });
+            canvasArea.addEventListener('dragover', function (e) {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'copy';
+            });
+            canvasArea.addEventListener('dragleave', function () {
+                dragCounter--;
+                if (dragCounter <= 0) {
+                    dragCounter = 0;
+                    canvasArea.classList.remove('eo-drag-over');
+                }
+            });
+            canvasArea.addEventListener('drop', function (e) {
+                e.preventDefault();
                 dragCounter = 0;
                 canvasArea.classList.remove('eo-drag-over');
-            }
-        });
-        canvasArea.addEventListener('drop', function (e) {
-            e.preventDefault();
-            dragCounter = 0;
-            canvasArea.classList.remove('eo-drag-over');
-            const file = e.dataTransfer.files[0];
-            if (file && file.type === 'application/pdf') {
-                loadPDF(file);
-            } else {
-                toast(L.onlyPdfAccepted, 'error');
-            }
-        });
+                const file = e.dataTransfer.files[0];
+                if (file && file.type === 'application/pdf') {
+                    loadPDF(file);
+                } else {
+                    toast(L.onlyPdfAccepted, 'error');
+                }
+            });
+        }
 
         // Atajos de teclado
         document.addEventListener('keydown', function (e) {
+            // Los atajos son del visor: sin visor no hay nada que atajar
+            if (!canvasArea) return;
+
             // Ignorar si estamos en un input/textarea/select
             const tag = e.target.tagName;
             if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
@@ -1614,10 +1623,16 @@ const EasyOcr = (function () {
             onSupplierChange();
         });
 
-        renderTags();
-        updateTemplateButtons();
+        // Inicializadores que pintan el visor: solo si la pagina trae el visor
+        if (canvasArea) {
+            renderTags();
+            updateTemplateButtons();
+            updateReadiness();
+            // Rellena ya los desplegables (proveedores, plantillas, cuentas) en vez de esperar a
+            // que se cargue un PDF: al abrir la pagina el de proveedores salia vacio y parecia roto.
+            loadInitialData();
+        }
         initSelect2();
-        updateReadiness();
 
         // AI enabled state from PHP data attribute
         var aiSection = document.getElementById('eo-ai-section');

@@ -4,9 +4,9 @@
 
 | Campo | Valor |
 |-------|-------|
-| **Versión del módulo** | 2.7.1 |
+| **Versión del módulo** | 2.7.2 |
 | **Compatibilidad Min** | V16 (id 95) |
-| **Compatibilidad Max** | V23 (id 116) |
+| **Compatibilidad Max** | V24 (id 120) |
 | **PHP Min** | 7.4 |
 | **PHP Max** | 8.2 |
 | **Duración acceso actualizaciones** | 365 días |
@@ -142,7 +142,7 @@ Herramienta para extracción de datos de facturas PDF, generación automática d
 
 <h3>⚙️ Compatibilidad y requisitos</h3>
 <ul>
-    <li>📦 Dolibarr <strong>V16+</strong> (compatible hasta V23+)</li>
+    <li>📦 Dolibarr <strong>V16+</strong> (compatible hasta V24+)</li>
     <li>⚙️ PHP <strong>7.4 – 8.3+</strong></li>
     <li>🗄️ MySQL 5.7+ / MariaDB 10.2+ / PostgreSQL 10+</li>
     <li>🌐 Navegador moderno con soporte ES6 y JavaScript</li>
@@ -262,7 +262,7 @@ Tool for extracting data from PDF invoices, automatically generating supplier in
 
 <h3>⚙️ Compatibility &amp; requirements</h3>
 <ul>
-    <li>📦 Dolibarr <strong>V16+</strong> (compatible up to V23+)</li>
+    <li>📦 Dolibarr <strong>V16+</strong> (compatible up to V24+)</li>
     <li>⚙️ PHP <strong>7.4 – 8.3+</strong></li>
     <li>🗄️ MySQL 5.7+ / MariaDB 10.2+ / PostgreSQL 10+</li>
     <li>🌐 Modern browser with ES6 and JavaScript support</li>
@@ -382,7 +382,7 @@ Automatisez le traitement des factures fournisseur et le scan de tickets de dép
 
 <h3>⚙️ Compatibilité et exigences</h3>
 <ul>
-    <li>📦 Dolibarr <strong>V16+</strong> (compatible jusqu'à V23+)</li>
+    <li>📦 Dolibarr <strong>V16+</strong> (compatible jusqu'à V24+)</li>
     <li>⚙️ PHP <strong>7.4 – 8.3+</strong></li>
     <li>🗄️ MySQL 5.7+ / MariaDB 10.2+ / PostgreSQL 10+</li>
     <li>🌐 Navigateur moderne avec support ES6 et JavaScript</li>
@@ -503,7 +503,7 @@ Verarbeitung von Lieferantenrechnungen und Scannen von Spesenbelegen vom Handy (
 
 <h3>⚙️ Kompatibilität und Anforderungen</h3>
 <ul>
-    <li>📦 Dolibarr <strong>V16+</strong> (kompatibel bis V23+)</li>
+    <li>📦 Dolibarr <strong>V16+</strong> (kompatibel bis V24+)</li>
     <li>⚙️ PHP <strong>7.4 – 8.3+</strong></li>
     <li>🗄️ MySQL 5.7+ / MariaDB 10.2+ / PostgreSQL 10+</li>
     <li>🌐 Moderner Browser mit ES6 und JavaScript-Unterstützung</li>
@@ -624,7 +624,7 @@ Automatizza l'elaborazione delle fatture fornitori e la scansione di scontrini d
 
 <h3>⚙️ Compatibilità e requisiti</h3>
 <ul>
-    <li>📦 Dolibarr <strong>V16+</strong> (compatibile fino a V23+)</li>
+    <li>📦 Dolibarr <strong>V16+</strong> (compatibile fino a V24+)</li>
     <li>⚙️ PHP <strong>7.4 – 8.3+</strong></li>
     <li>🗄️ MySQL 5.7+ / MariaDB 10.2+ / PostgreSQL 10+</li>
     <li>🌐 Browser moderno con supporto ES6 e JavaScript</li>

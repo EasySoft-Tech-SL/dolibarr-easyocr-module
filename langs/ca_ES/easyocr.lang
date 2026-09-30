@@ -832,3 +832,4 @@ EasyOcrJsonResults = resultats
 EasyOcrJsonCopied = JSON copiat al porta-retalls
 
 EasyOcrAIUnreadableDocument = El servei no ha pogut llegir aquest document (la IA no ha retornat dades estructurades). No s' ha marcat com a processat: pots tornar-ho a provar.
+EasyOcrTemplatesCreateHint = Les plantilles es creen a partir d'un PDF: carrega'n un al visor, marca les zones i guarda'l com a plantilla.

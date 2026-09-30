@@ -287,6 +287,10 @@ print '  <div class="eo-page-header-icon eo-page-header-icon--tpl"><i class="fas
 print '  <div class="eo-page-header-text">';
 print '    <h1>' . dol_escape_htmltag($title) . '</h1>';
 print '    <p>' . dol_escape_htmltag($langs->trans('EasyOcrIndexDescTemplates')) . '</p>';
+// La lista no tiene boton de alta a proposito: una plantilla se define marcando zonas sobre un PDF,
+// asi que se crea desde el visor. Sin esta linea, quien entra por aqui no sabe por donde empezar.
+print '    <p>' . dol_escape_htmltag($langs->trans('EasyOcrTemplatesCreateHint')) . ' ';
+print '<a href="' . dol_buildpath('/easyocr/extract.php', 1) . '">' . dol_escape_htmltag($langs->trans('EasyOcrMenuUploadPdf')) . '</a></p>';
 print '  </div>';
 print '</div>';
 

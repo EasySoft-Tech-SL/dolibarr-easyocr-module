@@ -834,3 +834,4 @@ EasyOcrJsonResults = Treffer
 EasyOcrJsonCopied = JSON in die Zwischenablage kopiert
 
 EasyOcrAIUnreadableDocument = Der Dienst konnte dieses Dokument nicht lesen (die KI lieferte keine strukturierten Daten). Es wurde nicht als verarbeitet markiert, Sie können es erneut versuchen.
+EasyOcrTemplatesCreateHint = Vorlagen entstehen aus einem PDF: laden Sie eines im Viewer, markieren Sie die Bereiche und speichern Sie es als Vorlage.

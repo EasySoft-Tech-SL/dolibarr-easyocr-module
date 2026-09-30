@@ -122,9 +122,22 @@ $conf->dol_hide_leftmenu = 1;
 $form = new Form($db);
 
 // PWA head: manifest + iOS/Android metas (injected via llxHeader's first arg)
+//
+// El manifest NO puede ir como <link> estatico: Dolibarr inyecta el SUYO (el del ERP entero)
+// antes que este $moreHead y el navegador se queda con el PRIMERO que encuentra, asi que el
+// enlace se ignoraba y al instalar desde el escaner se instalaba el ERP, con su nombre, su
+// start_url y sus iconos. Un script dentro de <head> quita el manifest ajeno e instala el
+// nuestro, que es el mismo patron que usa easyai para su chat. De paso pone viewport-fit=cover
+// para que las env(safe-area-inset-*) funcionen en los iPhone con notch en modo aplicacion.
 $manifestUrl = dol_buildpath('/easyocr/manifest.json.php', 1);
-$iconUrl = dol_buildpath('/easyocr/img/easyocr.png', 1);
-$moreHead  = '<link rel="manifest" href="' . $manifestUrl . '">' . "\n";
+$iconUrl = dol_buildpath('/easyocr/img/pwa-192.png', 1);
+$moreHead  = '<script>(function(){try{'
+	. 'document.querySelectorAll(\'link[rel="manifest"]\').forEach(function(l){l.parentNode.removeChild(l);});'
+	. 'var m=document.createElement("link");m.rel="manifest";m.href=' . json_encode($manifestUrl) . ';document.head.appendChild(m);'
+	. 'var vp=document.querySelector(\'meta[name=viewport]\');'
+	. 'if(vp){if(vp.content.indexOf("viewport-fit")<0){vp.content+=", viewport-fit=cover";}}'
+	. 'else{vp=document.createElement("meta");vp.name="viewport";vp.content="width=device-width, initial-scale=1, viewport-fit=cover";document.head.appendChild(vp);}'
+	. '}catch(e){}})();</script>' . "\n";
 $moreHead .= '<meta name="theme-color" content="#0f7b5a">' . "\n";
 $moreHead .= '<meta name="mobile-web-app-capable" content="yes">' . "\n";
 $moreHead .= '<meta name="apple-mobile-web-app-capable" content="yes">' . "\n";

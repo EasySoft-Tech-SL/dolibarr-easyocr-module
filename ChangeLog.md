@@ -5,6 +5,37 @@ Todos los cambios notables de EasyOcr se documentarán en este archivo.
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/),
 y este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 
+## [2.7.2] - 2026-09-30
+
+### Corregido — la página de lotes rompía su propio JavaScript
+
+- **`batch.php` no inicializaba nada por un `TypeError`.** Comparte `js/scripts.js` con el visor, pero no trae su HTML: la primera línea de `init()` era `document.getElementById('pdfInput').addEventListener(...)`, y sobre un elemento que no existe eso lanza `Cannot read properties of null (reading 'addEventListener')` y aborta la función entera, así que ni se pintaban las etiquetas ni se enganchaban los atajos de teclado ni el arrastrar y soltar.
+- El fallo no era de ninguna versión de Dolibarr: habría salido igual en la 21. Medido en la 24.0.1 con el paquete publicado y reproducido en la 18 en el navegador, comparando el fichero anterior con el corregido.
+- `init()` comprueba ahora cada elemento antes de usarlo (el input de subida, el estado vacío, la zona del visor, los atajos y los pintores del visor), de modo que una página sin visor puede seguir cargando el mismo script.
+
+### Corregido — el PWA instalaba el ERP en vez del escáner de gastos
+
+- **El manifiesto del módulo se ignoraba.** Dolibarr inyecta el suyo (el de la aplicación completa) antes que el `$moreHead` de la página, y el navegador se queda con el primero que encuentra: al añadir a la pantalla de inicio desde el escáner se instalaba el ERP, con su nombre, su `start_url` y sus iconos. Comprobado con el protocolo de DevTools de Chrome: la página anunciaba `theme/eldy/manifest.json.php`.
+- La pantalla instala ahora su propio manifiesto desde un script en el `<head>` que retira el ajeno, el mismo patrón que usa nuestro Chat IA. Chrome confirma el cambio: nombre «EasyOCR — Gastos», `start_url` del escáner, tres iconos y **cero errores de manifiesto**.
+- **Los iconos no existían al tamaño que decían.** El manifiesto publicaba `img/easyocr.png` (32×32) como 192×192 y 512×512, así que el móvil estiraba una imagen de 32 px para el icono de la aplicación. Se añaden `img/pwa-192.png` y `img/pwa-512.png`, hechos desde el símbolo del logotipo, y el icono de iOS se sirve a 192 px en vez de a 32.
+- De paso, el `<meta name="viewport">` recibe `viewport-fit=cover`, para que las `env(safe-area-inset-*)` funcionen en los iPhone con notch en modo aplicación.
+
+### Corregido — el webhook respondía los errores como página web
+
+- Las salidas de error de `webhook_batch.php` (sin `instance_id` o con uno inválido, método incorrecto, secreto inválido, cuerpo vacío o JSON ilegible) enviaban el JSON **sin cabecera de tipo**, así que PHP lo etiquetaba como `text/html` y un cliente que mire el `Content-Type` lo descarta. La ruta de éxito ya lo hacía bien.
+- Todas pasan ahora por `easyocrWebhookError()`, que fija `application/json` y el código HTTP en un solo sitio. Comprobado con una petición real: `400` + `application/json` + `{"error":"Missing instance_id parameter"}`.
+
+### Mejorado — el visor ya no arranca a medias
+
+- **El desplegable de proveedores viene relleno al abrir la pantalla de extracción**, en lugar de quedarse vacío hasta cargar un PDF, que parecía un fallo. Se sigue refrescando al cargar el documento.
+- **El listado de plantillas explica cómo se crean.** No tiene botón de alta a propósito —una plantilla se define marcando zonas sobre un PDF— y quien entra por ahí no tenía forma de saberlo: ahora lo dice y enlaza al visor.
+
+### Notas
+
+- **Barrido completo en Dolibarr 24.0.1** (PHP 7.4.33) sobre el paquete publicado: las diez pantallas del módulo, el alta/edición/borrado de plantillas verificado en base de datos, el manifiesto y el service worker del PWA, y la degradación cuando no hay servicio de IA. Sin un solo error de PHP del módulo. La compatibilidad declarada pasa a **V16–V24**.
+- Suites propias en verde: 159 + 89 + 26 aserciones (274), sin regresión respecto a la 2.7.1.
+- Una clave nueva en los ocho locales (es, en, fr, de, it, pt, ca, gl).
+
 ## [2.7.1] - 2026-09-29
 
 ### Corregido — desplegable de proveedores en Dolibarr 24 (pantalla de error técnico)
@@ -40,7 +71,7 @@ y este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 
 ### Notas
 
-- **Dolibarr 24**: verificadas en el navegador las pantallas de facturas, plantillas y vista de plantilla, el visor y el alta manual. Queda pendiente el barrido del resto (lotes, webhook, PWA), así que la compatibilidad declarada sigue siendo V23.
+- **Dolibarr 24**: verificadas en el navegador las pantallas de facturas, plantillas y vista de plantilla, el visor y el alta manual. En esa versión quedaba pendiente el barrido del resto (lotes, webhook, PWA), así que la compatibilidad declarada se quedó en V23; la 2.7.2 lo cerró y subió el rango a V16–V24.
 - Los idiomas reciben las claves nuevas: 15 en los ocho locales (es, en, fr, de, it, pt, ca, gl).
 
 ## [2.7.0] - 2026-07-29

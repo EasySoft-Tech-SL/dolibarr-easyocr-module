@@ -65,6 +65,28 @@ if (!defined('NOREQUIREAJAX'))     define('NOREQUIREAJAX', '1');
 if (!defined('NOCSRFCHECK'))       define('NOCSRFCHECK', '1');
 if (!defined('NOLOGIN'))           define('NOLOGIN', '1');       // webhook has no user session
 
+/**
+ * Respond an error as plain JSON.
+ *
+ * The header is the whole point: PHP defaults to text/html here, and a client that
+ * validates the Content-Type (or a proxy that inspects it) would take the body for a
+ * web page and drop it. The success path already sent application/json; the early
+ * exits did not, so a rejected webhook looked like an HTML response with JSON inside.
+ *
+ * @param int   $httpCode HTTP status to send
+ * @param array $payload  Body to encode
+ * @return void
+ */
+function easyocrWebhookError($httpCode, $payload)
+{
+	http_response_code($httpCode);
+	if (!headers_sent()) {
+		header('Content-Type: application/json; charset=utf-8');
+	}
+	echo json_encode($payload);
+	exit;
+}
+
 $res = 0;
 if (!$res && !empty($_SERVER["CONTEXT_DOCUMENT_ROOT"])) {
 	$res = @include $_SERVER["CONTEXT_DOCUMENT_ROOT"] . "/main.inc.php";
@@ -83,9 +105,7 @@ if (!$res && $i > 0 && file_exists(dirname(substr($tmp, 0, ($i + 1))) . "/main.i
 if (!$res && file_exists("../main.inc.php")) { $res = @include "../main.inc.php"; }
 if (!$res && file_exists("../../main.inc.php")) { $res = @include "../../main.inc.php"; }
 if (!$res) {
-	http_response_code(500);
-	echo json_encode(['error' => 'Dolibarr environment not available']);
-	exit;
+	easyocrWebhookError(500, array('error' => 'Dolibarr environment not available'));
 }
 
 // ─── Resolve entity for filesystem isolation (multicompany) ──────────────
@@ -189,9 +209,7 @@ if (empty($expectedInstanceId) && isset($conf) && is_object($conf) && !empty($co
 }
 
 if (empty($receivedInstanceId)) {
-	http_response_code(400);
-	echo json_encode(['error' => 'Missing instance_id parameter']);
-	exit;
+	easyocrWebhookError(400, array('error' => 'Missing instance_id parameter'));
 }
 
 if (empty($expectedInstanceId)) {
@@ -201,13 +219,11 @@ if (empty($expectedInstanceId)) {
 } else {
 	// Verify instance_id matches
 	if (!hash_equals($expectedInstanceId, $receivedInstanceId)) {
-		http_response_code(403);
-		echo json_encode([
+		easyocrWebhookError(403, array(
 			'error' => 'Invalid instance_id',
 			'received' => $receivedInstanceId,
 			'expected_length' => strlen($expectedInstanceId),
-		]);
-		exit;
+		));
 	}
 }
 
@@ -228,9 +244,7 @@ if ($reqEntity > 0 && isset($conf) && is_object($conf)) {
 
 // ─── Only accept POST ────────────────────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-	http_response_code(405);
-	echo json_encode(['error' => 'Method Not Allowed']);
-	exit;
+	easyocrWebhookError(405, array('error' => 'Method Not Allowed'));
 }
 
 // ─── Optional: verify webhook secret ─────────────────────────────────────
@@ -242,24 +256,18 @@ if (isset($conf) && is_object($conf) && isset($conf->global) && is_object($conf-
 if (!empty($webhookSecret)) {
 	$receivedSecret = isset($_SERVER['HTTP_X_WEBHOOK_SECRET']) ? $_SERVER['HTTP_X_WEBHOOK_SECRET'] : '';
 	if (empty($receivedSecret) || !hash_equals($webhookSecret, $receivedSecret)) {
-		http_response_code(403);
-		echo json_encode(['error' => 'Invalid webhook secret']);
-		exit;
+		easyocrWebhookError(403, array('error' => 'Invalid webhook secret'));
 	}
 }
 
 // ─── Validate JSON body ──────────────────────────────────────────────────
 if (empty($rawBody)) {
-	http_response_code(400);
-	echo json_encode(['error' => 'Empty request body']);
-	exit;
+	easyocrWebhookError(400, array('error' => 'Empty request body'));
 }
 
 $payload = json_decode($rawBody, true);
 if (json_last_error() !== JSON_ERROR_NONE) {
-	http_response_code(400);
-	echo json_encode(['error' => 'Invalid JSON: ' . json_last_error_msg()]);
-	exit;
+	easyocrWebhookError(400, array('error' => 'Invalid JSON: ' . json_last_error_msg()));
 }
 
 // ─── Log webhook to file for debugging ───────────────────────────────────

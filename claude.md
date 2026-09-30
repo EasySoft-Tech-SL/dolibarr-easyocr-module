@@ -2,7 +2,7 @@
 
 ## Información del módulo
 - **Nombre:** EasyOcr
-- **Versión:** 2.7.0
+- **Versión:** 2.7.2
 - **Número módulo:** 402020
 - **Empresa:** EasySoft Tech S.L. (info@easysoft.es)
 - **Autor:** Alberto Luque Rivas (aluquerivasdev@gmail.com)
@@ -93,13 +93,23 @@ easyocr/
 
 ## Historial de cambios
 
+### v2.7.2 — Barrido de Dolibarr 24, PWA e inicialización del visor
+
+- **Barrido completo en Dolibarr 24.0.1** (PHP 7.4.33) sobre el paquete publicado: las diez pantallas del módulo, plantillas con alta, edición y borrado verificados en base de datos, manifiesto y service worker del PWA, y la degradación sin servicio de IA. Ningún fallo bloqueante; cero errores de PHP del módulo. La compatibilidad declarada pasa a **V16–V24**.
+- **`batch.php` lanzaba un `TypeError` y no inicializaba nada.** Comparte `js/scripts.js` con el visor, pero no trae su DOM: `init()` empezaba con `document.getElementById('pdfInput').addEventListener(...)` sin guarda, y sobre null eso aborta la función entera. No dependía de la versión de Dolibarr (habría fallado igual en la 21). `init()` comprueba ahora cada elemento antes de usarlo, y los pintores del visor solo se ejecutan si la página trae el visor.
+- **El PWA instalaba el ERP en vez del escáner de gastos.** Dolibarr inyecta su propio manifiesto antes que el `$moreHead` de la página y el navegador se queda con el primero, así que el enlace estático del módulo se ignoraba. `scan-expense.php` retira ahora el manifiesto ajeno e instala el suyo desde un script en el `<head>` (el mismo patrón que usa `easyai`). Chrome lo confirma: nombre «EasyOCR — Gastos», `start_url` del escáner, 3 iconos y cero errores de manifiesto.
+- **Los iconos del PWA no existían a su tamaño.** Se declaraba `img/easyocr.png` (32×32) como 192×192 y 512×512. Se añaden `img/pwa-192.png` y `img/pwa-512.png`, hechos desde el símbolo del logotipo. El `<meta name="viewport">` recibe además `viewport-fit=cover`.
+- **El webhook responde sus errores como `application/json`.** Las salidas tempranas de `webhook_batch.php` no fijaban la cabecera y PHP las etiquetaba `text/html`; ahora pasan todas por `easyocrWebhookError()`.
+- **Arranque del visor**: el desplegable de proveedores viene relleno al abrir la pantalla (antes, vacío hasta cargar un PDF) y el listado de plantillas explica cómo se crean, con enlace al visor.
+- Suites en verde: 159 + 89 + 26 = 274 aserciones. Una clave nueva en los ocho locales.
+
 ### v2.7.1 — Proveedor por nombre, presupuestos de proveedor y dos fallos de versión
 - **Fix Dolibarr 21.0.x (alta de proveedor):** `Societe::create()` de la 21.0.x llama a `getCountry()` (está dentro de `create()`; en la 22 y la 24 solo en `update()`) y esa función vive en `core/lib/company.lib.php`, que no carga `main.inc.php` en contexto ajax. Como el alta pone `country_code` con las dos primeras letras del CIF, un CIF cuyo par inicial no corresponda a ningún país activo terminaba en `Call to undefined function getCountry()`. Reproducido con el alta real y arreglado cargando la librería en `lib/easyocr.lib.php` y en `ajax/ajax_easyocr.php`.
 - **Fix Dolibarr 24 (desplegable de proveedores):** hasta la 23, `Form::select_thirdparty_list()` solo pasa el filtro por el analizador de sintaxis universal si lleva paréntesis; la 24 lo pasa siempre y rechaza el SQL suelto (`Bad syntax of the search string` dentro del SQL → `DB_ERROR_SYNTAX` → pantalla de error técnico). Nueva `easyocrSupplierFilter()`: `(s.fournisseur:=:1)` desde la 16, SQL suelto en 14-15.
 - **Etiqueta «Proveedor» (9.ª):** el rectángulo sobre el nombre busca el proveedor y lo deja seleccionado. `easyocrFindSuppliersByName()` (PHP, tildes y sufijos aparte) + acción `findSupplierByName`. Con varios candidatos no elige: avisa.
 - **Presupuestos de proveedor:** `easyocrCreateInvoiceFromOCR()` acepta `document_type` (`invoice` por defecto / `supplier_proposal`); `easyocrAddDocumentLine()` encapsula las DOS firmas de `addline()` (FactureFournisseur pone las tasas antes de la cantidad y SupplierProposal al revés). El número del proveedor va a `ref_ext` — **`SupplierProposal::create()` del core NO persiste `ref_ext`, se escribe con un UPDATE después** — y es la clave del anti-duplicados; la nota privada guarda número, fecha, validez y descuadres; los totales no se fuerzan (suman líneas); nunca se paga; el PDF va a `supplier_proposal/`; requiere el módulo y su permiso de creación (`easyocrProposalModuleEnabled()`, que usa `isModEnabled()` porque `$conf->supplier_proposal->enabled` existe en la 16 y NO en la 21).
 - **QA:** `tests/easyocr_integration_test.php` pasa de 75 a 89 aserciones. Las nuevas cubren el presupuesto (ref_ext, nota, 8 líneas, sin factura, sin pago, duplicado). En navegador se verificó sobre Dolibarr 21 el alta de los dos documentos y la etiqueta, y sobre la 24 las tres pantallas del desplegable.
-- ⚠️ **Pendiente:** barrido completo del módulo en Dolibarr 24 (lotes, webhook, PWA). La compatibilidad declarada sigue siendo V23.
+- ⚠️ **En esa versión quedaba pendiente** el barrido completo del módulo en Dolibarr 24 (lotes, webhook, PWA); se cerró en la 2.7.2, que además subió la compatibilidad declarada a V16–V24.
 
 ### v2.7.0 — Fidelidad de línea, vinculación de producto y anti-duplicados
 - **Fix CRÍTICO (precios ×1000):** `easyocrParseNumber()` recibía los importes como `float` nativo del JSON del micro, los convertía a cadena y les aplicaba la heurística de formato europeo: con 3 decimales, el separador se leía como millar y **3,434 € pasaba a 3.434 €**. Afectaba a proveedores que facturan con 3+ decimales por unidad, en extracción y en webhook. Ahora `int`/`float` se devuelven tal cual y la heurística solo se aplica a cadenas. Detectado por los tests de integración de esta versión.

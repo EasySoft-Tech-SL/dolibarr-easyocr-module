@@ -829,3 +829,4 @@ EasyOcrJsonResults = risultati
 EasyOcrJsonCopied = JSON copiato negli appunti
 
 EasyOcrAIUnreadableDocument = Il servizio non è riuscito a leggere questo documento (l'IA non ha restituito dati strutturati). Non è stato contrassegnato come elaborato: puoi riprovare.
+EasyOcrTemplatesCreateHint = I modelli si creano da un PDF: caricane uno nel visualizzatore, marca le zone e salvalo come modello.

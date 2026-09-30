@@ -850,3 +850,4 @@ EasyOcrJsonResults = results
 EasyOcrJsonCopied = JSON copied to clipboard
 
 EasyOcrAIUnreadableDocument = The service could not read this document (the AI returned no structured data). It has not been marked as processed, so you can try again.
+EasyOcrTemplatesCreateHint = Templates are created from a PDF: load one in the viewer, mark the zones and save it as a template.

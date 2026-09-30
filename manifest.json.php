@@ -7,7 +7,12 @@
 header('Content-Type: application/manifest+json; charset=utf-8');
 
 $base = rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'])), '/');
-$icon = $base . '/img/easyocr.png';
+// Los iconos tienen que existir a ESE tamano: antes se declaraba img/easyocr.png (32x32)
+// como 192x192 y 512x512, y el movil estiraba una imagen de 32 px para el icono de la app.
+// Estos dos salen del simbolo del logotipo (blanco + #FF7314 sobre negro), al 72% del ancho
+// para que el maskable no recorte nada.
+$icon192 = $base . '/img/pwa-192.png';
+$icon512 = $base . '/img/pwa-512.png';
 
 $manifest = array(
 	'name'             => 'EasyOCR — Gastos',
@@ -20,9 +25,9 @@ $manifest = array(
 	'background_color' => '#ffffff',
 	'theme_color'      => '#0f7b5a',
 	'icons'            => array(
-		array('src' => $icon, 'sizes' => '192x192', 'type' => 'image/png', 'purpose' => 'any'),
-		array('src' => $icon, 'sizes' => '512x512', 'type' => 'image/png', 'purpose' => 'any'),
-		array('src' => $icon, 'sizes' => '192x192', 'type' => 'image/png', 'purpose' => 'maskable'),
+		array('src' => $icon192, 'sizes' => '192x192', 'type' => 'image/png', 'purpose' => 'any'),
+		array('src' => $icon512, 'sizes' => '512x512', 'type' => 'image/png', 'purpose' => 'any'),
+		array('src' => $icon512, 'sizes' => '512x512', 'type' => 'image/png', 'purpose' => 'maskable'),
 	),
 );
 
