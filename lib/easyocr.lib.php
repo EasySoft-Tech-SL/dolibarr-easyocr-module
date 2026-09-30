@@ -2385,3 +2385,96 @@ function easyocrCreateVariousPaymentFromOCR($params, $userObj = null)
 	];
 }
 
+
+/**
+ * Schema revision of this build.
+ *
+ * Bump it whenever a file is added to sql/ that has to reach installations already
+ * running. Dolibarr executes sql/ only when the module is ENABLED: _load_tables() is
+ * called from init(), and an installation updated by replacing files never runs it.
+ * The table then does not exist and every call to the feature using it fails with a
+ * "table doesn't exist", invisible to the user. Measured in production: the
+ * anti-duplicate table was missing for weeks because the module had been updated by
+ * files and never re-enabled, and every document processed in that time was registered
+ * nowhere.
+ */
+define('EASYOCR_SCHEMA_REVISION', 1);
+
+/**
+ * Apply the SQL files shipped in sql/ when this installation has not applied them yet.
+ *
+ * Runs at most once per revision. The mark lives in llx_const, so once applied the
+ * common case costs no query at all: constants are already loaded in $conf->global.
+ *
+ * @return bool     True when the schema is up to date (or was just repaired)
+ */
+function easyocrEnsureSchema()
+{
+	global $conf, $db;
+
+	if (!is_object($db) || empty($conf->easyocr->enabled)) {
+		return false;
+	}
+	if ((string) getDolGlobalString('EASYOCR_SCHEMA_REVISION') === (string) EASYOCR_SCHEMA_REVISION) {
+		return true;
+	}
+
+	// Mind the file name: in the repository (and in the ZIP, and on Linux) it is
+	// modEasyocr.class.php, without the capital O. Windows checks it out capitalised,
+	// but asking for it that way fails on a production server. PHP ignores case in the
+	// CLASS name, never in the FILE name.
+	$dir = dol_buildpath('/easyocr/sql/', 0);
+	if (!is_dir($dir)) {
+		return false;
+	}
+
+	dol_include_once('/core/lib/admin.lib.php');
+
+	// Same criterion and same order as DolibarrModules::_load_tables(), which is protected
+	// and cannot be called from here: first the tables and their changes, then the keys
+	// (.key.sql). run_sql() tolerates the "already exists" of a half-applied schema, the
+	// same way it does on module activation.
+	$tables = array();
+	$keys = array();
+	foreach (array('', 'tables/', 'data/') as $subdir) {
+		$found = glob($dir.$subdir.'llx_*.sql');
+		if (!is_array($found)) {
+			continue;
+		}
+		foreach ($found as $file) {
+			if (preg_match('/\.key\.sql$/i', $file)) {
+				$keys[] = $file;
+			} else {
+				$tables[] = $file;
+			}
+		}
+	}
+	if (empty($tables) && empty($keys)) {
+		return false;
+	}
+	sort($tables);
+	sort($keys);
+
+	$errors = 0;
+	foreach (array_merge($tables, $keys) as $file) {
+		$result = run_sql($file, !getDolGlobalString('MAIN_DISPLAY_SQL_INSTALL_LOG') ? 1 : 0, 0, 1);
+		if ($result <= 0) {
+			$errors++;
+			dol_syslog('EasyOCR: error applying '.basename($file).' - '.$db->lasterror(), LOG_ERR);
+		}
+	}
+
+	if ($errors) {
+		// No mark: the next page load tries again.
+		dol_syslog('EasyOCR: could not apply the schema of revision '.EASYOCR_SCHEMA_REVISION.' ('.$errors.' errors)', LOG_ERR);
+		return false;
+	}
+
+	dolibarr_set_const($db, 'EASYOCR_SCHEMA_REVISION', (string) EASYOCR_SCHEMA_REVISION, 'chaine', 0, '', $conf->entity);
+
+	return true;
+}
+
+// Repair the schema on the first page load after an update done by replacing files.
+easyocrEnsureSchema();
+

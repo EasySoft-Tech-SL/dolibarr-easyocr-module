@@ -2,7 +2,7 @@
 
 ## Información del módulo
 - **Nombre:** EasyOcr
-- **Versión:** 2.7.2
+- **Versión:** 2.7.3
 - **Número módulo:** 402020
 - **Empresa:** EasySoft Tech S.L. (info@easysoft.es)
 - **Autor:** Alberto Luque Rivas (aluquerivasdev@gmail.com)
@@ -92,6 +92,14 @@ easyocr/
 ---
 
 ## Historial de cambios
+
+### v2.7.3 — El módulo repara su propio esquema
+
+- **Las tablas nuevas no llegaban a las instalaciones ya en marcha.** Dolibarr ejecuta la carpeta `sql/` **solo al activar el módulo** (`_load_tables()` es `protected` y se llama desde `init()`), así que una instalación actualizada sustituyendo ficheros se queda con el esquema viejo: la tabla no existe y cada llamada a la función que la usa falla con un `table doesn't exist` que el usuario no ve por ninguna parte. `_load_tables()` es **protected**: no se puede invocar desde fuera, así que la reparación replica su criterio (primero los `llx_*.sql` que no son clave, después los `.key.sql`, con `run_sql()` tolerando el «already exists»).
+- **Medido en el ERP de la empresa**: `llx_easyocr_processed_files` faltaba desde que se añadió (2.7.0), con **165 errores** en el log y todos los documentos de ese periodo sin huella registrada — el anti-duplicados no detectaba nada. Reactivar el módulo a mano lo arregla, pero el aviso del ChangeLog no basta: hay que acordarse en cada actualización y se olvida.
+- `easyocrEnsureSchema()` se ejecuta al cargar `lib/easyocr.lib.php` (todas las pantallas y el ajax la incluyen, siempre después de `main.inc.php`). Comprueba `EASYOCR_SCHEMA_REVISION` y, si la instalación no lo ha aplicado, lanza los SQL. La marca vive en `llx_const`, así que en el caso normal **no cuesta ninguna consulta**: las constantes ya están cargadas en `$conf->global`. Si algo falla no deja marca y el siguiente acceso lo reintenta.
+- Probado sobre una instalación real en **Dolibarr 23.0.1 partiendo de la 2.4.5**, sin reactivar: creó la tabla, añadió `entity` a `llx_easyocr_webhook_log` y dejó el anti-duplicados operativo. Suites en verde: 159 + 89 aserciones.
+- **Esta versión no necesita reactivar el módulo** al actualizar.
 
 ### v2.7.2 — Barrido de Dolibarr 24, PWA e inicialización del visor
 

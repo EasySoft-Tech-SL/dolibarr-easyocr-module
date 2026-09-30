@@ -5,6 +5,19 @@ Todos los cambios notables de EasyOcr se documentarán en este archivo.
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/),
 y este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 
+## [2.7.3] - 2026-09-30
+
+### Corregido — las tablas nuevas no llegaban a las instalaciones ya en marcha
+
+- **El módulo no aplicaba su propio esquema.** Dolibarr ejecuta la carpeta `sql/` **solo al activar el módulo** (`_load_tables()` se llama desde `init()`), así que una instalación actualizada sustituyendo ficheros se queda con el esquema viejo: la tabla nueva no existe y cada llamada a la función que la usa falla con un `table doesn't exist` que el usuario no ve por ninguna parte.
+- Medido en el ERP de la empresa: `llx_easyocr_processed_files` (la huella del anti-duplicados) **faltaba desde que se añadió**, con 165 errores en el log y documentos procesados sin registrar. Reactivar el módulo a mano lo arregla, pero el aviso del ChangeLog no basta: hay que hacerlo en cada actualización y se olvida.
+- `easyocrEnsureSchema()` comprueba al cargar la biblioteca si esta instalación ya aplicó la revisión de esquema del build y, si no, ejecuta `sql/` con **la misma llamada que hace la activación** (mismo orden, misma tolerancia a «ya existe»). La marca se guarda en `EASYOCR_SCHEMA_REVISION`, así que en el caso normal no cuesta ninguna consulta: las constantes ya están cargadas en `$conf->global`.
+- Si la aplicación falla, **no se deja marca**: el siguiente acceso lo vuelve a intentar.
+
+### Notas de actualización
+
+- Esta versión **no necesita reactivar el módulo**: los cambios de esquema se aplican solos en el primer acceso.
+
 ## [2.7.2] - 2026-09-30
 
 ### Corregido — la página de lotes rompía su propio JavaScript
