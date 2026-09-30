@@ -2457,11 +2457,23 @@ function easyocrEnsureSchema()
 
 	$errors = 0;
 	foreach (array_merge($tables, $keys) as $file) {
-		$result = run_sql($file, !getDolGlobalString('MAIN_DISPLAY_SQL_INSTALL_LOG') ? 1 : 0, 0, 1);
-		if ($result <= 0) {
-			$errors++;
-			dol_syslog('EasyOCR: error applying '.basename($file).' - '.$db->lasterror(), LOG_ERR);
+		$result = run_sql($file, !getDolGlobalString('MAIN_DISPLAY_SQL_INSTALL_LOG') ? 1 : 0, '', 1);
+		if ($result > 0) {
+			continue;
 		}
+
+		// A schema that is already applied is a success, not a failure: "table already
+		// exists", "duplicate column" or "duplicate key name" are what an up-to-date
+		// installation answers. run_sql() only swallows those on its own from Dolibarr 16
+		// on (on 14 and 15 the same file returns KO), so they are filtered here instead of
+		// trusting the return value, which changes meaning between versions.
+		$sqlerror = $db->lasterror();
+		if (stripos($sqlerror, 'already exists') !== false || stripos($sqlerror, 'duplicate') !== false) {
+			continue;
+		}
+
+		$errors++;
+		dol_syslog('EasyOCR: error applying '.basename($file).' - '.$sqlerror, LOG_ERR);
 	}
 
 	if ($errors) {

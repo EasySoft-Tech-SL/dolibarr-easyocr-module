@@ -2,7 +2,7 @@
 
 ## Información del módulo
 - **Nombre:** EasyOcr
-- **Versión:** 2.7.3
+- **Versión:** 2.7.4
 - **Número módulo:** 402020
 - **Empresa:** EasySoft Tech S.L. (info@easysoft.es)
 - **Autor:** Alberto Luque Rivas (aluquerivasdev@gmail.com)
@@ -92,6 +92,13 @@ easyocr/
 ---
 
 ## Historial de cambios
+
+### v2.7.4 — Una sentencia partida en dos líneas rompía la reparación en Dolibarr 14 y 15
+
+- **`sql/llx_easyocr_webhook_log.alter.sql` tenía cada `ALTER TABLE` con un salto de línea antes del `ADD COLUMN`.** Dolibarr 14 y 15 leen estos ficheros sentencia a sentencia, así que la segunda mitad se ejecutaba suelta y MySQL la rechazaba por sintaxis en cualquier base que ya tuviera la columna. Medido en la 14.0.5 con las mismas cinco sentencias en una línea (pasan) frente a las partidas (no pasan); desde la 16 el fichero se tragaba bien, y por eso no había salido antes. Ahora hay una sentencia por línea, con un comentario en el propio fichero para que no vuelva a partirse.
+- **Efecto sobre la 2.7.3:** ese error hacía que la revisión de esquema se diera por no aplicada y los catorce ficheros de `sql/` se reejecutaban en cada acceso en vez de una vez. El esquema quedaba correcto; no llegaba la marca.
+- **La comprobación de errores ya no mira el valor que devuelve `run_sql()`**, que cambia de significado entre versiones (int en la 14, distinto control de errores tolerados en la 16+): filtra por el mensaje de la base de datos y cuenta «already exists» y «duplicate» como trabajo hecho. Cualquier otro error deja la revisión sin marcar para reintentarla en el siguiente acceso.
+- Probado en Dolibarr **14.0.5** (la marca se graba y el anti-duplicados responde) y en la **16** sin cambios. Suites en verde.
 
 ### v2.7.3 — El módulo repara su propio esquema
 

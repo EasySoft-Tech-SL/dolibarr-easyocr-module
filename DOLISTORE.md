@@ -4,7 +4,7 @@
 
 | Campo | Valor |
 |-------|-------|
-| **Versión del módulo** | 2.7.3 |
+| **Versión del módulo** | 2.7.4 |
 | **Compatibilidad Min** | V16 (id 95) |
 | **Compatibilidad Max** | V24 (id 120) |
 | **PHP Min** | 7.4 |

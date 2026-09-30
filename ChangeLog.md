@@ -5,6 +5,19 @@ Todos los cambios notables de EasyOcr se documentarán en este archivo.
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/),
 y este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 
+## [2.7.4] - 2026-09-30
+
+### Corregido — la reparación del esquema no arrancaba en Dolibarr 14 y 15
+
+- **Una sentencia partida en dos líneas llegaba rota a MySQL.** `sql/llx_easyocr_webhook_log.alter.sql` tenía cada `ALTER TABLE` con un salto de línea antes del `ADD COLUMN`. Dolibarr 14 y 15 leen esos ficheros sentencia a sentencia, así que la segunda mitad (`ADD COLUMN …`) se ejecutaba suelta y la base de datos la rechazaba con un error de sintaxis en cualquier instalación que ya tuviera la columna. Medido en la 14.0.5, con las mismas cinco sentencias en una línea frente a las partidas: las primeras pasan, las segundas no. Desde la 16 el mismo fichero se tragaba bien, que es por lo que nadie lo había visto.
+- **Consecuencia en la 2.7.3:** ese error hacía que la revisión de esquema se diera por no aplicada, así que los catorce ficheros de `sql/` se volvían a ejecutar en cada acceso en lugar de una sola vez. El esquema quedaba bien igualmente; lo que no llegaba era la marca.
+- De paso, la comprobación de errores **ya no depende del valor que devuelve `run_sql()`**, que cambia de significado entre versiones: ahora filtra por el mensaje de la base de datos («already exists», «duplicate») y cuenta eso como trabajo hecho. Cualquier otro error sigue dejando la revisión sin marcar para reintentarla.
+
+### Notas de actualización
+
+- Recomendada si tu Dolibarr es la **14 o la 15**. Con la 2.7.3, en la 16 y posteriores, el esquema quedaba reparado igual.
+- No necesita reactivar el módulo.
+
 ## [2.7.3] - 2026-09-30
 
 ### Corregido — las tablas nuevas no llegaban a las instalaciones ya en marcha
