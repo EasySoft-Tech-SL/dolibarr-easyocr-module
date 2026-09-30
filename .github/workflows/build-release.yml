@@ -127,7 +127,47 @@ jobs:
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      
+
+      # El aviso de "hay version nueva" que ve un Dolibarr instalado lo sirve el panel de
+      # licencias (SDL), no GitHub: sin este paso el modulo se publica y los clientes no se
+      # enteran. Medido el 2026-09-30: SDL seguia en la 2.5.3 con la 2.7.0 y la 2.7.1 ya
+      # publicadas aqui, porque este workflow no tenia el paso.
+      #
+      # Solo se REGISTRA la version, sin adjuntar el ZIP: la distribucion va por Dolistore y
+      # por el asset del Release. Para que el panel sirviera la descarga habria que anadir
+      # -F module_file=@<zip>.
+      #
+      # No bloquea el release: si SDL esta caido, el modulo YA esta publicado y solo falta el
+      # aviso, que se lanza a mano con la skill publicar-modulo-sdl. De ahi continue-on-error.
+      - name: Registrar la version en el panel de licencias (SDL)
+        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+        continue-on-error: true
+        env:
+          SDL_TOKEN: ${{ secrets.SDL_RELEASE_TOKEN }}
+          VERSION: ${{ steps.version.outputs.version }}
+          REPO: ${{ github.repository }}
+        run: |
+          if [ -z "${SDL_TOKEN:-}" ]; then
+            echo "::warning::Falta el secreto SDL_RELEASE_TOKEN: la $VERSION NO se registra en SDL y los clientes no veran el aviso de actualizacion."
+            exit 0
+          fi
+
+          # Titulos de seccion de esta version, en UNA sola linea: SDL responde error si le
+          # llegan saltos de linea, y una vez registrada NO reescribe la version (un segundo
+          # POST devuelve 200 sin cambiar nada), asi que hay que acertar a la primera.
+          #
+          # El filtro quita EMOJIS y simbolos pero CONSERVA LOS ACENTOS (un tr -cd [:print:]
+          # en locale C dejaba "resolucin"), y normaliza guiones y comillas tipograficas.
+          CHANGELOG=$(awk -v v="$VERSION" 'index($0, "## [" v "]")==1 {flag=1; next} /^## \[/ {flag=0} flag && /^### /' ChangeLog.md | sed 's/^### //' | perl -CSD -pe 's/[\x{1F000}-\x{1FAFF}\x{2600}-\x{27BF}\x{2B00}-\x{2BFF}\x{FE0F}]//g; s/[\x{2010}-\x{2015}]/-/g; s/[\x{2018}\x{2019}]/\x27/g; s/[\x{201C}\x{201D}]/"/g; s/^[ 	]+|[ 	]+$//g;' | paste -sd '~' - | sed 's/~/. /g' | sed 's/  */ /g' | cut -c1-900)
+          DOWNLOAD="https://github.com/$REPO/releases/download/v$VERSION/module_easyocr-$VERSION.zip"
+
+          echo "Registrando easyocr $VERSION en SDL..."
+          HTTP=$(curl -sS -o sdl-response.json -w '%{http_code}' --max-time 60 -X POST "https://sdl.easysoft.es/storeModuleVersion/easyocr" -H "X-Easysoft-Token: $SDL_TOKEN" -H 'Accept: application/json' -F "version=$VERSION" -F 'display_name=EasyOcr' -F "download_url=$DOWNLOAD" -F "changelog=$CHANGELOG" || echo '000')
+
+          cat sdl-response.json 2>/dev/null || true
+          echo ""
+          rm -f sdl-response.json
+
       - name: Build summary
         run: |
           VERSION="${{ steps.version.outputs.version }}"
