@@ -5,6 +5,19 @@ Todos los cambios notables de EasyOcr se documentarán en este archivo.
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/),
 y este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 
+## [2.8.0] - Sin publicar
+
+### Añadido — Documentos recibidos: entrada de PDFs desde otros módulos
+
+- **Nueva función pública `easyocr_recibir_documento($rutaAbsoluta, $user, $opciones)`** en `lib/easyocr.lib.php`, el contrato que espera EasyScan para entregar lo que digitaliza. Copia el PDF a la bandeja local de EasyOcr y lo registra; **no llama al servicio de IA**. Devuelve `ok`, `id`, `url` (la página donde revisarlo) y `error`, más `codigo` con el motivo en claro.
+- **Comprobaciones antes de aceptar nada:** módulo activo en la entidad, permiso de escritura de EasyOcr, usuario de la entidad (o compartido por Multicompany en modo transversal), ruta dentro de `DOL_DATA_ROOT` y dentro de la zona de la entidad (resuelta con `realpath()`, así que ni `..` ni enlaces sacan el fichero de ahí), que sea un **PDF por sus bytes** (`%PDF-` en los primeros 1024) y que no pase de **10 MB** (el mismo valor por defecto que usa el lote; se cambia con la constante oculta `EASYOCR_INBOX_MAX_SIZE_MB` y nunca supera `MAIN_UPLOAD_DOC`). El nombre se sanea. Si el mismo PDF ya está pendiente, devuelve esa fila en vez de duplicarla.
+- **Pantalla «Documentos recibidos»** (`inbox.php`, con tarjeta y contador en el inicio de EasyOcr): lista los recibidos con su origen, la factura de proveedor a la que venían asociados, quién y cuándo, y avisa si ese mismo documento ya pasó antes por el servicio. Desde ahí se **abren en el visor** o se **mandan varios a un lote**, y se procesan por el flujo de siempre, con el coste normal y solo cuando el usuario pulsa el botón. Descartar pide confirmación con el formulario de Dolibarr.
+- **El lote los carga solos**: `batch.php?inbox[]=N` descarga los recibidos en el navegador y los añade a la lista como si se hubieran elegido a mano; pasan por la misma subida, el mismo anti-duplicados y el mismo envío. Cuando el servicio acepta el lote, quedan marcados como «Enviado en lote» con su identificador. Un duplicado que el usuario decide saltarse sigue pendiente.
+- **El visor también**: `extract.php?inbox=N` carga el PDF y, al crear la factura (manual o con IA), el documento queda como «Procesado» enlazado a ella.
+- Nueva tabla `llx_easyocr_inbox` (`sql/llx_easyocr_inbox.sql` + `.key.sql`) y carpeta `DOL_DATA_ROOT[/<entidad>]/easyocr/inbox`. **No hace falta reactivar el módulo**: la revisión de esquema pasa a 2 y la reparación propia de la 2.7.3 crea la tabla en el primer acceso.
+- 38 claves nuevas en los 8 idiomas.
+- **Pruebas:** `php tests/easyocr_inbox_test.php` (44 aserciones contra la base real: PDF válido, duplicado, no-PDF, ruta fuera de `DOL_DATA_ROOT`, `..`, fichero de otra entidad, usuario sin permiso, tamaño, saneado del nombre y cambios de estado; limpia lo suyo por prefijo exacto). Probado de punta a punta en navegador desde la bandeja de EasyScan en Dolibarr 18.0.8: el botón «Enviar a easyocr» aparece, el documento llega a «Documentos recibidos» con origen EasyScan, se sirve el PDF y se descarta con confirmación; ninguna petición sale del ERP. ⚠️ La carga en el lote y en el visor **no se ha abierto en navegador**: `batch.php` y `extract.php` consultan el plan al servicio remoto al cargarse y el entorno de pruebas tiene una clave real; queda para el QA del release con una cuenta de pruebas. Las suites anteriores siguen en verde (159 + 89 + 26).
+
 ## [2.7.4] - 2026-09-30
 
 ### Corregido — la reparación del esquema no arrancaba en Dolibarr 14 y 15

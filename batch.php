@@ -141,6 +141,26 @@ if (!$aiEnabled) {
 // to bypass PHP max_file_uploads limit. See ajax_easyocr.php actions.
 $action = GETPOST('action', 'aZ09');
 
+// ─── Received documents (inbox.php → ?inbox[]=N) ─────────────────────────
+// Only pending documents of this entity are preloaded. They are loaded in the browser and
+// go through the normal upload + batch flow below: nothing is sent until the user presses
+// «Process», and then at the normal cost.
+$eoInboxPreload = array();
+$eoInboxIds = GETPOST('inbox', 'array');
+if (is_array($eoInboxIds)) {
+  foreach (array_slice(array_unique(array_map('intval', $eoInboxIds)), 0, 200) as $eoInboxId) {
+    $eoInboxRow = $eoInboxId > 0 ? easyocrInboxFetch($eoInboxId) : null;
+    if ($eoInboxRow && (int) $eoInboxRow->status === EASYOCR_INBOX_PENDING && is_file(easyocrInboxFilePath($eoInboxRow))) {
+      $eoInboxPreload[] = array(
+        'id'   => (int) $eoInboxRow->rowid,
+        'name' => easyocrInboxSanitizeName($eoInboxRow->label),
+        'url'  => dol_buildpath('/easyocr/ajax/inbox_file.php', 1) . '?id=' . ((int) $eoInboxRow->rowid),
+      );
+    }
+  }
+}
+$eoInboxPending = easyocrInboxCountPending();
+
 // ─── Page output ──────────────────────────────────────────────────────────
 $form = new Form($db);
 
@@ -226,6 +246,14 @@ if (!$canBatch) {
   // ──── MAIN CONTENT ────
 
   if ($activeTab == 'new') {
+
+    // Received documents: either the ones just brought from inbox.php, or a reminder.
+    if (!empty($eoInboxPreload)) {
+      print '<div class="info eo-inbox-banner">' . img_picto('', 'info', 'class="pictofixedwidth"') . $langs->trans('EasyOcrInboxPreloaded', count($eoInboxPreload)) . '</div>';
+    } elseif ($eoInboxPending > 0) {
+      print '<div class="info eo-inbox-banner">' . img_picto('', 'info', 'class="pictofixedwidth"') . $langs->trans('EasyOcrInboxPendingNotice', $eoInboxPending);
+      print ' <a href="' . dol_buildpath('/easyocr/inbox.php', 1) . '">' . $langs->trans('EasyOcrInboxOpen') . '</a></div>';
+    }
 
     // Load templates that have custom_instructions (supplier selector)
     if ($hasCustomInstructions) {
@@ -762,6 +790,28 @@ if (!$fromMenu) {
       addFiles(e.dataTransfer.files);
     });
 
+    // Received documents preloaded from inbox.php: fetched from the server and added to the
+    // list like any file the user picked. Each one keeps its inbox id, so the batch can mark
+    // it as sent once the service accepts it.
+    var eoInboxPreload = <?php echo json_encode($eoInboxPreload, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE); ?>;
+    if (eoInboxPreload.length && window.fetch && typeof File === 'function') {
+      eoInboxPreload.forEach(function(item) {
+        fetch(item.url, { credentials: 'same-origin' }).then(function(r) {
+          if (!r.ok) throw new Error('HTTP ' + r.status);
+          return r.blob();
+        }).then(function(blob) {
+          var f = new File([blob], item.name, { type: 'application/pdf' });
+          f._eoInboxId = item.id;
+          addFiles([f]);
+        }).catch(function() {
+          var box = document.createElement('div');
+          box.className = 'error';
+          box.textContent = <?php echo json_encode($langs->transnoentitiesnoconv('EasyOcrInboxLoadError')); ?>.replace('%s', item.name);
+          dropzone.parentNode.insertBefore(box, dropzone);
+        });
+      });
+    }
+
     // Global functions
     window.eoBatchRemoveFile = function(idx) {
       selectedFiles.splice(idx, 1);
@@ -953,7 +1003,11 @@ if (!$fromMenu) {
             auto_correct: (form.querySelector('[name=auto_correct]') || {}).checked ? '1' : '0',
             webhook_url: (document.getElementById('webhook_url') || {}).value || '',
             language: (document.getElementById('batch_language') || {}).value || '',
-            custom_instructions: (document.getElementById('batch_custom_instructions') || {}).value || ''
+            custom_instructions: (document.getElementById('batch_custom_instructions') || {}).value || '',
+            // Received documents that really went in (a skipped duplicate stays pending)
+            inbox_ids: selectedFiles.map(function(f, i) {
+              return (f._eoInboxId && duplicateIdx.indexOf(i) === -1) ? f._eoInboxId : 0;
+            }).filter(function(v) { return v > 0; }).join(',')
           };
 
           jQuery.ajax({

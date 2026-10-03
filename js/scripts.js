@@ -36,6 +36,7 @@ const EasyOcr = (function () {
         customInstructions: '', // Instrucciones personalizadas para IA (por plantilla/proveedor)
         selectedSupplierID: null, // Proveedor seleccionado/detectado por CIF en modal AI
         lastFileHash: '',     // Huella del documento procesado (dedupe + vínculo con factura)
+        inboxId: null,        // Documento de la bandeja de entrada abierto en el visor (extract.php?inbox=N)
         aiPayloadViewer: null // Instancia del visor JSON del modal IA (botón JSON)
     };
 
@@ -819,6 +820,8 @@ const EasyOcr = (function () {
     function loadPDF(file) {
         showLoader();
         state.file = file;
+        // Documento de la bandeja de entrada: al crear la factura se marca como procesado
+        state.inboxId = file && file._eoInboxId ? file._eoInboxId : null;
         state.pages = [];
         state.activeTag = null;
         state.templateId = null;
@@ -1284,6 +1287,7 @@ const EasyOcr = (function () {
         const formData = new FormData();
         formData.append('action', 'createSupplierInvoice');
         formData.append('file', state.file);
+        if (state.inboxId) formData.append('inbox_id', state.inboxId);
         formData.append('fk_soc', $('#eo-supplier').val());
         formData.append('ref_supplier', getSelectionValue(L.labelInvoice));
         formData.append('datef', getSelectionValue(L.labelDate));
@@ -1640,6 +1644,29 @@ const EasyOcr = (function () {
 
         // Check if redirected from batch with invoice data
         checkBatchInvoiceData();
+
+        // Opened from the received documents (inbox.php -> extract.php?inbox=N)
+        loadInboxDocument();
+    }
+
+    // ---- Documento recibido (bandeja de entrada) ----
+    // extract.php publica window.EASYOCR_INBOX = {id, name, url} cuando se abre con ?inbox=N.
+    // Se descarga el PDF y se carga en el visor como si el usuario lo hubiera elegido; la
+    // extracción con IA sigue esperando a que él pulse el botón, con el coste normal.
+    function loadInboxDocument() {
+        const inbox = window.EASYOCR_INBOX;
+        if (!inbox || !inbox.url || !document.getElementById('canvas-container')) return;
+        if (!window.fetch || typeof File !== 'function') return;
+        fetch(inbox.url, { credentials: 'same-origin' }).then(function (r) {
+            if (!r.ok) throw new Error('HTTP ' + r.status);
+            return r.blob();
+        }).then(function (blob) {
+            const file = new File([blob], inbox.name || 'documento.pdf', { type: 'application/pdf' });
+            file._eoInboxId = parseInt(inbox.id, 10) || null;
+            loadPDF(file);
+        }).catch(function () {
+            toast((L.inboxLoadError || 'Could not load %s').replace('%s', inbox.name || ''), 'error');
+        });
     }
 
     // ---- Select2 ----
@@ -3100,7 +3127,9 @@ const EasyOcr = (function () {
             // Lets the backend detect that the AI could not tell the two apart
             customer_tax_id: (editedData.customer && editedData.customer.tax_id) || '',
             // Ties the source document fingerprint to the invoice it creates
-            file_hash: state.lastFileHash || ''
+            file_hash: state.lastFileHash || '',
+            // Received document (inbox) this invoice comes from, if any
+            inbox_id: state.inboxId || ''
         };
 
         if (doPayment) {

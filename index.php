@@ -83,6 +83,9 @@ if ($resql2) {
 	$nbTemplates = (int) $obj2->nb;
 }
 
+// Documents handed over by other modules (EasyScan, ...) waiting in the inbox.
+$nbInbox = easyocrInboxCountPending();
+
 llxHeader('', $title, $help_url, '', 0, 0, array(), array(), '', 'mod-easyocr page-index');
 
 // ─── Inline styles ─────────────────────────────────────────────────────────
@@ -278,6 +281,20 @@ llxHeader('', $title, $help_url, '', 0, 0, array(), array(), '', 'mod-easyocr pa
 .eo-card--admin { --eo-c: #546e7a; --eo-bg: #eceff1; }
 .eo-card--whlog { --eo-c: #00838f; --eo-bg: #e0f7fa; }
 .eo-card--scan  { --eo-c: #5b3cc4; --eo-bg: #ede7f6; }
+.eo-card--inbox { --eo-c: #00695c; --eo-bg: #e0f2f1; }
+.eo-card-badge {
+	position: absolute;
+	top: 18px;
+	right: 18px;
+	min-width: 22px;
+	padding: 2px 8px;
+	border-radius: 11px;
+	background: var(--eo-c, #546e7a);
+	color: #fff;
+	font-size: .78em;
+	font-weight: 700;
+	text-align: center;
+}
 </style>
 
 <div class="eo-dashboard">
@@ -338,6 +355,14 @@ llxHeader('', $title, $help_url, '', 0, 0, array(), array(), '', 'mod-easyocr pa
 		<?php endif; ?>
 
 		<?php if ($permRead): ?>
+		<a href="<?php echo dol_buildpath('/easyocr/inbox.php', 1); ?>" class="eo-card eo-card--inbox">
+			<?php if ($nbInbox > 0): ?><span class="eo-card-badge" title="<?php echo dol_escape_htmltag($langs->transnoentitiesnoconv('EasyOcrInboxStatusPending')); ?>"><?php echo (int) $nbInbox; ?></span><?php endif; ?>
+			<div class="eo-card-icon"><i class="fas fa-inbox"></i></div>
+			<h3><?php echo $langs->trans('EasyOcrInboxTitle'); ?></h3>
+			<p><?php echo $langs->trans('EasyOcrIndexDescInbox'); ?></p>
+			<span class="eo-card-footer"><?php echo $langs->trans('EasyOcrIndexOpen'); ?> <i class="fas fa-arrow-right"></i></span>
+		</a>
+
 		<a href="<?php echo dol_buildpath('/easyocr/templates.php', 1); ?>" class="eo-card eo-card--tpl">
 			<div class="eo-card-icon"><i class="fas fa-th-large"></i></div>
 			<h3><?php echo $langs->trans('EasyOcrMenuTemplates'); ?></h3>

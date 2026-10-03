@@ -27,7 +27,8 @@ easyocr/
 ├── admin/
 │   └── setup.php                          # Página "Acerca de" del módulo
 ├── ajax/
-│   └── ajax_easyocr.php                   # Handler AJAX (newInvoice, getDetails, templates)
+│   ├── ajax_easyocr.php                   # Handler AJAX (newInvoice, getDetails, templates)
+│   └── inbox_file.php                     # Sirve el PDF de un documento recibido (solo lectura)
 ├── core/
 │   └── modules/
 │       └── modEasyocr.class.php           # Descriptor del módulo Dolibarr
@@ -51,7 +52,11 @@ easyocr/
 │   ├── llx_easyocr_template.sql           # Tabla de plantillas (con fk_soc)
 │   ├── llx_easyocr_template_details.sql   # Detalle de selecciones por plantilla
 │   └── llx_easyocr_template_details.key.sql # FK → llx_easyocr_template
-├── extract.php                            # Página principal: visor PDF + sidebar
+├── lib/
+│   ├── easyocr.lib.php                    # Funciones + easyocr_recibir_documento() (contrato público)
+│   └── easyocr_inbox.lib.php              # Bandeja de documentos recibidos (sin red)
+├── extract.php                            # Página principal: visor PDF + sidebar (?inbox=N)
+├── inbox.php                              # Documentos recibidos de otros módulos
 ├── templates.php                          # Listado de plantillas
 ├── templates_view.php                     # Edición de plantilla
 ├── invoices.php                           # Listado de facturas procesadas
@@ -67,6 +72,7 @@ easyocr/
 | `llx_easyocr_invoices` | Registro de facturas creadas (FK a `llx_ecm_files`) |
 | `llx_easyocr_template` | Plantillas de selección (nombre, fk_soc, fecha) |
 | `llx_easyocr_template_details` | Rectángulos de cada plantilla (posición, color, etiqueta) |
+| `llx_easyocr_inbox` | Documentos recibidos de otros módulos (status 0 pendiente, 1 enviado en lote, 2 procesado en el visor) |
 
 ---
 
@@ -91,7 +97,29 @@ easyocr/
 
 ---
 
+## Contrato público: `easyocr_recibir_documento()`
+
+Entrada para otros módulos nuestros (hoy EasyScan, `class/easyscaneasyocr.class.php`), en `lib/easyocr.lib.php`:
+
+```php
+easyocr_recibir_documento($rutaAbsoluta, $user, array $opciones = array())
+// $opciones: origen, nombre, fk_facture_fourn
+// devuelve array('ok'=>bool, 'id'=>int, 'url'=>string, 'error'=>string, 'codigo'=>string[, 'duplicado'=>true])
+```
+
+- **No llama al servicio de IA ni a nada de red.** Copia a `DOL_DATA_ROOT[/<entidad>]/easyocr/inbox` y registra en `llx_easyocr_inbox`. El coste llega solo cuando el usuario procesa el documento desde el visor o el lote.
+- Valida: módulo activo, `easyocr->write`, entidad del usuario (o `MULTICOMPANY_TRANSVERSE_MODE`), ruta dentro de `DOL_DATA_ROOT` y de la zona de la entidad tras `realpath()`, PDF por bytes, tamaño (`easyocrInboxMaxBytes()`: 10 MB o `EASYOCR_INBOX_MAX_SIZE_MB`, tope `MAIN_UPLOAD_DOC`). Códigos: `module`, `permission`, `entity`, `path`, `empty`, `size`, `notpdf`, `directory`, `copy`, `database`.
+- ⚠️ **No cambiar la firma ni las claves del array devuelto** sin tocar EasyScan a la vez: él lo detecta con `function_exists()` y pinta el botón solo si existe.
+- Flujo: `inbox.php` → `extract.php?inbox=N` (marca `status=2` y `fk_invoice_created` al crear la factura, en `createSupplierInvoice` y `newInvoiceAI` vía `inbox_id`) o `batch.php?inbox[]=N` (el JS descarga los PDFs por `ajax/inbox_file.php`, los mete en `selectedFiles` y `batchCreateFromUploads` marca `status=1` con `inbox_ids` cuando el servicio acepta el lote).
+- ⚠️ `batch.php` y `extract.php` llaman a `/me` del servicio al renderizar: en QA con una clave real no se abren sin querer. `inbox.php`, `index.php` y `ajax/inbox_file.php` no tocan la red.
+- Test: `php tests/easyocr_inbox_test.php` (base real, limpia por el prefijo `qa_easyscan_ocrq_`).
+
 ## Historial de cambios
+
+### 2.8.0 — Sin publicar: documentos recibidos de otros módulos
+
+- `easyocr_recibir_documento()` + `lib/easyocr_inbox.lib.php`, tabla `llx_easyocr_inbox`, `inbox.php`, `ajax/inbox_file.php`, tarjeta con contador en `index.php`, precarga en `batch.php` y en `extract.php`. `EASYOCR_SCHEMA_REVISION` pasa a 2: la tabla llega sola a las instalaciones ya en marcha.
+- ⚠️ `$this->version` sigue en 2.7.4: el bump y el resto de documentos (DOLISTORE, guía de la wiki) van con el release.
 
 ### v2.7.4 — Una sentencia partida en dos líneas rompía la reparación en Dolibarr 14 y 15
 

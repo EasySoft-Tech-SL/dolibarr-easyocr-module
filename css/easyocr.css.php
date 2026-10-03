@@ -127,6 +127,7 @@ div.mainmenu.easyocr {
 .eo-page-header-icon--tpl   { background: #ede7f6; color: #5e35b1; }
 .eo-page-header-icon--tool  { background: #e3f2fd; color: #1565c0; }
 .eo-page-header-icon--admin { background: #eceff1; color: #546e7a; }
+.eo-page-header-icon--inbox { background: #e0f2f1; color: #00695c; }
 
 .eo-page-header-text h1 {
     margin: 0;
@@ -140,3 +141,12 @@ div.mainmenu.easyocr {
     color: #78909c;
 }
 
+/* Received documents (inbox.php) */
+.eo-inbox-toolbar { margin: 0 0 10px; }
+.eo-inbox-footer { margin: 14px 0 6px; }
+.eo-inbox-act { display: inline-block; padding: 4px 7px; margin-left: 2px; border-radius: 4px; color: #546e7a; font-size: 1.05em; }
+.eo-inbox-act:hover { background: #eceff1; color: #263238; text-decoration: none; }
+.eo-inbox-act--discard:hover { background: #ffebee; color: #c62828; }
+.eo-inbox-row--focus td { background: #fff8e1 !important; }
+.eo-inbox-empty { padding: 28px 8px !important; }
+.eo-inbox-banner { margin: 0 0 16px; }

@@ -19,6 +19,7 @@
 - **Presupuestos de proveedor**: la misma extracción puede registrarse como factura de proveedor o como presupuesto, en borrador o validado; el número del documento del proveedor queda como referencia externa del presupuesto y su nota privada recoge la fecha, la validez y los avisos de descuadre (requiere el módulo Presupuestos de proveedor)
 - **Automatización vía Webhook**: Crea facturas de proveedor automáticamente al recibir la notificación de la API, con opción de dejarlas **marcadas como pagadas** (cuenta bancaria y método de pago configurables)
 - **Escaneo de gastos desde el móvil (PWA)**: Vista instalable para que el empleado fotografíe un ticket y se registre como **nota de gastos** o **factura de compra** (configurable), con asociación a **proyecto**. Requiere el modo IA.
+- **Documentos recibidos**: otros módulos (por ejemplo EasyScan, que digitaliza papel) pueden dejar PDFs en una bandeja de EasyOcr. No se envían al servicio de IA al recibirlos: los procesas tú cuando quieras, en el visor o en un lote, con el coste normal
 - **Gestión de Historial**: Visualiza todas las facturas procesadas
 - **Integración Completa**: Se integra perfectamente con el sistema de terceros y facturas de Dolibarr
 - **Multi-idioma**: Soporte para 8 idiomas (español, inglés, francés, alemán, italiano, portugués, catalán, gallego)
@@ -110,6 +111,27 @@ EasyOcr es compatible con:
 4. La plantilla aplicará automáticamente las selecciones
 5. Los datos se extraerán directamente
 
+### Procesar documentos recibidos de otros módulos
+
+1. Ve a **EasyOcr → Documentos recibidos** (la tarjeta muestra cuántos hay pendientes)
+2. Cada documento indica su origen (por ejemplo EasyScan) y, si venía de una factura de proveedor, cuál
+3. **Abrir en el visor** para leerlo uno a uno, o marca varios y pulsa **Procesar en lote**: se cargan en la pantalla del lote y nada se envía hasta que pulses «Procesar»
+4. Los que ya no hagan falta se descartan (pide confirmación)
+
+Para otros módulos, la entrada es una función PHP:
+
+```php
+dol_include_once('/easyocr/lib/easyocr.lib.php');
+$r = easyocr_recibir_documento($rutaAbsoluta, $user, array(
+    'origen' => 'easyscan',          // quién lo entrega
+    'nombre' => 'Factura 123.pdf',   // nombre visible
+    'fk_facture_fourn' => 0,         // factura de proveedor, si ya existe
+));
+// $r = array('ok' => bool, 'id' => int, 'url' => string, 'error' => string, 'codigo' => string)
+```
+
+Solo acepta PDFs reales de hasta 10 MB (constante `EASYOCR_INBOX_MAX_SIZE_MB`) que estén dentro de la carpeta de documentos de Dolibarr y de la entidad en curso, y exige el permiso de escritura de EasyOcr.
+
 ### Gestionar Facturas Procesadas
 
 1. Ve a **Herramientas → EasyOcr → Facturas Procesadas**
@@ -126,6 +148,7 @@ EasyOcr es compatible con:
 | `llx_easyocr_invoices` | Registro de facturas procesadas y sus referencias a PDFs (FK a `llx_ecm_files`) |
 | `llx_easyocr_template` | Plantillas de selección guardadas por proveedor |
 | `llx_easyocr_template_details` | Detalles de rectángulos, posiciones y etiquetas por plantilla |
+| `llx_easyocr_inbox` | Documentos recibidos de otros módulos, pendientes o ya procesados (fichero en `easyocr/inbox`) |
 
 ### Estructura de Carpetas
 
@@ -161,6 +184,7 @@ easyocr/
 │   ├── llx_easyocr_template_details.sql
 │   └── llx_easyocr_template_details.key.sql
 ├── extract.php                            # Página principal: visor PDF
+├── inbox.php                              # Documentos recibidos de otros módulos
 ├── invoices.php                           # Listado de facturas procesadas
 ├── templates.php                          # Listado de plantillas
 ├── templates_view.php                     # Editor de plantillas

@@ -91,6 +91,18 @@ $arrayofcss = array(
 );
 
 llxHeader("", "EasyOcr", '', '', 0, 0, $arrayofjs, $arrayofcss);
+
+// Received document (inbox.php -> ?inbox=N): js/scripts.js loads it into the viewer. Only a
+// pending document of this entity; the AI extraction still waits for the user's click.
+$eoInboxRow = GETPOST('inbox', 'int') > 0 ? easyocrInboxFetch(GETPOST('inbox', 'int')) : null;
+if ($eoInboxRow && (int) $eoInboxRow->status === EASYOCR_INBOX_PENDING && is_file(easyocrInboxFilePath($eoInboxRow))) {
+	$eoInboxJs = array(
+		'id'   => (int) $eoInboxRow->rowid,
+		'name' => easyocrInboxSanitizeName($eoInboxRow->label),
+		'url'  => dol_buildpath('/easyocr/ajax/inbox_file.php', 1).'?id='.((int) $eoInboxRow->rowid),
+	);
+	print '<script>window.EASYOCR_INBOX = '.json_encode($eoInboxJs, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP).';</script>'."\n";
+}
 ?>
 
 <!-- Loader global -->

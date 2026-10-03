@@ -360,6 +360,11 @@ if ($action == "createSupplierInvoice") {
 		}
 	}
 
+	// Document opened from the inbox (extract.php?inbox=N): it is processed now.
+	if (GETPOST('inbox_id', 'int') > 0) {
+		easyocrInboxMarkProcessed(GETPOST('inbox_id', 'int'), $newId, $user);
+	}
+
 	print json_encode(["status" => "ok", "id" => $newId, "ref" => $ref, "is_draft" => $is_draft]);
 
 
@@ -895,6 +900,13 @@ if ($action == "createSupplierInvoice") {
 	$postedHash = GETPOST('file_hash', 'alphanohtml');
 	if (!empty($postedHash) && !empty($result['id']) && (!isset($result['document_type']) || $result['document_type'] === 'supplier_invoice')) {
 		easyocrLinkProcessedFileToInvoice($postedHash, $result['id']);
+	}
+
+	// Document opened from the inbox (extract.php?inbox=N): it is processed now.
+	$inboxId = GETPOST('inbox_id', 'int');
+	if ($inboxId > 0 && !empty($result['id'])) {
+		$isInvoice = (!isset($result['document_type']) || $result['document_type'] === 'supplier_invoice');
+		easyocrInboxMarkProcessed($inboxId, $isInvoice ? (int) $result['id'] : 0, $user);
 	}
 
 	print json_encode($result);
@@ -1883,6 +1895,22 @@ if ($action == "createSupplierInvoice") {
 			if ($content !== false && $content !== '') {
 				easyocrRegisterProcessedFile(easyocrComputeFileHash($content), basename($fp), strlen($content), $user->id);
 			}
+		}
+
+		// Received documents (inbox) that went in this batch: no longer pending.
+		$inboxIds = array_filter(array_map('intval', explode(',', (string) GETPOST('inbox_ids', 'alphanohtml'))));
+		if (!empty($inboxIds)) {
+			$batchRef = '';
+			if (is_array($result)) {
+				if (!empty($result['uuid'])) {
+					$batchRef = (string) $result['uuid'];
+				} elseif (!empty($result['batch_id'])) {
+					$batchRef = (string) $result['batch_id'];
+				} elseif (!empty($result['data']['uuid'])) {
+					$batchRef = (string) $result['data']['uuid'];
+				}
+			}
+			easyocrInboxMarkBatched($inboxIds, $batchRef, $user);
 		}
 
 		// Cleanup temp files

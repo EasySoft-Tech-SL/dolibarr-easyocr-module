@@ -2398,7 +2398,7 @@ function easyocrCreateVariousPaymentFromOCR($params, $userObj = null)
  * files and never re-enabled, and every document processed in that time was registered
  * nowhere.
  */
-define('EASYOCR_SCHEMA_REVISION', 1);
+define('EASYOCR_SCHEMA_REVISION', 2);
 
 /**
  * Apply the SQL files shipped in sql/ when this installation has not applied them yet.
@@ -2489,4 +2489,32 @@ function easyocrEnsureSchema()
 
 // Repair the schema on the first page load after an update done by replacing files.
 easyocrEnsureSchema();
+
+require_once __DIR__.'/easyocr_inbox.lib.php';
+
+/**
+ * Public entry point for other modules: receive a document into EasyOcr's local inbox.
+ *
+ * Contract published for EasyScan (and any other module of ours), loaded with
+ * dol_include_once('/easyocr/lib/easyocr.lib.php'). It never calls the AI service: the file
+ * is copied to the inbox (DOL_DATA_ROOT[/<entity>]/easyocr/inbox) and recorded in
+ * llx_easyocr_inbox, where the user processes it later from EasyOcr (batch or viewer),
+ * at the normal cost and when he decides.
+ *
+ * Checks, in this order: module enabled in the current entity, easyocr write permission,
+ * user entity, source path inside DOL_DATA_ROOT and inside this entity's area, size
+ * (easyocrInboxMaxBytes()), real PDF by its first bytes. The name is sanitised. The same
+ * PDF still pending is not queued twice: the existing row is returned.
+ *
+ * @param  string              $rutaAbsoluta Absolute path of the PDF, inside DOL_DATA_ROOT
+ * @param  User                $user         User handing it over
+ * @param  array<string,mixed> $opciones     'origen' (e.g. 'easyscan'), 'nombre' (visible name),
+ *                                           'fk_facture_fourn' (supplier invoice, if it exists)
+ * @return array{ok:bool,id:int,url:string,error:string}  Plus 'codigo' (machine reason) and
+ *                                           'duplicado' when the document was already pending
+ */
+function easyocr_recibir_documento($rutaAbsoluta, $user, array $opciones = array())
+{
+	return easyocrInboxReceive($rutaAbsoluta, $user, $opciones);
+}
 
