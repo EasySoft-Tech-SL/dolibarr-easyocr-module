@@ -4,7 +4,7 @@
 
 | Campo | Valor |
 |-------|-------|
-| **Versión del módulo** | 2.7.4 |
+| **Versión del módulo** | 2.8.0 |
 | **Compatibilidad Min** | V16 (id 95) |
 | **Compatibilidad Max** | V24 (id 120) |
 | **PHP Min** | 7.4 |
@@ -27,7 +27,7 @@
 ## Palabras Clave / Keywords
 
 ```
-pdf, ocr, ai ocr, artificial intelligence, invoice automation, batch processing, supplier invoices, webhook, easyocr, pdf.js, text extraction, invoice processing, automation, pdf viewer, facturas, extracción de texto, procesamiento de facturas, facturas de proveedor, automatización, visor pdf, lotes, batch, inteligencia artificial, instrucciones personalizadas, document processing, auto invoice, supplier management, PDF processing, API OCR, multicompany, multisociete, multiempresa, multi-entity, expense, expenses, gastos, ticket, receipt, mobile, pwa, scan, expense report, expense scanning, nota de gastos, note de frais, spesen, nota spese, photo, foto, camera, cámara, escanear gasto, escaneo de gastos, mobile expense, reembolso, reimbursement, presupuesto de proveedor, presupuestos proveedor, supplier proposal, supplier quotation, devis fournisseur, Lieferantenangebot, preventivo fornitore
+pdf, ocr, ai ocr, artificial intelligence, invoice automation, batch processing, supplier invoices, webhook, easyocr, pdf.js, text extraction, invoice processing, automation, pdf viewer, facturas, extracción de texto, procesamiento de facturas, facturas de proveedor, automatización, visor pdf, lotes, batch, inteligencia artificial, instrucciones personalizadas, document processing, auto invoice, supplier management, PDF processing, API OCR, multicompany, multisociete, multiempresa, multi-entity, expense, expenses, gastos, ticket, receipt, mobile, pwa, scan, expense report, expense scanning, nota de gastos, note de frais, spesen, nota spese, photo, foto, camera, cámara, escanear gasto, escaneo de gastos, mobile expense, reembolso, reimbursement, presupuesto de proveedor, presupuestos proveedor, supplier proposal, supplier quotation, devis fournisseur, Lieferantenangebot, preventivo fornitore, documentos recibidos, bandeja de entrada, recibir documentos, inbox, inbox de documentos, received documents, document inbox, documents reçus, Dokumenteneingang, documenti ricevuti, digitalización de documentos, document digitization
 ```
 
 ## Categorías (máximo 3)
@@ -60,6 +60,13 @@ Herramienta para extracción de datos de facturas PDF, generación automática d
 <p><strong>EasyOcr</strong> es el módulo Dolibarr que elimina la entrada manual de datos en facturas de proveedor. Sube el PDF, deja que la IA extraiga proveedor, NIF, líneas y totales, y Dolibarr crea la factura validada automáticamente. Sin teclear. Sin errores.</p>
 
 <p>Disponible en <strong>dos modos</strong>: el <strong>Modo Clásico</strong> es completamente gratuito e incluido en el módulo; el <strong>Modo IA</strong> ofrece un <strong>plan gratuito de 10 páginas/mes</strong> para probar sin compromisos, y planes de pago para mayor volumen — consulta todos los planes en <a href="https://easyocr.es" target="_blank"><strong>easyocr.es</strong></a>.</p>
+
+<h3>🆕 Novedades v2.8.0 — Documentos recibidos de otros módulos</h3>
+<ul>
+    <li>📥 <strong>Bandeja de documentos recibidos</strong>: otros módulos (por ejemplo EasyScan, que digitaliza papel) pueden entregar PDFs a EasyOcr sin enviarlos al servicio de IA. Los revisas cuando quieras, en el visor o en un lote, con el coste normal y solo cuando tú pulsas el botón.</li>
+    <li>🔎 <strong>Revisión antes de procesar</strong>: cada documento muestra su origen, quién y cuándo lo entregó y, si venía de una factura de proveedor, cuál. Avisa si ese mismo documento ya pasó antes por el servicio.</li>
+    <li>🧩 <strong>Entrada para desarrolladores</strong>: una función pública (<code>easyocr_recibir_documento()</code>) integra cualquier módulo con la bandeja.</li>
+</ul>
 
 <h3>🆕 Novedades v2.6.0 — Escaneo de tickets de gasto desde el móvil (PWA)</h3>
 <ul>
@@ -135,6 +142,7 @@ Herramienta para extracción de datos de facturas PDF, generación automática d
     <li>⚙️ Panel de administración con configuración de API y suscripción.</li>
     <li>🔐 Pestaña de Telemetría y Protección de Datos (transparencia RGPD).</li>
     <li>📜 Pestaña de Acuerdo de Licencia con información legal completa.</li>
+    <li>📥 Bandeja de documentos recibidos de otros módulos (por ejemplo EasyScan), con revisión en el visor o en un lote.</li>
     <li>🌍 Traducciones completas en 8 idiomas: ES, EN, FR, DE, IT, PT, CA, GL.</li>
     <li>🏢 Compatible con módulo <strong>Multiempresa / Multisociété</strong> (datos aislados por entidad).</li>
     <li>⚡ Motor AJAX: operaciones sin recarga de página.</li>
@@ -180,6 +188,13 @@ Tool for extracting data from PDF invoices, automatically generating supplier in
 <p><strong>EasyOcr</strong> is the Dolibarr module that eliminates manual data entry for supplier invoices. Upload the PDF, let AI extract supplier, VAT number, line items and totals, and Dolibarr automatically creates the validated invoice. No typing. No errors.</p>
 
 <p>Available in <strong>two modes</strong>: <strong>Classic Mode</strong> is completely free and included in the module; <strong>AI Mode</strong> offers a <strong>free plan with 10 pages/month</strong> to try at no cost, plus paid plans for higher volumes — check all plans at <a href="https://easyocr.es" target="_blank"><strong>easyocr.es</strong></a>.</p>
+
+<h3>🆕 What's New in v2.8.0 — Documents Received from Other Modules</h3>
+<ul>
+    <li>📥 <strong>Inbox of received documents</strong>: other modules (e.g. EasyScan, which digitises paper) can hand PDFs to EasyOcr without sending them to the AI service. You review them whenever you want, in the viewer or in a batch, at the normal cost and only when you press the button.</li>
+    <li>🔎 <strong>Review before processing</strong>: each document shows its origin, who handed it over and when, and — if it came from a supplier invoice — which one. It warns you when that same document was already processed by the service.</li>
+    <li>🧩 <strong>Developer entry point</strong>: a public function (<code>easyocr_recibir_documento()</code>) integrates any module with the inbox.</li>
+</ul>
 
 <h3>🆕 What's New in v2.6.0 — Mobile Expense Receipt Scanning (PWA)</h3>
 <ul>
@@ -255,6 +270,7 @@ Tool for extracting data from PDF invoices, automatically generating supplier in
     <li>⚙️ Admin panel with API and subscription configuration.</li>
     <li>🔐 Telemetry &amp; Data Protection tab (GDPR transparency).</li>
     <li>📜 License Agreement tab with complete legal information.</li>
+    <li>📥 Inbox of documents received from other modules (e.g. EasyScan), with review in the viewer or in a batch.</li>
     <li>🌍 Full translations in 8 languages: ES, EN, FR, DE, IT, PT, CA, GL.</li>
     <li>🏢 Compatible with <strong>Multicompany / Multisociété</strong> module (data isolated per entity).</li>
     <li>⚡ AJAX engine: all operations without page reload.</li>
@@ -300,6 +316,13 @@ Automatisez le traitement des factures fournisseur et le scan de tickets de dép
 <p><strong>EasyOcr</strong> est le module Dolibarr qui supprime la saisie manuelle des données sur les factures fournisseur. Importez le PDF, laissez l'IA extraire fournisseur, numéro TVA, lignes et totaux, et Dolibarr crée automatiquement la facture validée. Sans frappe. Sans erreurs.</p>
 
 <p>Disponible en <strong>deux modes</strong> : le <strong>Mode Classique</strong> est entièrement gratuit et inclus dans le module ; le <strong>Mode IA</strong> propose un <strong>plan gratuit de 10 pages/mois</strong> pour tester sans engagement, plus des plans payants pour les volumes plus importants — consultez tous les plans sur <a href="https://easyocr.es" target="_blank"><strong>easyocr.es</strong></a>.</p>
+
+<h3>🆕 Nouveautés v2.8.0 — Documents reçus d'autres modules</h3>
+<ul>
+    <li>📥 <strong>Boîte des documents reçus</strong> : d'autres modules (par ex. EasyScan, qui numérise le papier) peuvent déposer des PDF dans EasyOcr sans les envoyer au service IA. Vous les révisez quand vous voulez, dans la visionneuse ou dans un lot, au coût normal et seulement lorsque vous cliquez.</li>
+    <li>🔎 <strong>Révision avant traitement</strong> : chaque document indique son origine, qui l'a déposé et quand, et, s'il provenait d'une facture fournisseur, laquelle. Un avertissement signale si ce document est déjà passé par le service.</li>
+    <li>🧩 <strong>Point d'entrée développeur</strong> : une fonction publique (<code>easyocr_recibir_documento()</code>) intègre n'importe quel module à la boîte.</li>
+</ul>
 
 <h3>🆕 Nouveautés v2.6.0 — Scan de tickets de dépenses depuis le mobile (PWA)</h3>
 <ul>
@@ -375,6 +398,7 @@ Automatisez le traitement des factures fournisseur et le scan de tickets de dép
     <li>⚙️ Panneau d'administration avec configuration API et abonnement.</li>
     <li>🔐 Onglet Télémétrie et Protection des Données (transparence RGPD).</li>
     <li>📜 Onglet Accord de Licence avec informations légales complètes.</li>
+    <li>📥 Boîte des documents reçus d'autres modules (par ex. EasyScan), avec révision dans la visionneuse ou en lot.</li>
     <li>🌍 Traductions complètes en 8 langues : ES, EN, FR, DE, IT, PT, CA, GL.</li>
     <li>🏢 Compatible avec le module <strong>Multisociété / Multicompany</strong> (données isolées par entité).</li>
     <li>⚡ Moteur AJAX : toutes les opérations sans rechargement de page.</li>
@@ -421,6 +445,13 @@ Verarbeitung von Lieferantenrechnungen und Scannen von Spesenbelegen vom Handy (
 <p><strong>EasyOcr</strong> ist das Dolibarr-Modul, das die manuelle Dateneingabe bei Lieferantenrechnungen eliminiert. Laden Sie das PDF hoch, lassen Sie die KI Lieferant, Steuernummer, Positionen und Summen extrahieren — und Dolibarr erstellt die validierte Rechnung automatisch. Kein Tippen. Keine Fehler.</p>
 
 <p>Verfügbar in <strong>zwei Modi</strong>: Der <strong>Klassische Modus</strong> ist vollständig kostenlos und im Modul enthalten; der <strong>KI-Modus</strong> bietet einen <strong>kostenlosen Plan mit 10 Seiten/Monat</strong> zum risikofreien Testen, plus kostenpflichtige Pläne für höhere Volumen — alle Pläne auf <a href="https://easyocr.es" target="_blank"><strong>easyocr.es</strong></a> einsehen.</p>
+
+<h3>🆕 Neu in v2.8.0 — Dokumenteneingang aus anderen Modulen</h3>
+<ul>
+    <li>📥 <strong>Eingangskorb empfangener Dokumente</strong>: Andere Module (z. B. EasyScan, das Papier digitalisiert) können PDFs an EasyOcr übergeben, ohne sie an den KI-Dienst zu senden. Sie prüfen sie, wann Sie wollen — in der Vorschau oder im Batch — zu den normalen Kosten und erst, wenn Sie klicken.</li>
+    <li>🔎 <strong>Prüfung vor der Verarbeitung</strong>: Jedes Dokument zeigt Herkunft, wer es wann übergeben hat und, sofern es aus einer Lieferantenrechnung stammt, welche. Ein Hinweis erscheint, wenn dieses Dokument bereits durch den Dienst gelaufen ist.</li>
+    <li>🧩 <strong>Entwickler-Einstiegspunkt</strong>: Eine öffentliche Funktion (<code>easyocr_recibir_documento()</code>) bindet jedes Modul an den Korb an.</li>
+</ul>
 
 <h3>🆕 Neu in v2.6.0 — Spesenbelege vom Handy scannen (PWA)</h3>
 <ul>
@@ -496,6 +527,7 @@ Verarbeitung von Lieferantenrechnungen und Scannen von Spesenbelegen vom Handy (
     <li>⚙️ Admin-Panel mit API- und Abonnementkonfiguration.</li>
     <li>🔐 Reiter Telemetrie und Datenschutz (DSGVO-Transparenz).</li>
     <li>📜 Reiter Lizenzvereinbarung mit vollständigen rechtlichen Informationen.</li>
+    <li>📥 Eingangskorb für Dokumente aus anderen Modulen (z. B. EasyScan), mit Prüfung in Vorschau oder Batch.</li>
     <li>🌍 Vollständige Übersetzungen in 8 Sprachen: ES, EN, FR, DE, IT, PT, CA, GL.</li>
     <li>🏢 Kompatibel mit dem Modul <strong>Multicompany / Multisociété</strong> (Daten pro Entität isoliert).</li>
     <li>⚡ AJAX-Engine: alle Operationen ohne Seitenneuladen.</li>
@@ -542,6 +574,13 @@ Automatizza l'elaborazione delle fatture fornitori e la scansione di scontrini d
 <p><strong>EasyOcr</strong> è il modulo Dolibarr che elimina l'inserimento manuale dei dati nelle fatture fornitori. Carica il PDF, lascia che l'IA estragga fornitore, partita IVA, righe e totali — e Dolibarr crea automaticamente la fattura validata. Senza digitare. Senza errori.</p>
 
 <p>Disponibile in <strong>due modalità</strong>: la <strong>Modalità Classica</strong> è completamente gratuita e inclusa nel modulo; la <strong>Modalità IA</strong> offre un <strong>piano gratuito di 10 pagine/mese</strong> per provare senza impegno, più piani a pagamento per volumi maggiori — consulta tutti i piani su <a href="https://easyocr.es" target="_blank"><strong>easyocr.es</strong></a>.</p>
+
+<h3>🆕 Novità v2.8.0 — Documenti ricevuti da altri moduli</h3>
+<ul>
+    <li>📥 <strong>Casella dei documenti ricevuti</strong>: altri moduli (ad es. EasyScan, che digitalizza la carta) possono consegnare PDF a EasyOcr senza inviarli al servizio IA. Li rivedi quando vuoi, nel visualizzatore o in un batch, al costo normale e solo quando premi il pulsante.</li>
+    <li>🔎 <strong>Revisione prima dell'elaborazione</strong>: ogni documento mostra l'origine, chi e quando l'ha consegnato e, se proveniva da una fattura fornitore, quale. Avvisa se lo stesso documento è già passato dal servizio.</li>
+    <li>🧩 <strong>Punto d'ingresso per sviluppatori</strong>: una funzione pubblica (<code>easyocr_recibir_documento()</code>) integra qualsiasi modulo con la casella.</li>
+</ul>
 
 <h3>🆕 Novità v2.6.0 — Scansione scontrini dal mobile (PWA)</h3>
 <ul>
@@ -617,6 +656,7 @@ Automatizza l'elaborazione delle fatture fornitori e la scansione di scontrini d
     <li>⚙️ Pannello di amministrazione con configurazione API e abbonamento.</li>
     <li>🔐 Scheda Telemetria e Protezione Dati (trasparenza GDPR).</li>
     <li>📜 Scheda Accordo di Licenza con informazioni legali complete.</li>
+    <li>📥 Casella dei documenti ricevuti da altri moduli (ad es. EasyScan), con revisione nel visualizzatore o in batch.</li>
     <li>🌍 Traduzioni complete in 8 lingue: ES, EN, FR, DE, IT, PT, CA, GL.</li>
     <li>🏢 Compatibile con il modulo <strong>Multicompany / Multisociété</strong> (dati isolati per entità).</li>
     <li>⚡ Motore AJAX: tutte le operazioni senza ricarico della pagina.</li>
@@ -671,12 +711,12 @@ info@easysoft.es | https://www.easysoft.es | https://easyocr.es
 
 - [ ] Archivo .zip generado con estructura correcta (`easyocr/`)
 - [ ] Imagen de portada preparada (800x600 o 1200x630 px)
-- [x] README.md actualizado (v2.6.0)
-- [x] ChangeLog.md actualizado (v2.6.0)
-- [x] Versión en module descriptor coincide (2.6.0)
+- [x] README.md actualizado (v2.8.0)
+- [x] ChangeLog.md actualizado (v2.8.0)
+- [x] Versión en module descriptor coincide (2.8.0)
 - [x] Todos los archivos .lang completos en 8 idiomas
 - [x] Licencia GPL v3 incluida
 - [ ] Sin archivos de desarrollo (.git, .vscode, etc.)
 - [x] Pestañas administrativas con iconos consistentes
 - [x] Contenido legal y GDPR completo (Copying, Telemetry)
-- [x] DOLISTORE.md actualizado a v2.6.0
+- [x] DOLISTORE.md actualizado a v2.8.0

@@ -5,7 +5,7 @@ Todos los cambios notables de EasyOcr se documentarán en este archivo.
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/),
 y este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 
-## [2.8.0] - Sin publicar
+## [2.8.0] - 2026-10-05
 
 ### Añadido — Documentos recibidos: entrada de PDFs desde otros módulos
 
@@ -16,7 +16,7 @@ y este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 - **El visor también**: `extract.php?inbox=N` carga el PDF y, al crear la factura (manual o con IA), el documento queda como «Procesado» enlazado a ella.
 - Nueva tabla `llx_easyocr_inbox` (`sql/llx_easyocr_inbox.sql` + `.key.sql`) y carpeta `DOL_DATA_ROOT[/<entidad>]/easyocr/inbox`. **No hace falta reactivar el módulo**: la revisión de esquema pasa a 2 y la reparación propia de la 2.7.3 crea la tabla en el primer acceso.
 - 38 claves nuevas en los 8 idiomas.
-- **Pruebas:** `php tests/easyocr_inbox_test.php` (44 aserciones contra la base real: PDF válido, duplicado, no-PDF, ruta fuera de `DOL_DATA_ROOT`, `..`, fichero de otra entidad, usuario sin permiso, tamaño, saneado del nombre y cambios de estado; limpia lo suyo por prefijo exacto). Probado de punta a punta en navegador desde la bandeja de EasyScan en Dolibarr 18.0.8: el botón «Enviar a easyocr» aparece, el documento llega a «Documentos recibidos» con origen EasyScan, se sirve el PDF y se descarta con confirmación; ninguna petición sale del ERP. ⚠️ La carga en el lote y en el visor **no se ha abierto en navegador**: `batch.php` y `extract.php` consultan el plan al servicio remoto al cargarse y el entorno de pruebas tiene una clave real; queda para el QA del release con una cuenta de pruebas. Las suites anteriores siguen en verde (159 + 89 + 26).
+- **Pruebas:** `php tests/easyocr_inbox_test.php` (44 aserciones contra la base real: PDF válido, duplicado, no-PDF, ruta fuera de `DOL_DATA_ROOT`, `..`, fichero de otra entidad, usuario sin permiso, tamaño, saneado del nombre y cambios de estado; limpia lo suyo por prefijo exacto). Probado de punta a punta en navegador desde la bandeja de EasyScan en Dolibarr 18.0.8: el botón «Enviar a easyocr» aparece, el documento llega a «Documentos recibidos» con origen EasyScan, se sirve el PDF y se descarta con confirmación; ninguna petición sale del ERP. ✅ **La carga en el lote y en el visor también se ha probado en navegador** (Playwright headless sobre Dolibarr 18.0.8), apuntando la URL y la clave del servicio a un doble local para no llamar al de verdad: con un documento pendiente y origen EasyScan, `batch.php?inbox[]=N` lo precarga en la lista y `extract.php?inbox=N` lo abre en el visor (canvas pintado, nombre y plan resueltos contra el doble). La clave real no viajó y ninguna petición salió a `app.easyocr.es`. Las suites anteriores siguen en verde (159 + 89 + 26).
 
 ## [2.7.4] - 2026-09-30
 

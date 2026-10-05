@@ -2,7 +2,7 @@
 
 ## Información del módulo
 - **Nombre:** EasyOcr
-- **Versión:** 2.7.4
+- **Versión:** 2.8.0
 - **Número módulo:** 402020
 - **Empresa:** EasySoft Tech S.L. (info@easysoft.es)
 - **Autor:** Alberto Luque Rivas (aluquerivasdev@gmail.com)
@@ -111,15 +111,15 @@ easyocr_recibir_documento($rutaAbsoluta, $user, array $opciones = array())
 - Valida: módulo activo, `easyocr->write`, entidad del usuario (o `MULTICOMPANY_TRANSVERSE_MODE`), ruta dentro de `DOL_DATA_ROOT` y de la zona de la entidad tras `realpath()`, PDF por bytes, tamaño (`easyocrInboxMaxBytes()`: 10 MB o `EASYOCR_INBOX_MAX_SIZE_MB`, tope `MAIN_UPLOAD_DOC`). Códigos: `module`, `permission`, `entity`, `path`, `empty`, `size`, `notpdf`, `directory`, `copy`, `database`.
 - ⚠️ **No cambiar la firma ni las claves del array devuelto** sin tocar EasyScan a la vez: él lo detecta con `function_exists()` y pinta el botón solo si existe.
 - Flujo: `inbox.php` → `extract.php?inbox=N` (marca `status=2` y `fk_invoice_created` al crear la factura, en `createSupplierInvoice` y `newInvoiceAI` vía `inbox_id`) o `batch.php?inbox[]=N` (el JS descarga los PDFs por `ajax/inbox_file.php`, los mete en `selectedFiles` y `batchCreateFromUploads` marca `status=1` con `inbox_ids` cuando el servicio acepta el lote).
-- ⚠️ `batch.php` y `extract.php` llaman a `/me` del servicio al renderizar: en QA con una clave real no se abren sin querer. `inbox.php`, `index.php` y `ajax/inbox_file.php` no tocan la red.
+- ⚠️ `batch.php` y `extract.php` llaman a `/me` del servicio al renderizar: en un entorno con una clave real no se abren sin querer. `inbox.php`, `index.php` y `ajax/inbox_file.php` no tocan la red. Para QA sin llamar al servicio real basta apuntar las constantes `EASYOCR_AI_URL` (p. ej. `http://127.0.0.1:<puerto>`) y `EASYOCR_AI_APIKEY` (un valor ficticio) a un doble local que responda `{data:{plan,quota,wallet,features,limits,status}}` a `/api/v1/me` y `/api/v1/account/me`: es configuración, no código, y se restaura después.
 - Test: `php tests/easyocr_inbox_test.php` (base real, limpia por el prefijo `qa_easyscan_ocrq_`).
 
 ## Historial de cambios
 
-### 2.8.0 — Sin publicar: documentos recibidos de otros módulos
+### v2.8.0 — Documentos recibidos de otros módulos
 
 - `easyocr_recibir_documento()` + `lib/easyocr_inbox.lib.php`, tabla `llx_easyocr_inbox`, `inbox.php`, `ajax/inbox_file.php`, tarjeta con contador en `index.php`, precarga en `batch.php` y en `extract.php`. `EASYOCR_SCHEMA_REVISION` pasa a 2: la tabla llega sola a las instalaciones ya en marcha.
-- ⚠️ `$this->version` sigue en 2.7.4: el bump y el resto de documentos (DOLISTORE, guía de la wiki) van con el release.
+- Probado en navegador (Playwright headless, Dolibarr 18.0.8) con las constantes apuntando a un doble local: `batch.php?inbox[]=N` precarga los recibidos y `extract.php?inbox=N` los abre en el visor. Guía de la wiki pública: pendiente para el release.
 
 ### v2.7.4 — Una sentencia partida en dos líneas rompía la reparación en Dolibarr 14 y 15
 
