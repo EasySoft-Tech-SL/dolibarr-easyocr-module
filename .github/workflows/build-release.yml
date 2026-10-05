@@ -63,6 +63,7 @@ jobs:
             --exclude='claude.md' \
             --exclude='.specstory' \
             --exclude='tests/' \
+            --exclude='dev/' \
             ./ temp_build/easyocr/
           
           # Crear el archivo zip desde el directorio temporal
