@@ -157,8 +157,8 @@ Herramienta para extracción de datos de facturas PDF, generación automática d
     <li>🔑 <strong>Modo IA:</strong> suscripción activa en <a href="https://easyocr.es" target="_blank">easyocr.es</a> — <a href="https://easyocr.es" target="_blank">ver planes disponibles</a></li>
 </ul>
 
-<h3>💰 Precio y licencia</h3>
-<p>El módulo es <strong>gratuito y de código abierto</strong> bajo licencia <strong>GPL v3</strong>. El Modo Clásico no tiene ningún coste adicional. El Modo IA incluye un <strong>plan gratuito de 10 páginas/mes</strong> para empezar sin coste — no se requiere tarjeta de crédito. Para mayor volumen hay planes de pago desde uso puntual hasta procesamiento empresarial masivo. <a href="https://easyocr.es" target="_blank">Consulta todos los planes y precios en easyocr.es →</a></p>
+<h3>💰 Precio</h3>
+<p>El módulo es <strong>gratuito</strong> y con <strong>código fuente completo</strong>. El Modo Clásico no tiene ningún coste adicional. El Modo IA incluye un <strong>plan gratuito de 10 páginas/mes</strong> para empezar sin coste — no se requiere tarjeta de crédito. Para mayor volumen hay planes de pago desde uso puntual hasta procesamiento empresarial masivo. <a href="https://easyocr.es" target="_blank">Consulta todos los planes y precios en easyocr.es →</a></p>
 
 <h3>✉️ Soporte</h3>
 <p>✉️ <a href="mailto:info@easysoft.es">info@easysoft.es</a>&nbsp;| 🌐 <a href="https://www.easysoft.es" target="_blank">www.easysoft.es</a>&nbsp;| 🤖 <a href="https://easyocr.es" target="_blank">easyocr.es</a></p>
@@ -285,8 +285,8 @@ Tool for extracting data from PDF invoices, automatically generating supplier in
     <li>🔑 <strong>AI Mode:</strong> active subscription at <a href="https://easyocr.es" target="_blank">easyocr.es</a> — <a href="https://easyocr.es" target="_blank">view available plans</a></li>
 </ul>
 
-<h3>💰 Pricing &amp; license</h3>
-<p>The module is <strong>free and open source</strong> under <strong>GPL v3</strong>. Classic Mode has no additional cost. AI Mode includes a <strong>free plan with 10 pages/month</strong> — no credit card required to get started. For higher volumes, paid plans are available from occasional use to high-volume enterprise processing. <a href="https://easyocr.es" target="_blank">Check all plans and pricing at easyocr.es →</a></p>
+<h3>💰 Pricing</h3>
+<p>The module is <strong>free</strong> and ships with its <strong>complete source code</strong>. Classic Mode has no additional cost. AI Mode includes a <strong>free plan with 10 pages/month</strong> — no credit card required to get started. For higher volumes, paid plans are available from occasional use to high-volume enterprise processing. <a href="https://easyocr.es" target="_blank">Check all plans and pricing at easyocr.es →</a></p>
 
 <h3>✉️ Support</h3>
 <p>✉️ <a href="mailto:info@easysoft.es">info@easysoft.es</a>&nbsp;| 🌐 <a href="https://www.easysoft.es" target="_blank">www.easysoft.es</a>&nbsp;| 🤖 <a href="https://easyocr.es" target="_blank">easyocr.es</a></p>
@@ -413,8 +413,8 @@ Automatisez le traitement des factures fournisseur et le scan de tickets de dép
     <li>🔑 <strong>Mode IA :</strong> abonnement actif sur <a href="https://easyocr.es" target="_blank">easyocr.es</a> — <a href="https://easyocr.es" target="_blank">voir les plans disponibles</a></li>
 </ul>
 
-<h3>💰 Prix et licence</h3>
-<p>Le module est <strong>gratuit et open source</strong> sous licence <strong>GPL v3</strong>. Le Mode Classique n'a aucun coût supplémentaire. Le Mode IA inclut un <strong>plan gratuit de 10 pages/mois</strong> — sans carte de crédit pour démarrer. Pour les volumes plus importants, des plans payants sont disponibles de l'usage ponctuel au traitement massif en entreprise. <a href="https://easyocr.es" target="_blank">Consulter tous les plans et tarifs sur easyocr.es →</a></p>
+<h3>💰 Prix</h3>
+<p>Le module est <strong>gratuit</strong> et livré avec son <strong>code source complet</strong>. Le Mode Classique n'a aucun coût supplémentaire. Le Mode IA inclut un <strong>plan gratuit de 10 pages/mois</strong> — sans carte de crédit pour démarrer. Pour les volumes plus importants, des plans payants sont disponibles de l'usage ponctuel au traitement massif en entreprise. <a href="https://easyocr.es" target="_blank">Consulter tous les plans et tarifs sur easyocr.es →</a></p>
 
 <h3>✉️ Support</h3>
 <p>✉️ <a href="mailto:info@easysoft.es">info@easysoft.es</a>&nbsp;| 🌐 <a href="https://www.easysoft.es" target="_blank">www.easysoft.es</a>&nbsp;| 🤖 <a href="https://easyocr.es" target="_blank">easyocr.es</a></p>
@@ -542,8 +542,8 @@ Verarbeitung von Lieferantenrechnungen und Scannen von Spesenbelegen vom Handy (
     <li>🔑 <strong>KI-Modus:</strong> aktives Abonnement auf <a href="https://easyocr.es" target="_blank">easyocr.es</a> — <a href="https://easyocr.es" target="_blank">verfügbare Pläne ansehen</a></li>
 </ul>
 
-<h3>💰 Preis und Lizenz</h3>
-<p>Das Modul ist <strong>kostenlos und Open Source</strong> unter der <strong>GPL v3</strong>-Lizenz. Der Klassische Modus hat keine Zusatzkosten. Der KI-Modus beinhaltet einen <strong>kostenlosen Plan mit 10 Seiten/Monat</strong> — keine Kreditkarte erforderlich. Für höhere Volumen stehen kostenpflichtige Pläne von der gelegentlichen Nutzung bis zur unternehmensweiten Massenverarbeitung zur Verfügung. <a href="https://easyocr.es" target="_blank">Alle Pläne und Preise auf easyocr.es ansehen →</a></p>
+<h3>💰 Preis</h3>
+<p>Das Modul ist <strong>kostenlos</strong> und wird mit <strong>vollständigem Quellcode</strong> geliefert. Der Klassische Modus hat keine Zusatzkosten. Der KI-Modus beinhaltet einen <strong>kostenlosen Plan mit 10 Seiten/Monat</strong> — keine Kreditkarte erforderlich. Für höhere Volumen stehen kostenpflichtige Pläne von der gelegentlichen Nutzung bis zur unternehmensweiten Massenverarbeitung zur Verfügung. <a href="https://easyocr.es" target="_blank">Alle Pläne und Preise auf easyocr.es ansehen →</a></p>
 
 <h3>✉️ Support</h3>
 <p>✉️ <a href="mailto:info@easysoft.es">info@easysoft.es</a>&nbsp;| 🌐 <a href="https://www.easysoft.es" target="_blank">www.easysoft.es</a>&nbsp;| 🤖 <a href="https://easyocr.es" target="_blank">easyocr.es</a></p>
@@ -671,8 +671,8 @@ Automatizza l'elaborazione delle fatture fornitori e la scansione di scontrini d
     <li>🔑 <strong>Modalità IA:</strong> abbonamento attivo su <a href="https://easyocr.es" target="_blank">easyocr.es</a> — <a href="https://easyocr.es" target="_blank">vedi i piani disponibili</a></li>
 </ul>
 
-<h3>💰 Prezzo e licenza</h3>
-<p>Il modulo è <strong>gratuito e open source</strong> con licenza <strong>GPL v3</strong>. La Modalità Classica non ha costi aggiuntivi. La Modalità IA include un <strong>piano gratuito di 10 pagine/mese</strong> — nessuna carta di credito richiesta per iniziare. Per volumi maggiori sono disponibili piani a pagamento dall'uso occasionale all'elaborazione massiva enterprise. <a href="https://easyocr.es" target="_blank">Consulta tutti i piani e prezzi su easyocr.es →</a></p>
+<h3>💰 Prezzo</h3>
+<p>Il modulo è <strong>gratuito</strong> e viene fornito con il <strong>codice sorgente completo</strong>. La Modalità Classica non ha costi aggiuntivi. La Modalità IA include un <strong>piano gratuito di 10 pagine/mese</strong> — nessuna carta di credito richiesta per iniziare. Per volumi maggiori sono disponibili piani a pagamento dall'uso occasionale all'elaborazione massiva enterprise. <a href="https://easyocr.es" target="_blank">Consulta tutti i piani e prezzi su easyocr.es →</a></p>
 
 <h3>✉️ Supporto</h3>
 <p>✉️ <a href="mailto:info@easysoft.es">info@easysoft.es</a>&nbsp;| 🌐 <a href="https://www.easysoft.es" target="_blank">www.easysoft.es</a>&nbsp;| 🤖 <a href="https://easyocr.es" target="_blank">easyocr.es</a></p>
@@ -699,7 +699,7 @@ La imagen debe mostrar:
 
 ## Related price
 ```
-Free classic mode included (PDF.js extraction, no external services). AI-powered mode requires an active subscription at https://easyocr.es — plans available from free tier. The module itself is free and open source (GPL v3).
+Free classic mode included (PDF.js extraction, no external services). AI-powered mode requires an active subscription at https://easyocr.es — plans available from free tier. The module itself is free.
 ```
 
 ## Contacto soporte (Support contact)
@@ -715,7 +715,7 @@ info@easysoft.es | https://www.easysoft.es | https://easyocr.es
 - [x] ChangeLog.md actualizado (v2.8.0)
 - [x] Versión en module descriptor coincide (2.8.0)
 - [x] Todos los archivos .lang completos en 8 idiomas
-- [x] Licencia GPL v3 incluida
+- [x] Textos sin mención de licencia ni de «código abierto» (regla de discurso)
 - [ ] Sin archivos de desarrollo (.git, .vscode, etc.)
 - [x] Pestañas administrativas con iconos consistentes
 - [x] Contenido legal y GDPR completo (Copying, Telemetry)
