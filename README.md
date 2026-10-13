@@ -4,6 +4,8 @@
 
 **EasyOcr** es un potente módulo para Dolibarr ERP que facilita la extracción de datos de facturas PDF y la generación automática de facturas de proveedor. Utiliza la tecnología nativa de PDF.js para extraer texto sin necesidad de OCR, permitiendo una integración fluida con tu sistema Dolibarr.
 
+Su página es **[easyocr.es/dolibarr](https://easyocr.es/dolibarr)**, con los planes del servicio de lectura y las guías.
+
 ## Características
 
 - **Visor PDF Interactivo**: Interfaz intuitiva con panel de dos columnas (PDF + datos)
@@ -246,6 +248,7 @@ Para soporte, preguntas o sugerencias:
 
 - **Email**: info@easysoft.es
 - **Web**: https://easysoft.es
+- **Módulo**: https://easyocr.es/dolibarr
 - **Incidencias**: Reporta errores por email
 
 ## Licencia
