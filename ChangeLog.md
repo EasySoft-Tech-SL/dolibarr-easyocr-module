@@ -5,6 +5,21 @@ Todos los cambios notables de EasyOcr se documentarán en este archivo.
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/),
 y este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 
+## [2.8.1] - 2026-11-01
+
+### Corregido — se registraban facturas dirigidas a otra empresa
+
+- **Una factura cuyo destinatario no es tu empresa ya no se convierte en factura de proveedor.** Hasta ahora solo se comprobaba que el proveedor no fuera tu propia empresa. Si alguien subía un documento emitido a nombre de un tercero (por ejemplo, la póliza de seguro de un cliente suyo), se creaba el borrador sin ningún aviso. Ahora, si se ha leído el CIF/NIF del cliente y no coincide con ninguno de los de tu empresa, la creación se detiene con el mensaje «Esta factura va dirigida a otra empresa (CIF/NIF …) y no a la vuestra». La comparación ignora guiones, puntos, espacios y el prefijo de país (`ES`).
+- La comprobación se hace **también cuando el proveedor se ha elegido a mano**: elegir el proveedor no cambia a quién va dirigida la factura.
+- Si no se ha podido leer el CIF/NIF del destinatario, o tu empresa no tiene ninguno configurado, la factura se crea como hasta ahora.
+- En los **lotes**, el documento afectado queda en error con ese mismo mensaje y el resto del lote sigue su curso.
+- Nuevo ajuste **«Permitir facturas dirigidas a otra empresa»** en la configuración del módulo (constante `EASYOCR_ALLOW_FOREIGN_CUSTOMER`), junto al de permitir tu propia empresa como proveedor. Desactivado por defecto.
+
+### Notas de actualización
+
+- No necesita reactivar el módulo.
+- Revisa que tu empresa tenga el CIF/NIF en *Inicio › Configuración › Empresa*: sin él, esta comprobación no actúa.
+
 ## [2.8.0] - 2026-10-05
 
 ### Añadido — Documentos recibidos: entrada de PDFs desde otros módulos

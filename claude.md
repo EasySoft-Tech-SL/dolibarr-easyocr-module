@@ -2,7 +2,7 @@
 
 ## Información del módulo
 - **Nombre:** EasyOcr
-- **Versión:** 2.8.0
+- **Versión:** 2.8.1
 - **Número módulo:** 402020
 - **Empresa:** EasySoft Tech S.L. (info@easysoft.es)
 - **Autor:** Alberto Luque Rivas (aluquerivasdev@gmail.com)
@@ -115,6 +115,10 @@ easyocr_recibir_documento($rutaAbsoluta, $user, array $opciones = array())
 - Test: `php tests/easyocr_inbox_test.php` (base real, limpia por el prefijo `qa_easyscan_ocrq_`).
 
 ## Historial de cambios
+
+### v2.8.1 — Factura dirigida a otra empresa
+
+- Nueva guarda en `easyocrCreateInvoiceFromOCR()`: si `customer_tax_id` (normalizado, ≥5 caracteres) no es de la empresa y hay NIF propio configurado (`easyocrHasOwnTaxId()`), devuelve `error_code = customer_not_own_company`. Aplica también con `fk_soc`. Bypass: `EASYOCR_ALLOW_FOREIGN_CUSTOMER` (expuesto en `admin/setup.php`). Prueba en `tests/easyocr_integration_test.php` (grupo «foreign-customer guard»).
 
 ### v2.8.0 — Documentos recibidos de otros módulos
 
