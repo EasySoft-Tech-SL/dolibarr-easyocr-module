@@ -800,6 +800,9 @@ EasyOcrSupplierIsReceiver = Die als Lieferant erkannte Steuernummer (%s) gehört
 EasyOcrSupplierEqualsCustomer = Lieferant und Kunde haben dieselbe Steuernummer (%s): Die KI konnte sie nicht unterscheiden. Korrigieren Sie den Lieferanten, bevor Sie die Rechnung anlegen.
 EasyOcrAllowSelfSupplier = Eigenes Unternehmen als Lieferant zulassen
 EasyOcrAllowSelfSupplierDesc = Wenn deaktiviert, werden Rechnungen blockiert, deren Lieferanten-Steuernummer mit der Ihres Unternehmens übereinstimmt (die klassische OCR-Verwechslung von Aussteller und Empfänger). Nur aktivieren, wenn Sie tatsächlich zwischen Einheiten mit derselben Steuernummer abrechnen.
+EasyOcrCustomerNotOwnCompany = Diese Rechnung ist an ein anderes Unternehmen gerichtet (Steuernummer %s), nicht an Ihres, daher wird sie nicht als Lieferantenrechnung erfasst.
+EasyOcrAllowForeignCustomer = Rechnungen an ein anderes Unternehmen zulassen
+EasyOcrAllowForeignCustomerDesc = Wenn deaktiviert, werden Rechnungen blockiert, deren Kunden-Steuernummer (Empfänger) nicht die Ihres Unternehmens ist: Ein auf einen anderen ausgestelltes Dokument ist kein Einkauf von Ihnen. Greift nur, wenn die Steuernummer des Empfängers erkannt wurde und Ihr Unternehmen eine Steuernummer hinterlegt hat.
 
 # --- v2.7.0: Duplicados en lote ---
 EasyOcrBatchDuplicatesFound = Dokument(e) dieses Stapels wurden bereits verarbeitet und nicht aufgenommen.

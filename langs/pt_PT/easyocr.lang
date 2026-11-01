@@ -796,6 +796,9 @@ EasyOcrSupplierIsReceiver = O NIF extraído como fornecedor (%s) é o da sua pr�
 EasyOcrSupplierEqualsCustomer = Fornecedor e cliente partilham o mesmo NIF (%s): a IA não os conseguiu distinguir. Corrija o fornecedor antes de criar a fatura.
 EasyOcrAllowSelfSupplier = Permitir a sua própria empresa como fornecedor
 EasyOcrAllowSelfSupplierDesc = Se desativado, são bloqueadas as faturas cujo NIF de fornecedor coincide com o da sua empresa (a típica troca do OCR entre emissor e destinatário). Ative apenas se faturar realmente entre entidades com o mesmo NIF.
+EasyOcrCustomerNotOwnCompany = Esta fatura é dirigida a outra empresa (NIF %s) e não à vossa, por isso não é registada como fatura de fornecedor.
+EasyOcrAllowForeignCustomer = Permitir faturas dirigidas a outra empresa
+EasyOcrAllowForeignCustomerDesc = Se desativado, são bloqueadas as faturas cujo NIF de cliente (destinatário) não é o da sua empresa: um documento emitido em nome de outro não é uma compra vossa. Só atua se o NIF do destinatário tiver sido lido e a sua empresa tiver NIF configurado.
 
 # --- v2.7.0: Duplicados en lote ---
 EasyOcrBatchDuplicatesFound = documento(s) deste lote já foram processados e não foram incluídos.

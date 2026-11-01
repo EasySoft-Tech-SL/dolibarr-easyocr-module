@@ -496,6 +496,11 @@ eo_assert('match lowercase', easyocrIsOwnCompanyTaxId('esb12345678'), true);
 eo_assert('different tax id', easyocrIsOwnCompanyTaxId('A87654321'), false);
 eo_assert('empty tax id', easyocrIsOwnCompanyTaxId(''), false);
 eo_assert('too short to be meaningful', easyocrIsOwnCompanyTaxId('B12'), false);
+eo_assert('easyocrHasOwnTaxId with ids configured', easyocrHasOwnTaxId(), true);
+$keepMysoc = $mysoc;   // $mysoc IS $GLOBALS['mysoc'] at global scope
+$GLOBALS['mysoc'] = new stdClass();
+eo_assert('easyocrHasOwnTaxId with nothing configured', easyocrHasOwnTaxId(), false);
+$GLOBALS['mysoc'] = $keepMysoc;
 
 // Falls back to the raw constants when $mysoc is not initialised (NOLOGIN context).
 // At global scope $mysoc IS $GLOBALS['mysoc'], so keep a separate handle to restore.

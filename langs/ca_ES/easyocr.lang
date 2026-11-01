@@ -798,6 +798,9 @@ EasyOcrSupplierIsReceiver = El CIF/NIF extret com a proveïdor (%s) és el de la
 EasyOcrSupplierEqualsCustomer = Proveïdor i client comparteixen el mateix CIF/NIF (%s): la IA no els ha sabut distingir. Corregeix el proveïdor abans de crear la factura.
 EasyOcrAllowSelfSupplier = Permet la teva pròpia empresa com a proveïdor
 EasyOcrAllowSelfSupplierDesc = Desactivat, es bloqueja la creació de factures el CIF/NIF de proveïdor de les quals coincideix amb el de la teva empresa (error típic de l'OCR en confondre emissor i receptor). Activa'l només si factures realment entre entitats amb el mateix CIF.
+EasyOcrCustomerNotOwnCompany = Aquesta factura va dirigida a una altra empresa (CIF/NIF %s) i no a la vostra, per això no es registra com a factura de proveïdor.
+EasyOcrAllowForeignCustomer = Permet factures dirigides a una altra empresa
+EasyOcrAllowForeignCustomerDesc = Desactivat, es bloqueja la creació de factures el CIF/NIF de client (destinatari) de les quals no és el de la teva empresa: un document emès a nom d'un altre no és una compra vostra. Només actua si s'ha llegit el CIF del destinatari i la teva empresa té CIF configurat.
 
 # --- v2.7.0: Duplicados en lote ---
 EasyOcrBatchDuplicatesFound = document(s) del lot ja s'havien processat i no s'han inclòs.

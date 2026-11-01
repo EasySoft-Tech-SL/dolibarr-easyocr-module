@@ -89,6 +89,7 @@ if ($action == 'update') {
 
 	$res = dolibarr_set_const($db, 'EASYOCR_AI_AUTOCREATE_PRODUCT', GETPOST('EASYOCR_AI_AUTOCREATE_PRODUCT', 'int'), 'chaine', 0, '', $conf->entity);
 	$res = dolibarr_set_const($db, 'EASYOCR_ALLOW_SELF_SUPPLIER', GETPOST('EASYOCR_ALLOW_SELF_SUPPLIER', 'int'), 'chaine', 0, '', $conf->entity);
+	$res = dolibarr_set_const($db, 'EASYOCR_ALLOW_FOREIGN_CUSTOMER', GETPOST('EASYOCR_ALLOW_FOREIGN_CUSTOMER', 'int'), 'chaine', 0, '', $conf->entity);
 	$res = dolibarr_set_const($db, 'EASYOCR_AI_RECEIVER_CONTEXT', GETPOST('EASYOCR_AI_RECEIVER_CONTEXT', 'int'), 'chaine', 0, '', $conf->entity);
 	if (!($res > 0)) $error++;
 
@@ -232,6 +233,15 @@ print '<td>'.$langs->trans("EasyOcrAllowSelfSupplier").'</td>';
 print '<td>';
 print $form->selectyesno('EASYOCR_ALLOW_SELF_SUPPLIER', !empty($conf->global->EASYOCR_ALLOW_SELF_SUPPLIER) ? $conf->global->EASYOCR_ALLOW_SELF_SUPPLIER : 0, 1);
 print '<br><span class="opacitymedium small">'.$langs->trans("EasyOcrAllowSelfSupplierDesc").'</span>';
+print '</td>';
+print '</tr>';
+
+// Allow invoices addressed to another company (escape hatch for the foreign-customer guard)
+print '<tr class="oddeven">';
+print '<td>'.$langs->trans("EasyOcrAllowForeignCustomer").'</td>';
+print '<td>';
+print $form->selectyesno('EASYOCR_ALLOW_FOREIGN_CUSTOMER', !empty($conf->global->EASYOCR_ALLOW_FOREIGN_CUSTOMER) ? $conf->global->EASYOCR_ALLOW_FOREIGN_CUSTOMER : 0, 1);
+print '<br><span class="opacitymedium small">'.$langs->trans("EasyOcrAllowForeignCustomerDesc").'</span>';
 print '</td>';
 print '</tr>';
 

@@ -795,6 +795,9 @@ EasyOcrSupplierIsReceiver = La partita IVA estratta come fornitore (%s) è quell
 EasyOcrSupplierEqualsCustomer = Fornitore e cliente hanno la stessa partita IVA (%s): l'IA non è riuscita a distinguerli. Correggi il fornitore prima di creare la fattura.
 EasyOcrAllowSelfSupplier = Consenti la tua azienda come fornitore
 EasyOcrAllowSelfSupplierDesc = Se disattivato, vengono bloccate le fatture la cui partita IVA fornitore coincide con quella della tua azienda (il classico scambio OCR tra emittente e destinatario). Attivalo solo se fatturi realmente tra entità con la stessa partita IVA.
+EasyOcrCustomerNotOwnCompany = Questa fattura è intestata a un'altra azienda (partita IVA %s) e non alla vostra, quindi non viene registrata come fattura fornitore.
+EasyOcrAllowForeignCustomer = Consenti fatture intestate a un'altra azienda
+EasyOcrAllowForeignCustomerDesc = Se disattivato, vengono bloccate le fatture la cui partita IVA cliente (destinatario) non è quella della tua azienda: un documento intestato a un altro non è un vostro acquisto. Si applica solo se è stata letta la partita IVA del destinatario e la tua azienda ne ha una configurata.
 
 # --- v2.7.0: Duplicados en lote ---
 EasyOcrBatchDuplicatesFound = documento/i di questo lotto sono già stati elaborati e non sono stati inclusi.

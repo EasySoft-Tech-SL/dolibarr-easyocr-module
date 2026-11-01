@@ -815,6 +815,9 @@ EasyOcrSupplierIsReceiver = Le numéro fiscal extrait comme fournisseur (%s) est
 EasyOcrSupplierEqualsCustomer = Le fournisseur et le client partagent le même numéro fiscal (%s) : l'IA n'a pas su les distinguer. Corrigez le fournisseur avant de créer la facture.
 EasyOcrAllowSelfSupplier = Autoriser votre propre société comme fournisseur
 EasyOcrAllowSelfSupplierDesc = Désactivé, les factures dont le numéro fiscal fournisseur correspond à votre société sont bloquées (confusion classique de l'OCR entre émetteur et destinataire). À activer uniquement si vous facturez réellement entre entités partageant le même numéro fiscal.
+EasyOcrCustomerNotOwnCompany = Cette facture est adressée à une autre société (numéro fiscal %s) et non à la vôtre : elle n'est donc pas enregistrée comme facture fournisseur.
+EasyOcrAllowForeignCustomer = Autoriser les factures adressées à une autre société
+EasyOcrAllowForeignCustomerDesc = Désactivé, les factures dont le numéro fiscal client (destinataire) n'est pas celui de votre société sont bloquées : un document émis au nom d'un autre n'est pas un de vos achats. Ne s'applique que si le numéro fiscal du destinataire a été lu et que votre société en a un configuré.
 
 # --- v2.7.0: Duplicados en lote ---
 EasyOcrBatchDuplicatesFound = document(s) de ce lot ont déjà été traités et n'ont pas été inclus.

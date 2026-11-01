@@ -570,6 +570,16 @@ function easyocrGetOwnTaxIds()
 }
 
 /**
+ * Whether the Dolibarr company has at least one tax id configured.
+ *
+ * @return bool
+ */
+function easyocrHasOwnTaxId()
+{
+	return count(easyocrGetOwnTaxIds()) > 0;
+}
+
+/**
  * Check whether a tax id belongs to the Dolibarr company itself.
  *
  * Used to catch the classic OCR failure where the model reads the invoice
@@ -1389,6 +1399,23 @@ function easyocrCreateInvoiceFromOCR($params, $userObj = null)
 				return ['status' => 'error', 'message' => $msg, 'error_code' => 'supplier_equals_customer'];
 			}
 		}
+	}
+
+	// ── Foreign-customer guard ───────────────────────────────────────────
+	// The invoice is addressed to SOMEONE ELSE (e.g. a partner uploads an
+	// insurance policy issued to one of his own clients). It is not a purchase
+	// of ours, so it must not become a supplier invoice. Applies even with
+	// fk_soc chosen: picking the supplier does not change who the receiver is.
+	// Lets it through when the customer id was not read or we have no tax id
+	// configured (nothing to compare against).
+	$customerTaxIdRaw = isset($params['customer_tax_id']) ? trim((string) $params['customer_tax_id']) : '';
+	if (empty($conf->global->EASYOCR_ALLOW_FOREIGN_CUSTOMER)
+		&& strlen(easyocrNormalizeTaxId($customerTaxIdRaw)) >= 5
+		&& easyocrHasOwnTaxId()
+		&& !easyocrIsOwnCompanyTaxId($customerTaxIdRaw)) {
+		$msg = is_object($langs) ? $langs->trans('EasyOcrCustomerNotOwnCompany', $customerTaxIdRaw) : 'This invoice is addressed to another company (tax id ' . $customerTaxIdRaw . '), not to yours, so it is not registered as a supplier invoice.';
+		dol_syslog('EasyOCR-CREATE: ABORT — customer_tax_id=' . $customerTaxIdRaw . ' is not our own company', LOG_ERR);
+		return ['status' => 'error', 'message' => $msg, 'error_code' => 'customer_not_own_company'];
 	}
 
 	// ── Advisory lock to prevent race condition on concurrent webhooks ──

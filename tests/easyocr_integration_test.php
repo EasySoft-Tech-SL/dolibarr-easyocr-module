@@ -318,6 +318,64 @@ if ($ownTaxId === '') {
 	eo_assert('supplier == customer is refused', isset($dupResult['error_code']) ? $dupResult['error_code'] : '', 'supplier_equals_customer');
 }
 
+// ── Foreign-customer guard: the invoice is addressed to someone else ─────
+eo_group('foreign-customer guard');
+
+if ($ownTaxId === '') {
+	eo_info('skipped: this Dolibarr has no tax id configured for $mysoc');
+} else {
+	$countInvoices = function () use ($db) {
+		return (int) $db->fetch_object($db->query("SELECT COUNT(*) n FROM " . MAIN_DB_PREFIX . "facture_fourn"))->n;
+	};
+	$code = function ($r) {
+		return isset($r['error_code']) ? $r['error_code'] : '';
+	};
+
+	// Applies even with fk_soc picked by the user
+	$fcParams = $params;
+	$fcParams['customer_tax_id'] = 'B55555555';
+	$fcParams['ref_supplier']    = 'EASYOCR-FC-' . substr(md5(microtime(true)), 0, 6);
+	$invBefore = $countInvoices();
+	$fcResult = easyocrCreateInvoiceFromOCR($fcParams, $user);
+	eo_assert('foreign customer is refused', isset($fcResult['status']) ? $fcResult['status'] : '', 'error');
+	eo_assert('with error code customer_not_own_company', $code($fcResult), 'customer_not_own_company');
+	eo_assert('the message names the foreign tax id', isset($fcResult['message']) && strpos($fcResult['message'], 'B55555555') !== false, true);
+	eo_assert('no supplier invoice was created', $countInvoices(), $invBefore);
+
+	// Our own tax id, with country prefix and separators → goes through
+	$bare = easyocrNormalizeTaxId($ownTaxId);
+	if (preg_match('/^[A-Z]{2}([A-Z0-9]{5,})$/', $bare, $mm) && !preg_match('/^[0-9]/', $bare)) {
+		$bare = $mm[1];
+	}
+	$ownVariant = 'ES ' . substr($bare, 0, 1) . '-' . substr($bare, 1, 4) . '.' . substr($bare, 5);
+	eo_info('own tax id variant: ' . $ownVariant);
+	$okParams = $params;
+	$okParams['customer_tax_id'] = $ownVariant;
+	$okParams['ref_supplier']    = 'EASYOCR-OWN-' . substr(md5(microtime(true)), 0, 6);
+	$okResult = easyocrCreateInvoiceFromOCR($okParams, $user);
+	eo_assert('own tax id (ES prefix + separators) is accepted', isset($okResult['status']) ? $okResult['status'] : $code($okResult), 'ok');
+
+	// Customer tax id not read → goes through as before
+	$emptyParams = $params;
+	$emptyParams['customer_tax_id'] = '';
+	$emptyParams['ref_supplier']    = 'EASYOCR-EMPTY-' . substr(md5(microtime(true)), 0, 6);
+	$emptyResult = easyocrCreateInvoiceFromOCR($emptyParams, $user);
+	eo_assert('empty customer tax id is accepted', isset($emptyResult['status']) ? $emptyResult['status'] : $code($emptyResult), 'ok');
+
+	// Bypass constant on → goes through
+	$prevBypass = isset($conf->global->EASYOCR_ALLOW_FOREIGN_CUSTOMER) ? $conf->global->EASYOCR_ALLOW_FOREIGN_CUSTOMER : null;
+	$conf->global->EASYOCR_ALLOW_FOREIGN_CUSTOMER = 1;
+	$bpParams = $fcParams;
+	$bpParams['ref_supplier'] = 'EASYOCR-BYPASS-' . substr(md5(microtime(true)), 0, 6);
+	$bpResult = easyocrCreateInvoiceFromOCR($bpParams, $user);
+	eo_assert('foreign customer with EASYOCR_ALLOW_FOREIGN_CUSTOMER=1 is accepted', isset($bpResult['status']) ? $bpResult['status'] : $code($bpResult), 'ok');
+	if ($prevBypass === null) {
+		unset($conf->global->EASYOCR_ALLOW_FOREIGN_CUSTOMER);
+	} else {
+		$conf->global->EASYOCR_ALLOW_FOREIGN_CUSTOMER = $prevBypass;
+	}
+}
+
 // ── Duplicate fingerprint, against the real table ────────────────────────
 eo_group('duplicate fingerprint (real table)');
 
