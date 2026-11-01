@@ -49,6 +49,7 @@ En la pestaña de configuración del módulo:
 - **Ventana de detección de duplicados**: durante cuántos días se avisa de que un documento ya se procesó.
 - **Crear productos automáticamente**: si una línea trae un código que no existe en el catálogo, el módulo crea el producto.
 - **Permitir tu propia empresa como proveedor**: desactivado por defecto, evita que un documento en el que tu empresa es el emisor acabe creándote a ti mismo como proveedor.
+- **Permitir facturas dirigidas a otra empresa**: desactivado por defecto. Si el CIF del destinatario que lee la IA no es el de tu empresa, la factura no se registra y verás el motivo (en un lote, ese documento queda en error y el resto sigue). Para que funcione, el CIF de tu empresa tiene que estar en **Inicio → Configuración → Empresa/Organización**; si no lo está, o si el documento no trae el CIF del destinatario, se registra como siempre.
 - **Automatización por webhook**: cuenta bancaria y forma de pago con las que marcar como pagadas las facturas que llegan por esa vía.
 - **Escanear gasto**: si el gasto del móvil se registra como nota de gastos o como factura de compra, y si se permite validarlo.
 

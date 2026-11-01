@@ -27,3 +27,7 @@ Nada. Cada documento de la bandeja es independiente: una vez recibido, se guarda
 ## ¿Dónde acaban los PDFs y cómo los borro?
 
 Se copian a la carpeta de documentos de tu propia instalación de Dolibarr, dentro del área de la entidad, y no salen de ahí hasta que los procesas. En la lista tienes un botón para descargarlos y otro para **descartarlos**: al descartar, se pide confirmación y se borra el fichero y su registro de la bandeja. Los ya procesados también se pueden descartar; la factura que crearon sigue en Dolibarr.
+
+## He subido una factura y dice que va dirigida a otra empresa. ¿Por qué?
+
+Desde la 2.8.1, EasyOcr compara el CIF del destinatario que aparece en el documento con el de tu empresa. Si no coinciden, la factura no se registra: un documento a nombre de otra empresa (por ejemplo, el seguro de un cliente que te han reenviado para revisar) no es una compra tuya. Si el CIF de tu empresa no está en **Inicio → Configuración → Empresa/Organización**, o el documento no lo trae, se registra como siempre. Si de verdad necesitas registrar facturas a nombre de otra empresa, activa **Permitir facturas dirigidas a otra empresa** en la configuración del módulo.
