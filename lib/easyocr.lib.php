@@ -2340,6 +2340,85 @@ function easyocrResolveSupplierForDocument($taxId, $name, $supplierCountry = '')
 }
 
 /**
+ * Add a paragraph to the private note of a document, keeping what it already says.
+ *
+ * Read from the database, not from the object: the note may have been written by an
+ * earlier step through another instance.
+ *
+ * @param  CommonObject $doc   Document (invoice, supplier invoice, proposal)
+ * @param  string       $table Table without prefix ('facture_fourn', 'supplier_proposal')
+ * @param  string       $text  Paragraph to add
+ * @return void
+ */
+function easyocrAppendPrivateNote($doc, $table, $text)
+{
+	global $db;
+
+	$res = $db->query("SELECT note_private FROM " . MAIN_DB_PREFIX . $db->escape($table) . " WHERE rowid = " . ((int) $doc->id));
+	$obj = $res ? $db->fetch_object($res) : null;
+	$now = $obj ? (string) $obj->note_private : '';
+	$doc->update_note(($now !== '' ? $now . "\n\n" : '') . $text, '_private');
+}
+
+/**
+ * Pay a validated supplier invoice in full into a bank account.
+ *
+ * When the bank refuses the line (a cash account only takes cash, for one) the
+ * payment is undone and the invoice left pending, with the reason in its note: an
+ * invoice "paid" with no movement in the bank is worse than an unpaid one.
+ *
+ * @param  FactureFournisseur $facture       Validated invoice, fetched
+ * @param  User               $userObj       User doing it
+ * @param  int                $bankId        Bank account id
+ * @param  int                $paymentTypeId Payment method id (llx_c_paiement)
+ * @param  string             $numPayment    Payment number (the supplier's invoice ref)
+ * @return string                            '' when paid, otherwise the reason it is not
+ */
+function easyocrPaySupplierInvoice($facture, $userObj, $bankId, $paymentTypeId, $numPayment)
+{
+	global $db, $conf, $langs;
+
+	require_once DOL_DOCUMENT_ROOT . '/fourn/class/paiementfourn.class.php';
+
+	$amount = $facture->total_ttc;
+	$paiement = new PaiementFourn($db);
+	$paiement->datepaye = $facture->date;
+	$paiement->amounts = array($facture->id => $amount);
+	$paiement->multicurrency_amounts = array($facture->id => $amount);
+	$paiement->multicurrency_code = array($facture->id => $conf->currency);
+	$paiement->multicurrency_tx = array($facture->id => 1);
+	$paiement->paiementid = (int) $paymentTypeId;
+	$paiement->num_payment = $numPayment;
+	$paiement->note_private = is_object($langs) ? $langs->trans('EasyOcrPaymentAutoNote') : 'Auto-payment by EasyOCR';
+	$paiement->fk_account = (int) $bankId;
+
+	$paiementId = $paiement->create($userObj, 1);
+	if ($paiementId <= 0) {
+		dol_syslog('EasyOCR-PAY: payment not created — ' . $paiement->error, LOG_ERR);
+		return is_object($langs) ? $langs->transnoentities('EasyOcrPaymentBankFailed', $paiement->error) : 'The payment could not be registered (' . $paiement->error . ').';
+	}
+
+	$bankLineId = $paiement->addPaymentToBank($userObj, 'payment_supplier', '(SupplierInvoicePayment)', (int) $bankId, '', '');
+	if ($bankLineId > 0) {
+		return '';
+	}
+
+	$bankError = $paiement->error ? $paiement->error : implode(', ', (array) $paiement->errors);
+	$facture->setUnpaid($userObj);
+	// Not passing a user: delete() takes ($notrigger) up to Dolibarr 18 and
+	// ($user, $notrigger) from 20 on
+	if ($paiement->delete() < 0) {
+		$bankError .= ' / ' . ($paiement->error ? $paiement->error : 'the payment could not be removed');
+		dol_syslog('EasyOCR-PAY: payment ' . $paiementId . ' could not be removed after the bank refused it', LOG_ERR);
+	}
+	$paymentError = is_object($langs) ? $langs->transnoentities('EasyOcrPaymentBankFailed', $bankError) : 'The payment could not be registered in the bank (' . $bankError . '): the invoice is left pending payment.';
+	dol_syslog('EasyOCR-PAY: payment undone, bank line refused — ' . $bankError, LOG_ERR);
+	easyocrAppendPrivateNote($facture, 'facture_fourn', $paymentError);
+
+	return $paymentError;
+}
+
+/**
  * Create a supplier invoice from OCR-extracted data.
  * Shared function used by both AJAX (newInvoiceAI) and webhook processing.
  *
@@ -3215,12 +3294,7 @@ function easyocrCreateInvoiceFromOCRCore($params, $userObj = null)
 		// No total was read (or the service renamed the field): forcing 0 over real lines
 		// would hide them. The lines' own sum stays, and someone looks at it.
 		$reviewAdd('totals_missing', is_object($langs) ? $langs->transnoentities('EasyOcrReviewTotalsMissing') : 'The document totals were not read: the invoice keeps the sum of its lines. Check it against the document.');
-		$resNoteT = $db->query("SELECT note_private FROM " . MAIN_DB_PREFIX . "facture_fourn WHERE rowid = " . ((int) $newId));
-		$objNoteT = $resNoteT ? $db->fetch_object($resNoteT) : null;
-		$noteNowT = $objNoteT ? (string) $objNoteT->note_private : '';
-		$facture->update_note(($noteNowT !== '' ? $noteNowT . "
-
-" : '') . end($reviewNotes), '_private');
+		easyocrAppendPrivateNote($facture, 'facture_fourn', end($reviewNotes));
 	} elseif (!$is_proposal) {
 		$sql_totals = "UPDATE " . MAIN_DB_PREFIX . "facture_fourn SET";
 		$sql_totals .= " total_ht = " . ((float) $ocr_total_ht);
@@ -3267,12 +3341,7 @@ function easyocrCreateInvoiceFromOCRCore($params, $userObj = null)
 			// The document exists: it stays a draft with the reason, attached to its PDF,
 			// instead of an error with no id that leaves an orphan draft behind
 			$reviewAdd('validate_failed', is_object($langs) ? $langs->transnoentities('EasyOcrReviewValidateFailed', $facture->error) : 'It could not be validated (' . $facture->error . '): it is left as a draft.');
-			$resNoteV = $db->query("SELECT note_private FROM " . MAIN_DB_PREFIX . ($is_proposal ? "supplier_proposal" : "facture_fourn") . " WHERE rowid = " . ((int) $newId));
-			$objNoteV = $resNoteV ? $db->fetch_object($resNoteV) : null;
-			$noteNowV = $objNoteV ? (string) $objNoteV->note_private : '';
-			$facture->update_note(($noteNowV !== '' ? $noteNowV . "
-
-" : '') . end($reviewNotes), '_private');
+			easyocrAppendPrivateNote($facture, $is_proposal ? 'supplier_proposal' : 'facture_fourn', end($reviewNotes));
 			$invoice_status = 'draft';
 			$forcedDraft = true;
 			$facture->fetch($newId);
@@ -3336,46 +3405,7 @@ function easyocrCreateInvoiceFromOCRCore($params, $userObj = null)
 	}
 	$paymentError = '';
 	if (!$is_proposal && $create_payment == '1' && $payment_bank_id > 0 && $invoice_status !== 'draft') {
-		if ($payment_type_id <= 0) $payment_type_id = 6;
-		$paymentAmount = $facture->total_ttc;
-
-		$paiement = new PaiementFourn($db);
-		$paiement->datepaye = $facture->date;
-		$paiement->amounts = array($newId => $paymentAmount);
-		$paiement->multicurrency_amounts = array($newId => $paymentAmount);
-		$paiement->multicurrency_code = array($newId => $conf->currency);
-		$paiement->multicurrency_tx = array($newId => 1);
-		$paiement->paiementid = $payment_type_id;
-		$paiement->num_payment = $ref_supplier;
-		$paiement->note_private = is_object($langs) ? $langs->trans('EasyOcrPaymentAutoNote') : 'Auto-payment by EasyOCR';
-		$paiement->fk_account = $payment_bank_id;
-
-		$paiement_id = $paiement->create($userObj, 1);
-		if ($paiement_id > 0) {
-			$bankLineId = $paiement->addPaymentToBank($userObj, 'payment_supplier', '(SupplierInvoicePayment)', $payment_bank_id, '', '');
-			if ($bankLineId <= 0) {
-				// The bank refused the line (a cash account only takes cash, for one): the
-				// invoice would stay "paid" with no movement in the bank. Undo the payment
-				// so it stays pending, and say why instead of failing in silence.
-				$bankError = $paiement->error ? $paiement->error : implode(', ', (array) $paiement->errors);
-				$facture->setUnpaid($userObj);
-				// Not passing a user: delete() takes ($notrigger) up to Dolibarr 18 and
-				// ($user, $notrigger) from 20 on
-				if ($paiement->delete() < 0) {
-					$bankError .= ' / ' . ($paiement->error ? $paiement->error : 'the payment could not be removed');
-					dol_syslog('EasyOCR-CREATE: payment ' . $paiement_id . ' could not be removed after the bank refused it', LOG_ERR);
-				}
-				$paymentError = is_object($langs) ? $langs->transnoentities('EasyOcrPaymentBankFailed', $bankError) : 'The payment could not be registered in the bank (' . $bankError . '): the invoice is left pending payment.';
-				dol_syslog('EasyOCR-CREATE: payment undone, bank line refused — ' . $bankError, LOG_ERR);
-				$resNote = $db->query("SELECT note_private FROM " . MAIN_DB_PREFIX . "facture_fourn WHERE rowid = " . ((int) $newId));
-				$objNote = $resNote ? $db->fetch_object($resNote) : null;
-				$noteNow = $objNote ? (string) $objNote->note_private : '';
-				$facture->update_note(($noteNow !== '' ? $noteNow . "\n\n" : '') . $paymentError, '_private');
-			}
-		} else {
-			$paymentError = is_object($langs) ? $langs->transnoentities('EasyOcrPaymentBankFailed', $paiement->error) : 'The payment could not be registered (' . $paiement->error . ').';
-			dol_syslog('EasyOCR-CREATE: payment not created — ' . $paiement->error, LOG_ERR);
-		}
+		$paymentError = easyocrPaySupplierInvoice($facture, $userObj, $payment_bank_id, $payment_type_id > 0 ? $payment_type_id : 6, $ref_supplier);
 	}
 
 	// ── Release advisory lock ────────────────────────────────────────────
