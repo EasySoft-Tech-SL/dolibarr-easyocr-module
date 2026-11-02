@@ -783,6 +783,136 @@ if ($cashId > 0 && $payType('VIR') > 0 && $payType('LIQ') > 0) {
 	eo_info('skipped payment checks: no open cash account or no VIR/LIQ payment types');
 }
 
+// ── 2.9.0 ────────────────────────────────────────────────────────────────
+eo_group('2.9.0 — suppliers with no tax id, closed, labels, foreign, locks, totals');
+
+// 19) Supplier from outside the EU whose name was typed in the tax id field (there was
+//     no id to put): every way the invoice can come must land on it, none creates
+$idOai = $mkSoc('EOQA OPENAI ' . $eoSeed . ', L.L.C.', 'EOQA OPENAI ' . $eoSeed, '');
+$nOai = $countSoc();
+foreach (array(
+	array('', 'EOQA OpenAI ' . $eoSeed . ', L.L.C.', 'no id'),
+	array('', 'EOQA OPENAI ' . $eoSeed, 'no id, no legal form'),
+	array('EU372041' . $eoSeed, 'EOQA OpenAI ' . $eoSeed . ', L.L.C.', 'EU OSS number'),
+	array('92-12' . $eoSeed, 'EOQA OpenAI ' . $eoSeed . ' LLC', 'US EIN'),
+	array('EOQA OPENAI ' . $eoSeed, 'EOQA OpenAI ' . $eoSeed, 'its name as the id'),
+) as $c) {
+	$r = easyocrCreateInvoiceFromOCR($whParams($c[0], $c[1], 'OAI'), $user);
+	eo_assert('name typed as tax id, ' . $c[2] . ': the same supplier', isset($r['supplier_id']) ? (int) $r['supplier_id'] : 0, $idOai);
+}
+eo_assert('name typed as tax id: nothing created', $countSoc(), $nOai);
+$r = easyocrCreateInvoiceFromOCR($whParams('EU372041' . $eoSeed, 'EOQA OpenAI ' . $eoSeed, 'OAI2'), $user);
+eo_assert('name typed as tax id, real id read: reported to add the id', isset($r['review_codes']) && in_array('supplier_by_name', $r['review_codes'], true), true);
+
+// 20) Compound label in front of the id ("NIF/CIF: B…"): the existing supplier, no
+//     third party made of the label glued to the number
+$cifLbl = eo_cif('B', $eoSeed . '919');
+$idLbl = $mkSoc('EOQA LABEL SL', $cifLbl, '');
+$nLbl = $countSoc();
+foreach (array('NIF/CIF: ' . $cifLbl, 'CIF/NIF ' . $cifLbl, 'Tax ID: ES' . $cifLbl, 'VAT Reg. No. ES' . $cifLbl) as $lbl) {
+	$r = easyocrCreateInvoiceFromOCR($whParams($lbl, 'Otro nombre impreso', 'LBL'), $user);
+	eo_assert('label "' . $lbl . '": found by tax id', array(isset($r['supplier_id']) ? (int) $r['supplier_id'] : 0, isset($r['review_codes']) ? in_array('supplier_by_name', $r['review_codes'], true) : null), array($idLbl, false));
+}
+eo_assert('compound labels: nothing created', $countSoc(), $nLbl);
+
+// 21) Closed supplier: used and reported, never a second record with the same id
+$cifClosed = eo_cif('B', $eoSeed . '323');
+$idClosed = $mkSoc('EOQA CERRADO SL', $cifClosed, '');
+$db->query("UPDATE " . MAIN_DB_PREFIX . "societe SET status = 0 WHERE rowid = " . $idClosed);
+$nClosed = $countSoc();
+$r = easyocrCreateInvoiceFromOCR($whParams('ES' . $cifClosed, 'EOQA CERRADO, S.L.', 'CLOSED'), $user);
+eo_assert('closed supplier: used', isset($r['supplier_id']) ? (int) $r['supplier_id'] : 0, $idClosed);
+eo_assert('closed supplier: nothing created', $countSoc(), $nClosed);
+eo_assert('closed supplier: reported', isset($r['review_codes']) && in_array('supplier_closed', $r['review_codes'], true), true);
+eo_assert('closed supplier: kept as draft', !empty($r['forced_draft']), true);
+// …but an active one with the same id wins over it
+$idOpen = $mkSoc('EOQA ABIERTO SL', $cifClosed, '');
+$r = easyocrCreateInvoiceFromOCR($whParams('ES' . $cifClosed, 'Cualquiera', 'CLOSED2'), $user);
+eo_assert('closed and active with the id: the active one', isset($r['supplier_id']) ? (int) $r['supplier_id'] : 0, $idOpen);
+
+// 22) Foreign supplier stored with the bare number, read with its country prefix
+$idPt = $mkSoc('EOQA PORTUGAL LDA', '50' . $eoSeed . '567', '');
+$db->query("UPDATE " . MAIN_DB_PREFIX . "societe SET fk_pays = (SELECT rowid FROM " . MAIN_DB_PREFIX . "c_country WHERE code = 'PT') WHERE rowid = " . $idPt);
+$nPt = $countSoc();
+$r = easyocrCreateInvoiceFromOCR($whParams('PT50' . $eoSeed . '567', 'Nombre comercial distinto', 'PT', array('supplier_country' => 'Portugal')), $user);
+eo_assert('foreign id stored bare, read with prefix: found by tax id', isset($r['supplier_id']) ? (int) $r['supplier_id'] : 0, $idPt);
+eo_assert('foreign id stored bare: nothing created', $countSoc(), $nPt);
+// The bare number of another country must not match it
+$r = easyocrFindThirdpartiesByTaxId('DE50' . $eoSeed . '567');
+eo_assert('the same digits with another country prefix: not that supplier', in_array($idPt, array_map(function ($x) {
+	return $x['id'];
+}, $r), true), false);
+
+// 23) Lock still held by another request: the caller is told to retry, nothing created
+$lockConn = @new mysqli($conf->db->host === 'localhost' ? '127.0.0.1' : $conf->db->host, $conf->db->user, $dolibarr_main_db_pass, $conf->db->name, (int) ($conf->db->port ? $conf->db->port : 3306));
+if ($lockConn && !$lockConn->connect_errno && strpos($db->type, 'mysql') !== false) {
+	$cifLock = eo_cif('B', $eoSeed . '545');
+	$lockName = 'eo_' . substr(md5('tax_' . easyocrTaxIdKey($cifLock)), 0, 30);
+	$lockConn->query("SELECT GET_LOCK('" . $lockName . "', 1)");
+	$prevTimeout = isset($conf->global->EASYOCR_LOCK_TIMEOUT) ? $conf->global->EASYOCR_LOCK_TIMEOUT : null;
+	$conf->global->EASYOCR_LOCK_TIMEOUT = 5;
+	$nLock = $countSoc();
+	$t0 = microtime(true);
+	$r = easyocrCreateInvoiceFromOCR($whParams($cifLock, 'EOQA LOCK SL', 'LOCK'), $user);
+	eo_assert('lock busy: retry', isset($r['status']) ? $r['status'] : '', 'retry');
+	eo_assert('lock busy: waited for the configured time', microtime(true) - $t0 >= 4.5, true);
+	eo_assert('lock busy: nothing created', $countSoc(), $nLock);
+	$lockConn->query("SELECT RELEASE_LOCK('" . $lockName . "')");
+	$r = easyocrCreateInvoiceFromOCR($whParams($cifLock, 'EOQA LOCK SL', 'LOCK2'), $user);
+	eo_assert('lock free again: created', isset($r['status']) ? $r['status'] : '', 'ok');
+	$conf->global->EASYOCR_LOCK_TIMEOUT = $prevTimeout;
+	$lockConn->close();
+} else {
+	eo_info('skipped lock checks: no second MySQL connection');
+}
+
+// 24) Totals not read: the lines' sum stays, nothing forced to 0, reported
+$r = easyocrCreateInvoiceFromOCR($whParams('', '', 'NOTOT', array(
+	'fk_soc' => $supplierId, 'total_ht' => '0', 'total_tva' => '0', 'total_ttc' => '0',
+	'items'  => array(array('description' => 'Linea', 'quantity' => 2, 'unit_price' => 50, 'net_amount' => 100, 'taxes' => eo_tax(21))),
+)), $user);
+$rowNt = $db->fetch_object($db->query("SELECT total_ht, total_ttc, fk_statut FROM " . MAIN_DB_PREFIX . "facture_fourn WHERE rowid = " . (int) (isset($r['id']) ? $r['id'] : 0)));
+eo_assert('totals not read: keeps the sum of the lines', $rowNt ? round((float) $rowNt->total_ttc, 2) : null, 121.0);
+eo_assert('totals not read: reported', isset($r['review_codes']) && in_array('totals_missing', $r['review_codes'], true), true);
+eo_assert('totals not read: kept as draft', $rowNt ? (int) $rowNt->fk_statut : null, 0);
+
+// 25) Credit note with withholding: base -100, VAT -21, IRPF 15 → total -106 adds up
+eo_assert('credit note with IRPF: no header mismatch', easyocrCheckHeaderTotals(array('total_ht' => -100, 'total_tva' => -21, 'total_localtax2' => -15, 'total_ttc' => -106)), array());
+eo_assert('credit note with IRPF, wrong total: reported', count(easyocrCheckHeaderTotals(array('total_ht' => -100, 'total_tva' => -21, 'total_localtax2' => -15, 'total_ttc' => -136))), 1);
+
+// 26) journal_code no longer lands in the bank account column
+$resJ = $db->query("SELECT code FROM " . MAIN_DB_PREFIX . "accounting_journal WHERE entity = " . ((int) $conf->entity) . " ORDER BY rowid LIMIT 1");
+$objJ = $resJ ? $db->fetch_object($resJ) : null;
+if ($objJ) {
+	$r = easyocrCreateInvoiceFromOCR($whParams('', '', 'JRN', array('fk_soc' => $supplierId, 'journal_code' => $objJ->code, 'invoice_status' => 'draft')), $user);
+	$rowJ = $db->fetch_object($db->query("SELECT fk_account FROM " . MAIN_DB_PREFIX . "facture_fourn WHERE rowid = " . (int) (isset($r['id']) ? $r['id'] : 0)));
+	eo_assert('journal code: bank account untouched', $rowJ ? (int) $rowJ->fk_account : -1, 0);
+} else {
+	eo_info('skipped journal check: no accounting journal');
+}
+
+// 27b) A third party whose tms is older than the sync mark (saved in a transaction that
+//      committed after another request moved the mark) is still found
+if (easyocrTpKeyTableExists()) {
+	$cifLate = eo_cif('B', $eoSeed . '656');
+	$idLate = $mkSoc('EOQA TARDIO SL', $cifLate, '');
+	$db->query("DELETE FROM " . MAIN_DB_PREFIX . "easyocr_tpkey WHERE fk_soc = " . $idLate);
+	require_once DOL_DOCUMENT_ROOT . '/core/lib/admin.lib.php';
+	$tmsLate = (string) $db->fetch_object($db->query("SELECT tms FROM " . MAIN_DB_PREFIX . "societe WHERE rowid = " . $idLate))->tms;
+	dolibarr_set_const($db, 'EASYOCR_TPKEY_SYNC', date('Y-m-d H:i:s', strtotime($tmsLate) + 300), 'chaine', 0, '', 0);
+	$rowsLate = easyocrFindThirdpartiesByTaxId('ES' . $cifLate);
+	eo_assert('row older than the sync mark: still indexed and found', isset($rowsLate[0]['id']) ? $rowsLate[0]['id'] : 0, $idLate);
+}
+
+// 27) Indexed and plain name search agree
+$plain = easyocrFindSuppliersByName('EOQA SIGMA SL', 50);
+$fast = easyocrFindSuppliersByExactName('EOQA SIGMA SL');
+eo_assert('exact name: keys table and full scan agree', array_map(function ($x) {
+	return $x['id'];
+}, $fast), array_map(function ($x) {
+	return $x['id'];
+}, $plain['exact']));
+
 if ($prevDraftConf === null) {
 	unset($conf->global->EASYOCR_INVOICE_DRAFT);
 } else {

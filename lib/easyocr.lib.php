@@ -549,15 +549,17 @@ function easyocrSplitTaxId($taxId)
 	$norm = easyocrNormalizeTaxId($taxId);
 	// A label stuck to the number ("CIF: B12345678"). No Spanish id starts with these
 	// letter pairs, so a real number is never cut.
-	if (preg_match('/^(NIFIVA|NIF|CIF|NIE|DNI|VATNO|VAT|IVA|TVA|USTIDNR)([A-Z0-9]{5,})$/', $norm, $lm) && preg_match('/[0-9]/', $lm[2])) {
+	// Labels come chained too ("NIF/CIF:", "CIF/NIF", "Tax ID", "VAT Reg. No."): all of them go.
+	if (preg_match('/^((?:NIFIVA|NIF|CIF|NIE|DNI|VATREGNO|VATREG|VATNO|VATID|VAT|IVA|TVA|USTIDNR|USTID|TAXID|TAXNO|TIN|EIN)+)([A-Z0-9]{5,})$/', $norm, $lm) && preg_match('/[0-9]/', $lm[2])) {
 		$norm = $lm[2];
 	}
 	$out = array('normalized' => $norm, 'country' => '', 'bare' => $norm);
 
 	if (strlen($norm) > 4 && preg_match('/^([A-Z]{2})([A-Z0-9]+)$/', $norm, $m)
-		&& in_array($m[1], easyocrVatCountryPrefixes(), true)
+		&& (in_array($m[1], easyocrVatCountryPrefixes(), true) || $m[1] === 'GR')
 		&& preg_match('/[0-9]/', $m[2])) {
-		$out['country'] = $m[1];
+		// Greek VAT numbers carry EL, but "GR" is what many people write
+		$out['country'] = ($m[1] === 'GR') ? 'EL' : $m[1];
 		$out['bare'] = $m[2];
 	}
 
@@ -737,6 +739,7 @@ function easyocrTaxIdVariants($taxId)
 		$variants[] = 'ES' . $p['bare'];
 	}
 	if ($p['country'] === 'EL') {
+		$variants[] = 'EL' . $p['bare'];
 		$variants[] = 'GR' . $p['bare'];
 	}
 	// A DNI printed or stored without its leading zero ("4247123N" / "04247123N"). Only as
@@ -1074,7 +1077,8 @@ function easyocrGetSupplierPaymentDefaults($fk_soc, $history = 3)
  */
 function easyocrSupplierNameKey($name)
 {
-	$key = trim((string) $name);
+	// ñ first: without dol_string_unaccent it would split "España" into "ESPA A"
+	$key = str_replace(array('ñ', 'Ñ'), 'N', trim((string) $name));
 	if (function_exists('dol_string_unaccent')) {
 		$key = dol_string_unaccent($key);
 	}
@@ -1322,7 +1326,9 @@ function easyocrCheckHeaderTotals($totals, $tolerance = 0.05)
 		return array();
 	}
 	$lt1 = (float) $num('total_localtax1');
-	$lt2 = abs((float) $num('total_localtax2'));
+	// The withholding goes with the sign of the base: it reduces an invoice and, on a
+	// credit note (negative base), it reduces the refund
+	$lt2 = abs((float) $num('total_localtax2')) * ($ht < 0 ? -1 : 1);
 
 	$withRetention = $ht + $tva + $lt1 - $lt2;
 	$withoutRetention = $ht + $tva + $lt1;
@@ -1719,6 +1725,68 @@ function easyocrShouldForceDraft($draftOnReview, $reviewCodes, $targetStatus)
 }
 
 /**
+ * Take a named advisory lock, waiting up to $timeout seconds.
+ *
+ * MySQL/MariaDB use GET_LOCK, PostgreSQL a session advisory lock on the hash of the
+ * name. The lock lives in the database session, so it is freed when the connection
+ * closes even if the code never releases it.
+ *
+ * @param  DoliDB $dbh     Database handler
+ * @param  string $name    Lock name (at most 64 characters)
+ * @param  int    $timeout Seconds to wait
+ * @return bool|null       true taken, false still busy after the wait, null when the
+ *                         database offers no advisory locks
+ */
+function easyocrAcquireLock($dbh, $name, $timeout)
+{
+	$type = isset($dbh->type) ? (string) $dbh->type : '';
+	if (strpos($type, 'pgsql') !== false) {
+		$deadline = microtime(true) + (int) $timeout;
+		do {
+			$res = $dbh->query("SELECT pg_try_advisory_lock(hashtext('" . $dbh->escape($name) . "')) as got");
+			$obj = $res ? $dbh->fetch_object($res) : null;
+			if (!$obj) {
+				return null;
+			}
+			if ($obj->got === 't' || $obj->got === true || $obj->got === '1' || $obj->got === 1) {
+				return true;
+			}
+			usleep(250000);
+		} while (microtime(true) < $deadline);
+		return false;
+	}
+	if (strpos($type, 'mysql') === false) {
+		return null;
+	}
+
+	$res = $dbh->query("SELECT GET_LOCK('" . $dbh->escape($name) . "', " . ((int) $timeout) . ")");
+	$row = $res ? $dbh->fetch_array($res) : null;
+	if (!is_array($row) || !array_key_exists(0, $row) || $row[0] === null) {
+		// NULL is an error inside MySQL (killed, out of memory): treat as not taken
+		return $res ? false : null;
+	}
+
+	return ((int) $row[0] === 1);
+}
+
+/**
+ * Release a lock taken with easyocrAcquireLock().
+ *
+ * @param  DoliDB $dbh  Database handler
+ * @param  string $name Lock name
+ * @return void
+ */
+function easyocrReleaseLock($dbh, $name)
+{
+	$type = isset($dbh->type) ? (string) $dbh->type : '';
+	if (strpos($type, 'pgsql') !== false) {
+		$dbh->query("SELECT pg_advisory_unlock(hashtext('" . $dbh->escape($name) . "'))");
+	} elseif (strpos($type, 'mysql') !== false) {
+		$dbh->query("SELECT RELEASE_LOCK('" . $dbh->escape($name) . "')");
+	}
+}
+
+/**
  * Active third parties whose tax id matches, under any of its stored forms.
  *
  * Both sides are normalized: the stored value loses spaces, dashes, dots and slashes
@@ -1726,10 +1794,11 @@ function easyocrShouldForceDraft($draftOnReview, $reviewCodes, $targetStatus)
  * "ESB33788506" finds a supplier stored as "B-33788506" and the other way round.
  * Suppliers come first, then the oldest record.
  *
- * @param  string $taxId Tax id as read
- * @return array<int, array{id: int, name: string, fournisseur: int}>
+ * @param  string $taxId         Tax id as read
+ * @param  bool   $includeClosed Also return closed third parties (status 0), after the active ones
+ * @return array<int, array{id: int, name: string, fournisseur: int, status: int}>
  */
-function easyocrFindThirdpartiesByTaxId($taxId)
+function easyocrFindThirdpartiesByTaxId($taxId, $includeClosed = false)
 {
 	global $db;
 
@@ -1744,27 +1813,317 @@ function easyocrFindThirdpartiesByTaxId($taxId)
 	}
 	$in = implode(',', $in);
 
-	$conds = array();
-	foreach (array('siren', 'siret', 'ape', 'idprof4', 'idprof5', 'idprof6', 'tva_intra') as $col) {
-		// The usual separators; anything rarer (a no-break space) is left to the name search
-		$conds[] = "UPPER(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(s." . $col . ",''),' ',''),'-',''),'.',''),'/',''),',',''),'_','')) IN (" . $in . ")";
+	if (easyocrTpKeySync()) {
+		// Indexed path: the keys table holds every stored form already normalized
+		$sql = "SELECT DISTINCT s.rowid, s.nom, s.fournisseur, s.status FROM " . MAIN_DB_PREFIX . "easyocr_tpkey k";
+		$sql .= " INNER JOIN " . MAIN_DB_PREFIX . "societe s ON s.rowid = k.fk_soc";
+		$sql .= " WHERE k.kind = 'T' AND k.keyval IN (" . $in . ")";
+	} else {
+		$conds = array();
+		foreach (array('siren', 'siret', 'ape', 'idprof4', 'idprof5', 'idprof6', 'tva_intra') as $col) {
+			// The usual separators; anything rarer (a no-break space) is left to the name search
+			$conds[] = "UPPER(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(s." . $col . ",''),' ',''),'-',''),'.',''),'/',''),',',''),'_','')) IN (" . $in . ")";
+		}
+		$sql = "SELECT s.rowid, s.nom, s.fournisseur, s.status FROM " . MAIN_DB_PREFIX . "societe s";
+		$sql .= " WHERE (" . implode(' OR ', $conds) . ")";
 	}
-
-	$sql = "SELECT s.rowid, s.nom, s.fournisseur FROM " . MAIN_DB_PREFIX . "societe s";
-	$sql .= " WHERE s.status = 1 AND s.entity IN (" . getEntity('societe') . ")";
-	$sql .= " AND (" . implode(' OR ', $conds) . ")";
-	$sql .= " ORDER BY s.fournisseur DESC, s.rowid ASC";
+	$sql .= " AND s.entity IN (" . getEntity('societe') . ")";
+	if (!$includeClosed) {
+		$sql .= " AND s.status = 1";
+	}
+	$sql .= " ORDER BY s.status DESC, s.fournisseur DESC, s.rowid ASC";
 
 	$out = array();
 	$resql = $db->query($sql);
 	if ($resql) {
 		while ($obj = $db->fetch_object($resql)) {
-			$out[] = array('id' => (int) $obj->rowid, 'name' => $obj->nom, 'fournisseur' => (int) $obj->fournisseur);
+			$out[] = array('id' => (int) $obj->rowid, 'name' => $obj->nom, 'fournisseur' => (int) $obj->fournisseur, 'status' => (int) $obj->status);
 		}
 		$db->free($resql);
 	}
 
 	return $out;
+}
+
+/**
+ * Whether what sits in a tax id field is really a name.
+ *
+ * Suppliers with no known tax id (outside the EU, mostly) get their own name, or a
+ * word, typed in the field so the record can be saved. That text is not an id and
+ * proves nothing against a real id read from an invoice. It is a name when it has no
+ * digit, or when it is the third party's own name (names like "3M" do have digits).
+ *
+ * @param  string $value Stored value
+ * @param  string $name  Name of the third party it belongs to
+ * @return bool
+ */
+function easyocrTaxIdIsAName($value, $name)
+{
+	$v = easyocrNormalizeTaxId($value);
+	if ($v === '' || !preg_match('/[0-9]/', $v)) {
+		return true;
+	}
+	$compact = str_replace(' ', '', easyocrSupplierNameKey($name));
+	$core = easyocrSupplierNameCore($name);
+
+	return ($compact !== '' && $v === $compact) || ($core !== '' && $v === $core);
+}
+
+/**
+ * Search keys of one third party, as stored in llx_easyocr_tpkey.
+ *
+ * Tax ids under the form the old SQL compared (separators out, uppercased), the
+ * strict normalization, the label-free form and, for a bare foreign number, the
+ * number with the country prefix of the third party ("501234567" of a Portuguese
+ * supplier also answers to "PT501234567"). A value with no digit is a name typed in
+ * the tax id field (common for suppliers outside the EU), not an id: it is keyed
+ * anyway so reading that same text still finds it.
+ *
+ * @param  object $row Row of llx_societe with nom, siren, siret, ape, idprof4-6, tva_intra, country_code
+ * @return array<int, array{0: string, 1: string}> List of [kind, keyval]
+ */
+function easyocrTpKeysForRow($row)
+{
+	$keys = array();
+	$add = function ($kind, $val) use (&$keys) {
+		$val = substr((string) $val, 0, 128);
+		if ($val !== '' && ($kind !== 'T' || strlen($val) >= 5)) {
+			$keys[$kind . '|' . $val] = array($kind, $val);
+		}
+	};
+
+	$country = strtoupper(trim((string) (isset($row->country_code) ? $row->country_code : '')));
+	$vatCountry = ($country === 'GR') ? 'EL' : $country;
+	foreach (array('siren', 'siret', 'ape', 'idprof4', 'idprof5', 'idprof6', 'tva_intra') as $col) {
+		$val = isset($row->{$col}) ? trim((string) $row->{$col}) : '';
+		if ($val === '') {
+			continue;
+		}
+		$add('T', strtoupper(str_replace(array(' ', '-', '.', '/', ',', '_'), '', $val)));
+		$p = easyocrSplitTaxId($val);
+		$add('T', $p['normalized']);
+		$add('T', $p['bare']);
+		if ($p['country'] !== '') {
+			$add('T', $p['country'] . $p['bare']);
+		} elseif ($vatCountry !== '' && $vatCountry !== 'ES' && in_array($vatCountry, easyocrVatCountryPrefixes(), true) && preg_match('/[0-9]/', $p['bare'])) {
+			$add('T', $vatCountry . $p['bare']);
+		}
+	}
+
+	$nameKey = easyocrSupplierNameKey(isset($row->nom) ? $row->nom : '');
+	if ($nameKey !== '') {
+		$add('C', str_replace(' ', '', $nameKey));
+		$core = easyocrSupplierNameCore($row->nom);
+		if (strlen($core) >= 3) {
+			$add('N', $core);
+		}
+	}
+
+	return array_values($keys);
+}
+
+/**
+ * Whether the keys table exists (the module may run before it was reactivated).
+ *
+ * @return bool
+ */
+function easyocrTpKeyTableExists()
+{
+	global $db;
+	static $exists = null;
+
+	if ($exists === null) {
+		$tables = $db->DDLListTables($db->database_name, MAIN_DB_PREFIX . 'easyocr_tpkey');
+		$exists = is_array($tables) && !empty($tables);
+	}
+
+	return $exists;
+}
+
+/**
+ * Rewrite the keys of some third parties from llx_societe.
+ *
+ * @param  DoliDB $dbh    Database handler
+ * @param  int[]  $socids Third party ids
+ * @return bool
+ */
+function easyocrTpKeyRefreshMany($dbh, $socids)
+{
+	$socids = array_values(array_filter(array_map('intval', (array) $socids)));
+	if (empty($socids) || !easyocrTpKeyTableExists()) {
+		return false;
+	}
+
+	$ok = true;
+	foreach (array_chunk($socids, 500) as $chunk) {
+		$ids = implode(',', $chunk);
+		$sql = "SELECT s.rowid, s.nom, s.siren, s.siret, s.ape, s.idprof4, s.idprof5, s.idprof6, s.tva_intra, c.code as country_code";
+		$sql .= " FROM " . MAIN_DB_PREFIX . "societe s LEFT JOIN " . MAIN_DB_PREFIX . "c_country c ON c.rowid = s.fk_pays";
+		$sql .= " WHERE s.rowid IN (" . $ids . ")";
+		$resql = $dbh->query($sql);
+		if (!$resql) {
+			return false;
+		}
+		$values = array();
+		while ($obj = $dbh->fetch_object($resql)) {
+			foreach (easyocrTpKeysForRow($obj) as $k) {
+				$values[] = "(" . ((int) $obj->rowid) . ",'" . $dbh->escape($k[0]) . "','" . $dbh->escape($k[1]) . "')";
+			}
+		}
+		$dbh->free($resql);
+
+		$ok = $ok && (bool) $dbh->query("DELETE FROM " . MAIN_DB_PREFIX . "easyocr_tpkey WHERE fk_soc IN (" . $ids . ")");
+		foreach (array_chunk($values, 500) as $vals) {
+			$ok = $ok && (bool) $dbh->query("INSERT INTO " . MAIN_DB_PREFIX . "easyocr_tpkey (fk_soc, kind, keyval) VALUES " . implode(',', $vals));
+		}
+	}
+
+	return $ok;
+}
+
+/**
+ * Keys of one third party (trigger on create and modify).
+ *
+ * @param  DoliDB $dbh   Database handler
+ * @param  int    $socid Third party id
+ * @return bool
+ */
+function easyocrSupplierKeyRefresh($dbh, $socid)
+{
+	return easyocrTpKeyRefreshMany($dbh, array((int) $socid));
+}
+
+/**
+ * Forget the keys of a deleted third party (trigger on delete).
+ *
+ * Lookups join llx_societe, so a stale key never finds anything: this only keeps the
+ * table small.
+ *
+ * @param  DoliDB $dbh   Database handler
+ * @param  int    $socid Third party id
+ * @return bool
+ */
+function easyocrSupplierKeyDelete($dbh, $socid)
+{
+	if (!easyocrTpKeyTableExists()) {
+		return false;
+	}
+
+	return (bool) $dbh->query("DELETE FROM " . MAIN_DB_PREFIX . "easyocr_tpkey WHERE fk_soc = " . ((int) $socid));
+}
+
+/**
+ * Bring the keys table up to date before a lookup.
+ *
+ * Does not depend on the trigger: imports, the API and direct SQL also change third
+ * parties, and every change moves llx_societe.tms. The rows whose tms is at or after
+ * the last sync are rewritten (the first time, all of them), so a lookup always sees
+ * what is in llx_societe. Returns false when the table is not there, and the caller
+ * then scans llx_societe as before.
+ *
+ * @return bool True when the indexed lookup can be used
+ */
+function easyocrTpKeySync()
+{
+	global $db, $conf;
+
+	// Not cached per request: a batch creates suppliers between two lookups, and the
+	// second one must see them. Only the rows changed since the mark are read.
+	if (!easyocrTpKeyTableExists()) {
+		return false;
+	}
+
+	$last = isset($conf->global->EASYOCR_TPKEY_SYNC) ? (string) $conf->global->EASYOCR_TPKEY_SYNC : '';
+	if ($last !== '') {
+		// The stored mark is read back from the database each time: another request may
+		// have moved it, and $conf was loaded when this one started.
+		$resql = $db->query("SELECT value FROM " . MAIN_DB_PREFIX . "const WHERE name = 'EASYOCR_TPKEY_SYNC' AND entity = 0");
+		if ($resql && ($obj = $db->fetch_object($resql))) {
+			$last = (string) $obj->value;
+		}
+	}
+
+	$sql = "SELECT rowid, tms FROM " . MAIN_DB_PREFIX . "societe";
+	if ($last !== '' && preg_match('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/', $last)) {
+		// tms is stamped when the row is written, not when its transaction commits: a
+		// third party saved inside a long transaction can show up later with a tms older
+		// than the mark. Ten minutes back covers it; those rows are just rewritten again.
+		$since = date('Y-m-d H:i:s', strtotime($last) - 600);
+		$sql .= " WHERE tms >= '" . $db->escape($since) . "'";
+	} else {
+		// No mark yet: build everything from scratch
+		$db->query("DELETE FROM " . MAIN_DB_PREFIX . "easyocr_tpkey");
+	}
+	$resql = $db->query($sql);
+	if (!$resql) {
+		return false;
+	}
+	$ids = array();
+	$max = $last;
+	while ($obj = $db->fetch_object($resql)) {
+		$ids[] = (int) $obj->rowid;
+		$tms = substr((string) $obj->tms, 0, 19);
+		if ($tms > $max) {
+			$max = $tms;
+		}
+	}
+	$db->free($resql);
+
+	if (!empty($ids) && !easyocrTpKeyRefreshMany($db, $ids)) {
+		return false;
+	}
+	if ($max !== '' && $max !== $last) {
+		require_once DOL_DOCUMENT_ROOT . '/core/lib/admin.lib.php';
+		dolibarr_set_const($db, 'EASYOCR_TPKEY_SYNC', $max, 'chaine', 0, 'Last llx_societe.tms indexed by EasyOCR', 0);
+	}
+
+	return true;
+}
+
+/**
+ * Active suppliers whose name is the one read, legal form ignored.
+ *
+ * Same rule as the 'exact' part of easyocrFindSuppliersByName(), through the keys
+ * table when it is there.
+ *
+ * @param  string $name Name read from the document
+ * @return array<int, array{id: int, name: string}>
+ */
+function easyocrFindSuppliersByExactName($name)
+{
+	global $db;
+
+	$needle = easyocrSupplierNameKey($name);
+	if ($needle === '') {
+		return array();
+	}
+	if (!easyocrTpKeySync()) {
+		$found = easyocrFindSuppliersByName($name, 50);
+		return $found['exact'];
+	}
+
+	$compact = str_replace(' ', '', $needle);
+	$core = easyocrSupplierNameCore($name);
+	$cond = "(k.kind = 'C' AND k.keyval = '" . $db->escape(substr($compact, 0, 128)) . "')";
+	if (strlen($core) >= 3) {
+		$cond .= " OR (k.kind = 'N' AND k.keyval = '" . $db->escape(substr($core, 0, 128)) . "')";
+	}
+	$sql = "SELECT DISTINCT s.rowid, s.nom FROM " . MAIN_DB_PREFIX . "easyocr_tpkey k";
+	$sql .= " INNER JOIN " . MAIN_DB_PREFIX . "societe s ON s.rowid = k.fk_soc";
+	$sql .= " WHERE (" . $cond . ") AND s.fournisseur = 1 AND s.status = 1";
+	$sql .= " AND s.entity IN (" . getEntity('societe') . ")";
+	$sql .= " ORDER BY s.nom";
+
+	$out = array();
+	$resql = $db->query($sql);
+	if ($resql) {
+		while ($obj = $db->fetch_object($resql)) {
+			$out[] = array('id' => (int) $obj->rowid, 'name' => $obj->nom);
+		}
+		$db->free($resql);
+	}
+
+	return array_slice($out, 0, 50);
 }
 
 /**
@@ -1840,7 +2199,7 @@ function easyocrApplyTaxIdToSociete($soc, $taxId, $invalid = false, $supplierCou
 			$soc->country_code = 'ES';
 		}
 	} elseif ($p['country'] !== '') {
-		$soc->tva_intra = $p['normalized'];
+		$soc->tva_intra = $p['country'] . $p['bare'];
 		if (empty($soc->country_code)) {
 			$soc->country_code = ($p['country'] === 'EL') ? 'GR' : $p['country'];
 		}
@@ -1880,6 +2239,7 @@ function easyocrResolveSupplierForDocument($taxId, $name, $supplierCountry = '')
 		'tax_id_invalid' => easyocrTaxIdLooksInvalid($taxId, $supplierCountry, $ownCountry),
 		'candidates'     => array(),
 		'needs_upgrade'  => false,
+		'closed'         => false,
 	);
 	$nameCore = easyocrSupplierNameCore($name);
 
@@ -1904,7 +2264,17 @@ function easyocrResolveSupplierForDocument($taxId, $name, $supplierCountry = '')
 	// 1) Tax id. A misread one is not searched: it would land on a duplicate created
 	//    from that same misreading instead of on the real supplier.
 	if (!$out['tax_id_invalid'] && trim((string) $taxId) !== '') {
-		$rows = easyocrFindThirdpartiesByTaxId($taxId);
+		$rows = easyocrFindThirdpartiesByTaxId($taxId, true);
+		// A closed third party with this id is still that company: it is used (and
+		// reported) only when no active one has the id, instead of creating it again
+		$active = array_values(array_filter($rows, function ($r) {
+			return $r['status'] === 1;
+		}));
+		if (empty($active) && !empty($rows)) {
+			$out['closed'] = true;
+		} else {
+			$rows = $active;
+		}
 		if (!empty($rows)) {
 			$suppliers = array_values(array_filter($rows, function ($r) {
 				return $r['fournisseur'] === 1;
@@ -1922,8 +2292,7 @@ function easyocrResolveSupplierForDocument($taxId, $name, $supplierCountry = '')
 	if (trim((string) $name) === '') {
 		return $out;
 	}
-	$found = easyocrFindSuppliersByName($name, 50);
-	$exact = $found['exact'];
+	$exact = easyocrFindSuppliersByExactName($name);
 
 	$readKey = ($out['tax_id_invalid'] || trim((string) $taxId) === '') ? '' : easyocrTaxIdKey($taxId);
 	if ($readKey !== '' && !empty($exact)) {
@@ -1931,7 +2300,7 @@ function easyocrResolveSupplierForDocument($taxId, $name, $supplierCountry = '')
 			return (int) $c['id'];
 		}, $exact);
 		// Only the tax id fields: the other professional ids hold activity codes and the like
-		$sql = "SELECT rowid, siren, tva_intra FROM " . MAIN_DB_PREFIX . "societe";
+		$sql = "SELECT rowid, nom, siren, tva_intra FROM " . MAIN_DB_PREFIX . "societe";
 		$sql .= " WHERE rowid IN (" . implode(',', $ids) . ")";
 		$resql = $db->query($sql);
 		$stored = array();
@@ -1940,8 +2309,10 @@ function easyocrResolveSupplierForDocument($taxId, $name, $supplierCountry = '')
 				$keys = array();
 				foreach (array('siren', 'tva_intra') as $col) {
 					$val = trim((string) $obj->{$col});
-					// A misread id saved by an older version proves nothing either way
-					if ($val !== '' && !easyocrTaxIdLooksInvalid($val, '', $ownCountry)) {
+					// A misread id saved by an older version proves nothing either way, and
+					// neither does text with no digit: suppliers with no known tax id (outside
+					// the EU, mostly) get their own name typed in the field
+					if ($val !== '' && !easyocrTaxIdIsAName($val, $obj->nom) && !easyocrTaxIdLooksInvalid($val, '', $ownCountry)) {
 						$keys[] = easyocrTaxIdKey($val);
 					}
 				}
@@ -2195,25 +2566,30 @@ function easyocrCreateInvoiceFromOCR($params, $userObj = null)
 	} elseif (!empty($fk_soc)) {
 		$lockKeys[] = 'soc_' . ((int) $fk_soc);
 	}
-	$lockTimeout = 30; // seconds
+	$lockTimeout = max(5, (int) (empty($conf->global->EASYOCR_LOCK_TIMEOUT) ? 60 : $conf->global->EASYOCR_LOCK_TIMEOUT)); // seconds
 	$heldLocks = array();
-	foreach ($lockKeys as $lockKey) {
-		$lockName = 'eo_' . substr(md5($lockKey), 0, 30);
-		$resLock = $db->query("SELECT GET_LOCK('" . $db->escape($lockName) . "', " . ((int) $lockTimeout) . ")");
-		$objLock = $resLock ? $db->fetch_array($resLock) : null;
-		if (isset($objLock[0]) && $objLock[0] == 1) {
-			$heldLocks[] = $lockName;
-		} else {
-			dol_syslog('EasyOCR-CREATE: WARNING — Could not acquire advisory lock "' . $lockName . '", proceeding without lock', LOG_WARNING);
-		}
-	}
-	$lockAcquired = !empty($heldLocks);
 	$releaseLocks = function () use ($db, &$heldLocks) {
 		foreach (array_reverse($heldLocks) as $held) {
-			$db->query("SELECT RELEASE_LOCK('" . $db->escape($held) . "')");
+			easyocrReleaseLock($db, $held);
 		}
 		$heldLocks = array();
 	};
+	foreach ($lockKeys as $lockKey) {
+		$lockName = 'eo_' . substr(md5($lockKey), 0, 30);
+		$got = easyocrAcquireLock($db, $lockName, $lockTimeout);
+		if ($got === true) {
+			$heldLocks[] = $lockName;
+		} elseif ($got === false) {
+			// Another request is still creating this same supplier or invoice. Going on
+			// without the lock is what lets both create it: the caller retries later.
+			$releaseLocks();
+			dol_syslog('EasyOCR-CREATE: lock "' . $lockName . '" busy after ' . $lockTimeout . ' s — asking the caller to retry', LOG_WARNING);
+			$msg = is_object($langs) ? $langs->transnoentities('EasyOcrLockBusy') : 'Another document of the same supplier is being processed: try again in a moment.';
+			return ['status' => 'retry', 'message' => $msg, 'error_code' => 'lock_busy', 'retry_after' => 30];
+		}
+		// null: the database has no advisory locks; nothing to serialize with
+	}
+	$lockAcquired = !empty($heldLocks);
 
 	// ── Resolve supplier if fk_soc not provided ─────────────────────────
 	// Nobody picked it (webhook, receipt): tax id under any of its forms, then the
@@ -2232,6 +2608,9 @@ function easyocrCreateInvoiceFromOCR($params, $userObj = null)
 			// really created (not on a duplicate or a refused document)
 			if ($resolved['needs_upgrade']) {
 				$pendingSupplierUpgrade = $fk_soc;
+			}
+			if (!empty($resolved['closed'])) {
+				$reviewAdd('supplier_closed', is_object($langs) ? $langs->transnoentities('EasyOcrReviewSupplierClosed', $supplier_tax_id, $fk_soc) : 'The third party with the tax id ' . $supplier_tax_id . ' (id ' . $fk_soc . ') is closed: reopen it or check the invoice belongs to it.');
 			}
 			if (count($resolved['candidates']) > 1) {
 				$candidateList = implode(', ', $resolved['candidates']);
@@ -2321,6 +2700,9 @@ function easyocrCreateInvoiceFromOCR($params, $userObj = null)
 			if ($createdId > 0) {
 				$fk_soc = $createdId;
 				$supplier_created = true;
+				// Indexed now, before the lock is released: the next document of this same
+				// new supplier must find it even if the trigger is off or the sync mark moved
+				easyocrSupplierKeyRefresh($db, $createdId);
 				$supplier_created_name = $newSoc->name;
 				if ($supplierTaxIdInvalid) {
 					$reviewAdd('tax_id_invalid_created', is_object($langs) ? $langs->transnoentities('EasyOcrReviewTaxIdInvalidCreated', $supplier_tax_id) : 'The tax id read (' . $supplier_tax_id . ') is not valid and no supplier has that name: a new one was created. Check its tax id.');
@@ -2390,7 +2772,7 @@ function easyocrCreateInvoiceFromOCR($params, $userObj = null)
 		$sql_dup2 .= " WHERE fk_soc = " . ((int) $fk_soc);
 		$sql_dup2 .= " AND total_ttc = " . ((float) $total_ttc);
 		$sql_dup2 .= " AND datef = '" . $db->escape($datef_str) . "'";
-		$sql_dup2 .= " AND import_key IN ('easyocr-ai', 'easyocr-wh')";
+		$sql_dup2 .= " AND import_key IN ('easyocr', 'easyocr-ai', 'easyocr-wh')";
 		$sql_dup2 .= " AND entity IN (" . getEntity('supplier_invoice') . ")";
 		$resql_dup2 = $db->query($sql_dup2);
 		if ($resql_dup2 && $db->num_rows($resql_dup2) > 0) {
@@ -2437,10 +2819,12 @@ function easyocrCreateInvoiceFromOCR($params, $userObj = null)
 	if ($is_proposal) {
 		if (!easyocrProposalModuleEnabled()) {
 			$msg = is_object($langs) ? $langs->trans('EasyOcrErrorProposalModuleOff') : 'The supplier proposals module is not enabled';
+			$releaseLocks();
 			return ['status' => 'error', 'message' => $msg];
 		}
 		if (!easyocrCheckRight($userObj, 'supplier_proposal', 'creer')) {
 			$msg = is_object($langs) ? $langs->trans('EasyOcrErrorProposalNoPermission') : 'No permission to create supplier proposals';
+			$releaseLocks();
 			return ['status' => 'error', 'message' => $msg];
 		}
 
@@ -2580,10 +2964,9 @@ function easyocrCreateInvoiceFromOCR($params, $userObj = null)
 
 	// Set import_key and journal code (invoice only: the proposal table has neither)
 	if (!$is_proposal) {
+		// journal_code is not written: facture_fourn.fk_account is the BANK account, and the
+		// journal row id stored there pointed the invoice at whatever bank had that id
 		$sql_upd = "UPDATE " . MAIN_DB_PREFIX . "facture_fourn SET import_key = '" . $db->escape($import_key) . "'";
-		if (!empty($journal_code)) {
-			$sql_upd .= ", fk_account = (SELECT rowid FROM " . MAIN_DB_PREFIX . "accounting_journal WHERE code = '" . $db->escape($journal_code) . "' AND entity = " . ((int) $conf->entity) . " LIMIT 1)";
-		}
 		$sql_upd .= " WHERE rowid = " . ((int) $newId);
 		if (!$db->query($sql_upd)) {
 			// Not fatal, but it used to fail silently and lose the origin tag
@@ -2775,7 +3158,17 @@ function easyocrCreateInvoiceFromOCR($params, $userObj = null)
 	$ocr_localtax1 = easyocrParseNumber($total_localtax1);
 	$ocr_localtax2 = easyocrParseNumber($total_localtax2);
 
-	if (!$is_proposal) {
+	if (!$is_proposal && abs((float) $ocr_total_ttc) < 0.005 && abs((float) $ocr_total_ht) < 0.005) {
+		// No total was read (or the service renamed the field): forcing 0 over real lines
+		// would hide them. The lines' own sum stays, and someone looks at it.
+		$reviewAdd('totals_missing', is_object($langs) ? $langs->transnoentities('EasyOcrReviewTotalsMissing') : 'The document totals were not read: the invoice keeps the sum of its lines. Check it against the document.');
+		$resNoteT = $db->query("SELECT note_private FROM " . MAIN_DB_PREFIX . "facture_fourn WHERE rowid = " . ((int) $newId));
+		$objNoteT = $resNoteT ? $db->fetch_object($resNoteT) : null;
+		$noteNowT = $objNoteT ? (string) $objNoteT->note_private : '';
+		$facture->update_note(($noteNowT !== '' ? $noteNowT . "
+
+" : '') . end($reviewNotes), '_private');
+	} elseif (!$is_proposal) {
 		$sql_totals = "UPDATE " . MAIN_DB_PREFIX . "facture_fourn SET";
 		$sql_totals .= " total_ht = " . ((float) $ocr_total_ht);
 		$sql_totals .= ", tva = " . ((float) $ocr_total_tva);
@@ -2784,10 +3177,13 @@ function easyocrCreateInvoiceFromOCR($params, $userObj = null)
 			$sql_totals .= ", localtax1 = " . ((float) $ocr_localtax1);
 		}
 		if ($ocr_localtax2 != 0) {
-			$sql_totals .= ", localtax2 = " . ((float) -abs($ocr_localtax2));
+			// Withholding: negative on an invoice, positive on a credit note
+			$sql_totals .= ", localtax2 = " . ((float) (abs($ocr_localtax2) * ((float) $ocr_total_ht < 0 ? 1 : -1)));
 		}
 		$sql_totals .= " WHERE rowid = " . ((int) $newId);
-		$db->query($sql_totals);
+		if (!$db->query($sql_totals)) {
+			dol_syslog('EasyOCR-CREATE: could not set the document totals — ' . $db->lasterror(), LOG_ERR);
+		}
 
 		dol_syslog("EasyOCR: Updated invoice totals - HT: $ocr_total_ht, TVA: $ocr_total_tva, TTC: $ocr_total_ttc, LTX1: $ocr_localtax1, LTX2: $ocr_localtax2", LOG_DEBUG);
 	}
@@ -2815,11 +3211,22 @@ function easyocrCreateInvoiceFromOCR($params, $userObj = null)
 				$errMsg .= ' | Line errors: ' . implode('; ', $lineErrors);
 			}
 			dol_syslog('EasyOCR-CREATE: ERROR validating: ' . $errMsg, LOG_ERR);
-			$releaseLocks();
-			return ['status' => 'error', 'message' => $errMsg];
+			// The document exists: it stays a draft with the reason, attached to its PDF,
+			// instead of an error with no id that leaves an orphan draft behind
+			$reviewAdd('validate_failed', is_object($langs) ? $langs->transnoentities('EasyOcrReviewValidateFailed', $facture->error) : 'It could not be validated (' . $facture->error . '): it is left as a draft.');
+			$resNoteV = $db->query("SELECT note_private FROM " . MAIN_DB_PREFIX . ($is_proposal ? "supplier_proposal" : "facture_fourn") . " WHERE rowid = " . ((int) $newId));
+			$objNoteV = $resNoteV ? $db->fetch_object($resNoteV) : null;
+			$noteNowV = $objNoteV ? (string) $objNoteV->note_private : '';
+			$facture->update_note(($noteNowV !== '' ? $noteNowV . "
+
+" : '') . end($reviewNotes), '_private');
+			$invoice_status = 'draft';
+			$forcedDraft = true;
+			$facture->fetch($newId);
+		} else {
+			$facture->fetch($newId);
+			$ref = $facture->ref;
 		}
-		$facture->fetch($newId);
-		$ref = $facture->ref;
 	} else {
 		$facture->fetch($newId);
 	}
@@ -2899,7 +3306,12 @@ function easyocrCreateInvoiceFromOCR($params, $userObj = null)
 				// so it stays pending, and say why instead of failing in silence.
 				$bankError = $paiement->error ? $paiement->error : implode(', ', (array) $paiement->errors);
 				$facture->setUnpaid($userObj);
-				$paiement->delete();
+				// Not passing a user: delete() takes ($notrigger) up to Dolibarr 18 and
+				// ($user, $notrigger) from 20 on
+				if ($paiement->delete() < 0) {
+					$bankError .= ' / ' . ($paiement->error ? $paiement->error : 'the payment could not be removed');
+					dol_syslog('EasyOCR-CREATE: payment ' . $paiement_id . ' could not be removed after the bank refused it', LOG_ERR);
+				}
 				$paymentError = is_object($langs) ? $langs->transnoentities('EasyOcrPaymentBankFailed', $bankError) : 'The payment could not be registered in the bank (' . $bankError . '): the invoice is left pending payment.';
 				dol_syslog('EasyOCR-CREATE: payment undone, bank line refused — ' . $bankError, LOG_ERR);
 				$resNote = $db->query("SELECT note_private FROM " . MAIN_DB_PREFIX . "facture_fourn WHERE rowid = " . ((int) $newId));

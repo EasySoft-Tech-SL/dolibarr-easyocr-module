@@ -929,6 +929,36 @@ eo_assert('within tolerance', easyocrCheckHeaderTotals(array('total_ht' => 100, 
 eo_assert('VAT not read: not checked', easyocrCheckHeaderTotals(array('total_ht' => 100, 'total_tva' => '', 'total_ttc' => 150)), array());
 eo_assert('total not read: not checked', easyocrCheckHeaderTotals(array('total_ht' => 100, 'total_tva' => 21, 'total_ttc' => 0)), array());
 eo_assert('no array: not checked', easyocrCheckHeaderTotals(null), array());
+eo_assert('credit note with withholding adds up', easyocrCheckHeaderTotals(array('total_ht' => -100, 'total_tva' => -21, 'total_localtax2' => 15, 'total_ttc' => -106)), array());
+
+eo_group('2.9.0 — labels, Greek prefix, names typed as tax ids, search keys');
+foreach (array('NIF/CIF: B12345674', 'CIF/NIF B12345674', 'Tax ID: B12345674', 'VAT Reg. No. B12345674', 'N.I.F.-C.I.F. B12345674', 'TIN B12345674') as $lbl) {
+	eo_assert('label chain "' . $lbl . '" is dropped', easyocrSplitTaxId($lbl)['bare'], 'B12345674');
+}
+eo_assert('label then ES prefix', easyocrSplitTaxId('IVA: ES B12345674'), array('normalized' => 'ESB12345674', 'country' => 'ES', 'bare' => 'B12345674'));
+eo_assert('NIE after its label keeps its X', easyocrSplitTaxId('NIE X1234567L')['bare'], 'X1234567L');
+eo_assert('a Norwegian VAT keeps its NO prefix', easyocrSplitTaxId('NO123456789MVA')['country'], 'NO');
+eo_assert('GR is read as the Greek EL prefix', easyocrSplitTaxId('GR094014201'), array('normalized' => 'GR094014201', 'country' => 'EL', 'bare' => '094014201'));
+eo_assert('Greek variants carry both prefixes', array_values(array_intersect(array('EL094014201', 'GR094014201', '094014201'), easyocrTaxIdVariants('GR094014201'))), array('EL094014201', 'GR094014201', '094014201'));
+eo_assert('a word in the tax id field is a name', easyocrTaxIdIsAName('OPENAI', 'OpenAI, L.L.C.'), true);
+eo_assert('the own name with digits is a name', easyocrTaxIdIsAName('3M ESPANA', '3M España, S.A.'), true);
+eo_assert('a real id is not a name', easyocrTaxIdIsAName('B12345674', 'OpenAI, L.L.C.'), false);
+eo_assert('an empty field is a name (proves nothing)', easyocrTaxIdIsAName('', 'X'), true);
+$kr = (object) array('nom' => 'Lisboa Comercio, Lda', 'siren' => '501 234 567', 'siret' => '', 'ape' => '', 'idprof4' => '', 'idprof5' => '', 'idprof6' => '', 'tva_intra' => '', 'country_code' => 'PT');
+$kk = array_map(function ($k) {
+	return $k[0] . ':' . $k[1];
+}, easyocrTpKeysForRow($kr));
+eo_assert('keys: bare foreign number', in_array('T:501234567', $kk, true), true);
+eo_assert('keys: with the country prefix of the third party', in_array('T:PT501234567', $kk, true), true);
+eo_assert('keys: name compacted', in_array('C:LISBOACOMERCIOLDA', $kk, true), true);
+eo_assert('keys: name without legal form', in_array('N:LISBOACOMERCIO', $kk, true), true);
+$kr->country_code = 'ES';
+$kr->siren = 'B-1234.5674';
+$kk = array_map(function ($k) {
+	return $k[0] . ':' . $k[1];
+}, easyocrTpKeysForRow($kr));
+eo_assert('keys: Spanish id never gets a foreign prefix', preg_grep('/^T:(PT|DE)/', $kk), array());
+eo_assert('keys: separators out', in_array('T:B12345674', $kk, true), true);
 
 
 // ── Summary ──────────────────────────────────────────────────────────────
