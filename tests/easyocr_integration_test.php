@@ -125,6 +125,7 @@ $supplier->country_id = $mysoc->country_id;
 $supplier->idprof1    = 'B99999999';   // deliberately NOT our own tax id
 $supplier->tva_intra  = '';
 $supplier->status     = 1;
+$supplier->get_codefournisseur();   // some setups require a supplier code
 $supplierId = $supplier->create($user);
 eo_assert('test supplier created', $supplierId > 0, true);
 if ($supplierId <= 0) {
