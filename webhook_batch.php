@@ -289,7 +289,9 @@ function easyocrWebhookBuildUrl($db, $create = true)
  *
  * - token: compared with hash_equals against the entity token.
  * - instance_id (legacy): accepted only while the legacy window is open. With no window
- *   yet, the first legacy call opens it (set_legacy_until). Never pays.
+ *   yet, the first legacy call opens it (set_legacy_until), but only on an installation
+ *   that comes from before 2.9.0 and was already in use ($legacyEligible): a fresh 2.9.0
+ *   install never handed out an instance_id URL, so there it is refused. Never pays.
  * - nothing configured or nothing received: refused.
  *
  * @param  string $receivedToken      ?token=
@@ -298,9 +300,10 @@ function easyocrWebhookBuildUrl($db, $create = true)
  * @param  string $expectedInstanceId $dolibarr_main_instance_unique_id
  * @param  int    $legacyUntil        EASYOCR_WEBHOOK_LEGACY_UNTIL (timestamp, 0 = not set)
  * @param  int    $now                Current time
+ * @param  bool   $legacyEligible     May a missing window be opened (see easyocrWebhookLegacyEligible)
  * @return array{ok:bool,mode:string,reason:string,set_legacy_until:int}
  */
-function easyocrWebhookAuthenticate($receivedToken, $receivedInstanceId, $expectedToken, $expectedInstanceId, $legacyUntil, $now)
+function easyocrWebhookAuthenticate($receivedToken, $receivedInstanceId, $expectedToken, $expectedInstanceId, $legacyUntil, $now, $legacyEligible = false)
 {
 	$out = array('ok' => false, 'mode' => '', 'reason' => 'auth_failed', 'set_legacy_until' => 0);
 	$receivedToken = is_string($receivedToken) ? $receivedToken : '';
@@ -323,6 +326,9 @@ function easyocrWebhookAuthenticate($receivedToken, $receivedInstanceId, $expect
 		}
 		$legacyUntil = (int) $legacyUntil;
 		if ($legacyUntil <= 0) {
+			if (!$legacyEligible) {
+				return $out;
+			}
 			$out['set_legacy_until'] = (int) $now + EASYOCR_WEBHOOK_LEGACY_DAYS * 86400;
 		} elseif ((int) $now > $legacyUntil) {
 			$out['reason'] = 'legacy_expired';
@@ -335,6 +341,22 @@ function easyocrWebhookAuthenticate($receivedToken, $receivedInstanceId, $expect
 	}
 
 	return $out;
+}
+
+/**
+ * May this installation still open the legacy window? Pure: no I/O.
+ *
+ * Only one updated from before 2.9.0 (schema revision below 3; empty before 2.7.3) that
+ * was in use (an API key configured). Once the schema repair has run it opens the window
+ * itself when it applies, so a revision of 3 or more with no window means "not eligible".
+ *
+ * @param  string $schemaRevision EASYOCR_SCHEMA_REVISION stored for the entity
+ * @param  string $apiKey         EASYOCR_AI_APIKEY stored for the entity
+ * @return bool
+ */
+function easyocrWebhookLegacyEligible($schemaRevision, $apiKey)
+{
+	return (int) $schemaRevision < 3 && trim((string) $apiKey) !== '';
 }
 
 /**
@@ -742,7 +764,10 @@ if ($expectedInstanceId === '' && isset($conf->file->instance_unique_id)) {
 $expectedToken = easyocrWebhookReadConst($db, 'EASYOCR_WEBHOOK_TOKEN', $reqEntity);
 $legacyUntil = (int) easyocrWebhookReadConst($db, 'EASYOCR_WEBHOOK_LEGACY_UNTIL', $reqEntity);
 
-$auth = easyocrWebhookAuthenticate($eoReceivedToken, $eoReceivedInstanceId, $expectedToken, $expectedInstanceId, $legacyUntil, dol_now());
+$legacyEligible = ($legacyUntil <= 0 && $eoReceivedInstanceId !== '')
+	? easyocrWebhookLegacyEligible(easyocrWebhookReadConst($db, 'EASYOCR_SCHEMA_REVISION', $reqEntity), easyocrWebhookReadConst($db, 'EASYOCR_AI_APIKEY', $reqEntity))
+	: false;
+$auth = easyocrWebhookAuthenticate($eoReceivedToken, $eoReceivedInstanceId, $expectedToken, $expectedInstanceId, $legacyUntil, dol_now(), $legacyEligible);
 unset($expectedToken, $expectedInstanceId);
 if (!$auth['ok']) {
 	// Same answer for every failure: no lengths, no expected values

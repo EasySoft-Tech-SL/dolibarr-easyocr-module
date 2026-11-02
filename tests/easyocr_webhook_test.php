@@ -99,9 +99,17 @@ $a = easyocrWebhookAuthenticate('', '', '', '', 0, $now);
 eo_assert('nothing configured, nothing received: refused', $a['ok'], false);
 $a = easyocrWebhookAuthenticate('', '', $tok, $iid, 0, $now);
 eo_assert('no credentials in the request: refused', $a['ok'], false);
-$a = easyocrWebhookAuthenticate('', $iid, $tok, $iid, 0, $now);
+$a = easyocrWebhookAuthenticate('', $iid, $tok, $iid, 0, $now, true);
 eo_assert('legacy instance_id, first use: accepted in legacy mode', array($a['ok'], $a['mode']), array(true, 'legacy'));
 eo_assert('legacy first use opens a 30-day window', $a['set_legacy_until'], $now + 30 * 86400);
+$a = easyocrWebhookAuthenticate('', $iid, $tok, $iid, 0, $now, false);
+eo_assert('legacy on a fresh 2.9.0 install (no window, not eligible): refused, no window opened', array($a['ok'], $a['set_legacy_until']), array(false, 0));
+$a = easyocrWebhookAuthenticate('', $iid, $tok, $iid, 0, $now);
+eo_assert('legacy eligibility defaults to no', $a['ok'], false);
+eo_assert('eligible: updated from 2.8 (revision 2) with an API key', easyocrWebhookLegacyEligible('2', 'k-123'), true);
+eo_assert('eligible: updated from before 2.7.3 (no revision) with an API key', easyocrWebhookLegacyEligible('', 'k-123'), true);
+eo_assert('not eligible: never configured (no API key)', easyocrWebhookLegacyEligible('2', '  '), false);
+eo_assert('not eligible: schema already at 2.9.0 (repair decided)', easyocrWebhookLegacyEligible('3', 'k-123'), false);
 $a = easyocrWebhookAuthenticate('', $iid, $tok, $iid, $now + 10, $now);
 eo_assert('legacy inside the window: accepted, window untouched', array($a['ok'], $a['set_legacy_until']), array(true, 0));
 $a = easyocrWebhookAuthenticate('', $iid, $tok, $iid, $now - 1, $now);
@@ -263,6 +271,45 @@ if ($db->type !== 'pgsql') {
 	eo_assert('index (entity, document_id)', isset($idx['idx_easyocr_webhook_log_document']) ? $idx['idx_easyocr_webhook_log_document'] : null, array('entity', 'document_id'));
 }
 
+eo_group('schema repair opens the legacy window only for an install in use');
+// Outside the transaction: easyocrEnsureSchema() never runs inside one.
+$prevRev = getDolGlobalString('EASYOCR_SCHEMA_REVISION');
+$prevWin = easyocrWebhookReadConst($db, 'EASYOCR_WEBHOOK_LEGACY_UNTIL', 1);
+$prevKey = getDolGlobalString('EASYOCR_AI_APIKEY');
+try {
+	dolibarr_set_const($db, 'EASYOCR_SCHEMA_REVISION', '2', 'chaine', 0, '', 1);
+	dolibarr_del_const($db, 'EASYOCR_WEBHOOK_LEGACY_UNTIL', 1);
+	dolibarr_set_const($db, 'EASYOCR_AI_APIKEY', 'k-test-key', 'chaine', 0, '', 1);
+	easyocrEnsureSchema();
+	$win = (int) getDolGlobalString('EASYOCR_WEBHOOK_LEGACY_UNTIL');
+	eo_assert('updated from 2.8 with an API key: window of ~30 days', abs($win - (dol_now() + 30 * 86400)) < 600, true);
+	eo_assert('... and the revision mark is 3', getDolGlobalString('EASYOCR_SCHEMA_REVISION'), (string) EASYOCR_SCHEMA_REVISION);
+
+	dolibarr_set_const($db, 'EASYOCR_SCHEMA_REVISION', '2', 'chaine', 0, '', 1);
+	dolibarr_del_const($db, 'EASYOCR_WEBHOOK_LEGACY_UNTIL', 1);
+	dolibarr_del_const($db, 'EASYOCR_AI_APIKEY', 1);
+	easyocrEnsureSchema();
+	eo_assert('fresh install (no API key yet): no window', easyocrWebhookReadConst($db, 'EASYOCR_WEBHOOK_LEGACY_UNTIL', 1), '');
+
+	dolibarr_set_const($db, 'EASYOCR_SCHEMA_REVISION', '2', 'chaine', 0, '', 1);
+	dolibarr_set_const($db, 'EASYOCR_WEBHOOK_LEGACY_UNTIL', '12345', 'chaine', 0, '', 1);
+	dolibarr_set_const($db, 'EASYOCR_AI_APIKEY', 'k-test-key', 'chaine', 0, '', 1);
+	easyocrEnsureSchema();
+	eo_assert('a window already set is not moved', easyocrWebhookReadConst($db, 'EASYOCR_WEBHOOK_LEGACY_UNTIL', 1), '12345');
+} finally {
+	dolibarr_set_const($db, 'EASYOCR_SCHEMA_REVISION', $prevRev !== '' ? $prevRev : (string) EASYOCR_SCHEMA_REVISION, 'chaine', 0, '', 1);
+	if ($prevWin !== '') {
+		dolibarr_set_const($db, 'EASYOCR_WEBHOOK_LEGACY_UNTIL', $prevWin, 'chaine', 0, '', 1);
+	} else {
+		dolibarr_del_const($db, 'EASYOCR_WEBHOOK_LEGACY_UNTIL', 1);
+	}
+	if ($prevKey !== '') {
+		dolibarr_set_const($db, 'EASYOCR_AI_APIKEY', $prevKey, 'chaine', 0, '', 1);
+	} else {
+		dolibarr_del_const($db, 'EASYOCR_AI_APIKEY', 1);
+	}
+}
+
 $db->begin();
 register_shutdown_function(function () use ($db) {
 	if (!empty($db->transaction_opened)) {
@@ -417,7 +464,13 @@ if ($probeCode === 0) {
 		eo_assert('already processed document: repeat with the known invoice', array($c, $j['status'], $j['processing']['invoice_id']), array(200, 'repeat', 321));
 		eo_assert('already processed document: nothing processed or stored again', $after, $before);
 
-		// Legacy URL: first use opens the window, never pays; after it, 403
+		// Fresh 2.9.0 install (schema at 3, no window): the instance_id URL never worked here
+		list($c, $h, $b) = eo_http($endpoint . '?instance_id=' . urlencode($dolibarr_main_instance_unique_id), '{"event":"batch.completed"}');
+		eo_assert('legacy on an install already at 2.9.0 with no window: 403', $c, 403);
+		eo_assert('... and it does not open a window', easyocrWebhookReadConst($db, 'EASYOCR_WEBHOOK_LEGACY_UNTIL', 1), '');
+
+		// Updated from 2.8 (revision 2, API key set): first use opens the window, never pays; after it, 403
+		dolibarr_set_const($db, 'EASYOCR_SCHEMA_REVISION', '2', 'chaine', 0, '', 1);
 		list($c, $h, $b) = eo_http($endpoint . '?instance_id=' . urlencode($dolibarr_main_instance_unique_id) . '&pay=1&bank_id=1', json_encode(array('event' => 'batch.completed', 'batch_id' => $docB)));
 		$j = json_decode($b, true);
 		$legacySet = (int) easyocrWebhookReadConst($db, 'EASYOCR_WEBHOOK_LEGACY_UNTIL', 1);
@@ -440,6 +493,7 @@ if ($probeCode === 0) {
 		}
 	} finally {
 		// Leave the site as it was
+		dolibarr_set_const($db, 'EASYOCR_SCHEMA_REVISION', (string) EASYOCR_SCHEMA_REVISION, 'chaine', 0, '', 1);
 		$db->query("DELETE FROM " . MAIN_DB_PREFIX . "easyocr_webhook_log WHERE batch_id = '" . $db->escape($docB) . "' OR document_id = '" . $db->escape($docB) . "'");
 		if ($prevToken !== '') {
 			dolibarr_set_const($db, 'EASYOCR_WEBHOOK_TOKEN', $prevToken, 'chaine', 0, '', 1);

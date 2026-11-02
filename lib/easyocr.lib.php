@@ -3891,6 +3891,15 @@ function easyocrEnsureSchema()
 		$mod->insert_menus();
 	}
 
+	// 2.9.0 replaces the instance_id webhook URL with a token. An installation that was in
+	// use before (API key set) gets 30 days for the batches already sent with the old URL;
+	// a fresh install never had one and gets no window (see easyocrWebhookLegacyEligible).
+	if ((int) getDolGlobalString('EASYOCR_SCHEMA_REVISION') < 3
+		&& getDolGlobalString('EASYOCR_WEBHOOK_LEGACY_UNTIL') === ''
+		&& trim(getDolGlobalString('EASYOCR_AI_APIKEY')) !== '') {
+		dolibarr_set_const($db, 'EASYOCR_WEBHOOK_LEGACY_UNTIL', (string) (dol_now() + 30 * 86400), 'chaine', 0, '', $conf->entity);
+	}
+
 	dolibarr_set_const($db, 'EASYOCR_SCHEMA_REVISION', (string) EASYOCR_SCHEMA_REVISION, 'chaine', 0, '', $conf->entity);
 
 	return true;
