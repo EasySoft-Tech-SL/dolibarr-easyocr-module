@@ -2340,6 +2340,47 @@ function easyocrResolveSupplierForDocument($taxId, $name, $supplierCountry = '')
 }
 
 /**
+ * Folder where Dolibarr keeps the files of a supplier invoice or proposal.
+ *
+ * The entity's own output folder: with Multicompany, entity 2 lives under
+ * DOL_DATA_ROOT/2/, and a path built from DOL_DATA_ROOT alone put the PDF where the
+ * document's Files tab never looks.
+ *
+ * @param  CommonObject $doc        FactureFournisseur or SupplierProposal, fetched
+ * @param  bool         $isProposal True for a supplier proposal
+ * @param  string       $refClean   Sanitized ref of the document
+ * @return string                   Absolute folder, without trailing slash
+ */
+function easyocrDocumentDir($doc, $isProposal, $refClean)
+{
+	global $conf;
+
+	$entity = !empty($doc->entity) ? (int) $doc->entity : (int) $conf->entity;
+	if ($isProposal) {
+		$cfg = isset($conf->supplier_proposal) ? $conf->supplier_proposal : null;
+		$fallback = DOL_DATA_ROOT . '/supplier_proposal';
+		$sub = get_exdir($doc->id, 2, 0, 0, $doc, 'supplier_proposal');
+	} else {
+		$cfg = (isset($conf->fournisseur) && isset($conf->fournisseur->facture)) ? $conf->fournisseur->facture : null;
+		$fallback = DOL_DATA_ROOT . '/fournisseur/facture';
+		$sub = get_exdir($doc->id, 2, 0, 0, $doc, 'invoice_supplier');
+	}
+	$base = '';
+	if (is_object($cfg)) {
+		if (!empty($cfg->multidir_output[$entity])) {
+			$base = $cfg->multidir_output[$entity];
+		} elseif (!empty($cfg->dir_output)) {
+			$base = $cfg->dir_output;
+		}
+	}
+	if ($base === '') {
+		$base = $fallback;
+	}
+
+	return rtrim($base, '/\\') . '/' . $sub . $refClean;
+}
+
+/**
  * Add a paragraph to the private note of a document, keeping what it already says.
  *
  * Read from the database, not from the object: the note may have been written by an
@@ -2442,6 +2483,7 @@ function easyocrPaySupplierInvoice($facture, $userObj, $bankId, $paymentTypeId, 
  *   - create_payment    string '1' to auto-create payment
  *   - payment_bank_id   int    Bank account ID for payment
  *   - payment_type_id   int    Payment type ID
+ *   - line_desc         string Text of the single line when there are no items (default: "Invoice total")
  *   - file_tmp_path     string Temp path of uploaded PDF
  *   - file_name         string Original filename of PDF
  *   - draft_on_review   bool   Keep the document as a draft when something needs review
@@ -3270,7 +3312,8 @@ function easyocrCreateInvoiceFromOCRCore($params, $userObj = null)
 		$tva_tx = easyocrCalcTaxRate($total_ht, $total_tva);
 		$localtax1_tx = get_localtax($tva_tx, 1, $mysoc, $socTmp);
 		$localtax2_tx = get_localtax($tva_tx, 2, $mysoc, $socTmp);
-		$lineDesc = is_object($langs) ? $langs->trans('EasyOcrInvoiceLineDesc') : 'Invoice total';
+		// A template may give the line its own text (the description it extracted)
+		$lineDesc = (isset($params['line_desc']) && trim((string) $params['line_desc']) !== '') ? (string) $params['line_desc'] : (is_object($langs) ? $langs->trans('EasyOcrInvoiceLineDesc') : 'Invoice total');
 		easyocrAddDocumentLine($facture, $is_proposal, array(
 			'desc'  => $lineDesc,
 			'pu'    => $total_ht,
@@ -3356,12 +3399,9 @@ function easyocrCreateInvoiceFromOCRCore($params, $userObj = null)
 	// ── Attach PDF to the document ───────────────────────────────────────
 	if (!empty($file_tmp_path) && file_exists($file_tmp_path)) {
 		$ref_clean = dol_sanitizeFileName($ref);
-		if ($is_proposal) {
-			$reldir = 'supplier_proposal/' . get_exdir($newId, 2, 0, 0, $facture, 'supplier_proposal') . $ref_clean;
-		} else {
-			$reldir = 'fournisseur/facture/' . get_exdir($newId, 2, 0, 0, $facture, 'invoice_supplier') . $ref_clean;
-		}
-		$destDir = DOL_DATA_ROOT . '/' . $reldir;
+		$destDir = easyocrDocumentDir($facture, $is_proposal, $ref_clean);
+		// ECM keeps the path relative to the data root, entity folder included
+		$reldir = ltrim(preg_replace('/^' . preg_quote(DOL_DATA_ROOT, '/') . '/', '', $destDir), '/\\');
 
 		if (!@is_dir($destDir)) {
 			@mkdir($destDir, 0755, true); // Native mkdir avoids dol_mkdir open_basedir issue
@@ -3378,10 +3418,19 @@ function easyocrCreateInvoiceFromOCRCore($params, $userObj = null)
 		}
 		$destFullPath = $destDir . '/' . $destFileName;
 
-		// dol_move for HTTP context, copy() as fallback for webhook / CLI
-		$fileMoved = @dol_move($file_tmp_path, $destFullPath, 0, 1, 0, 0);
-		if (!$fileMoved) {
-			$fileMoved = @copy($file_tmp_path, $destFullPath);
+		// A file uploaded in this request goes through Dolibarr's upload checks (antivirus
+		// when configured); otherwise dol_move, and copy() as fallback for webhook / CLI
+		if (is_uploaded_file($file_tmp_path)) {
+			// No fallback here: a file the antivirus refused must not get in another way
+			$fileMoved = (dol_move_uploaded_file($file_tmp_path, $destFullPath, 1, 0, 0, 1, 'file') > 0);
+			if (!$fileMoved) {
+				dol_syslog('EasyOCR-CREATE: the uploaded file was refused (' . $destFileName . ')', LOG_WARNING);
+			}
+		} else {
+			$fileMoved = @dol_move($file_tmp_path, $destFullPath, 0, 1, 0, 0);
+			if (!$fileMoved) {
+				$fileMoved = @copy($file_tmp_path, $destFullPath);
+			}
 		}
 		if ($fileMoved) {
 			$ecmfile = new EcmFiles($db);

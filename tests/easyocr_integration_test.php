@@ -961,6 +961,28 @@ if (isset($r['status']) && $r['status'] === 'error') {
 	eo_info('could not force the creation to fail here; orphan cleanup not exercised');
 }
 
+// 30) Template path (viewer, ajax createSupplierInvoice) now goes through the shared
+//     function: one line with the extracted description, its own import key, and the
+//     same duplicate check as everything else
+$tplRef = 'EOQA-TPL-' . $eoSeed;
+$tplParams = array('fk_soc' => $supplierId, 'ref_supplier' => $tplRef, 'datef' => '01/10/2026',
+	'total_ht' => '100', 'total_tva' => '21', 'total_ttc' => '121', 'line_desc' => 'Servicio mensual EOQA',
+	'invoice_status' => 'draft', 'import_key' => 'easyocr');
+$r = easyocrCreateInvoiceFromOCR($tplParams, $user);
+$tplLines = array();
+$resTpl = $db->query("SELECT description, total_ht FROM " . MAIN_DB_PREFIX . "facture_fourn_det WHERE fk_facture_fourn = " . (int) (isset($r['id']) ? $r['id'] : 0));
+while ($resTpl && ($o = $db->fetch_object($resTpl))) {
+	$tplLines[] = array($o->description, round((float) $o->total_ht, 2));
+}
+eo_assert('template: one line with the extracted description', $tplLines, array(array('Servicio mensual EOQA', 100.0)));
+$rowTpl = $db->fetch_object($db->query("SELECT import_key FROM " . MAIN_DB_PREFIX . "facture_fourn WHERE rowid = " . (int) (isset($r['id']) ? $r['id'] : 0)));
+eo_assert('template: its own import key', $rowTpl ? $rowTpl->import_key : null, 'easyocr');
+$r2 = easyocrCreateInvoiceFromOCR($tplParams, $user);
+eo_assert('template: same supplier ref again is a repeat', isset($r2['status']) ? $r2['status'] : '', 'repeat');
+$tplParams['ref_supplier'] = '';
+$r3 = easyocrCreateInvoiceFromOCR($tplParams, $user);
+eo_assert('template: same amount and date without ref is a repeat too', isset($r3['status']) ? $r3['status'] : '', 'repeat');
+
 // 27) Indexed and plain name search agree
 $plain = easyocrFindSuppliersByName('EOQA SIGMA SL', 50);
 $fast = easyocrFindSuppliersByExactName('EOQA SIGMA SL');

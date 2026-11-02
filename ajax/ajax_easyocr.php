@@ -253,193 +253,52 @@ if ($action == "createSupplierInvoice") {
 		exit;
 	}
 
-	$fk_soc = GETPOST("fk_soc", "int");
-	$ref_supplier = GETPOST("ref_supplier", "alphanohtml");
-	$datef_str = easyocrParseDate(GETPOST("datef", "alphanohtml"));
-	$total_ttc = easyocrParseNumber(GETPOST("total_ttc", "alphanohtml"));
-	$total_ht = easyocrParseNumber(GETPOST("total_ht", "alphanohtml"));
-
-	// Use IVA from OCR if provided, otherwise calculate
-	$total_tva_ocr = GETPOST("total_tva", "alphanohtml");
-	if (!empty($total_tva_ocr)) {
-		$total_tva = easyocrParseNumber($total_tva_ocr);
-	} else {
-		$total_tva = $total_ttc - $total_ht;
-	}
-
-	// Optional: description from OCR
-	$ocr_description = GETPOST("description", "restricthtml");
-
-	// Optional: due date from OCR
-	$date_echeance_str = GETPOST("date_echeance", "alphanohtml");
-
-	// Verificar duplicado por ref_supplier + proveedor (normalizado: trim + case-insensitive)
-	if (!empty($ref_supplier)) {
-		$ref_clean_check = trim($ref_supplier);
-		$sql_check = "SELECT rowid, ref, ref_supplier FROM " . MAIN_DB_PREFIX . "facture_fourn";
-		$sql_check .= " WHERE UPPER(TRIM(ref_supplier)) = UPPER('" . $db->escape($ref_clean_check) . "')";
-		$sql_check .= " AND fk_soc = " . ((int) $fk_soc);
-		$sql_check .= " AND entity IN (" . getEntity('supplier_invoice') . ")";
-		$resql_check = $db->query($sql_check);
-		if ($resql_check && $db->num_rows($resql_check) > 0) {
-			$existingObj = $db->fetch_object($resql_check);
-			print json_encode([
-				"status" => "repeat",
-				"message" => $langs->trans('EasyOcrDuplicateRefSupplier', $ref_supplier, $existingObj->ref),
-				"existing_id" => $existingObj->rowid,
-				"existing_ref" => $existingObj->ref,
-				"existing_ref_supplier" => $existingObj->ref_supplier
-			]);
-			exit;
-		}
-	}
-
-	// Crear factura usando el objeto nativo
-	$facture = new FactureFournisseur($db);
-	$facture->socid = $fk_soc;
-	$facture->ref_supplier = $ref_supplier;
-	$facture->date = dol_mktime(
-		12,
-		0,
-		0,
-		date('m', strtotime($datef_str)),
-		date('d', strtotime($datef_str)),
-		date('Y', strtotime($datef_str))
-	);
-	$facture->multicurrency_code = $conf->currency;
-	$facture->import_key = 'easyocr';
-
-	// Set due date if provided
-	if (!empty($date_echeance_str)) {
-		$date_ech = easyocrParseDate($date_echeance_str);
-		$facture->date_echeance = dol_mktime(
-			12,
-			0,
-			0,
-			date('m', strtotime($date_ech)),
-			date('d', strtotime($date_ech)),
-			date('Y', strtotime($date_ech))
-		);
-	}
-
-	$newId = $facture->create($user);
-
-	if ($newId <= 0) {
-		print json_encode(["status" => "error", "message" => $langs->trans('EasyOcrErrorCreatingInvoice') . ': ' . $facture->error]);
-		exit;
-	}
-
-	// Setear import_key (create() no lo incluye en el INSERT, se hace via update)
-	$sql = "UPDATE " . MAIN_DB_PREFIX . "facture_fourn SET import_key = 'easyocr' WHERE rowid = " . ((int) $newId);
-	$db->query($sql);
-
-	// Load supplier for localtax calculation (RE / IRPF)
-	$supplier = new Societe($db);
-	$supplier->fetch($fk_soc);
-
-	// Add invoice line with proper localtax resolution
-	$line_desc = !empty($ocr_description) ? $ocr_description : $langs->trans('EasyOcrInvoiceLineDesc');
-	$tva_tx = easyocrCalcTaxRate($total_ht, $total_tva);
-	$localtax1_tx = get_localtax($tva_tx, 1, $mysoc, $supplier);
-	$localtax2_tx = get_localtax($tva_tx, 2, $mysoc, $supplier);
-
-	$result = $facture->addline(
-		$line_desc,       // description
-		$total_ht,        // pu (precio unitario HT)
-		$tva_tx,          // txtva
-		$localtax1_tx,    // txlocaltax1 (RE)
-		$localtax2_tx,    // txlocaltax2 (IRPF)
-		1                 // qty
-	);
-
-	if ($result <= 0) {
-		print json_encode(["status" => "error", "message" => $langs->trans('EasyOcrErrorAddingLine') . ': ' . $facture->error]);
-		exit;
-	}
-
-	// Validate or leave as draft based on config
-	$ref = '(PROV' . $newId . ')';
-	$is_draft = !empty($conf->global->EASYOCR_INVOICE_DRAFT);
+	// Supplier invoice from a template: the same shared function as the AI path, so it
+	// gets the same duplicate checks (supplier ref, then amount + date), the same single
+	// line with RE/IRPF, the same PDF filing, payment undo and hooks. It used to build
+	// the invoice here with its own copy of all that, and drifted from it.
 	// Without the validate right the invoice stays as a draft (and is not paid), and
 	// the user is told why instead of getting a draft with no explanation.
 	$permDraftNote = '';
-	if (!$is_draft && !easyocrAjaxCan($user, 'supplier_invoice_validate')) {
-		$is_draft = true;
+	$tplStatus = '';
+	if (empty($conf->global->EASYOCR_INVOICE_DRAFT) && !easyocrAjaxCan($user, 'supplier_invoice_validate')) {
+		$tplStatus = 'draft';
 		$permDraftNote = $langs->transnoentities('EasyOcrNoPermValidateDraft');
 	}
-
-	if (!$is_draft) {
-		$result = $facture->validate($user);
-		if ($result <= 0) {
-			print json_encode(["status" => "error", "message" => $langs->trans('EasyOcrErrorValidating') . ': ' . $facture->error]);
-			exit;
-		}
-		$facture->fetch($newId);
-		$ref = $facture->ref;
-	} else {
-		$facture->fetch($newId);
-	}
-
-	// Attach PDF file to invoice
+	$paramsTpl = array(
+		'fk_soc'          => GETPOST('fk_soc', 'int'),
+		'ref_supplier'    => GETPOST('ref_supplier', 'alphanohtml'),
+		'datef'           => GETPOST('datef', 'alphanohtml'),
+		'date_echeance'   => GETPOST('date_echeance', 'alphanohtml'),
+		'total_ttc'       => GETPOST('total_ttc', 'alphanohtml'),
+		'total_ht'        => GETPOST('total_ht', 'alphanohtml'),
+		'total_tva'       => GETPOST('total_tva', 'alphanohtml'),
+		'total_localtax1' => GETPOST('total_localtax1', 'alphanohtml'),
+		'total_localtax2' => GETPOST('total_localtax2', 'alphanohtml'),
+		'line_desc'       => GETPOST('description', 'restricthtml'),
+		'invoice_status'  => $tplStatus,
+		'import_key'      => 'easyocr',
+		'create_payment'  => GETPOST('create_payment', 'alpha'),
+		'payment_bank_id' => GETPOST('payment_bank_id', 'int'),
+		'payment_type_id' => GETPOST('payment_type_id', 'int'),
+	);
 	$receivedFile = isset($_FILES['file']) ? $_FILES['file'] : null;
-	if (!empty($receivedFile) && $receivedFile['error'] === UPLOAD_ERR_OK) {
-
-		$ref = dol_sanitizeFileName($facture->ref);
-		$reldir = 'fournisseur/facture/' . get_exdir($newId, 2, 0, 0, $facture, 'invoice_supplier') . $ref;
-		$destDir = DOL_DATA_ROOT . '/' . $reldir;
-
-		if (!dol_is_dir($destDir)) {
-			dol_mkdir($destDir);
-		}
-
-		$fileName = dol_sanitizeFileName(basename($receivedFile['name']));
-		$destFileName = $ref . '-' . $fileName;
-		$destFullPath = $destDir . '/' . $destFileName;
-
-		$moveResult = dol_move_uploaded_file($receivedFile['tmp_name'], $destFullPath, 1, 1, $receivedFile['error'], 1, 'file');
-		if ($moveResult > 0) {
-			// Register in ECM
-			$ecmfile = new EcmFiles($db);
-			$ecmfile->filepath = $reldir;
-			$ecmfile->filename = $destFileName;
-			$ecmfile->fullpath_orig = $fileName;
-			$ecmfile->gen_or_uploaded = 'uploaded';
-			$ecmfile->src_object_type = 'supplier_invoice';
-			$ecmfile->src_object_id = $newId;
-			$ecmfile->fk_user_c = $user->id;
-			$ecmfile->create($user);
-		}
+	if (!empty($receivedFile) && $receivedFile['error'] === UPLOAD_ERR_OK && is_uploaded_file($receivedFile['tmp_name'])) {
+		$paramsTpl['file_tmp_path'] = $receivedFile['tmp_name'];
+		$paramsTpl['file_name'] = $receivedFile['name'];
 	}
 
-	// Create payment only for validated invoices
-	$paymentError = '';
-	$create_payment = GETPOST('create_payment', 'alpha');
-	if ($create_payment == '1' && GETPOST('payment_bank_id', 'int') > 0 && !$is_draft) {
-
-		$payment_bank_id = GETPOST('payment_bank_id', 'int');
-		$payment_type_id = GETPOST('payment_type_id', 'int') > 0 ? GETPOST('payment_type_id', 'int') : 6;
-
-		// Shared with the lib: pays the amount the invoice really carries and, when the
-		// bank refuses the line, undoes the payment and notes why ('' = paid).
-		$paymentError = easyocrPaySupplierInvoice($facture, $user, $payment_bank_id, $payment_type_id, $ref_supplier);
-	}
+	$tplResult = easyocrCreateInvoiceFromOCR($paramsTpl, $user);
 
 	// Document opened from the inbox (extract.php?inbox=N): it is processed now.
-	if (GETPOST('inbox_id', 'int') > 0) {
-		easyocrInboxMarkProcessed(GETPOST('inbox_id', 'int'), $newId, $user);
+	if (isset($tplResult['status']) && $tplResult['status'] === 'ok' && GETPOST('inbox_id', 'int') > 0) {
+		easyocrInboxMarkProcessed(GETPOST('inbox_id', 'int'), (int) $tplResult['id'], $user);
 	}
-
-	$tplResult = array("payment_error" => $paymentError);
-	print json_encode([
-		"status"        => "ok",
-		"id"            => $newId,
-		"ref"           => $ref,
-		"is_draft"      => $is_draft,
-		"payment_error" => $paymentError,
-		"user_notices"  => easyocrAjaxUserNotices($tplResult, $permDraftNote),
-		"notices_title" => $langs->transnoentities('EasyOcrCreatedWithNotices'),
-	]);
-
+	if (isset($tplResult['status']) && $tplResult['status'] === 'ok') {
+		$tplResult['user_notices'] = easyocrAjaxUserNotices($tplResult, $permDraftNote);
+		$tplResult['notices_title'] = $langs->transnoentities('EasyOcrCreatedWithNotices');
+	}
+	print json_encode($tplResult);
 
 	// ============================================================
 	// OBTENER DATOS PARA EL FORMULARIO (proveedores, templates, bancos, pagos)
