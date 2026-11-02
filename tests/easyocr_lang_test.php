@@ -109,6 +109,12 @@ foreach ($it as $f) {
 			$used[$k . ($mm[2][$i] !== '' ? '*' : '')] = basename($p);
 		}
 	}
+	// Menu titles in the descriptor are translated by the core, not by a trans() here
+	if (preg_match_all('/[\'"]titre[\'"]\s*=>\s*[\'"](EasyOcr[A-Za-z0-9_]+)[\'"]/', file_get_contents($p), $mm)) {
+		foreach ($mm[1] as $k) {
+			$used[$k] = basename($p);
+		}
+	}
 }
 if ($scanned < 10) {
 	lt_fail('only ' . $scanned . ' source files scanned for used keys: the scan is broken');
