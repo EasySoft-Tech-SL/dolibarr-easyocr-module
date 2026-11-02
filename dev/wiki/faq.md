@@ -14,7 +14,7 @@ preguntas; estas cuatro son las que un cliente plantea de verdad sobre la bandej
 
 ## ¿De dónde salen los documentos que aparecen en «Documentos recibidos»?
 
-Los entregan otros módulos de EasySoft. Hoy es **EasyScan**: cuando digitaliza papel, en lugar de que tú subas el PDF a EasyOcr, lo deja directamente en la bandeja. Es una función pública del módulo (`easyocr_recibir_documento()`), así que cualquier otro módulo se puede integrar del mismo modo.
+Los entregan otros módulos de EasySoft Tech S.L. Hoy es **EasyScan**: cuando digitaliza papel, en lugar de que tú subas el PDF a EasyOcr, lo deja directamente en la bandeja. Es una función pública del módulo (`easyocr_recibir_documento()`), así que cualquier otro módulo se puede integrar del mismo modo.
 
 ## ¿Me cuesta algo que me los envíen? ¿Cuándo se cobra?
 
@@ -34,4 +34,4 @@ Desde la 2.8.1, EasyOcr compara el CIF del destinatario que aparece en el docume
 
 ## Una factura de un lote se ha quedado en borrador. ¿Por qué?
 
-Desde la 2.8.2, las facturas que llegan por lote se quedan en borrador cuando hay algo que una persona debe mirar: un CIF/NIF que no es válido, un proveedor encontrado por el nombre y no por el CIF/NIF, varios terceros posibles, o unos totales que no suman. Si el proveedor no tenía el CIF/NIF guardado, añádeselo en su ficha y las siguientes facturas irán solas. El motivo está en la nota privada de la factura y en **Logs de Webhook**. Si son terceros duplicados, fusiónalos con el botón **Fusión** de la ficha del tercero y las siguientes facturas irán solas.
+Desde la 2.8.2, las facturas que llegan por lote se quedan en borrador cuando hay algo que una persona debe mirar: un CIF/NIF que no es válido, un proveedor encontrado por el nombre y no por el CIF/NIF, varios terceros posibles, o unos totales que no suman. El motivo está en la nota privada de la factura y en **Logs de Webhook**. Si el proveedor no tenía el CIF/NIF guardado, añádeselo en su ficha; si son terceros duplicados, fusiónalos con el botón **Fusión** de la ficha del tercero. Así las siguientes facturas irán solas.

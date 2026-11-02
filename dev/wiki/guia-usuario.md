@@ -135,7 +135,7 @@ El motivo aparece en la nota privada de la factura y en **Logs de Webhook**. Rev
 <!-- NUEVO v2.8.0: apartado completo -->
 ### Documentos recibidos de otros módulos
 
-Otros módulos de EasySoft pueden dejarte documentos en EasyOcr en vez de que los subas a mano. Hoy lo hace **EasyScan**, que digitaliza papel y entrega cada documento en esta bandeja.
+Otros módulos de EasySoft Tech S.L. pueden dejarte documentos en EasyOcr en vez de que los subas a mano. Hoy lo hace **EasyScan**, que digitaliza papel y entrega cada documento en esta bandeja.
 
 #### Cómo llegan
 
