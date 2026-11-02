@@ -20,7 +20,8 @@ EasyOcrCloudServiceWebsiteDesc = Informations sur le service d'extraction OCR da
 EasyOcrCloudServicePanel = Panneau de gestion
 EasyOcrCloudServicePanelDesc = Accédez au panneau de gestion pour gérer votre compte, abonnement et utilisation de l'API
 EasyOcrReadmeFileNotFound = Fichier README non trouvé
-EasyOcrChangeLogFileNotFound = Fichier ChangeLog non trouvéEasyOcrPermRead = Lire les modèles et factures traitées
+EasyOcrChangeLogFileNotFound = Fichier ChangeLog non trouvé
+EasyOcrPermRead = Lire les modèles et factures traitées
 EasyOcrPermWrite = Créer et modifier les modèles, traiter les factures
 EasyOcrPermDelete = Supprimer les modèles et les enregistrements de factures
 
@@ -213,7 +214,6 @@ EasyOcrErrorUpdatingTpl = Erreur lors de la mise à jour du modèle
 # --- admin/setup.php ---
 EasyOcrAboutModule = À propos du module EasyOcr
 EasyOcrBackToModules = Retour à la liste des modules
-EasyOcrAbout = À propos
 EasyOcrForDolibarr = EASYOCR POUR DOLIBARR ERP CRM
 EasyOcrFeaturesTitle = Fonctionnalités
 EasyOcrFeaturesDesc = Un outil ou composant logiciel conçu spécifiquement pour extraire le contenu textuel de fichiers PDF (Portable Document Format). Cette fonctionnalité est essentielle dans diverses applications et services nécessitant l'extraction et la manipulation de texte à partir de documents PDF.
@@ -264,7 +264,8 @@ EasyOcrErrorCreatingTemplate = Erreur lors de la création du modèle
 EasyOcrPage = Page
 EasyOcrDeleteSelection = Supprimer
 EasyOcrInvoiceNumber = N Facture
-EasyOcrTaxableBase = Base imposableEasyOcrMetaTitle = Titre
+EasyOcrTaxableBase = Base imposable
+EasyOcrMetaTitle = Titre
 EasyOcrMetaAuthor = Auteur
 EasyOcrMetaSubject = Sujet
 EasyOcrMetaCreator = Créateur
@@ -450,7 +451,7 @@ EasyOcrAIFeat3 = Crée factures et fournisseurs automatiquement
 EasyOcrAICtaHeadline = Boostez votre extraction de données
 EasyOcrAIActivateHint = Activez-le depuis Configuration > EasyOCR
 
-// Copying (License Agreement)
+# Copying (License Agreement)
 EasyOcrCopying = Accord de licence
 EasyOcrCopyingLicense = Licence
 EasyOcrCopyingAuthor = Auteur
@@ -463,7 +464,7 @@ EasyOcrCopyingAIDesc = La fonctionnalité easyOCR AI utilise des services d'inte
 EasyOcrCopyingFullText = Texte complet de la licence
 EasyOcrCopyingFileNotFound = Fichier de licence introuvable (COPYING ou LICENSE).
 
-// Telemetry & Data Protection
+# Telemetry & Data Protection
 EasyOcrTelemetry = Télémétrie et protection des données
 EasyOcrTelemetryModule = Module
 EasyOcrTelemetryPurpose = Finalité
@@ -597,7 +598,8 @@ EasyOcrPlanStatusActive = Actif
 EasyOcrPlanStatusInactive = Inactif
 EasyOcrPlanStatusTrial = Essai
 EasyOcrPlanStatusCancelled = Annulé
-EasyOcrPlanStatusExpired = ExpiréEasyOcrPlanStatusPastDue = Paiement échoué
+EasyOcrPlanStatusExpired = Expiré
+EasyOcrPlanStatusPastDue = Paiement échoué
 EasyOcrPlanStatusPaused = En pause
 
 # Subscription status descriptions
@@ -763,7 +765,6 @@ EasyOcrBatchSearchName = Rechercher par nom...
 EasyOcrBatchProgress = Progression
 EasyOcrBatchFailedDocs = Documents échoués
 EasyOcrBatchCompletedDocs = Documents complétés
-EasyOcrClear = Effacer
 EasyOcrBatchCustomer = Client
 EasyOcrBatchTaxId = N° TVA / SIRET
 EasyOcrBatchItems = Lignes

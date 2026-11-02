@@ -197,7 +197,6 @@ EasyOcrTemplateUpdatedOk = Modelo atualizado com sucesso
 EasyOcrErrorUpdatingTpl = Erro ao atualizar o modelo
 EasyOcrAboutModule = Sobre o módulo EasyOcr
 EasyOcrBackToModules = Voltar à lista de módulos
-EasyOcrAbout = Sobre
 EasyOcrForDolibarr = EASYOCR PARA DOLIBARR ERP CRM
 EasyOcrFeaturesTitle = Funcionalidades
 EasyOcrFeaturesDesc = Uma ferramenta ou componente de software projetada especificamente para a extração de conteúdo textual de ficheiros PDF (Portable Document Format). Esta funcionalidade é indispensável em várias aplicações e serviços que requerem a extração e manipulação de texto de documentos PDF.
@@ -431,7 +430,7 @@ EasyOcrAIFeat3 = Cria faturas e fornecedores automaticamente
 EasyOcrAICtaHeadline = Potencialize a extração de dados
 EasyOcrAIActivateHint = Ative nas Configurações > EasyOCR
 
-// Copying (License Agreement)
+# Copying (License Agreement)
 EasyOcrCopying = Acordo de licença
 EasyOcrCopyingLicense = Licença
 EasyOcrCopyingAuthor = Autor
@@ -444,7 +443,7 @@ EasyOcrCopyingAIDesc = A funcionalidade easyOCR AI utiliza serviços de intelig�
 EasyOcrCopyingFullText = Texto completo da licença
 EasyOcrCopyingFileNotFound = Ficheiro de licença não encontrado (COPYING ou LICENSE).
 
-// Telemetry & Data Protection
+# Telemetry & Data Protection
 EasyOcrTelemetry = Telemetria e proteção de dados
 EasyOcrTelemetryModule = Módulo
 EasyOcrTelemetryPurpose = Finalidade
@@ -578,7 +577,8 @@ EasyOcrPlanStatusActive = Ativa
 EasyOcrPlanStatusInactive = Inativa
 EasyOcrPlanStatusTrial = Teste
 EasyOcrPlanStatusCancelled = Cancelada
-EasyOcrPlanStatusExpired = ExpiradaEasyOcrPlanStatusPastDue = Cobrança falhada
+EasyOcrPlanStatusExpired = Expirada
+EasyOcrPlanStatusPastDue = Cobrança falhada
 EasyOcrPlanStatusPaused = Pausada
 
 # Subscription status descriptions
@@ -744,7 +744,6 @@ EasyOcrBatchSearchName = Pesquisar por nome...
 EasyOcrBatchProgress = Progresso
 EasyOcrBatchFailedDocs = Documentos falhados
 EasyOcrBatchCompletedDocs = Documentos concluídos
-EasyOcrClear = Limpar
 EasyOcrBatchCustomer = Cliente
 EasyOcrBatchTaxId = NIF
 EasyOcrBatchItems = Linhas

@@ -199,7 +199,6 @@ EasyOcrTemplateUpdatedOk = Vorlage erfolgreich aktualisiert
 EasyOcrErrorUpdatingTpl = Fehler beim Aktualisieren der Vorlage
 EasyOcrAboutModule = Über das EasyOcr-Modul
 EasyOcrBackToModules = Zurück zur Modulliste
-EasyOcrAbout = Über
 EasyOcrForDolibarr = EASYOCR FÜR DOLIBARR ERP CRM
 EasyOcrFeaturesTitle = Funktionen
 EasyOcrFeaturesDesc = Ein Werkzeug oder Softwarekomponente, die speziell für die Extraktion von Textinhalten aus PDF-Dateien (Portable Document Format) entwickelt wurde. Diese Funktionalität ist in verschiedenen Anwendungen und Diensten, die die Extraktion und Bearbeitung von Text aus PDF-Dokumenten erfordern, unverzichtbar.
@@ -396,7 +395,7 @@ EasyOcrAIPayment = Zahlung
 EasyOcrAINotes = Notizen
 EasyOcrAIAddLine = Zeile hinzufügen
 EasyOcrAILineDesc = Beschreibung
-EasyOcrAITaxRate = MwSt. %
+EasyOcrAITaxRate = MwSt. %%
 EasyOcrAIApplyToInvoice = Auf Rechnung anwenden
 EasyOcrAIDocType = Typ
 EasyOcrAIName = Name
@@ -433,7 +432,7 @@ EasyOcrAIFeat3 = Erstellt Rechnungen und Lieferanten automatisch
 EasyOcrAICtaHeadline = Optimieren Sie Ihre Datenextraktion
 EasyOcrAIActivateHint = Aktivieren unter Einstellungen > EasyOCR
 
-// Copying (License Agreement)
+# Copying (License Agreement)
 EasyOcrCopying = Lizenzvereinbarung
 EasyOcrCopyingLicense = Lizenz
 EasyOcrCopyingAuthor = Autor
@@ -446,7 +445,7 @@ EasyOcrCopyingAIDesc = Die easyOCR AI-Funktionalität verwendet KI-Dienste von D
 EasyOcrCopyingFullText = Vollständiger Lizenztext
 EasyOcrCopyingFileNotFound = Lizenzdatei nicht gefunden (COPYING oder LICENSE).
 
-// Telemetry & Data Protection
+# Telemetry & Data Protection
 EasyOcrTelemetry = Telemetrie und Datenschutz
 EasyOcrTelemetryModule = Modul
 EasyOcrTelemetryPurpose = Zweck
@@ -748,7 +747,6 @@ EasyOcrBatchSearchName = Nach Name suchen...
 EasyOcrBatchProgress = Fortschritt
 EasyOcrBatchFailedDocs = Fehlgeschlagene Dokumente
 EasyOcrBatchCompletedDocs = Abgeschlossene Dokumente
-EasyOcrClear = Löschen
 EasyOcrBatchCustomer = Kunde
 EasyOcrBatchTaxId = USt-IdNr.
 EasyOcrBatchItems = Positionen

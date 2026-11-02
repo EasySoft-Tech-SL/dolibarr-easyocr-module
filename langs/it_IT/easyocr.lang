@@ -197,7 +197,6 @@ EasyOcrTemplateUpdatedOk = Modello aggiornato con successo
 EasyOcrErrorUpdatingTpl = Errore nell'aggiornamento del modello
 EasyOcrAboutModule = Informazioni sul modulo EasyOcr
 EasyOcrBackToModules = Torna alla lista dei moduli
-EasyOcrAbout = Informazioni
 EasyOcrForDolibarr = EASYOCR PER DOLIBARR ERP CRM
 EasyOcrFeaturesTitle = Funzionalità
 EasyOcrFeaturesDesc = Uno strumento o componente software progettato specificamente per l'estrazione di contenuti testuali da file PDF (Portable Document Format). Questa funzionalità è indispensabile in varie applicazioni e servizi che richiedono l'estrazione e la manipolazione di testo da documenti PDF.
@@ -244,7 +243,8 @@ EasyOcrErrorCreatingTemplate = Errore nella creazione del modello
 EasyOcrPage = Pag.
 EasyOcrDeleteSelection = Elimina
 EasyOcrInvoiceNumber = N Fattura
-EasyOcrTaxableBase = Base imponibileEasyOcrMetaTitle = Titolo
+EasyOcrTaxableBase = Base imponibile
+EasyOcrMetaTitle = Titolo
 EasyOcrMetaAuthor = Autore
 EasyOcrMetaSubject = Soggetto
 EasyOcrMetaCreator = Creatore
@@ -430,7 +430,7 @@ EasyOcrAIFeat3 = Crea fatture e fornitori automaticamente
 EasyOcrAICtaHeadline = Potenzia la tua estrazione dati
 EasyOcrAIActivateHint = Attivalo da Configurazione > EasyOCR
 
-// Copying (License Agreement)
+# Copying (License Agreement)
 EasyOcrCopying = Accordo di licenza
 EasyOcrCopyingLicense = Licenza
 EasyOcrCopyingAuthor = Autore
@@ -443,7 +443,7 @@ EasyOcrCopyingAIDesc = La funzionalità easyOCR AI utilizza servizi di intellige
 EasyOcrCopyingFullText = Testo completo della licenza
 EasyOcrCopyingFileNotFound = File di licenza non trovato (COPYING o LICENSE).
 
-// Telemetry & Data Protection
+# Telemetry & Data Protection
 EasyOcrTelemetry = Telemetria e protezione dei dati
 EasyOcrTelemetryModule = Modulo
 EasyOcrTelemetryPurpose = Finalità
@@ -577,7 +577,8 @@ EasyOcrPlanStatusActive = Attivo
 EasyOcrPlanStatusInactive = Inattivo
 EasyOcrPlanStatusTrial = Prova
 EasyOcrPlanStatusCancelled = Cancellato
-EasyOcrPlanStatusExpired = ScadutoEasyOcrPlanStatusPastDue = Pagamento fallito
+EasyOcrPlanStatusExpired = Scaduto
+EasyOcrPlanStatusPastDue = Pagamento fallito
 EasyOcrPlanStatusPaused = In pausa
 
 # Subscription status descriptions
@@ -743,7 +744,6 @@ EasyOcrBatchSearchName = Cerca per nome...
 EasyOcrBatchProgress = Progresso
 EasyOcrBatchFailedDocs = Documenti falliti
 EasyOcrBatchCompletedDocs = Documenti completati
-EasyOcrClear = Cancella
 EasyOcrBatchCustomer = Cliente
 EasyOcrBatchTaxId = P.IVA / C.F.
 EasyOcrBatchItems = Righe

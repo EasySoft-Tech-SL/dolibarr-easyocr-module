@@ -20,7 +20,8 @@ EasyOcrCloudServiceWebsiteDesc = Information about the EasyOCR cloud OCR extract
 EasyOcrCloudServicePanel = Management panel
 EasyOcrCloudServicePanelDesc = Access the management panel to manage your account, subscription and API usage
 EasyOcrReadmeFileNotFound = README file not found
-EasyOcrChangeLogFileNotFound = ChangeLog file not foundEasyOcrPermRead = Read templates and processed invoices
+EasyOcrChangeLogFileNotFound = ChangeLog file not found
+EasyOcrPermRead = Read templates and processed invoices
 EasyOcrPermWrite = Create and edit templates, process invoices
 EasyOcrPermDelete = Delete templates and invoice records
 
@@ -213,7 +214,6 @@ EasyOcrErrorUpdatingTpl = Error updating template
 # --- admin/setup.php ---
 EasyOcrAboutModule = About the EasyOcr module
 EasyOcrBackToModules = Back to modules list
-EasyOcrAbout = About
 EasyOcrForDolibarr = EASYOCR FOR DOLIBARR ERP CRM
 EasyOcrFeaturesTitle = Features
 EasyOcrFeaturesDesc = A tool or software component specifically designed to extract text content from PDF (Portable Document Format) files. This functionality is essential in various applications and services that require the extraction and manipulation of text from PDF documents.
@@ -414,7 +414,7 @@ EasyOcrAIPayment = Payment
 EasyOcrAINotes = Notes
 EasyOcrAIAddLine = Add line
 EasyOcrAILineDesc = Description
-EasyOcrAITaxRate = Tax %
+EasyOcrAITaxRate = Tax %%
 EasyOcrAIApplyToInvoice = Apply to invoice
 EasyOcrAIDocType = Type
 EasyOcrAIName = Name
@@ -764,7 +764,6 @@ EasyOcrBatchSearchName = Search by name...
 EasyOcrBatchProgress = Progress
 EasyOcrBatchFailedDocs = Failed documents
 EasyOcrBatchCompletedDocs = Completed documents
-EasyOcrClear = Clear
 EasyOcrBatchCustomer = Customer
 EasyOcrBatchTaxId = Tax ID
 EasyOcrBatchItems = Line items

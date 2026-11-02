@@ -215,7 +215,6 @@ EasyOcrErrorUpdatingTpl = Error al actualizar plantilla
 # --- admin/setup.php ---
 EasyOcrAboutModule = Acerca del modulo EasyOcr
 EasyOcrBackToModules = Volver al listado de módulos
-EasyOcrAbout = Acerca de
 EasyOcrForDolibarr = EASYOCR PARA DOLIBARR ERP CRM
 EasyOcrFeaturesTitle = Características
 EasyOcrFeaturesDesc = Es una herramienta o componente de software diseñada específicamente para extraer contenido textual de archivos PDF (Portable Document Format). Esta funcionalidad es esencial en diversas aplicaciones y servicios que requieren la extracción y manipulación de texto de documentos PDF.
@@ -768,7 +767,6 @@ EasyOcrBatchSearchName = Buscar por nombre...
 EasyOcrBatchProgress = Progreso
 EasyOcrBatchFailedDocs = Documentos fallidos
 EasyOcrBatchCompletedDocs = Documentos completados
-EasyOcrClear = Limpiar
 EasyOcrBatchCustomer = Cliente
 EasyOcrBatchTaxId = NIF/CIF
 EasyOcrBatchItems = Líneas

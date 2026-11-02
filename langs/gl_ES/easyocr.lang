@@ -199,7 +199,6 @@ EasyOcrTemplateUpdatedOk = Modelo actualizado con éxito
 EasyOcrErrorUpdatingTpl = Erro ao actualizar o modelo
 EasyOcrAboutModule = Sobre o módulo EasyOcr
 EasyOcrBackToModules = Volver á lista de módulos
-EasyOcrAbout = Sobre
 EasyOcrForDolibarr = EASYOCR PARA DOLIBARR ERP CRM
 EasyOcrFeaturesTitle = Funcionalidades
 EasyOcrFeaturesDesc = Unha ferramenta ou compoñente de software deseñada especificamente para a extracción de contido textual de ficheiros PDF (Portable Document Format). Esta funcionalidade é indispensable en diversas aplicacións e servizos que requiren a extracción e manipulación de texto de documentos PDF.
@@ -433,7 +432,7 @@ EasyOcrAIFeat3 = Crea facturas e provedores automaticamente
 EasyOcrAICtaHeadline = Potencia a túa extracción de datos
 EasyOcrAIActivateHint = Actíveo desde Configuración > EasyOCR
 
-// Copying (License Agreement)
+# Copying (License Agreement)
 EasyOcrCopying = Acordo de licenza
 EasyOcrCopyingLicense = Licenza
 EasyOcrCopyingAuthor = Autor
@@ -446,7 +445,7 @@ EasyOcrCopyingAIDesc = A funcionalidade easyOCR AI utiliza servizos de intelixen
 EasyOcrCopyingFullText = Texto completo da licenza
 EasyOcrCopyingFileNotFound = Non se atopou o ficheiro de licenza (COPYING ou LICENSE).
 
-// Telemetry & Data Protection
+# Telemetry & Data Protection
 EasyOcrTelemetry = Telemetría e protección de datos
 EasyOcrTelemetryModule = Módulo
 EasyOcrTelemetryPurpose = Finalidade
@@ -748,7 +747,6 @@ EasyOcrBatchSearchName = Buscar por nome...
 EasyOcrBatchProgress = Progreso
 EasyOcrBatchFailedDocs = Documentos fallidos
 EasyOcrBatchCompletedDocs = Documentos completados
-EasyOcrClear = Limpar
 EasyOcrBatchCustomer = Cliente
 EasyOcrBatchTaxId = NIF/CIF
 EasyOcrBatchItems = Liñas
