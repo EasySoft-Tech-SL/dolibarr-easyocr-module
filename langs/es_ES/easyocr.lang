@@ -908,3 +908,19 @@ EasyOcrReviewTaxIdInvalidCreated = El CIF/NIF leído (%s) no es válido y ningú
 EasyOcrReviewHeaderTotals = La base más los impuestos (%s) no coincide con el total del documento (%s).
 EasyOcrReviewSupplierByName = El proveedor se ha encontrado por el nombre (%s) y no por el CIF/NIF %s, que no tiene guardado: comprueba que es la misma empresa y añádele el CIF/NIF.
 EasyOcrReviewSupplierByNameOnly = No se ha leído el CIF/NIF: el proveedor se ha encontrado solo por el nombre (%s). Comprueba que es el correcto.
+
+# 2.8.3
+EasyOcrPaymentBankFailed = No se ha podido registrar el pago en el banco (%s): la factura queda pendiente de pago. Revisa la cuenta y la forma de pago del marcado automático; una cuenta de caja solo admite pagos en efectivo.
+EasyOcrWebhookCashAccountWarning = La cuenta elegida es de caja y solo admite pagos en efectivo: con esta forma de pago el banco rechazará el pago y la factura quedará pendiente. Elige la forma de pago «Efectivo» o una cuenta bancaria.
+EasyOcrDuplicatesTitle = Posibles terceros duplicados
+EasyOcrDuplicatesDesc = Terceros activos que probablemente son la misma empresa. La página solo consulta: no cambia nada.
+EasyOcrDuplicatesByTaxId = Mismo CIF/NIF
+EasyOcrDuplicatesByTaxIdDesc = Comparten el CIF/NIF aunque uno lleve el prefijo ES o separadores.
+EasyOcrDuplicatesByName = Mismo nombre
+EasyOcrDuplicatesByNameDesc = Proveedores con el mismo nombre (sin contar S.L., S.A. y similares) cuyo CIF/NIF no los distingue: uno no lo tiene, está mal leído o es el mismo.
+EasyOcrDuplicatesNone = No hay ninguno.
+EasyOcrDuplicatesGroup = Grupo
+EasyOcrDuplicatesInvoices = Facturas de proveedor
+EasyOcrDuplicatesTaxId = CIF/NIF
+EasyOcrDuplicatesHowToMerge = Para unirlos, abre el tercero que quieras conservar y pulsa el botón Fusión (Fusionar terceros): Dolibarr pasa a ese tercero las facturas y demás documentos del otro. Lo ven los usuarios con permiso para borrar terceros.
+EasyOcrDuplicatesLink = Terceros duplicados

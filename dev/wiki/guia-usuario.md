@@ -132,6 +132,11 @@ La factura se queda en **borrador**, aunque tengas configurado validarlas, y no 
 
 El motivo aparece en la nota privada de la factura y en **Logs de Webhook**. Revísala, corrígela si hace falta y valídala tú.
 
+<!-- NUEVO v2.8.3 -->
+Si una importación anterior dejó proveedores repetidos, en **Logs de Webhook** tienes el botón **Terceros duplicados**. Lista los terceros que comparten CIF/NIF y los proveedores con el mismo nombre, con cuántas facturas tiene cada uno. Para unirlos, abre el que quieras conservar y pulsa **Fusión** en su ficha.
+
+Si marcas como pagadas las facturas del lote, la cuenta y la forma de pago tienen que encajar: una cuenta de caja solo admite efectivo. La configuración te avisa si no encajan, y si el banco rechaza un pago, la factura queda pendiente de pago con el motivo en su nota.
+
 <!-- NUEVO v2.8.0: apartado completo -->
 ### Documentos recibidos de otros módulos
 

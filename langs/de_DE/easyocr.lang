@@ -888,3 +888,19 @@ EasyOcrReviewTaxIdInvalidCreated = Die gelesene Steuernummer (%s) ist ungültig 
 EasyOcrReviewHeaderTotals = Netto plus Steuern (%s) stimmt nicht mit dem Gesamtbetrag des Dokuments (%s) überein.
 EasyOcrReviewSupplierByName = Der Lieferant wurde über den Namen (%s) gefunden, nicht über die Steuernummer %s, die bei ihm fehlt: bitte prüfen, ob es dieselbe Firma ist, und die Steuernummer ergänzen.
 EasyOcrReviewSupplierByNameOnly = Keine Steuernummer gelesen: der Lieferant wurde nur über den Namen (%s) gefunden. Bitte prüfen.
+
+# 2.8.3
+EasyOcrPaymentBankFailed = Die Zahlung konnte nicht im Bankkonto gebucht werden (%s): die Rechnung bleibt offen. Bitte Konto und Zahlungsart der automatischen Zahlung prüfen; ein Kassenkonto nimmt nur Barzahlungen an.
+EasyOcrWebhookCashAccountWarning = Das gewählte Konto ist ein Kassenkonto und nimmt nur Barzahlungen an: mit dieser Zahlungsart wird die Zahlung abgelehnt und die Rechnung bleibt offen. Wählen Sie «Bar» oder ein Bankkonto.
+EasyOcrDuplicatesTitle = Mögliche doppelte Geschäftspartner
+EasyOcrDuplicatesDesc = Aktive Geschäftspartner, die wahrscheinlich dieselbe Firma sind. Diese Seite liest nur: sie ändert nichts.
+EasyOcrDuplicatesByTaxId = Gleiche Steuernummer
+EasyOcrDuplicatesByTaxIdDesc = Sie teilen die Steuernummer, auch wenn einer das Präfix ES oder Trennzeichen trägt.
+EasyOcrDuplicatesByName = Gleicher Name
+EasyOcrDuplicatesByNameDesc = Lieferanten mit gleichem Namen (ohne S.L., S.A. usw.), die die Steuernummer nicht unterscheidet: einer hat keine, sie ist falsch gelesen oder gleich.
+EasyOcrDuplicatesNone = Keine.
+EasyOcrDuplicatesGroup = Gruppe
+EasyOcrDuplicatesInvoices = Lieferantenrechnungen
+EasyOcrDuplicatesTaxId = Steuernummer
+EasyOcrDuplicatesHowToMerge = Zum Zusammenführen den zu behaltenden Geschäftspartner öffnen und die Schaltfläche Zusammenführen verwenden: Dolibarr überträgt Rechnungen und andere Dokumente des anderen. Sichtbar für Benutzer mit Recht zum Löschen von Geschäftspartnern.
+EasyOcrDuplicatesLink = Doppelte Geschäftspartner

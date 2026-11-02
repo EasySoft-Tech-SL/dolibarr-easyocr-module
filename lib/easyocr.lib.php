@@ -1577,6 +1577,135 @@ function easyocrLinkProcessedFileToInvoice($hash, $invoiceId)
 // ============================================================
 
 /**
+ * Group third parties that are probably the same company, for the duplicates report.
+ *
+ * Two kinds of group:
+ *  - by_tax_id: same tax id once prefix and separators are ignored ("ESB123" = "B123").
+ *  - by_name:   suppliers with the same name once the legal form is ignored, unless
+ *               their tax ids tell them apart (every member with a valid id, all
+ *               different: one CIF per store of a chain is not a duplicate). This is
+ *               the group that catches a duplicate created with a misread tax id.
+ *
+ * @param  array  $rows       Rows: id, name, siren, tva_intra, fournisseur
+ * @param  string $ownCountry Country code of the company (for the validity check)
+ * @return array{by_tax_id: array<string, array>, by_name: array<string, array>}
+ */
+function easyocrGroupDuplicateThirdparties($rows, $ownCountry = '')
+{
+	$byTax = array();
+	$byName = array();
+	foreach ((array) $rows as $r) {
+		$keys = array();
+		foreach (array('siren', 'tva_intra') as $col) {
+			$v = isset($r[$col]) ? trim((string) $r[$col]) : '';
+			if ($v !== '' && strlen(easyocrNormalizeTaxId($v)) >= 5) {
+				$keys[easyocrTaxIdKey($v)] = !easyocrTaxIdLooksInvalid($v, '', $ownCountry);
+			}
+		}
+		$r['tax_keys'] = $keys;
+		foreach (array_keys($keys) as $k) {
+			$byTax[$k][$r['id']] = $r;
+		}
+		if (!empty($r['fournisseur'])) {
+			$core = easyocrSupplierNameCore(isset($r['name']) ? $r['name'] : '');
+			if (strlen($core) >= 3) {
+				$byName[$core][$r['id']] = $r;
+			}
+		}
+	}
+
+	$out = array('by_tax_id' => array(), 'by_name' => array());
+	foreach ($byTax as $k => $members) {
+		if (count($members) > 1) {
+			$out['by_tax_id'][$k] = array_values($members);
+		}
+	}
+	foreach ($byName as $core => $members) {
+		if (count($members) < 2) {
+			continue;
+		}
+		$validKeys = array();
+		$allValid = true;
+		foreach ($members as $m) {
+			$valid = array_keys(array_filter($m['tax_keys']));
+			if (empty($valid)) {
+				$allValid = false;
+				break;
+			}
+			$validKeys[] = $valid[0];
+		}
+		// Every member identified by its own valid tax id: different companies
+		if ($allValid && count(array_unique($validKeys)) === count($validKeys)) {
+			continue;
+		}
+		// All with the same valid tax id: already listed in by_tax_id
+		if ($allValid && count(array_unique($validKeys)) === 1) {
+			continue;
+		}
+		$out['by_name'][$core] = array_values($members);
+	}
+	ksort($out['by_tax_id']);
+	ksort($out['by_name']);
+
+	return $out;
+}
+
+/**
+ * Delete the webhook's own debug and log files older than a number of days.
+ *
+ * Every notification leaves a JSON in webhook_debug/ and a line in a daily file in
+ * webhook_logs/, and nothing removed them: an installation with many batches filled
+ * the disk. Only files with the webhook's own names are touched, and the sweep runs at
+ * most once a day (a ".purged" marker in the folder keeps the date).
+ *
+ * @param  string   $dir  Folder to sweep
+ * @param  int      $days Age limit in days; 0 or less keeps everything
+ * @param  int|null $now  Current time (for tests)
+ * @return int            Number of files deleted (-1 when the sweep was skipped)
+ */
+function easyocrPurgeWebhookFiles($dir, $days, $now = null)
+{
+	$now = ($now === null) ? time() : (int) $now;
+	if ((int) $days <= 0 || !@is_dir($dir)) {
+		return -1;
+	}
+	$marker = rtrim($dir, '/\\') . '/.purged';
+	if (@is_file($marker) && ($now - (int) @filemtime($marker)) < 86400) {
+		return -1;
+	}
+	@touch($marker, $now);
+
+	$limit = $now - ((int) $days * 86400);
+	$deleted = 0;
+	foreach ((array) @glob(rtrim($dir, '/\\') . '/*') as $file) {
+		$base = basename($file);
+		if (!preg_match('/^(webhook_.*\.(json|log)|crash_.*\.json)$/', $base) || !@is_file($file)) {
+			continue;
+		}
+		if ((int) @filemtime($file) < $limit && @unlink($file)) {
+			$deleted++;
+		}
+	}
+
+	return $deleted;
+}
+
+/**
+ * Whether the automatic payment settings will be refused by the bank.
+ *
+ * Dolibarr only takes cash payments (code LIQ) on a cash account (type 2): any other
+ * method makes Account::addline() fail, and the payment cannot be registered.
+ *
+ * @param  int    $accountType Bank account type (llx_bank_account.courant): 2 = cash
+ * @param  string $paymentCode Payment method code (llx_c_paiement.code)
+ * @return bool                True when the combination will be refused
+ */
+function easyocrPaymentConfigRefused($accountType, $paymentCode)
+{
+	return (int) $accountType === 2 && strtoupper(trim((string) $paymentCode)) !== 'LIQ';
+}
+
+/**
  * Whether a document that would be validated must stay a draft for review.
  *
  * @param  bool   $draftOnReview The caller asked for it (unattended path)
@@ -2091,6 +2220,7 @@ function easyocrCreateInvoiceFromOCR($params, $userObj = null)
 	// exact name. Only what is still unknown is created, and a misread tax id or a
 	// choice among several records is reported for review.
 	$supplierTaxIdInvalid = false;
+	$pendingSupplierUpgrade = 0;
 	if (empty($fk_soc) && ($supplier_tax_id !== '' || $supplier_name !== '')) {
 		$resolved = easyocrResolveSupplierForDocument($supplier_tax_id, $supplier_name, $supplier_country);
 		$supplierTaxIdInvalid = $resolved['tax_id_invalid'];
@@ -2098,8 +2228,10 @@ function easyocrCreateInvoiceFromOCR($params, $userObj = null)
 
 		if ($resolved['fk_soc'] > 0) {
 			$fk_soc = (int) $resolved['fk_soc'];
+			// A customer with this tax id becomes a supplier only once the document is
+			// really created (not on a duplicate or a refused document)
 			if ($resolved['needs_upgrade']) {
-				easyocrUpgradeToSupplier($fk_soc);
+				$pendingSupplierUpgrade = $fk_soc;
 			}
 			if (count($resolved['candidates']) > 1) {
 				$candidateList = implode(', ', $resolved['candidates']);
@@ -2442,6 +2574,9 @@ function easyocrCreateInvoiceFromOCR($params, $userObj = null)
 		return ['status' => 'error', 'message' => $msg . ': ' . $facture->error];
 	}
 	dol_syslog('EasyOCR-CREATE: Document created OK — id=' . $newId, LOG_INFO);
+	if ($pendingSupplierUpgrade > 0) {
+		easyocrUpgradeToSupplier($pendingSupplierUpgrade);
+	}
 
 	// Set import_key and journal code (invoice only: the proposal table has neither)
 	if (!$is_proposal) {
@@ -2739,6 +2874,7 @@ function easyocrCreateInvoiceFromOCR($params, $userObj = null)
 		$payment_bank_id = $supplier_payment_account;
 		dol_syslog('EasyOCR-CREATE: payment_bank_id defaulted to ' . $payment_bank_id . ' from supplier payment history', LOG_INFO);
 	}
+	$paymentError = '';
 	if (!$is_proposal && $create_payment == '1' && $payment_bank_id > 0 && $invoice_status !== 'draft') {
 		if ($payment_type_id <= 0) $payment_type_id = 6;
 		$paymentAmount = $facture->total_ttc;
@@ -2756,7 +2892,24 @@ function easyocrCreateInvoiceFromOCR($params, $userObj = null)
 
 		$paiement_id = $paiement->create($userObj, 1);
 		if ($paiement_id > 0) {
-			$paiement->addPaymentToBank($userObj, 'payment_supplier', '(SupplierInvoicePayment)', $payment_bank_id, '', '');
+			$bankLineId = $paiement->addPaymentToBank($userObj, 'payment_supplier', '(SupplierInvoicePayment)', $payment_bank_id, '', '');
+			if ($bankLineId <= 0) {
+				// The bank refused the line (a cash account only takes cash, for one): the
+				// invoice would stay "paid" with no movement in the bank. Undo the payment
+				// so it stays pending, and say why instead of failing in silence.
+				$bankError = $paiement->error ? $paiement->error : implode(', ', (array) $paiement->errors);
+				$facture->setUnpaid($userObj);
+				$paiement->delete();
+				$paymentError = is_object($langs) ? $langs->transnoentities('EasyOcrPaymentBankFailed', $bankError) : 'The payment could not be registered in the bank (' . $bankError . '): the invoice is left pending payment.';
+				dol_syslog('EasyOCR-CREATE: payment undone, bank line refused — ' . $bankError, LOG_ERR);
+				$resNote = $db->query("SELECT note_private FROM " . MAIN_DB_PREFIX . "facture_fourn WHERE rowid = " . ((int) $newId));
+				$objNote = $resNote ? $db->fetch_object($resNote) : null;
+				$noteNow = $objNote ? (string) $objNote->note_private : '';
+				$facture->update_note(($noteNow !== '' ? $noteNow . "\n\n" : '') . $paymentError, '_private');
+			}
+		} else {
+			$paymentError = is_object($langs) ? $langs->transnoentities('EasyOcrPaymentBankFailed', $paiement->error) : 'The payment could not be registered (' . $paiement->error . ').';
+			dol_syslog('EasyOCR-CREATE: payment not created — ' . $paiement->error, LOG_ERR);
 		}
 	}
 
@@ -2788,6 +2941,7 @@ function easyocrCreateInvoiceFromOCR($params, $userObj = null)
 		'review_codes'     => array_values(array_unique($reviewCodes)),
 		'review_notes'     => $reviewNotes,
 		'forced_draft'     => $forcedDraft,
+		'payment_error'    => $paymentError,
 		// Aliases for webhook compatibility
 		'invoice_id'       => $newId,
 		'invoice_ref'      => $ref,

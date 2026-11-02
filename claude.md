@@ -2,7 +2,7 @@
 
 ## Información del módulo
 - **Nombre:** EasyOcr
-- **Versión:** 2.8.2
+- **Versión:** 2.8.3
 - **Número módulo:** 402020
 - **Empresa:** EasySoft Tech S.L. (info@easysoft.es)
 - **Autor:** Alberto Luque Rivas (aluquerivasdev@gmail.com)
@@ -115,6 +115,14 @@ easyocr_recibir_documento($rutaAbsoluta, $user, array $opciones = array())
 - Test: `php tests/easyocr_inbox_test.php` (base real, limpia por el prefijo `qa_easyscan_ocrq_`).
 
 ## Historial de cambios
+
+### v2.8.3 — Pago sin apunte, duplicados y limpieza
+
+- Pago automático: se comprueba el retorno de `addPaymentToBank()`. Si el banco rechaza la línea (cuenta de caja `courant=2` solo acepta `LIQ` en `Account::addline()`), `setUnpaid()` + `PaiementFourn::delete()` (sin argumentos: la firma cambia en v20) y `payment_error` en el resultado, la nota y el log del webhook. Aviso en `admin/setup.php` con `easyocrPaymentConfigRefused()`; sin forma configurada el módulo paga con id 6 (CB).
+- `easyocrUpgradeToSupplier()` diferido a después de `$facture->create()` (`$pendingSupplierUpgrade`).
+- `duplicates.php` (solo lectura, permisos easyocr read + societe lire) con `easyocrGroupDuplicateThirdparties()`: grupos por clave de NIF y por núcleo de nombre que el NIF no separa. Enlazada desde `webhook_logs.php`.
+- `easyocrPurgeWebhookFiles()`: `webhook_debug/` y `webhook_logs/` a `EASYOCR_WEBHOOK_LOG_DAYS` días (30), marca `.purged` para una pasada al día; solo ficheros `webhook_*`/`crash_*`.
+- Pruebas: unitarias de las cuatro funciones puras; integración «bank refuses» con control positivo (caja + LIQ) y «duplicate of a customer», comprobadas rompiéndolas.
 
 ### v2.8.2 — Proveedores duplicados por lote (webhook)
 

@@ -5,6 +5,23 @@ Todos los cambios notables de EasyOcr se documentarán en este archivo.
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/),
 y este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 
+## [2.8.3] - 2026-11-02
+
+### Corregido — el pago automático podía quedar fuera del banco
+
+- **Si el banco rechaza el pago automático, ya no se queda a medias.** Con una cuenta de caja y una forma de pago que no es efectivo, Dolibarr rechaza el movimiento en el banco. Hasta ahora la factura quedaba pagada igualmente, con el pago fuera del banco y sin ningún aviso. Ahora el pago se deshace, la factura queda pendiente de pago y el motivo aparece en su nota privada y en **Logs de Webhook**.
+- La configuración del módulo **avisa** si la cuenta elegida para el pago automático es de caja y la forma de pago no es efectivo. Si no hay forma de pago configurada, el módulo usa tarjeta, que con una cuenta de caja tampoco sirve.
+- Un cliente que tiene el CIF/NIF de la factura **solo se convierte en proveedor cuando la factura se crea**. Antes cambiaba aunque la factura saliera repetida.
+
+### Añadido
+
+- **Posibles terceros duplicados**: página nueva, enlazada desde **Logs de Webhook**, que lista los terceros que comparten CIF/NIF (con o sin `ES`) y los proveedores con el mismo nombre que su CIF/NIF no distingue, con el número de facturas de proveedor de cada uno. Solo consulta; para unirlos se usa el botón **Fusión** de la ficha del tercero.
+- Los ficheros de depuración y de log del webhook (`webhook_debug/` y `webhook_logs/`) se borran solos pasados **30 días**, como mucho una vez al día. Se cambia con la constante `EASYOCR_WEBHOOK_LOG_DAYS` (0 = no borrar nunca).
+
+### Notas de actualización
+
+- No necesita reactivar el módulo.
+
 ## [2.8.2] - 2026-11-02
 
 ### Corregido — los lotes creaban proveedores duplicados

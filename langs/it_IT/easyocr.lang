@@ -883,3 +883,19 @@ EasyOcrReviewTaxIdInvalidCreated = Il codice fiscale letto (%s) non è valido e 
 EasyOcrReviewHeaderTotals = Imponibile più imposte (%s) non corrisponde al totale del documento (%s).
 EasyOcrReviewSupplierByName = Il fornitore è stato trovato per nome (%s) e non per il codice fiscale %s, che non ha salvato: verifica che sia la stessa azienda e aggiungi il codice.
 EasyOcrReviewSupplierByNameOnly = Nessun codice fiscale letto: il fornitore è stato trovato solo per nome (%s). Verifica che sia quello giusto.
+
+# 2.8.3
+EasyOcrPaymentBankFailed = Non è stato possibile registrare il pagamento in banca (%s): la fattura resta da pagare. Controlla il conto e il metodo di pagamento della marcatura automatica; un conto di cassa accetta solo pagamenti in contanti.
+EasyOcrWebhookCashAccountWarning = Il conto scelto è di cassa e accetta solo pagamenti in contanti: con questo metodo la banca rifiuterà il pagamento e la fattura resterà da pagare. Scegli il metodo «Contanti» o un conto bancario.
+EasyOcrDuplicatesTitle = Possibili soggetti duplicati
+EasyOcrDuplicatesDesc = Soggetti attivi che probabilmente sono la stessa azienda. La pagina consulta soltanto: non modifica nulla.
+EasyOcrDuplicatesByTaxId = Stesso codice fiscale
+EasyOcrDuplicatesByTaxIdDesc = Condividono il codice fiscale anche se uno ha il prefisso ES o separatori.
+EasyOcrDuplicatesByName = Stesso nome
+EasyOcrDuplicatesByNameDesc = Fornitori con lo stesso nome (senza contare S.L., S.A. e simili) che il codice fiscale non distingue: uno non ce l'ha, è letto male o è lo stesso.
+EasyOcrDuplicatesNone = Nessuno.
+EasyOcrDuplicatesGroup = Gruppo
+EasyOcrDuplicatesInvoices = Fatture fornitore
+EasyOcrDuplicatesTaxId = Codice fiscale
+EasyOcrDuplicatesHowToMerge = Per unirli, apri il soggetto da conservare e usa il pulsante Unisci (Unisci soggetti): Dolibarr gli trasferisce fatture e altri documenti dell'altro. Lo vedono gli utenti con permesso di eliminare soggetti.
+EasyOcrDuplicatesLink = Soggetti duplicati

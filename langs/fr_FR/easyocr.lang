@@ -903,3 +903,19 @@ EasyOcrReviewTaxIdInvalidCreated = Le numéro fiscal lu (%s) n'est pas valide et
 EasyOcrReviewHeaderTotals = La base plus les taxes (%s) ne correspond pas au total du document (%s).
 EasyOcrReviewSupplierByName = Le fournisseur a été trouvé par son nom (%s) et non par le numéro fiscal %s, qu'il n'a pas : vérifiez que c'est la même entreprise et ajoutez-lui ce numéro.
 EasyOcrReviewSupplierByNameOnly = Aucun numéro fiscal lu : le fournisseur a été trouvé seulement par son nom (%s). Vérifiez que c'est le bon.
+
+# 2.8.3
+EasyOcrPaymentBankFailed = Le paiement n'a pas pu être enregistré en banque (%s) : la facture reste à payer. Vérifiez le compte et le mode de paiement du marquage automatique ; un compte de caisse n'accepte que les paiements en espèces.
+EasyOcrWebhookCashAccountWarning = Le compte choisi est un compte de caisse et n'accepte que les espèces : avec ce mode de paiement la banque refusera le paiement et la facture restera à payer. Choisissez le mode « Espèces » ou un compte bancaire.
+EasyOcrDuplicatesTitle = Tiers potentiellement en double
+EasyOcrDuplicatesDesc = Tiers actifs qui sont probablement la même entreprise. Cette page ne fait que consulter : elle ne modifie rien.
+EasyOcrDuplicatesByTaxId = Même numéro fiscal
+EasyOcrDuplicatesByTaxIdDesc = Ils partagent le numéro fiscal même si l'un porte le préfixe ES ou des séparateurs.
+EasyOcrDuplicatesByName = Même nom
+EasyOcrDuplicatesByNameDesc = Fournisseurs portant le même nom (hors S.L., S.A. et similaires) que le numéro fiscal ne distingue pas : l'un n'en a pas, il est mal lu ou c'est le même.
+EasyOcrDuplicatesNone = Aucun.
+EasyOcrDuplicatesGroup = Groupe
+EasyOcrDuplicatesInvoices = Factures fournisseur
+EasyOcrDuplicatesTaxId = Numéro fiscal
+EasyOcrDuplicatesHowToMerge = Pour les fusionner, ouvrez le tiers à conserver et utilisez le bouton Fusionner (Fusionner les tiers) : Dolibarr lui transfère les factures et autres documents de l'autre. Visible pour les utilisateurs autorisés à supprimer des tiers.
+EasyOcrDuplicatesLink = Tiers en double

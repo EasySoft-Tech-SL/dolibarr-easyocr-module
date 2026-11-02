@@ -730,6 +730,58 @@ $r = easyocrCreateInvoiceFromOCR($whParams(ltrim($dni, '0'), 'EOQA OTRO NOMBRE',
 eo_assert('DNI without leading zero: found by tax id', isset($r['supplier_id']) ? (int) $r['supplier_id'] : 0, $idDni);
 eo_assert('DNI without leading zero: nothing created', $countSoc(), $n6);
 
+// 18) A customer with the tax id whose document turns out to be a duplicate stays a
+//     customer (2.8.3): the upgrade happens only when the document is created
+$cifEta = eo_cif('A', $eoSeed . '939');
+$idEta = $mkSoc('EOQA CLIENTE ETA', $cifEta, '', 0);
+$dupRef = 'EOQA-DUPCLI-' . substr(md5(microtime(true)), 0, 6);
+require_once DOL_DOCUMENT_ROOT . '/fourn/class/fournisseur.facture.class.php';
+$prev = new FactureFournisseur($db);
+$prev->socid = $idEta;
+$prev->ref_supplier = $dupRef;
+$prev->date = dol_now();
+$prevId = $prev->create($user);
+eo_assert('fixture: earlier invoice with the same number', $prevId > 0, true);
+$r = easyocrCreateInvoiceFromOCR($whParams('ES' . $cifEta, 'EOQA CLIENTE ETA', 'DUPCLI', array('ref_supplier' => $dupRef, 'invoice_status' => 'draft')), $user);
+eo_assert('duplicate of a customer: reported as repeat', isset($r['status']) ? $r['status'] : '', 'repeat');
+eo_assert('duplicate of a customer: still not a supplier', (int) $socRow($idEta)->fournisseur, 0);
+
+// 17) Automatic payment the bank refuses (2.8.3): a cash account only takes cash. The
+//     payment used to stay with no bank line and the invoice "paid"; now it is undone.
+$cashRow = $db->fetch_object($db->query("SELECT MIN(rowid) id FROM " . MAIN_DB_PREFIX . "bank_account WHERE courant = 2 AND clos = 0 AND entity IN (" . getEntity('bank_account') . ")"));
+$cashId = $cashRow ? (int) $cashRow->id : 0;
+$payType = function ($code) use ($db) {
+	$o = $db->fetch_object($db->query("SELECT MIN(id) id FROM " . MAIN_DB_PREFIX . "c_paiement WHERE code = '" . $db->escape($code) . "' AND active = 1 AND entity IN (" . getEntity('c_paiement') . ")"));
+	return $o ? (int) $o->id : 0;
+};
+$payRows = function ($invId) use ($db) {
+	return (int) $db->fetch_object($db->query("SELECT COUNT(*) n FROM " . MAIN_DB_PREFIX . "paiementfourn_facturefourn WHERE fk_facturefourn = " . (int) $invId))->n;
+};
+if ($cashId > 0 && $payType('VIR') > 0 && $payType('LIQ') > 0) {
+	$r = easyocrCreateInvoiceFromOCR($whParams('', '', 'PAYBAD', array(
+		'fk_soc' => $supplierId, 'invoice_status' => 'validated', 'draft_on_review' => 0,
+		'create_payment' => '1', 'payment_bank_id' => $cashId, 'payment_type_id' => $payType('VIR'),
+	)), $user);
+	$row = $db->fetch_object($db->query("SELECT fk_statut, paye, note_private FROM " . MAIN_DB_PREFIX . "facture_fourn WHERE rowid = " . (int) $r['id']));
+	eo_assert('bank refuses: the invoice is created and validated', $row ? (int) $row->fk_statut : -1, 1);
+	eo_assert('bank refuses: the error is reported', !empty($r['payment_error']), true);
+	eo_assert('bank refuses: the payment is undone', $payRows($r['id']), 0);
+	eo_assert('bank refuses: the invoice stays pending payment', $row ? (int) $row->paye : -1, 0);
+	eo_assert('bank refuses: the private note explains it', $row && $r['payment_error'] !== '' && strpos((string) $row->note_private, $r['payment_error']) !== false, true);
+
+	// Positive control: the same cash account with a cash payment is paid, with its line
+	$r = easyocrCreateInvoiceFromOCR($whParams('', '', 'PAYOK', array(
+		'fk_soc' => $supplierId, 'invoice_status' => 'validated', 'draft_on_review' => 0,
+		'create_payment' => '1', 'payment_bank_id' => $cashId, 'payment_type_id' => $payType('LIQ'),
+	)), $user);
+	$pay = $db->fetch_object($db->query("SELECT p.fk_bank FROM " . MAIN_DB_PREFIX . "paiementfourn p JOIN " . MAIN_DB_PREFIX . "paiementfourn_facturefourn pf ON pf.fk_paiementfourn = p.rowid WHERE pf.fk_facturefourn = " . (int) $r['id']));
+	eo_assert('cash with cash: paid', $payRows($r['id']), 1);
+	eo_assert('cash with cash: with its bank line', $pay && (int) $pay->fk_bank > 0, true);
+	eo_assert('cash with cash: no error', isset($r['payment_error']) ? $r['payment_error'] : null, '');
+} else {
+	eo_info('skipped payment checks: no open cash account or no VIR/LIQ payment types');
+}
+
 if ($prevDraftConf === null) {
 	unset($conf->global->EASYOCR_INVOICE_DRAFT);
 } else {

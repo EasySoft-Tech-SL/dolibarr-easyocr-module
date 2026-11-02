@@ -35,3 +35,7 @@ Desde la 2.8.1, EasyOcr compara el CIF del destinatario que aparece en el docume
 ## Una factura de un lote se ha quedado en borrador. ¿Por qué?
 
 Desde la 2.8.2, las facturas que llegan por lote se quedan en borrador cuando hay algo que una persona debe mirar: un CIF/NIF que no es válido, un proveedor encontrado por el nombre y no por el CIF/NIF, varios terceros posibles, o unos totales que no suman. El motivo está en la nota privada de la factura y en **Logs de Webhook**. Si el proveedor no tenía el CIF/NIF guardado, añádeselo en su ficha; si son terceros duplicados, fusiónalos con el botón **Fusión** de la ficha del tercero. Así las siguientes facturas irán solas.
+
+## La factura del lote no se ha marcado como pagada. ¿Por qué?
+
+Desde la 2.8.3, si el banco rechaza el pago automático, EasyOcr lo deshace y deja la factura pendiente de pago, con el motivo en su nota privada y en **Logs de Webhook**. Lo más habitual es una cuenta de caja con una forma de pago que no es efectivo: una cuenta de caja solo admite pagos en efectivo. Cambia la cuenta o la forma de pago en la configuración del módulo; si no encajan, la propia configuración te lo avisa.

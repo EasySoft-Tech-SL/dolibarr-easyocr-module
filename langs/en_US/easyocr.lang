@@ -904,3 +904,19 @@ EasyOcrReviewTaxIdInvalidCreated = The tax id read (%s) is not valid and no supp
 EasyOcrReviewHeaderTotals = Base plus taxes (%s) does not match the document total (%s).
 EasyOcrReviewSupplierByName = The supplier was found by its name (%s), not by the tax id %s, which it does not have: check it is the same company and add the tax id to it.
 EasyOcrReviewSupplierByNameOnly = No tax id was read: the supplier was found only by its name (%s). Check it is the right one.
+
+# 2.8.3
+EasyOcrPaymentBankFailed = The payment could not be registered in the bank (%s): the invoice is left pending payment. Check the account and payment method used to mark invoices as paid; a cash account only takes cash payments.
+EasyOcrWebhookCashAccountWarning = The chosen account is a cash account and only takes cash payments: with this payment method the bank will refuse the payment and the invoice will stay pending. Choose the «Cash» method or a bank account.
+EasyOcrDuplicatesTitle = Possible duplicate third parties
+EasyOcrDuplicatesDesc = Active third parties that are probably the same company. This page only reads: it changes nothing.
+EasyOcrDuplicatesByTaxId = Same tax id
+EasyOcrDuplicatesByTaxIdDesc = They share the tax id even if one carries the ES prefix or separators.
+EasyOcrDuplicatesByName = Same name
+EasyOcrDuplicatesByNameDesc = Suppliers with the same name (S.L., S.A. and the like ignored) whose tax id does not tell them apart: one lacks it, it was misread or it is the same.
+EasyOcrDuplicatesNone = None.
+EasyOcrDuplicatesGroup = Group
+EasyOcrDuplicatesInvoices = Supplier invoices
+EasyOcrDuplicatesTaxId = Tax id
+EasyOcrDuplicatesHowToMerge = To merge them, open the third party you want to keep and use the Merge button (Merge third parties): Dolibarr moves the invoices and other documents of the other one to it. Users allowed to delete third parties see it.
+EasyOcrDuplicatesLink = Duplicate third parties

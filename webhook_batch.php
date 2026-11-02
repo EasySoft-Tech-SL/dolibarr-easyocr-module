@@ -503,6 +503,11 @@ if ($_condEvent && $_condDoc && $_condStat) {
 					$webhookProcessingMessage = (!empty($webhookResult['forced_draft']) ? 'Draft for review: ' : 'To review: ') . implode(' | ', $webhookResult['review_notes']);
 					@file_put_contents($logFile, date('H:i:s') . ' | REVIEW: ' . $webhookProcessingMessage . "\n", FILE_APPEND | LOCK_EX);
 				}
+				// The invoice exists but its automatic payment was undone: say so
+				if (!empty($webhookResult['payment_error'])) {
+					$webhookProcessingMessage = trim($webhookProcessingMessage . ' | Payment: ' . $webhookResult['payment_error'], ' |');
+					@file_put_contents($logFile, date('H:i:s') . ' | PAYMENT-ERROR: ' . $webhookResult['payment_error'] . "\n", FILE_APPEND | LOCK_EX);
+				}
 			} elseif ($webhookProcessingStatus === 'repeat') {
 				// Duplicate detected — not an error, just a skip
 				$webhookInvoiceId = isset($webhookResult['existing_id']) ? $webhookResult['existing_id'] : null;
@@ -566,6 +571,13 @@ if (!isset($db) || !is_object($db)) {
 		@file_put_contents($logFile, date('H:i:s') . ' | ERROR: webhook_log insert failed: ' . $webhookLogInsertError . "\n", FILE_APPEND | LOCK_EX);
 	}
 }
+
+// ─── Housekeeping: drop old debug/log files (at most once a day) ─────────
+// EASYOCR_WEBHOOK_LOG_DAYS: days to keep them (30 by default, 0 keeps everything)
+require_once __DIR__ . '/lib/easyocr.lib.php';
+$keepDays = (isset($conf->global->EASYOCR_WEBHOOK_LOG_DAYS) && $conf->global->EASYOCR_WEBHOOK_LOG_DAYS !== '') ? (int) $conf->global->EASYOCR_WEBHOOK_LOG_DAYS : 30;
+easyocrPurgeWebhookFiles($debugDir, $keepDays);
+easyocrPurgeWebhookFiles($logDir, $keepDays);
 
 // ─── Build response reflecting real outcome ──────────────────────────────
 // Decide overall status:

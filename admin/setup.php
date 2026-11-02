@@ -300,6 +300,19 @@ print '<td>'.$langs->trans("EasyOcrWebhookPaymentType").'</td>';
 print '<td>';
 print $form->select_types_paiements(!empty($conf->global->EASYOCR_WEBHOOK_PAYMENT_TYPE) ? $conf->global->EASYOCR_WEBHOOK_PAYMENT_TYPE : '', 'EASYOCR_WEBHOOK_PAYMENT_TYPE', '', 0, 1);
 print '<br><span class="opacitymedium small">'.$langs->trans("EasyOcrWebhookPaymentTypeDesc").'</span>';
+// A cash account only takes cash: warn before the bank refuses every payment.
+// Without a method set, the module pays with id 6 (card).
+$whBankCfg = !empty($conf->global->EASYOCR_WEBHOOK_BANK_ID) ? (int) $conf->global->EASYOCR_WEBHOOK_BANK_ID : 0;
+if ($whBankCfg > 0) {
+	$whTypeCfg = !empty($conf->global->EASYOCR_WEBHOOK_PAYMENT_TYPE) ? (int) $conf->global->EASYOCR_WEBHOOK_PAYMENT_TYPE : 6;
+	$resAcc = $db->query("SELECT courant FROM ".MAIN_DB_PREFIX."bank_account WHERE rowid = ".$whBankCfg);
+	$objAcc = $resAcc ? $db->fetch_object($resAcc) : null;
+	$resTyp = $db->query("SELECT code FROM ".MAIN_DB_PREFIX."c_paiement WHERE id = ".$whTypeCfg);
+	$objTyp = $resTyp ? $db->fetch_object($resTyp) : null;
+	if ($objAcc && easyocrPaymentConfigRefused($objAcc->courant, $objTyp ? $objTyp->code : '')) {
+		print '<br>'.img_warning().' <span class="warning">'.$langs->trans("EasyOcrWebhookCashAccountWarning").'</span>';
+	}
+}
 print '</td>';
 print '</tr>';
 

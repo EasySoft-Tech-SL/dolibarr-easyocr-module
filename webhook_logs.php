@@ -181,6 +181,10 @@ print '    <h1>'.dol_escape_htmltag($title).'</h1>';
 print '    <p>'.dol_escape_htmltag($langs->trans('EasyOcrWebhookLogsDesc')).'</p>';
 print '  </div>';
 print '</div>';
+// Third parties left duplicated by older batch imports
+if (easyocrCheckRight($user, 'societe', 'lire')) {
+	print '<div class="right"><a class="butAction" href="'.dol_buildpath('/easyocr/duplicates.php', 1).'"><i class="fas fa-clone paddingright"></i>'.$langs->trans('EasyOcrDuplicatesLink').'</a></div>';
+}
 
 
 // ─── Detail view ─────────────────────────────────────────────────────────

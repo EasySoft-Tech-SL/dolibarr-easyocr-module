@@ -823,6 +823,52 @@ eo_assert('a misread CIF is still caught', easyocrTaxIdLooksInvalid('BS2345674',
 eo_assert('foreign VAT gives no bare variant', in_array('123456789', easyocrTaxIdVariants('DE123456789'), true), false);
 eo_assert('ES VAT still gives the bare variant', in_array('B12345674', easyocrTaxIdVariants('ESB12345674'), true), true);
 
+eo_group('easyocrGroupDuplicateThirdparties');
+// B12345674, 12345678Z and X1234567L are valid synthetic ids; BS2345674 is the first one misread
+$cifX = 'B12345674';
+$g = easyocrGroupDuplicateThirdparties(array(
+	array('id' => 1, 'name' => 'Acme, S.L.', 'siren' => $cifX, 'tva_intra' => '', 'fournisseur' => 1),
+	array('id' => 2, 'name' => 'ACME SL', 'siren' => '', 'tva_intra' => 'ES' . $cifX, 'fournisseur' => 1),
+	array('id' => 3, 'name' => 'Acme', 'siren' => 'BS2345674', 'tva_intra' => '', 'fournisseur' => 1),
+	array('id' => 4, 'name' => 'Cadena Tiendas', 'siren' => 'B12345674', 'tva_intra' => '', 'fournisseur' => 0),
+	array('id' => 5, 'name' => 'Media Tienda SA', 'siren' => '12345678Z', 'tva_intra' => '', 'fournisseur' => 1),
+	array('id' => 6, 'name' => 'Media Tienda SL', 'siren' => 'X1234567L', 'tva_intra' => '', 'fournisseur' => 1),
+	array('id' => 7, 'name' => 'Solo Uno', 'siren' => '', 'tva_intra' => '', 'fournisseur' => 1),
+), 'ES');
+eo_assert('same tax id with and without ES: one group', isset($g['by_tax_id'][$cifX]) ? count($g['by_tax_id'][$cifX]) : 0, 3);
+eo_assert('the misread duplicate shows up by name', isset($g['by_name']['ACME']) ? count($g['by_name']['ACME']) : 0, 3);
+eo_assert('same name, different valid ids: not listed', isset($g['by_name']['MEDIATIENDA']), false);
+eo_assert('a single supplier is never a group', isset($g['by_name']['SOLOUNO']), false);
+$g2 = easyocrGroupDuplicateThirdparties(array(
+	array('id' => 1, 'name' => 'Beta SL', 'siren' => $cifX, 'tva_intra' => '', 'fournisseur' => 1),
+	array('id' => 2, 'name' => 'Beta S.L.', 'siren' => '', 'tva_intra' => 'ES' . $cifX, 'fournisseur' => 1),
+), 'ES');
+eo_assert('same name and same valid id: listed once, by tax id', array(count($g2['by_tax_id']), count($g2['by_name'])), array(1, 0));
+
+eo_group('easyocrPurgeWebhookFiles');
+$pd = sys_get_temp_dir() . '/eo_purge_' . getmypid();
+@mkdir($pd);
+$now = time();
+foreach (array('webhook_2026-01-01_1.json' => 40, 'crash_2026-01-01.json' => 40, 'webhook_2026-01-01.log' => 40, 'webhook_new.json' => 2, 'other_old.txt' => 40) as $fn => $ageDays) {
+	file_put_contents("$pd/$fn", 'x');
+	touch("$pd/$fn", $now - $ageDays * 86400);
+}
+eo_assert('0 days keeps everything', easyocrPurgeWebhookFiles($pd, 0, $now), -1);
+eo_assert('deletes only old webhook files', easyocrPurgeWebhookFiles($pd, 30, $now), 3);
+eo_assert('the recent one stays', is_file("$pd/webhook_new.json"), true);
+eo_assert('a file that is not the webhook\'s stays', is_file("$pd/other_old.txt"), true);
+eo_assert('a second sweep the same day is skipped', easyocrPurgeWebhookFiles($pd, 30, $now + 60), -1);
+eo_assert('the next day it sweeps again', easyocrPurgeWebhookFiles($pd, 30, $now + 86400 + 60), 0);
+foreach ((array) glob("$pd/{,.}*", GLOB_BRACE) as $f) { if (is_file($f)) unlink($f); }
+@rmdir($pd);
+eo_assert('test folder cleaned', is_dir($pd), false);
+
+eo_group('easyocrPaymentConfigRefused');
+eo_assert('cash account + transfer: refused', easyocrPaymentConfigRefused(2, 'VIR'), true);
+eo_assert('cash account + card (the default): refused', easyocrPaymentConfigRefused('2', 'CB'), true);
+eo_assert('cash account + cash: accepted', easyocrPaymentConfigRefused(2, 'liq'), false);
+eo_assert('current account + transfer: accepted', easyocrPaymentConfigRefused(1, 'VIR'), false);
+
 eo_group('easyocrShouldForceDraft');
 eo_assert('unattended + something to review + would validate', easyocrShouldForceDraft(true, array('header_mismatch'), 'validated'), true);
 eo_assert('nothing to review', easyocrShouldForceDraft(true, array(), 'validated'), false);
