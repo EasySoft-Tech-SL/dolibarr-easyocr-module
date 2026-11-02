@@ -92,6 +92,9 @@ $arrayofcss = array(
 
 llxHeader("", "EasyOcr", '', '', 0, 0, $arrayofjs, $arrayofcss);
 
+// CSRF token for the AJAX calls that create or change data (js/scripts.js sends it)
+print '<script>window.EASYOCR_TOKEN = '.json_encode(newToken(), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP).';</script>'."\n";
+
 // Received document (inbox.php -> ?inbox=N): js/scripts.js loads it into the viewer. Only a
 // pending document of this entity; the AI extraction still waits for the user's click.
 $eoInboxRow = GETPOST('inbox', 'int') > 0 ? easyocrInboxFetch(GETPOST('inbox', 'int')) : null;
@@ -336,6 +339,14 @@ if ($eoInboxRow && (int) $eoInboxRow->status === EASYOCR_INBOX_PENDING && is_fil
           <li><?php echo $langs->trans('EasyOcrAIFeat2'); ?></li>
           <li><?php echo $langs->trans('EasyOcrAIFeat3'); ?></li>
         </ul>
+        <?php if (empty($conf->global->EASYOCR_AI_APIKEY)) { ?>
+        <div class="eo-ai-activate-hint eo-ai-nokey-cta">
+          <?php
+          // Translation with its own links (app.easyocr.es and the setup page): printed as is
+          echo $langs->trans('EasyOcrNoApiKeyCta', dol_buildpath('/easyocr/admin/setup.php', 1));
+          ?>
+        </div>
+        <?php } ?>
         <div class="eo-ai-activate-hint">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
           <?php echo $langs->trans('EasyOcrAIActivateHint'); ?>
@@ -559,6 +570,7 @@ if ($eoInboxRow && (int) $eoInboxRow->status === EASYOCR_INBOX_PENDING && is_fil
         <button class="eo-modal-close" onclick="EasyOcr.closeInvoicePreview()">✕</button>
       </div>
     </div>
+    <div id="eo-invoice-notices" class="eo-ai-totals-warning" role="alert" style="display:none;margin:8px 12px"></div>
     <div class="eo-modal-body eo-modal-body-iframe">
       <iframe id="eo-invoice-iframe" src="about:blank" frameborder="0"></iframe>
     </div>

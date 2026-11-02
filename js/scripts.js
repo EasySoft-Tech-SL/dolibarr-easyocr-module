@@ -9,6 +9,39 @@ if (typeof pdfjsLib !== 'undefined' && window.EasyOcrWorkerSrc) {
     pdfjsLib.GlobalWorkerOptions.workerSrc = window.EasyOcrWorkerSrc;
 }
 
+/**
+ * CSRF token of this session, for the POSTs to ajax/ajax_easyocr.php.
+ * extract.php publishes it in window.EASYOCR_TOKEN; any other page that loads this
+ * script (batch.php) has the anti-csrf meta that Dolibarr prints in every header
+ * from v16 to v24. The server accepts either the page token or the next one.
+ */
+function easyOcrCsrfToken() {
+    if (window.EASYOCR_TOKEN) return String(window.EASYOCR_TOKEN);
+    var meta = document.querySelector('meta[name="anti-csrf-newtoken"]') || document.querySelector('meta[name="anti-csrf-currenttoken"]');
+    return meta ? (meta.getAttribute('content') || '') : '';
+}
+window.easyOcrCsrfToken = easyOcrCsrfToken;
+
+// Every jQuery POST to the module AJAX handler carries the token, also the ones
+// written in batch.php, so no call can be left without it. One already in the
+// data (batch.php sends some) is left alone.
+if (typeof jQuery !== 'undefined' && typeof jQuery.ajaxPrefilter === 'function') {
+    jQuery.ajaxPrefilter(function (options) {
+        if (String(options.type || options.method || '').toUpperCase() !== 'POST') return;
+        if (!/ajax_easyocr\.php/.test(String(options.url || ''))) return;
+        var token = easyOcrCsrfToken();
+        if (!token) return;
+        var data = options.data;
+        if (typeof FormData !== 'undefined' && data instanceof FormData) {
+            if (typeof data.has !== 'function' || !data.has('token')) data.append('token', token);
+        } else if (typeof data === 'string') {
+            if (!/(^|&)token=/.test(data)) options.data = data + (data ? '&' : '') + 'token=' + encodeURIComponent(token);
+        } else if (data === undefined || data === null) {
+            options.data = 'token=' + encodeURIComponent(token);
+        }
+    });
+}
+
 const EasyOcr = (function () {
 
     // Translations (set by scripts.js.php before this code)
@@ -77,15 +110,35 @@ const EasyOcr = (function () {
         document.getElementById('loader').style.display = 'none';
     }
 
-    function toast(msg, type) {
+    /**
+     * Text of a message that may come with HTML entities or tags (server messages built
+     * with trans(), data read from the document). Parsed in an inert document, so no
+     * script or handler in it ever runs, and only its text is kept.
+     */
+    function toPlainText(msg) {
+        var s = (msg === undefined || msg === null) ? '' : String(msg);
+        if (s.indexOf('<') === -1 && s.indexOf('&') === -1) return s;
+        try {
+            return new DOMParser().parseFromString(s, 'text/html').body.textContent || '';
+        } catch (e) {
+            return s;
+        }
+    }
+
+    /**
+     * @param {string}  msg    Message. Plain text unless isHtml is true.
+     * @param {string}  type   success | warn | error
+     * @param {boolean} isHtml Only for HTML built here, with every variable part escaped
+     */
+    function toast(msg, type, isHtml) {
         type = type || 'success';
         const el = document.createElement('div');
         el.className = 'eo-toast ' + type;
-        // Use innerHTML for warn/error to allow links; textContent for success (safe)
-        if (type === 'warn' || type === 'error') {
+        // Messages from the server and from the document are text: never markup
+        if (isHtml === true) {
             el.innerHTML = msg;
         } else {
-            el.textContent = msg;
+            el.textContent = toPlainText(msg);
         }
         const offset = 20 + (toastCount * 52);
         el.style.bottom = offset + 'px';
@@ -257,8 +310,8 @@ const EasyOcr = (function () {
             html += `<div class="eo-sel-item">
                 <div class="eo-sel-header">
                     <div class="eo-sel-label">
-                        <span class="eo-sel-color" style="background:${sel.color}"></span>
-                        ${sel.label}
+                        <span class="eo-sel-color" style="background:${escapeHtml(sel.color)}"></span>
+                        ${escapeHtml(sel.label)}
                         <span class="eo-sel-page">${(L.page || 'Pág.') + ' '}${sel.pageIdx + 1}</span>
                     </div>
                     <button class="eo-sel-delete" onclick="EasyOcr.removeOcrSelection(${sel.pageIdx}, ${sel.selIdx})" title="${L.deleteSelection || 'Eliminar'}">✕</button>
@@ -266,7 +319,7 @@ const EasyOcr = (function () {
                 <input type="text" class="eo-sel-input" 
                     data-page="${sel.pageIdx}" 
                     data-sel="${sel.selIdx}"
-                    value="${(sel.text || '').replace(/"/g, '&quot;')}"
+                    value="${escapeHtml(sel.text || '')}"
                     onchange="EasyOcr.updateSelectionText(${sel.pageIdx}, ${sel.selIdx}, this.value)"
                     oninput="EasyOcr.updateSelectionText(${sel.pageIdx}, ${sel.selIdx}, this.value)">
             </div>`;
@@ -924,8 +977,8 @@ const EasyOcr = (function () {
                 supplierSelect.innerHTML = '<option value="">' + (L.selectSupplier || 'Select supplier') + '</option>';
                 tplSupplierSelect.innerHTML = '<option value="">' + (L.noSupplierGeneric || 'No supplier (generic)') + '</option>';
                 state.suppliersData.forEach(s => {
-                    supplierSelect.innerHTML += `<option value="${s.rowid}">${s.nom}</option>`;
-                    tplSupplierSelect.innerHTML += `<option value="${s.rowid}">${s.nom}</option>`;
+                    supplierSelect.innerHTML += `<option value="${escapeHtml(s.rowid)}">${escapeHtml(s.nom)}</option>`;
+                    tplSupplierSelect.innerHTML += `<option value="${escapeHtml(s.rowid)}">${escapeHtml(s.nom)}</option>`;
                 });
 
                 const tplSelect = document.getElementById('eo-template-select');
@@ -934,7 +987,7 @@ const EasyOcr = (function () {
                     const selected = state.templateId && t.rowid === state.templateId ? ' selected' : '';
                     const suffix = t.supplier_name ? ` (${t.supplier_name})` : '';
                     const displayName = t.name && t.name.trim() ? t.name : 'ID: ' + t.rowid;
-                    tplSelect.innerHTML += `<option value="${t.rowid}"${selected} data-fk-soc="${t.fk_soc || ''}">${displayName}${suffix}</option>`;
+                    tplSelect.innerHTML += `<option value="${escapeHtml(t.rowid)}"${selected} data-fk-soc="${escapeHtml(t.fk_soc || '')}">${escapeHtml(displayName + suffix)}</option>`;
                 });
 
                 // Poblar selector de cuentas bancarias
@@ -944,7 +997,7 @@ const EasyOcr = (function () {
                     state.banksData.forEach(b => {
                         const curr = b.currency_code ? ` (${b.currency_code})` : '';
                         const num = b.number ? ` - ${b.number}` : '';
-                        bankSelect.innerHTML += `<option value="${b.rowid}">${b.label}${num}${curr}</option>`;
+                        bankSelect.innerHTML += `<option value="${escapeHtml(b.rowid)}">${escapeHtml(b.label + num + curr)}</option>`;
                     });
                 }
 
@@ -961,7 +1014,7 @@ const EasyOcr = (function () {
                     });
                     // Agregar las opciones únicas
                     uniquePaymentTypes.forEach(pt => {
-                        paymentTypeSelect.innerHTML += `<option value="${pt.id}">${pt.label}</option>`;
+                        paymentTypeSelect.innerHTML += `<option value="${escapeHtml(pt.id)}">${escapeHtml(pt.label)}</option>`;
                     });
                 }
 
@@ -1170,6 +1223,8 @@ const EasyOcr = (function () {
                     hideSaveTemplate();
                     loadInitialData();
                     toast(L.templateSavedOk);
+                } else {
+                    toastServerError(data, L.errorSavingTemplate);
                 }
             },
             error: function () {
@@ -1207,6 +1262,8 @@ const EasyOcr = (function () {
                 hideLoader();
                 if (data.status === 'ok') {
                     toast(L.templateEditedOk);
+                } else {
+                    toastServerError(data, L.errorEditingTemplate);
                 }
             },
             error: function () {
@@ -1243,20 +1300,20 @@ const EasyOcr = (function () {
         // Modal de confirmación
         let confirmHtml = `
             <div class="eo-confirm-grid">
-                <div class="eo-confirm-row"><span class="eo-confirm-label">${(L.supplierLabel || 'Supplier') + ':'}</span><span class="eo-confirm-value">${supplierName}</span></div>
-                <div class="eo-confirm-row"><span class="eo-confirm-label">${(L.invoiceNumber || 'Invoice No.') + ':'}</span><span class="eo-confirm-value">${factura}</span></div>
-                <div class="eo-confirm-row"><span class="eo-confirm-label">${(L.dateLabel || 'Date') + ':'}</span><span class="eo-confirm-value">${fecha}</span></div>
-                <div class="eo-confirm-row"><span class="eo-confirm-label">${(L.taxableBase || 'Tax base') + ':'}</span><span class="eo-confirm-value">${totalHt}</span></div>
-                <div class="eo-confirm-row"><span class="eo-confirm-label">${(L.totalTTC || 'Total') + ':'}</span><span class="eo-confirm-value">${totalTtc}</span></div>`;
+                <div class="eo-confirm-row"><span class="eo-confirm-label">${(L.supplierLabel || 'Supplier') + ':'}</span><span class="eo-confirm-value">${escapeHtml(supplierName)}</span></div>
+                <div class="eo-confirm-row"><span class="eo-confirm-label">${(L.invoiceNumber || 'Invoice No.') + ':'}</span><span class="eo-confirm-value">${escapeHtml(factura)}</span></div>
+                <div class="eo-confirm-row"><span class="eo-confirm-label">${(L.dateLabel || 'Date') + ':'}</span><span class="eo-confirm-value">${escapeHtml(fecha)}</span></div>
+                <div class="eo-confirm-row"><span class="eo-confirm-label">${(L.taxableBase || 'Tax base') + ':'}</span><span class="eo-confirm-value">${escapeHtml(totalHt)}</span></div>
+                <div class="eo-confirm-row"><span class="eo-confirm-label">${(L.totalTTC || 'Total') + ':'}</span><span class="eo-confirm-value">${escapeHtml(totalTtc)}</span></div>`;
 
         if (iva) confirmHtml += `
-                <div class="eo-confirm-row"><span class="eo-confirm-label">${(L.labelIVA || 'Tax amount') + ':'}</span><span class="eo-confirm-value">${iva}</span></div>`;
+                <div class="eo-confirm-row"><span class="eo-confirm-label">${(L.labelIVA || 'Tax amount') + ':'}</span><span class="eo-confirm-value">${escapeHtml(iva)}</span></div>`;
         if (desc) confirmHtml += `
-                <div class="eo-confirm-row"><span class="eo-confirm-label">${(L.labelDesc || 'Description') + ':'}</span><span class="eo-confirm-value eo-confirm-desc">${desc}</span></div>`;
+                <div class="eo-confirm-row"><span class="eo-confirm-label">${(L.labelDesc || 'Description') + ':'}</span><span class="eo-confirm-value eo-confirm-desc">${escapeHtml(desc)}</span></div>`;
         if (cif) confirmHtml += `
-                <div class="eo-confirm-row"><span class="eo-confirm-label">${(L.labelCIF || 'Tax ID') + ':'}</span><span class="eo-confirm-value">${cif}</span></div>`;
+                <div class="eo-confirm-row"><span class="eo-confirm-label">${(L.labelCIF || 'Tax ID') + ':'}</span><span class="eo-confirm-value">${escapeHtml(cif)}</span></div>`;
         if (dueDate) confirmHtml += `
-                <div class="eo-confirm-row"><span class="eo-confirm-label">${(L.labelDueDate || 'Due date') + ':'}</span><span class="eo-confirm-value">${dueDate}</span></div>`;
+                <div class="eo-confirm-row"><span class="eo-confirm-label">${(L.labelDueDate || 'Due date') + ':'}</span><span class="eo-confirm-value">${escapeHtml(dueDate)}</span></div>`;
 
         confirmHtml += `
             </div>`;
@@ -1325,26 +1382,30 @@ const EasyOcr = (function () {
                 if (data.status === 'ok') {
                     const tipo = data.document_type || docType;
                     showInvoicePreview(data.id, data.ref || '', tipo);
+                    renderInvoiceNotices(data);
                     toast(tipo === 'supplier_proposal' ? (L.proposalCreatedOk || 'Presupuesto creado') : L.invoiceCreatedOk, 'success');
                     resetWorkspace();
+                } else if (data.status === 'retry') {
+                    // Another process was creating the same supplier: nothing failed, try again
+                    toast(data.message || L.errorGeneratingInvoice, 'warn');
                 } else if (data.status === 'repeat') {
                     var esPresupuesto = (data.document_type || docType) === 'supplier_proposal';
-                    var msg = esPresupuesto ? (L.proposalAlreadyExists || 'El presupuesto ya existe') : (L.invoiceAlreadyExists || 'La factura ya existe');
+                    var msg = escapeHtml(esPresupuesto ? (L.proposalAlreadyExists || 'El presupuesto ya existe') : (L.invoiceAlreadyExists || 'La factura ya existe'));
                     if (data.existing_ref) {
-                        msg += ': ' + data.existing_ref;
+                        msg += ': ' + escapeHtml(data.existing_ref);
                     }
                     if (data.existing_ref_supplier) {
-                        msg += ' (Ref: ' + data.existing_ref_supplier + ')';
+                        msg += ' (Ref: ' + escapeHtml(data.existing_ref_supplier) + ')';
                     }
                     if (data.existing_id) {
                         var url = esPresupuesto
-                            ? '../../supplier_proposal/card.php?id=' + data.existing_id
-                            : '../../fourn/facture/card.php?facid=' + data.existing_id;
-                        msg += ' <a href="' + url + '" target="_blank" style="color:#fff;text-decoration:underline;">' + (esPresupuesto ? (L.viewProposal || 'Ver presupuesto') : (L.viewInvoice || 'Ver factura')) + '</a>';
+                            ? '../../supplier_proposal/card.php?id=' + encodeURIComponent(data.existing_id)
+                            : '../../fourn/facture/card.php?facid=' + encodeURIComponent(data.existing_id);
+                        msg += ' <a href="' + url + '" target="_blank" style="color:#fff;text-decoration:underline;">' + escapeHtml(esPresupuesto ? (L.viewProposal || 'Ver presupuesto') : (L.viewInvoice || 'Ver factura')) + '</a>';
                     }
-                    toast(msg, 'warn');
+                    toast(msg, 'warn', true);
                 } else {
-                    toast(data.message || L.errorGeneratingInvoice, 'error');
+                    toastServerError(data, L.errorGeneratingInvoice);
                 }
             },
             error: function () {
@@ -1729,18 +1790,18 @@ const EasyOcr = (function () {
                     val = val.substring(2, 10);
                     val = val.substring(0, 4) + '-' + val.substring(4, 6) + '-' + val.substring(6, 8);
                 }
-                html += `<div class="eo-meta-row"><span class="eo-meta-label">${f.label}:</span><span class="eo-meta-value">${val}</span></div>`;
+                html += `<div class="eo-meta-row"><span class="eo-meta-label">${escapeHtml(f.label)}:</span><span class="eo-meta-value">${escapeHtml(val)}</span></div>`;
             }
         });
 
         Object.keys(info).forEach(key => {
             if (knownKeys.indexOf(key) === -1 && key !== 'PDFFormatVersion' && key !== 'IsLinearized' && key !== 'IsAcroFormPresent' && key !== 'IsXFAPresent' && key !== 'IsCollectionPresent') {
                 hasData = true;
-                html += `<div class="eo-meta-row"><span class="eo-meta-label">${key}:</span><span class="eo-meta-value">${String(info[key])}</span></div>`;
+                html += `<div class="eo-meta-row"><span class="eo-meta-label">${escapeHtml(key)}:</span><span class="eo-meta-value">${escapeHtml(String(info[key]))}</span></div>`;
             }
         });
 
-        html += `<div class="eo-meta-row"><span class="eo-meta-label">${L.pdfVersion || 'Versión PDF'}:</span><span class="eo-meta-value">${info.PDFFormatVersion || '—'}</span></div>`;
+        html += `<div class="eo-meta-row"><span class="eo-meta-label">${L.pdfVersion || 'Versión PDF'}:</span><span class="eo-meta-value">${escapeHtml(info.PDFFormatVersion || '—')}</span></div>`;
 
         if (meta.metadata) {
             const xmpFields = [
@@ -1754,14 +1815,14 @@ const EasyOcr = (function () {
                     const val = meta.metadata.get(f.ns + f.key);
                     if (val) {
                         hasData = true;
-                        html += `<div class="eo-meta-row"><span class="eo-meta-label">${f.label}:</span><span class="eo-meta-value">${val}</span></div>`;
+                        html += `<div class="eo-meta-row"><span class="eo-meta-label">${escapeHtml(f.label)}:</span><span class="eo-meta-value">${escapeHtml(val)}</span></div>`;
                     }
                 } catch (e) { /* XMP field not available */ }
             });
         }
 
         if (state.pdfDoc) {
-            html += `<div class="eo-meta-row"><span class="eo-meta-label">Páginas:</span><span class="eo-meta-value">${state.pdfDoc.numPages}</span></div>`;
+            html += `<div class="eo-meta-row"><span class="eo-meta-label">${escapeHtml(L.pdfPages || 'Pages')}:</span><span class="eo-meta-value">${state.pdfDoc.numPages}</span></div>`;
         }
 
         container.innerHTML = hasData ? html : '<span class="eo-meta-empty">' + (L.noRelevantMetadata) + '</span>';
@@ -1785,7 +1846,58 @@ const EasyOcr = (function () {
         showModal('eo-modal-invoice');
     }
 
+    /**
+     * What the user must see right after creating a document: the payment that did not
+     * go through, why it stayed as a draft, what to review. The server sends them
+     * translated in user_notices; they are drawn as text above the invoice preview
+     * and stay there until the preview is closed.
+     */
+    function renderInvoiceNotices(data) {
+        var box = document.getElementById('eo-invoice-notices');
+        var notices = (data && Array.isArray(data.user_notices)) ? data.user_notices : [];
+        if (!box) {
+            notices.forEach(function (n) { toast(n, 'warn'); });
+            return;
+        }
+        box.textContent = '';
+        if (!notices.length) {
+            box.style.display = 'none';
+            return;
+        }
+        var title = document.createElement('strong');
+        title.textContent = toPlainText(data.notices_title || '');
+        box.appendChild(title);
+        var ul = document.createElement('ul');
+        ul.style.margin = '4px 0 0 18px';
+        ul.style.padding = '0';
+        notices.forEach(function (n) {
+            var li = document.createElement('li');
+            li.textContent = toPlainText(n);
+            ul.appendChild(li);
+        });
+        box.appendChild(ul);
+        box.style.display = 'block';
+        toast(data.notices_title || notices[0], 'warn');
+    }
+
+    /**
+     * Error answered by the server. The message is text; when the server adds the
+     * module setup link (service errors), it is appended as a real link.
+     */
+    function toastServerError(data, fallback) {
+        var msg = (data && data.message) ? data.message : (fallback || '');
+        if (data && data.help_url && /^\/[^\/]/.test(String(data.help_url))) {
+            var html = escapeHtml(toPlainText(msg)) + ' <a href="' + escapeHtml(data.help_url) + '" target="_blank" style="color:#fff;text-decoration:underline;">'
+                + escapeHtml(toPlainText(data.help_label || '')) + '</a>';
+            toast(html, 'error', true);
+            return;
+        }
+        toast(msg, 'error');
+    }
+
     function closeInvoicePreview() {
+        var noticesBox = document.getElementById('eo-invoice-notices');
+        if (noticesBox) { noticesBox.textContent = ''; noticesBox.style.display = 'none'; }
         hideModal('eo-modal-invoice');
         document.getElementById('eo-invoice-iframe').src = 'about:blank';
     }
@@ -1914,6 +2026,7 @@ const EasyOcr = (function () {
         if (force) {
             formData.append('force_reprocess', '1');
         }
+        formData.append('token', easyOcrCsrfToken());
 
         var gotRealEvent = false;
 
@@ -1961,9 +2074,13 @@ const EasyOcr = (function () {
                 toast(L.aiNoData || 'No data extracted', 'warn');
             }
         }).catch(function (err) {
-            console.warn('SSE stream error, falling back to classic:', err.message);
             stopSimulatedProgress();
             resetAIProgress();
+            if (err && err.eoServerError) {
+                toastServerError(err.payload || {}, L.aiOcrError || 'AI OCR service error');
+                return;
+            }
+            console.warn('SSE stream error, falling back to classic:', err.message);
             // Re-encode from current pdfArrayBuffer in case the user loaded a new PDF
             // since the SSE request was initiated (base64 in closure may be stale)
             if (state.pdfArrayBuffer) {
@@ -2037,7 +2154,12 @@ const EasyOcr = (function () {
                             resolve({ __duplicate: true, info: data });
                             return;
                         } else if (eventType === 'error') {
-                            reject(new Error(data.message || 'SSE error'));
+                            // The server answered (no credits, bad key, service down...):
+                            // retrying through the classic path would only repeat it.
+                            var serverErr = new Error(data.message || 'SSE error');
+                            serverErr.eoServerError = true;
+                            serverErr.payload = data;
+                            reject(serverErr);
                             return;
                         }
                     }
@@ -2119,7 +2241,7 @@ const EasyOcr = (function () {
                     displayAIResult(response.data);
                     toast(L.aiOcrSuccess || 'AI extraction complete', 'success');
                 } else {
-                    toast(response.message || (L.aiOcrError || 'AI OCR error'), 'error');
+                    toastServerError(response, L.aiOcrError || 'AI OCR error');
                 }
             },
             error: function (xhr) {
@@ -3183,24 +3305,28 @@ const EasyOcr = (function () {
                 toast(esPresupuesto ? (L.proposalCreatedOk || 'Presupuesto creado') : L.invoiceCreatedOk, 'success');
             }
             showInvoicePreview(data.id, data.ref || '', data.document_type || 'invoice');
+            renderInvoiceNotices(data);
             resetWorkspace();
+        } else if (data.status === 'retry') {
+            // Another process was creating the same supplier: nothing failed, try again
+            toast(data.message || L.errorGeneratingInvoice, 'warn');
         } else if (data.status === 'repeat') {
-            var msg = esPresupuesto ? (L.proposalAlreadyExists || 'El presupuesto ya existe') : (L.invoiceAlreadyExists || 'La factura ya existe');
+            var msg = escapeHtml(esPresupuesto ? (L.proposalAlreadyExists || 'El presupuesto ya existe') : (L.invoiceAlreadyExists || 'La factura ya existe'));
             if (data.existing_ref) {
-                msg += ': ' + data.existing_ref;
+                msg += ': ' + escapeHtml(data.existing_ref);
             }
             if (data.existing_ref_supplier) {
-                msg += ' (Ref: ' + data.existing_ref_supplier + ')';
+                msg += ' (Ref: ' + escapeHtml(data.existing_ref_supplier) + ')';
             }
             if (data.existing_id) {
                 var url = esPresupuesto
-                    ? '../../supplier_proposal/card.php?id=' + data.existing_id
-                    : '../../fourn/facture/card.php?facid=' + data.existing_id;
-                msg += ' <a href="' + url + '" target="_blank" style="color:#fff;text-decoration:underline;">' + (esPresupuesto ? (L.viewProposal || 'Ver presupuesto') : (L.viewInvoice || 'Ver factura')) + '</a>';
+                    ? '../../supplier_proposal/card.php?id=' + encodeURIComponent(data.existing_id)
+                    : '../../fourn/facture/card.php?facid=' + encodeURIComponent(data.existing_id);
+                msg += ' <a href="' + url + '" target="_blank" style="color:#fff;text-decoration:underline;">' + escapeHtml(esPresupuesto ? (L.viewProposal || 'Ver presupuesto') : (L.viewInvoice || 'Ver factura')) + '</a>';
             }
-            toast(msg, 'warn');
+            toast(msg, 'warn', true);
         } else {
-            toast(data.message || L.errorGeneratingInvoice, 'error');
+            toastServerError(data, L.errorGeneratingInvoice);
         }
     }
 
@@ -3262,7 +3388,7 @@ const EasyOcr = (function () {
             state.banksData.forEach(function (b) {
                 var curr = b.currency_code ? ' (' + b.currency_code + ')' : '';
                 var num = b.number ? ' - ' + b.number : '';
-                bankSel.innerHTML += '<option value="' + b.rowid + '">' + b.label + num + curr + '</option>';
+                bankSel.innerHTML += '<option value="' + escapeHtml(b.rowid) + '">' + escapeHtml(b.label + num + curr) + '</option>';
             });
         }
         var paySel = document.getElementById('eo-ai-payment-type');
@@ -3272,7 +3398,7 @@ const EasyOcr = (function () {
             state.paymentTypesData.forEach(function (pt) {
                 if (!seen[pt.id]) {
                     seen[pt.id] = true;
-                    paySel.innerHTML += '<option value="' + pt.id + '">' + pt.label + '</option>';
+                    paySel.innerHTML += '<option value="' + escapeHtml(pt.id) + '">' + escapeHtml(pt.label) + '</option>';
                 }
             });
         }
@@ -3281,7 +3407,7 @@ const EasyOcr = (function () {
         if (journalSel && state.journalsData) {
             journalSel.innerHTML = '<option value="">' + (L.selectJournal || '-- Diario automático --') + '</option>';
             state.journalsData.forEach(function (j) {
-                journalSel.innerHTML += '<option value="' + j.code + '">' + j.code + ' - ' + j.label + '</option>';
+                journalSel.innerHTML += '<option value="' + escapeHtml(j.code) + '">' + escapeHtml(j.code + ' - ' + j.label) + '</option>';
             });
         }
     }
@@ -3310,10 +3436,14 @@ const EasyOcr = (function () {
         return undefined;
     }
 
+    // Escapes for text and for attribute values (quotes included)
     function escapeHtml(str) {
-        var div = document.createElement('div');
-        div.textContent = str;
-        return div.innerHTML;
+        return String(str === undefined || str === null ? '' : str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
     }
 
     /**

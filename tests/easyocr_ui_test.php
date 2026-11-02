@@ -340,7 +340,9 @@ function eo_http($url, $post = null)
 	$raw = curl_exec($ch);
 	$code = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
 	$hsize = (int) curl_getinfo($ch, CURLINFO_HEADER_SIZE);
-	curl_close($ch);
+	if (PHP_VERSION_ID < 80000) {
+		curl_close($ch);
+	}
 	$raw = (string) $raw;
 	$head = substr($raw, 0, $hsize);
 	$location = preg_match('/^Location:\s*(.+)$/mi', $head, $m) ? trim($m[1]) : '';

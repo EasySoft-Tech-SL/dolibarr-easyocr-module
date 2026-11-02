@@ -71,6 +71,7 @@ require_once DOL_DOCUMENT_ROOT . '/core/lib/date.lib.php';
 require_once DOL_DOCUMENT_ROOT . '/core/lib/company.lib.php';
 require_once __DIR__ . '/../lib/easyocr.lib.php';
 require_once __DIR__ . '/../lib/easyocr_ai.class.php';
+require_once __DIR__ . '/../lib/easyocr_errors.lib.php';
 dol_include_once('/easyocr/lib/easyocr_autoload.php');
 
 // For SSE stream, skip JSON content-type (will set text/event-stream later)
@@ -146,13 +147,80 @@ function easyocr_ajax_check_can_process()
 
 $action = isset($_POST["action"]) ? $_POST["action"] : '';
 
+// Last safety net: whatever escapes the handlers below is logged with its file, line
+// and trace, and the browser only gets a plain message. Never the technical detail.
+set_exception_handler(function ($e) use ($action) {
+	global $langs;
+	dol_syslog('EasyOcr ajax uncaught ' . get_class($e) . ' in action=' . $action . ': ' . $e->getMessage() . ' at ' . $e->getFile() . ':' . $e->getLine() . "\n" . $e->getTraceAsString(), LOG_ERR);
+	$msg = is_object($langs) ? $langs->transnoentities('EasyOcrUnexpectedError') : 'Unexpected error';
+	if ($action === 'aiOcrStream') {
+		echo "event: error\ndata: " . json_encode(array("message" => $msg)) . "\n\n";
+	} else {
+		print json_encode(array("status" => "error", "message" => $msg));
+	}
+	exit;
+});
+
+/**
+ * Print an error for this request in the format the caller reads (SSE or JSON) and stop.
+ *
+ * @param  string $action  Current action
+ * @param  array  $payload status/message (+ any extra field)
+ * @return void
+ */
+function easyocrAjaxFail($action, $payload)
+{
+	if ($action === 'aiOcrStream') {
+		if (!headers_sent()) {
+			header('Content-Type: text/event-stream; charset=utf-8');
+		}
+		unset($payload['status']);
+		echo "event: error\ndata: " . json_encode($payload) . "\n\n";
+	} else {
+		print json_encode($payload);
+	}
+	exit;
+}
+
+// CSRF: every action that creates, changes, deletes or spends service credits needs a
+// token of this session. NOCSRFCHECK stays defined above so the core does not drop the
+// POST of the read-only lookups; the check for these actions is done here instead.
+// findSupplierByCIF only writes when it creates or converts a third party: it is
+// checked at that point, so plain lookups keep working without a token.
+$easyocrWriteActions = array(
+	'createSupplierInvoice', 'saveNewTemplate', 'updateTemplate', 'newInvoiceAI',
+	'aiOcr', 'aiOcrStream', 'newExpenseAI', 'expenseOcr',
+	'batchUploadFile', 'batchCreateFromUploads', 'batchCancel',
+);
+if (in_array($action, $easyocrWriteActions, true) && !easyocrAjaxTokenIsValid(GETPOST('token', 'alpha'), isset($_SESSION) ? $_SESSION : array())) {
+	// HTTP 200 on purpose: the page handlers read status/message from the JSON body and
+	// only show a generic text on a transport error, which would hide "reload the page".
+	dol_syslog('EasyOcr ajax: action ' . $action . ' refused, missing or invalid CSRF token', LOG_WARNING);
+	easyocrAjaxFail($action, array("status" => "error", "message" => $langs->transnoentities('EasyOcrSecurityTokenInvalid'), "error_kind" => "csrf"));
+}
+
 // ============================================================
 // CREAR FACTURA DE PROVEEDOR
 // ============================================================
 if ($action == "createSupplierInvoice") {
 
 	if (!easyocrCheckRight($user, 'easyocr', 'write')) {
-		print json_encode(["status" => "error", "message" => "Sin permiso de escritura"]);
+		print json_encode(["status" => "error", "message" => $langs->transnoentities('EasyOcrAccessDenied')]);
+		exit;
+	}
+
+	// The core rights of what is about to be created, on top of easyocr write.
+	// The proposal branch is checked by the lib (supplier_proposal creer).
+	$isProposalDoc = (GETPOST('document_type', 'aZ09') === 'supplier_proposal');
+	if (!$isProposalDoc && !easyocrAjaxCan($user, 'supplier_invoice_create')) {
+		print json_encode(["status" => "error", "message" => $langs->transnoentities('EasyOcrNoPermSupplierInvoiceCreate')]);
+		exit;
+	}
+	// The bank account comes from the browser: it must exist, be open and be ours,
+	// and that is checked before anything is created.
+	if (!$isProposalDoc && GETPOST('create_payment', 'alpha') == '1' && GETPOST('payment_bank_id', 'int') > 0
+		&& !easyocrAjaxBankAccountIsUsable($db, GETPOST('payment_bank_id', 'int'), $conf->entity)) {
+		print json_encode(["status" => "error", "message" => $langs->transnoentities('EasyOcrPaymentBankInvalid')]);
 		exit;
 	}
 
@@ -292,6 +360,13 @@ if ($action == "createSupplierInvoice") {
 	// Validate or leave as draft based on config
 	$ref = '(PROV' . $newId . ')';
 	$is_draft = !empty($conf->global->EASYOCR_INVOICE_DRAFT);
+	// Without the validate right the invoice stays as a draft (and is not paid), and
+	// the user is told why instead of getting a draft with no explanation.
+	$permDraftNote = '';
+	if (!$is_draft && !easyocrAjaxCan($user, 'supplier_invoice_validate')) {
+		$is_draft = true;
+		$permDraftNote = $langs->transnoentities('EasyOcrNoPermValidateDraft');
+	}
 
 	if (!$is_draft) {
 		$result = $facture->validate($user);
@@ -337,27 +412,16 @@ if ($action == "createSupplierInvoice") {
 	}
 
 	// Create payment only for validated invoices
+	$paymentError = '';
 	$create_payment = GETPOST('create_payment', 'alpha');
 	if ($create_payment == '1' && GETPOST('payment_bank_id', 'int') > 0 && !$is_draft) {
 
 		$payment_bank_id = GETPOST('payment_bank_id', 'int');
 		$payment_type_id = GETPOST('payment_type_id', 'int') > 0 ? GETPOST('payment_type_id', 'int') : 6;
 
-		$paiement = new PaiementFourn($db);
-		$paiement->datepaye = $facture->date;
-		$paiement->amounts = array($newId => $total_ttc);
-		$paiement->multicurrency_amounts = array($newId => $total_ttc);
-		$paiement->multicurrency_code = array($newId => $conf->currency);
-		$paiement->multicurrency_tx = array($newId => 1);
-		$paiement->paiementid = $payment_type_id;
-		$paiement->num_payment = $ref_supplier;
-		$paiement->note_private = $langs->trans('EasyOcrPaymentAutoNote');
-		$paiement->fk_account = $payment_bank_id;
-
-		$paiement_id = $paiement->create($user, 1);
-		if ($paiement_id > 0) {
-			$paiement->addPaymentToBank($user, 'payment_supplier', '(SupplierInvoicePayment)', $payment_bank_id, '', '');
-		}
+		// Shared with the lib: pays the amount the invoice really carries and, when the
+		// bank refuses the line, undoes the payment and notes why ('' = paid).
+		$paymentError = easyocrPaySupplierInvoice($facture, $user, $payment_bank_id, $payment_type_id, $ref_supplier);
 	}
 
 	// Document opened from the inbox (extract.php?inbox=N): it is processed now.
@@ -365,7 +429,16 @@ if ($action == "createSupplierInvoice") {
 		easyocrInboxMarkProcessed(GETPOST('inbox_id', 'int'), $newId, $user);
 	}
 
-	print json_encode(["status" => "ok", "id" => $newId, "ref" => $ref, "is_draft" => $is_draft]);
+	$tplResult = array("payment_error" => $paymentError);
+	print json_encode([
+		"status"        => "ok",
+		"id"            => $newId,
+		"ref"           => $ref,
+		"is_draft"      => $is_draft,
+		"payment_error" => $paymentError,
+		"user_notices"  => easyocrAjaxUserNotices($tplResult, $permDraftNote),
+		"notices_title" => $langs->transnoentities('EasyOcrCreatedWithNotices'),
+	]);
 
 
 	// ============================================================
@@ -498,7 +571,7 @@ if ($action == "createSupplierInvoice") {
 } else if ($action == "saveNewTemplate") {
 
 	if (!easyocrCheckRight($user, 'easyocr', 'write')) {
-		print json_encode(["status" => "error", "message" => "Sin permiso de escritura"]);
+		print json_encode(["status" => "error", "message" => $langs->transnoentities('EasyOcrAccessDenied')]);
 		exit;
 	}
 
@@ -551,7 +624,7 @@ if ($action == "createSupplierInvoice") {
 } else if ($action == "updateTemplate") {
 
 	if (!easyocrCheckRight($user, 'easyocr', 'write')) {
-		print json_encode(["status" => "error", "message" => "Sin permiso de escritura"]);
+		print json_encode(["status" => "error", "message" => $langs->transnoentities('EasyOcrAccessDenied')]);
 		exit;
 	}
 
@@ -646,7 +719,18 @@ if ($action == "createSupplierInvoice") {
 			]);
 		}
 	} else {
-		if (!empty($taxRows) && GETPOST('readonly', 'int')) {
+		// Converting a customer or creating a supplier writes: it needs easyocr write,
+		// "create third parties" and a token, whatever the page sent as readonly. Without
+		// them the answer is the same as a plain lookup that found no supplier.
+		$canWriteSupplier = easyocrCheckRight($user, 'easyocr', 'write')
+			&& easyocrAjaxCan($user, 'societe_create')
+			&& easyocrAjaxTokenIsValid(GETPOST('token', 'alpha'), isset($_SESSION) ? $_SESSION : array());
+		$wantsWrite = !GETPOST('readonly', 'int') && (!empty($taxRows) || GETPOST('auto_create', 'alpha') == '1');
+		if ($wantsWrite && !$canWriteSupplier) {
+			dol_syslog('EasyOcr findSupplierByCIF: no supplier created/converted for user ' . $user->id . ' (missing right or token)', LOG_INFO);
+		}
+
+		if (!empty($taxRows) && (GETPOST('readonly', 'int') || !$canWriteSupplier)) {
 			// A plain lookup (the batch list): a customer with this tax id is not a supplier
 			print json_encode(["status" => "not_found"]);
 		} elseif (!empty($taxRows)) {
@@ -658,7 +742,9 @@ if ($action == "createSupplierInvoice") {
 		} else {
 			// Not found at all â€” auto-create if requested
 			$autoCreate = GETPOST('auto_create', 'alpha');
-			if ($autoCreate == '1') {
+			if ($autoCreate == '1' && !GETPOST('readonly', 'int') && !$canWriteSupplier) {
+				print json_encode(["status" => "error", "message" => $langs->transnoentities('EasyOcrNoPermSupplierCreate')]);
+			} elseif ($autoCreate == '1' && !GETPOST('readonly', 'int')) {
 				$supplierName    = GETPOST('supplier_name', 'alphanohtml');
 				$supplierAddress = GETPOST('supplier_address', 'alphanohtml');
 				$supplierCity    = GETPOST('supplier_city', 'alphanohtml');
@@ -668,7 +754,7 @@ if ($action == "createSupplierInvoice") {
 				$supplierEmail   = GETPOST('supplier_email', 'alphanohtml');
 
 				if (empty($supplierName)) {
-					print json_encode(["status" => "error", "message" => "Supplier name is required to create"]);
+					print json_encode(["status" => "error", "message" => $langs->transnoentities('EasyOcrSupplierNameRequired')]);
 					exit;
 				}
 
@@ -735,7 +821,16 @@ if ($action == "createSupplierInvoice") {
 						$errorDetails[] = "DB error: " . $db->lasterror();
 					}
 
-					print json_encode(["status" => "error", "message" => "Error creating supplier. " . implode(' | ', $errorDetails)]);
+					// The detail (SQL error included) is for the log, not for the browser.
+					// The core message of Societe (duplicate code, mandatory field) is kept:
+					// it tells the user what to fix.
+					dol_syslog('EasyOcr findSupplierByCIF: error creating supplier — ' . implode(' | ', $errorDetails), LOG_ERR);
+					$userMsg = $langs->transnoentities('EasyOcrErrorCreatingSupplier');
+					if (!empty($newSoc->error) && empty($db->lasterror())) {
+						$langs->load('errors');
+						$userMsg .= ': ' . $langs->transnoentities($newSoc->error);
+					}
+					print json_encode(["status" => "error", "message" => $userMsg]);
 				}
 			} else {
 				print json_encode(["status" => "not_found"]);
@@ -792,7 +887,7 @@ if ($action == "createSupplierInvoice") {
 } else if ($action == "newInvoiceAI") {
 
 	if (!easyocrCheckRight($user, 'easyocr', 'write')) {
-		print json_encode(["status" => "error", "message" => "Sin permiso de escritura"]);
+		print json_encode(["status" => "error", "message" => $langs->transnoentities('EasyOcrAccessDenied')]);
 		exit;
 	}
 
@@ -831,6 +926,30 @@ if ($action == "createSupplierInvoice") {
 		'import_key'       => 'easyocr-ai',
 	);
 
+	// Core rights on top of easyocr write. A supplier proposal is checked by the lib.
+	$permDraftNote = '';
+	if ($params['document_type'] !== 'supplier_proposal') {
+		if (!easyocrAjaxCan($user, 'supplier_invoice_create')) {
+			print json_encode(["status" => "error", "message" => $langs->transnoentities('EasyOcrNoPermSupplierInvoiceCreate')]);
+			exit;
+		}
+		// No validate right: the invoice is created as a draft (and so not paid), and
+		// the user is told. '' means "follow EASYOCR_INVOICE_DRAFT", which may validate.
+		if ($params['invoice_status'] !== 'draft' && !easyocrAjaxCan($user, 'supplier_invoice_validate')) {
+			$params['invoice_status'] = 'draft';
+			$permDraftNote = $langs->transnoentities('EasyOcrNoPermValidateDraft');
+		}
+		if ($params['create_payment'] == '1' && (int) $params['payment_bank_id'] > 0
+			&& !easyocrAjaxBankAccountIsUsable($db, $params['payment_bank_id'], $conf->entity)) {
+			print json_encode(["status" => "error", "message" => $langs->transnoentities('EasyOcrPaymentBankInvalid')]);
+			exit;
+		}
+	}
+	if (!easyocrAjaxSupplierAllowed($user, $params['fk_soc'], $params['supplier_tax_id'], $params['supplier_name'], $params['supplier_country'])) {
+		print json_encode(["status" => "error", "message" => $langs->transnoentities('EasyOcrNoPermSupplierCreate')]);
+		exit;
+	}
+
 	// Handle received file
 	$receivedFile = isset($_FILES['file']) ? $_FILES['file'] : null;
 	if (!empty($receivedFile) && $receivedFile['error'] === UPLOAD_ERR_OK) {
@@ -856,6 +975,10 @@ if ($action == "createSupplierInvoice") {
 		easyocrInboxMarkProcessed($inboxId, $isInvoice ? (int) $result['id'] : 0, $user);
 	}
 
+	if (is_array($result) && isset($result['status']) && $result['status'] === 'ok') {
+		$result['user_notices'] = easyocrAjaxUserNotices($result, $permDraftNote);
+		$result['notices_title'] = $langs->transnoentities('EasyOcrCreatedWithNotices');
+	}
 	print json_encode($result);
 
 
@@ -865,7 +988,7 @@ if ($action == "createSupplierInvoice") {
 } else if ($action == "aiOcr") {
 
 	if (!easyocrCheckRight($user, 'easyocr', 'write')) {
-		print json_encode(["status" => "error", "message" => "Sin permiso de escritura"]);
+		print json_encode(["status" => "error", "message" => $langs->transnoentities('EasyOcrAccessDenied')]);
 		exit;
 	}
 
@@ -937,7 +1060,7 @@ if ($action == "createSupplierInvoice") {
 	$result = $aiService->processBase64($base64Data, $customInstructions);
 
 	if ($result === false) {
-		print json_encode(["status" => "error", "message" => $aiService->error]);
+		print json_encode(easyocrServiceErrorPayload(0, 0, $aiService->error));
 		exit;
 	}
 
@@ -966,7 +1089,26 @@ if ($action == "createSupplierInvoice") {
 } else if ($action == "newExpenseAI") {
 
 	if (!easyocrCheckRight($user, 'easyocr', 'write')) {
-		print json_encode(["status" => "error", "message" => "Sin permiso de escritura"]);
+		print json_encode(["status" => "error", "message" => $langs->transnoentities('EasyOcrAccessDenied')]);
+		exit;
+	}
+
+	// Core right of what the configured target creates, on top of easyocr write
+	$expenseTargetCheck = !empty($conf->global->EASYOCR_EXPENSE_TARGET) ? $conf->global->EASYOCR_EXPENSE_TARGET : 'expensereport';
+	$expensePermKey = '';
+	if ($expenseTargetCheck == 'expensereport' && !easyocrAjaxCan($user, 'expensereport_create')) {
+		$expensePermKey = 'EasyOcrNoPermExpenseReport';
+	} elseif ($expenseTargetCheck == 'various_payment' && !easyocrAjaxCan($user, 'various_payment_create')) {
+		$expensePermKey = 'EasyOcrNoPermVariousPayment';
+	} elseif ($expenseTargetCheck != 'expensereport' && $expenseTargetCheck != 'various_payment') {
+		if (!easyocrAjaxCan($user, 'supplier_invoice_create')) {
+			$expensePermKey = 'EasyOcrNoPermSupplierInvoiceCreate';
+		} elseif (!easyocrAjaxSupplierAllowed($user, 0, '', GETPOST('merchant', 'alphanohtml') !== '' ? GETPOST('merchant', 'alphanohtml') : 'Gastos varios', '')) {
+			$expensePermKey = 'EasyOcrNoPermSupplierCreate';
+		}
+	}
+	if ($expensePermKey !== '') {
+		print json_encode(["status" => "error", "message" => $langs->transnoentities($expensePermKey)]);
 		exit;
 	}
 
@@ -1067,7 +1209,7 @@ if ($action == "createSupplierInvoice") {
 			'total_ht'       => $ht,
 			'total_tva'      => $tva,
 			'supplier_name'  => $merchant !== '' ? $merchant : 'Gastos varios',
-			'invoice_status' => $doValidate ? 'validated' : 'draft',
+			'invoice_status' => ($doValidate && easyocrAjaxCan($user, 'supplier_invoice_validate')) ? 'validated' : 'draft',
 			'project_id'     => $project_id,
 			'import_key'     => 'easyocr-exp',
 			'file_tmp_path'  => $tmpFile,
@@ -1114,7 +1256,7 @@ if ($action == "createSupplierInvoice") {
 } else if ($action == "expenseOcr") {
 
 	if (!easyocrCheckRight($user, 'easyocr', 'write')) {
-		print json_encode(["status" => "error", "message" => "Sin permiso de escritura"]);
+		print json_encode(["status" => "error", "message" => $langs->transnoentities('EasyOcrAccessDenied')]);
 		exit;
 	}
 
@@ -1168,7 +1310,7 @@ if ($action == "createSupplierInvoice") {
 	// it does not return the employer as the supplier.
 	$result = $aiService->processBase64($imgB64, easyocrAugmentInstructions(''), 'receipt.' . $ext, $isImage);
 	if ($result === false) {
-		print json_encode(["status" => "error", "message" => $aiService->error]);
+		print json_encode(easyocrServiceErrorPayload(0, 0, $aiService->error));
 		exit;
 	}
 	print json_encode(["status" => "ok", "data" => $result]);
@@ -1181,7 +1323,7 @@ if ($action == "createSupplierInvoice") {
 
 	if (!easyocrCheckRight($user, 'easyocr', 'write')) {
 		header('Content-Type: text/event-stream');
-		echo "event: error\ndata: " . json_encode(["message" => "Sin permiso de escritura"]) . "\n\n";
+		echo "event: error\ndata: " . json_encode(["message" => $langs->transnoentities('EasyOcrAccessDenied')]) . "\n\n";
 		exit;
 	}
 
@@ -1304,6 +1446,11 @@ if ($action == "createSupplierInvoice") {
 
 	$sawParseError = false;
 	$chunkTail     = '';
+	// Status of the answer, read from its headers before the body arrives: an error
+	// answer (401, 402, 429, 5xx) is a JSON body, not SSE, so it is held back and
+	// turned into one plain-words error event instead of being passed through.
+	$streamHttpCode = 0;
+	$streamErrBody  = '';
 
 	$ch = curl_init($url);
 	curl_setopt_array($ch, [
@@ -1326,7 +1473,19 @@ if ($action == "createSupplierInvoice") {
 		// Pure pass-through, but watch the stream for the marker the service
 		// emits when the model failed to produce JSON. Fingerprinting such a
 		// document below would make the user's retry look like a duplicate.
-		CURLOPT_WRITEFUNCTION  => function ($ch, $chunk) use (&$sawParseError, &$chunkTail) {
+		CURLOPT_HEADERFUNCTION => function ($ch, $headerLine) use (&$streamHttpCode) {
+			if (preg_match('#^HTTP/[0-9.]+\s+(\d{3})#', $headerLine, $m)) {
+				$streamHttpCode = (int) $m[1];
+			}
+			return strlen($headerLine);
+		},
+		CURLOPT_WRITEFUNCTION  => function ($ch, $chunk) use (&$sawParseError, &$chunkTail, &$streamHttpCode, &$streamErrBody) {
+			if ($streamHttpCode >= 400) {
+				if (strlen($streamErrBody) < 4096) {
+					$streamErrBody .= $chunk;
+				}
+				return strlen($chunk);
+			}
 			if (!$sawParseError && strpos($chunkTail . $chunk, '"parse_error"') !== false) {
 				$sawParseError = true;
 			}
@@ -1341,15 +1500,22 @@ if ($action == "createSupplierInvoice") {
 
 	$ok = curl_exec($ch);
 
-	if (!$ok || curl_errno($ch)) {
-		$errMsg = curl_error($ch) ?: 'Connection failed';
-		echo "event: error\ndata: " . json_encode(["message" => $errMsg]) . "\n\n";
+	$curlErrno = curl_errno($ch);
+	$curlError = curl_error($ch);
+	$httpCode = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+	// curl_close() does nothing since PHP 8.0 and is deprecated in 8.5
+	if (PHP_VERSION_ID < 80000) {
+		curl_close($ch);
+	}
+
+	if (!$ok || $curlErrno || $httpCode >= 400) {
+		// Plain words for the user; the technical detail only goes to the log
+		$svcErr = easyocrServiceErrorPayload($httpCode, $curlErrno, $curlErrno ? $curlError : 'HTTP ' . $httpCode . ': ' . $streamErrBody);
+		unset($svcErr['status']);
+		echo "event: error\ndata: " . json_encode($svcErr) . "\n\n";
 		if (ob_get_level()) ob_flush();
 		flush();
 	}
-
-	$httpCode = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
-	curl_close($ch);
 
 	// Fingerprint the document only when the service actually processed it AND
 	// returned something usable: a parse_error means the credits were spent for
@@ -1602,7 +1768,7 @@ if ($action == "createSupplierInvoice") {
 
 		print json_encode(["status" => "ok", "data" => $result]);
 	} catch (\Exception $e) {
-		print json_encode(["status" => "error", "message" => $e->getMessage()]);
+		print json_encode(easyocrServiceErrorPayloadFromException($e));
 	}
 
 
@@ -1634,7 +1800,7 @@ if ($action == "createSupplierInvoice") {
 		$result = $client->batch()->status($uuid);
 		print json_encode(["status" => "ok", "data" => $result]);
 	} catch (\Exception $e) {
-		print json_encode(["status" => "error", "message" => $e->getMessage()]);
+		print json_encode(easyocrServiceErrorPayloadFromException($e));
 	}
 
 
@@ -1666,7 +1832,7 @@ if ($action == "createSupplierInvoice") {
 		$result = $client->batch()->results($uuid);
 		print json_encode(["status" => "ok", "data" => $result]);
 	} catch (\Exception $e) {
-		print json_encode(["status" => "error", "message" => $e->getMessage()]);
+		print json_encode(easyocrServiceErrorPayloadFromException($e));
 	}
 
 
@@ -1873,13 +2039,13 @@ if ($action == "createSupplierInvoice") {
 			@unlink($fp);
 		}
 		@rmdir($tempDir);
-		print json_encode(["status" => "error", "message" => $e->getMessage()]);
+		print json_encode(easyocrServiceErrorPayloadFromException($e));
 	} catch (\Exception $e) {
 		foreach ($filePaths as $fp) {
 			@unlink($fp);
 		}
 		@rmdir($tempDir);
-		print json_encode(["status" => "error", "message" => $langs->trans('EasyOcrBatchApiError') . ': ' . $e->getMessage()]);
+		print json_encode(easyocrServiceErrorPayloadFromException($e));
 	}
 
 
@@ -1911,7 +2077,7 @@ if ($action == "createSupplierInvoice") {
 		$result = $client->batch()->cancel($uuid);
 		print json_encode(["status" => "ok", "data" => $result]);
 	} catch (\Exception $e) {
-		print json_encode(["status" => "error", "message" => $e->getMessage()]);
+		print json_encode(easyocrServiceErrorPayloadFromException($e));
 	}
 
 	// ============================================================
@@ -2056,6 +2222,6 @@ if ($action == "createSupplierInvoice") {
 		]);
 	} catch (\Exception $e) {
 		dol_syslog('EasyOcr getSubscriptionInfo ERROR: ' . $e->getMessage(), LOG_ERR);
-		print json_encode(["status" => "error", "message" => $e->getMessage()]);
+		print json_encode(easyocrServiceErrorPayloadFromException($e));
 	}
 }

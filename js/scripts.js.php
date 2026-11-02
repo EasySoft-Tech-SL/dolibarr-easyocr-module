@@ -135,6 +135,7 @@ window.EasyOcrLang = {
   onlyPdfAccepted: <?php echo transJson('EasyOcrOnlyPdfAccepted'); ?>,
   noMetadata: <?php echo transJson('EasyOcrNoMetadata'); ?>,
   noRelevantMetadata: <?php echo transJson('EasyOcrNoRelevantMetadata'); ?>,
+  pdfPages: <?php echo transJson('EasyOcrPdfPagesLabel'); ?>,
   noSelectionsYet: <?php echo transJson('EasyOcrNoSelectionsYet'); ?>,
   selectSupplier: <?php echo transJson('EasyOcrSelectSupplier'); ?>,
   noTemplate: <?php echo transJson('EasyOcrNoTemplate'); ?>,
