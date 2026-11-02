@@ -2374,6 +2374,50 @@ function easyocrResolveSupplierForDocument($taxId, $name, $supplierCountry = '')
  */
 function easyocrCreateInvoiceFromOCR($params, $userObj = null)
 {
+	global $db, $conf, $hookmanager;
+
+	if (empty($db) && !empty($GLOBALS['db'])) {
+		$db = $GLOBALS['db'];
+	}
+	// Extension point for other modules. 'easyocrBeforeCreate' may change the
+	// parameters ($parameters['params'], by reference) or refuse the document by
+	// returning > 0 with an error in $hookmanager->error; 'easyocrAfterCreate' sees
+	// the result and may add to it ($parameters['result'], by reference).
+	if (!is_object($hookmanager) && is_object($db)) {
+		include_once DOL_DOCUMENT_ROOT . '/core/class/hookmanager.class.php';
+		$hookmanager = new HookManager($db);
+	}
+	$hookObject = null;
+	if (is_object($hookmanager)) {
+		$hookmanager->initHooks(array('easyocrdocument'));
+		$hookParams = array('params' => &$params, 'user' => $userObj);
+		$reshook = $hookmanager->executeHooks('easyocrBeforeCreate', $hookParams, $hookObject);
+		if ($reshook > 0) {
+			$hookError = !empty($hookmanager->error) ? $hookmanager->error : 'Refused by a hook';
+			dol_syslog('EasyOCR-CREATE: refused by hook easyocrBeforeCreate — ' . $hookError, LOG_WARNING);
+			return array('status' => 'error', 'message' => $hookError, 'error_code' => 'hook_refused');
+		}
+	}
+
+	$result = easyocrCreateInvoiceFromOCRCore($params, $userObj);
+
+	if (is_object($hookmanager)) {
+		$hookParams = array('params' => $params, 'result' => &$result, 'user' => $userObj);
+		$hookmanager->executeHooks('easyocrAfterCreate', $hookParams, $hookObject);
+	}
+
+	return $result;
+}
+
+/**
+ * Body of easyocrCreateInvoiceFromOCR(), without the hooks.
+ *
+ * @param  array     $params  See easyocrCreateInvoiceFromOCR()
+ * @param  User|null $userObj User object (null = auto-detect first admin)
+ * @return array
+ */
+function easyocrCreateInvoiceFromOCRCore($params, $userObj = null)
+{
 	global $db, $conf, $langs, $mysoc;
 
 	// Robust $db recovery — in NOLOGIN/webhook context, global may not resolve
@@ -2954,6 +2998,15 @@ function easyocrCreateInvoiceFromOCR($params, $userObj = null)
 	if ($newId <= 0) {
 		$msg = is_object($langs) ? $langs->trans($is_proposal ? 'EasyOcrErrorCreatingProposal' : 'EasyOcrErrorCreatingInvoice') : 'Error creating document';
 		dol_syslog('EasyOCR-CREATE: ERROR creating document: ' . $facture->error . ' | errors: ' . implode(', ', $facture->errors ?? []), LOG_ERR);
+		// A supplier created a moment ago only for this document would stay behind with
+		// nothing attached, and the next attempt would find it as an unconfirmed match
+		if ($supplier_created && $fk_soc > 0) {
+			$orphan = new Societe($db);
+			if ($orphan->fetch($fk_soc) > 0 && $orphan->delete($fk_soc, $userObj) > 0) {
+				easyocrSupplierKeyDelete($db, $fk_soc);
+				dol_syslog('EasyOCR-CREATE: removed the supplier ' . $fk_soc . ' created for the failed document', LOG_INFO);
+			}
+		}
 		$releaseLocks();
 		return ['status' => 'error', 'message' => $msg . ': ' . $facture->error];
 	}

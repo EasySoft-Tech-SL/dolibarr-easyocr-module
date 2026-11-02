@@ -904,6 +904,63 @@ if (easyocrTpKeyTableExists()) {
 	eo_assert('row older than the sync mark: still indexed and found', isset($rowsLate[0]['id']) ? $rowsLate[0]['id'] : 0, $idLate);
 }
 
+// 28) Hooks: another module can change the parameters, refuse a document, read the result
+include_once DOL_DOCUMENT_ROOT . '/core/class/hookmanager.class.php';
+if (!is_object($hookmanager)) {
+	$hookmanager = new HookManager($db);
+}
+$eoHook = new class {
+	public $seen = array();
+	public $refuse = false;
+	public $results = array();
+	public $resprints = '';
+	public $resArray = array();
+	public $error = '';
+	public $errors = array();
+	public function easyocrBeforeCreate($parameters, &$object, &$action, $hookmanager)
+	{
+		$this->seen[] = $parameters['params']['ref_supplier'];
+		$parameters['params']['notes'] = 'set by a hook';
+		if ($this->refuse) {
+			$hookmanager->error = 'refused by the test hook';
+			return 1;
+		}
+		return 0;
+	}
+	public function easyocrAfterCreate($parameters, &$object, &$action, $hookmanager)
+	{
+		$parameters['result']['hook_saw'] = $parameters['result']['status'];
+		return 0;
+	}
+};
+$hookmanager->initHooks(array('easyocrdocument'));
+$hookmanager->hooks['easyocrdocument']['eotest'] = $eoHook;
+if (property_exists($hookmanager, 'hooksSorted')) {
+	$hookmanager->hooksSorted['easyocrdocument']['eotest'] = $eoHook;
+}
+$r = easyocrCreateInvoiceFromOCR($whParams('', '', 'HOOK', array('fk_soc' => $supplierId, 'invoice_status' => 'draft')), $user);
+eo_assert('hook before: called', count($eoHook->seen), 1);
+eo_assert('hook after: can extend the result', isset($r['hook_saw']) ? $r['hook_saw'] : null, 'ok');
+$noteHook = $db->fetch_object($db->query("SELECT note_private FROM " . MAIN_DB_PREFIX . "facture_fourn WHERE rowid = " . (int) (isset($r['id']) ? $r['id'] : 0)));
+eo_assert('hook before: can change the parameters', $noteHook && strpos((string) $noteHook->note_private, 'set by a hook') !== false, true);
+$eoHook->refuse = true;
+$r = easyocrCreateInvoiceFromOCR($whParams('', '', 'HOOK2', array('fk_soc' => $supplierId)), $user);
+eo_assert('hook before: can refuse the document', array(isset($r['status']) ? $r['status'] : '', isset($r['error_code']) ? $r['error_code'] : ''), array('error', 'hook_refused'));
+unset($hookmanager->hooks['easyocrdocument']['eotest']);
+if (property_exists($hookmanager, 'hooksSorted')) {
+	unset($hookmanager->hooksSorted['easyocrdocument']['eotest']);
+}
+
+// 29) The document cannot be created: the supplier made for it is removed again
+$nOrph = $countSoc();
+$r = easyocrCreateInvoiceFromOCR($whParams('ES' . eo_cif('B', $eoSeed . '161'), 'EOQA HUERFANO SL', 'ORPH', array('datef' => '2026-10-20', 'project_id' => 999999999)), $user);
+eo_info('orphan case status=' . (isset($r['status']) ? $r['status'] : '?') . ' ' . (isset($r['message']) ? $r['message'] : ''));
+if (isset($r['status']) && $r['status'] === 'error') {
+	eo_assert('failed document: no supplier left behind', $countSoc(), $nOrph);
+} else {
+	eo_info('could not force the creation to fail here; orphan cleanup not exercised');
+}
+
 // 27) Indexed and plain name search agree
 $plain = easyocrFindSuppliersByName('EOQA SIGMA SL', 50);
 $fast = easyocrFindSuppliersByExactName('EOQA SIGMA SL');
