@@ -50,6 +50,11 @@ require_once DOL_DOCUMENT_ROOT . '/core/class/html.form.class.php';
 require_once __DIR__ . '/lib/easyocr.lib.php';
 require_once __DIR__ . '/lib/easyocr_ai.class.php';
 require_once __DIR__ . '/lib/easyocr_autoload.php';
+// Webhook helpers (token, URL): the receiver stops right after its function definitions
+if (!defined('EASYOCR_WEBHOOK_LIB_ONLY')) {
+  define('EASYOCR_WEBHOOK_LIB_ONLY', 1);
+}
+require_once __DIR__ . '/webhook_batch.php';
 
 // Security check
 if (!easyocrCheckRight($user, 'easyocr', 'write')) {
@@ -237,8 +242,15 @@ if (!$canBatch) {
   print '<div class="warning">';
   print img_picto('', 'warning', 'class="pictofixedwidth"');
   print '<strong>' . $langs->trans('EasyOcrBatchLocked') . '</strong><br>';
-  print dol_escape_htmltag($subscriptionError);
-  print '<br><br>';
+  if (empty($apiKey)) {
+    // First contact: say where the key comes from, not only that it is missing
+    // The text carries its own links (app.easyocr.es and the setup page): not escaped
+    print $langs->trans('EasyOcrNoApiKeyCta', dol_buildpath('/easyocr/admin/setup.php', 1));
+    print '<br><br>';
+  } else {
+    print dol_escape_htmltag($subscriptionError);
+    print '<br><br>';
+  }
   print '<a class="butAction" href="' . dol_buildpath('/easyocr/admin/plan.php', 1) . '">' . $langs->trans('EasyOcrViewFullPlan') . '</a> ';
   print '<a class="butAction" href="' . dol_buildpath('/easyocr/admin/setup.php', 1) . '">' . $langs->trans('EasyOcrSetup') . '</a>';
   print '</div>';
@@ -433,21 +445,12 @@ if (!$canBatch) {
     $lockedWebhook = !$hasWebhooks ? ' ' . img_picto($langs->trans('EasyOcrBatchUpgradePlan'), 'warning') : '';
     $webhookDefault = GETPOST('webhook_url', 'alpha');
     if (empty($webhookDefault)) {
-      global $dolibarr_main_instance_unique_id;
-      $instanceId = !empty($dolibarr_main_instance_unique_id) ? $dolibarr_main_instance_unique_id : '';
-      $webhookDefault = dol_buildpath('/easyocr/webhook_batch.php', 2);
-      // Always force HTTPS for webhook URLs (external callbacks must be secure)
-      $webhookDefault = preg_replace('/^http:\/\//i', 'https://', $webhookDefault);
-      if (!empty($instanceId)) {
-        $webhookDefault .= '?instance_id=' . urlencode($instanceId);
-        // Only emit entity when multicompany is enabled — without it $conf->entity is always 1.
-        if (isModEnabled('multicompany')) {
-          $webhookDefault .= '&entity=' . (int) $conf->entity;
-        }
-      }
+      // Module token of this entity (created the first time), https, &entity=N with multicompany.
+      // The instance unique id of Dolibarr is the key of dolEncrypt(): it never goes in a URL.
+      $webhookDefault = easyocrWebhookBuildUrl($db, true);
     }
     print '<tr>';
-    print '<td>Webhook URL' . $lockedWebhook . '</td>';
+    print '<td>' . $langs->trans('EasyOcrBatchWebhookUrl') . $lockedWebhook . '</td>';
     print '<td>';
     print '<div class="eo-webhook-url-wrapper" style="display:flex;gap:6px;align-items:center;max-width:720px;">';
     print '<input type="url" id="webhook_url" name="webhook_url" class="flat" form="eo-batch-form" style="flex:1;min-width:0;"';
@@ -718,7 +721,7 @@ if (!$fromMenu) {
         var row = document.createElement('div');
         row.className = 'eo-batch-file-row';
         row.innerHTML = getFileIcon(file.name) +
-          '<div class="eo-batch-file-info"><span class="eo-batch-file-name">' + file.name + '</span><span class="eo-batch-file-size">' + formatSize(file.size) + '</span></div>' +
+          '<div class="eo-batch-file-info"><span class="eo-batch-file-name">' + eoBatchEscHtml(file.name) + '</span><span class="eo-batch-file-size">' + formatSize(file.size) + '</span></div>' +
           '<button type="button" class="eo-batch-file-remove" onclick="eoBatchRemoveFile(' + idx + ')" title="<?php echo addslashes($langs->trans('Delete')); ?>">&times;</button>';
         fileItems.appendChild(row);
       });
@@ -823,19 +826,14 @@ if (!$fromMenu) {
       updateUI();
     };
 
-    // Confirmation dialog shared with extract.php (js/scripts.js). Falls back to
-    // the browser prompt if scripts.js failed to load, so a decision is never lost.
+    // Confirmation dialog shared with extract.php (js/scripts.js). If scripts.js failed
+    // to load, an inline box with the same two choices (never the browser prompt).
     window.eoBatchConfirm = function(opts) {
       if (typeof EasyOcr !== 'undefined' && typeof EasyOcr.confirm === 'function') {
         EasyOcr.confirm(opts);
         return;
       }
-      var msg = (opts.message || '') + (opts.question ? '\n\n' + opts.question : '');
-      if (window.confirm(msg)) {
-        if (typeof opts.onConfirm === 'function') opts.onConfirm();
-      } else if (typeof opts.onCancel === 'function') {
-        opts.onCancel();
-      }
+      eoBatchInlineConfirm(opts);
     };
 
     // Form submission — AJAX chunked upload (bypasses PHP max_file_uploads)
@@ -853,7 +851,7 @@ if (!$fromMenu) {
         var el = document.createElement('div');
         el.className = 'jnotify-container';
         el.innerHTML = '<div class="jnotify-notification jnotify-notification-' + s.cls + '" style="padding:12px 16px; margin:8px 0; border-radius:4px; background:' + s.bg + '; border:1px solid ' + s.color + ';">' +
-          '<span class="fas ' + s.icon + '" style="margin-right:8px; color:' + s.color + '"></span>' + msg +
+          '<span class="fas ' + s.icon + '" style="margin-right:8px; color:' + s.color + '"></span>' + eoBatchEscHtml(msg) +
           '</div>';
         var target = document.getElementById('eo-batch-form');
         if (target) target.parentNode.insertBefore(el, target);
@@ -1148,7 +1146,8 @@ if (!$fromMenu) {
     backToHistory: '<?php echo addslashes($langs->trans('EasyOcrBatchBackToHistory')); ?>',
     confirmTitle: '<?php echo addslashes($langs->trans('EasyOcrConfirm')); ?>',
     confirmYes: '<?php echo addslashes($langs->trans('Yes')); ?>',
-    confirmNo: '<?php echo addslashes($langs->trans('EasyOcrCancel')); ?>'
+    confirmNo: '<?php echo addslashes($langs->trans('EasyOcrCancel')); ?>',
+    prepareDataError: <?php echo json_encode($langs->transnoentitiesnoconv('EasyOcrBatchPrepareDataError'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>
   };
 
   var eoBatchCurrentPage = 1;
@@ -1257,16 +1256,16 @@ if (!$fromMenu) {
       dataType: 'json',
       success: function(res) {
         if (res.status !== 'ok' || !res.data) {
-          container.innerHTML = '<div class="warning">' + (res.message || eoBatchI18n.errorLoading) + '</div>';
+          container.innerHTML = '<div class="warning">' + eoBatchEscHtml(res.message || eoBatchI18n.errorLoading) + '</div>';
           return;
         }
 
         // Laravel pagination: { current_page, data: [...], last_page, per_page, total }
         var apiResp = res.data.data || res.data;
         var batches = apiResp.data || apiResp;
-        var currentPage = apiResp.current_page || res.data.current_page || 1;
-        var lastPage = apiResp.last_page || res.data.last_page || 1;
-        var total = apiResp.total || res.data.total || 0;
+        var currentPage = parseInt(apiResp.current_page || res.data.current_page, 10) || 1;
+        var lastPage = parseInt(apiResp.last_page || res.data.last_page, 10) || 1;
+        var total = parseInt(apiResp.total || res.data.total, 10) || 0;
 
         if (!Array.isArray(batches) || batches.length === 0) {
           container.innerHTML = '<div class="opacitymedium center" style="padding:30px">' +
@@ -1289,12 +1288,12 @@ if (!$fromMenu) {
 
         for (var i = 0; i < batches.length; i++) {
           var b = batches[i];
-          var batchId = b.batch_id || b.uuid || b.id || '';
+          var batchId = eoBatchSafeId(b.batch_id || b.uuid || b.id || '');
           var bName = b.name || batchId.substring(0, 12) + '…';
-          var totalDocs = b.total_documents || 0;
-          var completedDocs = b.completed_documents || 0;
-          var failedDocs = b.failed_documents || 0;
-          var bProgress = b.progress || 0;
+          var totalDocs = parseInt(b.total_documents, 10) || 0;
+          var completedDocs = parseInt(b.completed_documents, 10) || 0;
+          var failedDocs = parseInt(b.failed_documents, 10) || 0;
+          var bProgress = parseFloat(b.progress) || 0;
           var bStatus = b.status || 'pending';
           var bCreated = b.created_at || '';
           var canCancel = (bStatus === 'pending' || bStatus === 'processing');
@@ -1376,8 +1375,59 @@ if (!$fromMenu) {
 
   function eoBatchEscHtml(str) {
     var div = document.createElement('div');
-    div.appendChild(document.createTextNode(str));
-    return div.innerHTML;
+    div.appendChild(document.createTextNode(str === null || str === undefined ? '' : String(str)));
+    return div.innerHTML.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
+  // Ids that end up inside onclick="...('id')": only what a UUID can contain
+  function eoBatchSafeId(id) {
+    return String(id === null || id === undefined ? '' : id).replace(/[^A-Za-z0-9_-]/g, '');
+  }
+
+  // Inline notice (instead of alert()): text only, closes by itself
+  function eoBatchInlineNotice(msg, type) {
+    var el = document.createElement('div');
+    el.className = (type === 'error') ? 'error' : 'warning';
+    el.setAttribute('role', 'alert');
+    el.textContent = msg;
+    var anchor = document.getElementById('eo-batch-detail-body') && document.getElementById('eo-batch-detail-overlay') && document.getElementById('eo-batch-detail-overlay').style.display !== 'none'
+      ? document.getElementById('eo-batch-detail-body')
+      : (document.getElementById('eo-batch-list-container') || document.getElementById('eo-batch-form') || document.body);
+    anchor.parentNode ? anchor.parentNode.insertBefore(el, anchor) : document.body.appendChild(el);
+    setTimeout(function() {
+      if (el.parentNode) el.parentNode.removeChild(el);
+    }, 8000);
+  }
+
+  // Inline confirmation (fallback when js/scripts.js did not load): two buttons, no prompt
+  function eoBatchInlineConfirm(opts) {
+    var box = document.createElement('div');
+    box.className = 'warning';
+    box.setAttribute('role', 'alertdialog');
+    var p = document.createElement('div');
+    p.textContent = (opts.title ? opts.title + ' — ' : '') + (opts.message || '') + (opts.question ? ' ' + opts.question : '');
+    box.appendChild(p);
+    var yes = document.createElement('button');
+    yes.type = 'button';
+    yes.className = opts.danger ? 'button butActionDelete' : 'button';
+    yes.textContent = opts.confirmLabel || eoBatchI18n.confirmYes;
+    var no = document.createElement('button');
+    no.type = 'button';
+    no.className = 'button';
+    no.textContent = opts.cancelLabel || eoBatchI18n.confirmNo;
+    var bar = document.createElement('div');
+    bar.className = 'center';
+    bar.style.marginTop = '8px';
+    bar.appendChild(yes);
+    bar.appendChild(document.createTextNode(' '));
+    bar.appendChild(no);
+    box.appendChild(bar);
+    var close = function() { if (box.parentNode) box.parentNode.removeChild(box); };
+    yes.addEventListener('click', function() { close(); if (typeof opts.onConfirm === 'function') opts.onConfirm(); });
+    no.addEventListener('click', function() { close(); if (typeof opts.onCancel === 'function') opts.onCancel(); });
+    var anchor = document.getElementById('eo-batch-form') || document.getElementById('eo-batch-list-container') || document.body;
+    anchor.parentNode ? anchor.parentNode.insertBefore(box, anchor) : document.body.appendChild(box);
+    yes.focus();
   }
 
   function eoBatchClearFilters() {
@@ -1413,18 +1463,18 @@ if (!$fromMenu) {
       dataType: 'json',
       success: function(res) {
         if (res.status !== 'ok') {
-          body.innerHTML = '<div class="warning">' + (res.message || eoBatchI18n.errorLoading) + '</div>';
+          body.innerHTML = '<div class="warning">' + eoBatchEscHtml(res.message || eoBatchI18n.errorLoading) + '</div>';
           return;
         }
 
         var batch = res.data.data || res.data;
-        var batchId = batch.batch_id || batch.uuid || uuid;
+        var batchId = eoBatchSafeId(batch.batch_id || batch.uuid || uuid);
         var bName = batch.name || batchId.substring(0, 16) + '…';
         var bStatus = batch.status || 'pending';
-        var totalDocs = batch.total_documents || 0;
-        var completedDocs = batch.completed_documents || 0;
-        var failedDocs = batch.failed_documents || 0;
-        var bProgress = batch.progress || 0;
+        var totalDocs = parseInt(batch.total_documents, 10) || 0;
+        var completedDocs = parseInt(batch.completed_documents, 10) || 0;
+        var failedDocs = parseInt(batch.failed_documents, 10) || 0;
+        var bProgress = parseFloat(batch.progress) || 0;
         var bCreated = batch.created_at || '';
         var bCompleted = batch.completed_at || '';
         var bStarted = batch.started_at || '';
@@ -1512,7 +1562,7 @@ if (!$fromMenu) {
       dataType: 'json',
       success: function(res) {
         if (res.status !== 'ok') {
-          area.innerHTML = '<div class="warning">' + (res.message || eoBatchI18n.errorLoading) + '</div>';
+          area.innerHTML = '<div class="warning">' + eoBatchEscHtml(res.message || eoBatchI18n.errorLoading) + '</div>';
           return;
         }
 
@@ -1551,7 +1601,7 @@ if (!$fromMenu) {
           html += '<td><span class="fas fa-file-pdf" style="margin-right:6px; color:#bc0000"></span>' + eoBatchEscHtml(dName);
           if (dDocNum) html += '<br><span class="opacitymedium" style="font-size:10px">' + eoBatchEscHtml(dDocNum) + '</span>';
           html += '</td>';
-          html += '<td class="center">' + dPages + '</td>';
+          html += '<td class="center">' + eoBatchEscHtml(dPages) + '</td>';
           html += '<td class="center">' + eoBatchStatusBadge(dStatus) + '</td>';
           html += '<td class="center" style="white-space:nowrap">';
           // Invoice status icon (inline button, unique ID per row)
@@ -1703,7 +1753,7 @@ if (!$fromMenu) {
         var taxStr = '-';
         if (it.taxes && Array.isArray(it.taxes) && it.taxes.length > 0) {
           taxStr = it.taxes.map(function(t) {
-            return (t.tax_rate || 0) + '%';
+            return eoBatchEscHtml(t.tax_rate || 0) + '%';
           }).join(', ');
         }
         var typeIcon = '';
@@ -1781,7 +1831,7 @@ if (!$fromMenu) {
       html += '<div class="eo-batch-section-title"><span class="fas fa-info-circle" style="margin-right:6px"></span>' + eoBatchI18n.metadata + '</div>';
       html += '<table class="border centpercent tableforfield">';
       if (meta) {
-        if (meta.page_count) html += '<tr><td class="titlefield">' + eoBatchI18n.pageCount + '</td><td>' + meta.page_count + '</td></tr>';
+        if (meta.page_count) html += '<tr><td class="titlefield">' + eoBatchI18n.pageCount + '</td><td>' + eoBatchEscHtml(meta.page_count) + '</td></tr>';
         if (meta.language) html += '<tr><td>' + eoBatchI18n.language + '</td><td>' + eoBatchEscHtml(meta.language) + '</td></tr>';
         if (meta.has_logo != null) html += '<tr><td>' + eoBatchI18n.logo + '</td><td>' + (meta.has_logo ? '<span class="fas fa-check" style="color:#28a745"></span>' : '<span class="fas fa-times" style="color:#999"></span>') + '</td></tr>';
         if (meta.has_stamp != null) html += '<tr><td>' + eoBatchI18n.stamp + '</td><td>' + (meta.has_stamp ? '<span class="fas fa-check" style="color:#28a745"></span>' : '<span class="fas fa-times" style="color:#999"></span>') + '</td></tr>';
@@ -1878,7 +1928,7 @@ if (!$fromMenu) {
         if (res.exists) {
           // Invoice exists - show link
           statusEl.innerHTML = '<span class="fas fa-check-circle" style="color:#28a745; margin-right:4px"></span>' + eoBatchI18n.invoiceExists;
-          var url = '<?php echo DOL_URL_ROOT; ?>/fourn/facture/card.php?facid=' + res.invoice_id;
+          var url = '<?php echo DOL_URL_ROOT; ?>/fourn/facture/card.php?facid=' + (parseInt(res.invoice_id, 10) || 0);
           actionEl.innerHTML = '<a href="' + url + '" class="butAction" target="_blank" style="margin:0">' + eoBatchI18n.viewInvoice + '</a>';
         } else {
           // Invoice does not exist - show create button
@@ -1909,7 +1959,7 @@ if (!$fromMenu) {
       // Redirect to extract.php which will auto-open modal with this data
       window.location.href = '<?php echo dol_buildpath('/easyocr/extract.php', 1); ?>?fromBatch=1';
     } catch (e) {
-      alert('Error al preparar datos. Por favor, intenta desde la herramienta principal.');
+      eoBatchInlineNotice(eoBatchI18n.prepareDataError, 'error');
       console.error('localStorage error:', e);
     }
   }
@@ -1947,7 +1997,7 @@ if (!$fromMenu) {
         success: function(res) {
           if (!res) return;
           if (res.exists) {
-            var url = '<?php echo DOL_URL_ROOT; ?>/fourn/facture/card.php?facid=' + res.invoice_id;
+            var url = '<?php echo DOL_URL_ROOT; ?>/fourn/facture/card.php?facid=' + (parseInt(res.invoice_id, 10) || 0);
             applyResult('<a href="' + url + '" target="_blank" class="button reposition smallpaddingimp" title="' + eoBatchI18n.viewInvoice + ': ' + eoBatchEscHtml(res.invoice_ref || docNum) + '" style="color:#28a745"><span class="fas fa-file-invoice"></span></a>', null);
           } else {
             // For "create" action, each row gets its own onclick with its row index
@@ -2064,11 +2114,11 @@ if (!$fromMenu) {
           eoBatchCloseDetail();
           eoBatchUpdateTrashBadge();
         } else {
-          alert(res.message || eoBatchI18n.errorLoading);
+          eoBatchInlineNotice(res.message || eoBatchI18n.errorLoading, 'error');
         }
       },
       error: function() {
-        alert(eoBatchI18n.errorLoading);
+        eoBatchInlineNotice(eoBatchI18n.errorLoading, 'error');
       }
     });
   }

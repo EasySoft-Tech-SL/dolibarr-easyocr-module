@@ -60,6 +60,12 @@ global $db, $langs, $user, $conf;
 require_once DOL_DOCUMENT_ROOT.'/core/lib/admin.lib.php';
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.form.class.php';
 require_once __DIR__.'/../lib/easyocr.lib.php';
+require_once __DIR__.'/../lib/easyocr_ai.class.php';
+// Webhook helpers (token, URL): the receiver stops right after its function definitions
+if (!defined('EASYOCR_WEBHOOK_LIB_ONLY')) {
+	define('EASYOCR_WEBHOOK_LIB_ONLY', 1);
+}
+require_once __DIR__.'/../webhook_batch.php';
 
 // Translations
 $langs->loadLangs(array('errors', 'admin', 'easyocr@easyocr'));
@@ -71,6 +77,7 @@ if (!$user->admin) {
 
 // Parameters
 $action = GETPOST('action', 'aZ09');
+$confirm = GETPOST('confirm', 'alpha');
 $backtopage = GETPOST('backtopage', 'alpha');
 
 $error = 0;
@@ -131,8 +138,18 @@ if ($action == 'update') {
 	$res = dolibarr_set_const($db, 'EASYOCR_AI_ENABLED', GETPOST('EASYOCR_AI_ENABLED', 'int'), 'chaine', 0, '', $conf->entity);
 	if (!($res > 0)) $error++;
 
-	$res = dolibarr_set_const($db, 'EASYOCR_AI_URL', GETPOST('EASYOCR_AI_URL', 'alpha'), 'chaine', 0, '', $conf->entity);
-	if (!($res > 0)) $error++;
+	// The API key travels in every request: only https, or plain http towards this machine
+	$aiUrl = trim(GETPOST('EASYOCR_AI_URL', 'alpha'));
+	if ($aiUrl === '') {
+		$aiUrl = EasyOcrAI::DEFAULT_URL;
+	}
+	if (EasyOcrAI::isAllowedServiceUrl($aiUrl)) {
+		$res = dolibarr_set_const($db, 'EASYOCR_AI_URL', rtrim($aiUrl, '/'), 'chaine', 0, '', $conf->entity);
+		if (!($res > 0)) $error++;
+	} else {
+		setEventMessages($langs->trans('EasyOcrAIUrlMustBeHttps'), null, 'errors');
+		$error++;
+	}
 
 	$res = dolibarr_set_const($db, 'EASYOCR_AI_APIKEY', GETPOST('EASYOCR_AI_APIKEY', 'alpha'), 'chaine', 0, '', $conf->entity);
 	if (!($res > 0)) $error++;
@@ -145,6 +162,42 @@ if ($action == 'update') {
 	} else {
 		setEventMessages($langs->trans("Error"), null, 'errors');
 	}
+}
+
+// Regenerate the webhook token (confirmed with formconfirm; the CSRF token is checked here
+// too, whatever MAIN_SECURITY_CSRF_WITH_TOKEN says)
+if ($action == 'confirm_regentoken' && $confirm == 'yes') {
+	if (GETPOST('token', 'alpha') !== currentToken()) {
+		accessforbidden();
+	}
+	if (easyocrWebhookRegenerateToken($db, $conf->entity) !== '') {
+		setEventMessages($langs->trans('EasyOcrWebhookTokenRegenerated'), null, 'mesgs');
+	} else {
+		setEventMessages($langs->trans('Error'), null, 'errors');
+	}
+	header('Location: '.$_SERVER['PHP_SELF'].'#webhook');
+	exit;
+}
+
+// Test the connection with the saved URL and key (POST: main.inc.php checks the CSRF token)
+if ($action == 'testconnection' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+	$check = EasyOcrAI::checkAccount(getDolGlobalString('EASYOCR_AI_URL', EasyOcrAI::DEFAULT_URL), getDolGlobalString('EASYOCR_AI_APIKEY'), 15);
+	if ($check['code'] === 'ok') {
+		if ($check['pages'] !== null) {
+			setEventMessages($langs->trans('EasyOcrTestConnectionOk', (string) $check['pages']), null, 'mesgs');
+		} else {
+			setEventMessages($langs->trans('EasyOcrTestConnectionOkNoPages'), null, 'mesgs');
+		}
+	} else {
+		$checkKeys = array(
+			'invalid_key'   => 'EasyOcrTestConnectionInvalidKey',
+			'no_connection' => 'EasyOcrTestConnectionNoConnection',
+			'service_down'  => 'EasyOcrTestConnectionServiceDown',
+		);
+		setEventMessages($langs->trans(isset($checkKeys[$check['code']]) ? $checkKeys[$check['code']] : 'EasyOcrTestConnectionError'), null, 'errors');
+	}
+	header('Location: '.$_SERVER['PHP_SELF'].'#aiconfig');
+	exit;
 }
 
 
@@ -166,6 +219,18 @@ print load_fiche_titre($title, $linkback, 'title_setup');
 // Configuration header
 $head = easyocr_admin_prepare_head();
 print dol_get_fiche_head($head, 'settings', $langs->trans('EasyOcrSetup'), -1, 'easyocr@easyocr');
+
+if ($action == 'regentoken') {
+	print $form->formconfirm(
+		$_SERVER['PHP_SELF'],
+		$langs->trans('EasyOcrWebhookRegenerateTokenTitle'),
+		$langs->trans('EasyOcrWebhookRegenerateTokenConfirm'),
+		'confirm_regentoken',
+		'',
+		0,
+		1
+	);
+}
 
 // --- General info ---
 print '<div class="div-table-responsive-no-min">';
@@ -269,11 +334,27 @@ print '</div>';
 print '<br>';
 
 // --- Webhook auto-payment configuration ---
-print '<div class="div-table-responsive-no-min">';
+print '<div class="div-table-responsive-no-min" id="webhook">';
 print '<table class="noborder centpercent">';
 
 print '<tr class="liste_titre">';
 print '<td colspan="2">'.$langs->trans("EasyOcrWebhookPaymentConfig").'</td>';
+print '</tr>';
+
+// Webhook address (with this entity's token) and its regeneration
+$eoWebhookUrl = easyocrWebhookBuildUrl($db, true);
+print '<tr class="oddeven">';
+print '<td>'.$langs->trans("EasyOcrWebhookUrl").'</td>';
+print '<td>';
+print '<input type="text" id="eo-webhook-url" readonly class="minwidth400 quatrevingtpercent" value="'.dol_escape_htmltag($eoWebhookUrl).'" onclick="this.select();">';
+print ' <a class="butActionDelete smallpaddingimp" href="'.$_SERVER['PHP_SELF'].'?action=regentoken&token='.newToken().'">'.$langs->trans("EasyOcrWebhookRegenerateToken").'</a>';
+print '<br><span class="opacitymedium small">'.$langs->trans("EasyOcrWebhookUrlDesc").'</span>';
+$eoLegacyUntil = (int) getDolGlobalString('EASYOCR_WEBHOOK_LEGACY_UNTIL');
+if ($eoLegacyUntil > 0) {
+	$eoLegacyKey = ($eoLegacyUntil > dol_now()) ? 'EasyOcrWebhookLegacyUntil' : 'EasyOcrWebhookLegacyExpired';
+	print '<br>'.img_warning().' <span class="opacitymedium small">'.$langs->trans($eoLegacyKey, dol_print_date($eoLegacyUntil, 'dayhour')).'</span>';
+}
+print '</td>';
 print '</tr>';
 
 // Mark invoices created via webhook as paid
@@ -408,10 +489,11 @@ print '</td>';
 print '</tr>';
 
 // AI URL
-print '<tr class="oddeven">';
+print '<tr class="oddeven" id="aiconfig">';
 print '<td>'.$langs->trans("EasyOcrAIUrl").'</td>';
 print '<td>';
-print '<input type="text" name="EASYOCR_AI_URL" class="minwidth400" value="'.dol_escape_htmltag(!empty($conf->global->EASYOCR_AI_URL) ? $conf->global->EASYOCR_AI_URL : 'http://127.0.0.1:8000').'">';
+print '<input type="url" name="EASYOCR_AI_URL" class="minwidth400" value="'.dol_escape_htmltag(getDolGlobalString('EASYOCR_AI_URL', EasyOcrAI::DEFAULT_URL)).'">';
+print '<br><span class="opacitymedium small">'.$langs->trans("EasyOcrAIUrlDesc").'</span>';
 print '</td>';
 print '</tr>';
 
@@ -440,6 +522,14 @@ print '<div class="center">';
 print '<input type="submit" class="button button-save" value="'.$langs->trans("Save").'">';
 print '</div>';
 
+print '</form>';
+
+// Connection test with the saved URL and key (own form: forms cannot be nested)
+print '<form method="POST" action="'.$_SERVER["PHP_SELF"].'" class="center">';
+print '<input type="hidden" name="token" value="'.newToken().'">';
+print '<input type="hidden" name="action" value="testconnection">';
+print '<input type="submit" class="button" value="'.dol_escape_htmltag($langs->trans("EasyOcrTestConnection")).'">';
+print '<br><span class="opacitymedium small">'.$langs->trans("EasyOcrTestConnectionDesc").'</span>';
 print '</form>';
 
 print '<br>';

@@ -54,17 +54,38 @@ if (!$res) {
 require_once DOL_DOCUMENT_ROOT.'/core/lib/functions.lib.php';
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.form.class.php';
 require_once __DIR__.'/lib/easyocr.lib.php';
+// Shared webhook helpers (retention): the receiver stops right after its function definitions
+if (!defined('EASYOCR_WEBHOOK_LIB_ONLY')) {
+	define('EASYOCR_WEBHOOK_LIB_ONLY', 1);
+}
+require_once __DIR__.'/webhook_batch.php';
 
 $langs->loadLangs(array("easyocr@easyocr", "other"));
 
 // ─── Helpers (page-local) ────────────────────────────────────────────────
 if (!function_exists('easyocr_format_status_badge')) {
+	/**
+	 * Badge of a processing status (ok, repeat, review, error), translated.
+	 *
+	 * @param  string|null $status Processing status
+	 * @return string              HTML
+	 */
 	function easyocr_format_status_badge($status)
 	{
-		if ($status === 'ok')     return '<span class="badge badge-status4 badge-status">ok</span>';
-		if ($status === 'repeat') return '<span class="badge badge-status1 badge-status">repeat</span>';
-		if ($status === 'error')  return '<span class="badge badge-status8 badge-status">error</span>';
-		if (empty($status))       return '<span class="opacitymedium">—</span>';
+		global $langs;
+		// 'review' is amber: the invoice exists but somebody has to look at it
+		$map = array(
+			'ok'     => array('badge-status4', 'EasyOcrWebhookStatusOk'),
+			'repeat' => array('badge-status0', 'EasyOcrWebhookStatusRepeat'),
+			'review' => array('badge-status1', 'EasyOcrWebhookStatusReview'),
+			'error'  => array('badge-status8', 'EasyOcrWebhookStatusError'),
+		);
+		if (empty($status)) {
+			return '<span class="opacitymedium">—</span>';
+		}
+		if (isset($map[$status])) {
+			return '<span class="badge '.$map[$status][0].' badge-status">'.dol_escape_htmltag($langs->transnoentities($map[$status][1])).'</span>';
+		}
 		return '<span class="badge badge-status0 badge-status">'.dol_escape_htmltag($status).'</span>';
 	}
 }
@@ -85,7 +106,12 @@ $optioncss  = GETPOST('optioncss', 'aZ');
 
 // Search filters
 $search_event    = GETPOST('search_event', 'alphanohtml');
-$search_status   = GETPOST('search_status', 'alphanohtml');
+$search_status   = GETPOST('search_status', 'aZ09');
+$eoStatuses      = array('ok', 'repeat', 'review', 'error');
+if (!in_array($search_status, $eoStatuses, true)) {
+	$search_status = '';
+}
+$eoKeepDays      = easyocrWebhookLogDays();
 $search_filename = GETPOST('search_filename', 'alphanohtml');
 $search_batch    = GETPOST('search_batch', 'alphanohtml');
 $search_datec_start = dol_mktime(0, 0, 0, GETPOST('search_datec_startmonth', 'int'), GETPOST('search_datec_startday', 'int'), GETPOST('search_datec_startyear', 'int'));
@@ -147,14 +173,11 @@ if ($action == 'confirm_delete' && $confirm == 'yes' && $permissiontodelete && $
 	$action = 'list';
 }
 
-// Purge logs older than 30 days
-if ($action == 'confirm_purgeold' && $confirm == 'yes' && $permissiontodelete) {
-	$sqlPurge = "DELETE FROM ".MAIN_DB_PREFIX."easyocr_webhook_log";
-	$sqlPurge .= " WHERE entity = ".((int) $conf->entity);
-	$sqlPurge .= " AND datec < (NOW() - INTERVAL 30 DAY)";
-	if ($db->query($sqlPurge)) {
-		$nbDeleted = $db->affected_rows($db->query("SELECT 0")); // affected_rows is unreliable post-DDL; just inform generic
-		setEventMessages($langs->trans('EasyOcrWebhookLogPurgedOld'), null, 'mesgs');
+// Purge logs older than EASYOCR_WEBHOOK_LOG_DAYS (same limit as the daily sweep of the webhook)
+if ($action == 'confirm_purgeold' && $confirm == 'yes' && $permissiontodelete && $eoKeepDays > 0) {
+	$nbDeleted = easyocrWebhookPurgeLogRows($db, $conf->entity, $eoKeepDays, 500, 0);
+	if ($nbDeleted >= 0) {
+		setEventMessages($langs->trans('EasyOcrWebhookLogPurgedOldN', $nbDeleted), null, 'mesgs');
 		header('Location: '.$_SERVER['PHP_SELF']);
 		exit;
 	} else {
@@ -296,7 +319,7 @@ if ($action == 'purgeold') {
 	print $form->formconfirm(
 		$_SERVER['PHP_SELF'],
 		$langs->trans('EasyOcrWebhookLogPurgeOldTitle'),
-		$langs->trans('EasyOcrWebhookLogConfirmPurgeOld'),
+		$langs->trans('EasyOcrWebhookLogConfirmPurgeOldDays', $eoKeepDays),
 		'confirm_purgeold',
 		'',
 		0,
@@ -326,8 +349,8 @@ $sql .= " WHERE entity = ".((int) $conf->entity);
 if ($search_event) {
 	$sql .= natural_search("event", $search_event);
 }
-if ($search_status) {
-	$sql .= natural_search("processing_status", $search_status);
+if ($search_status !== '') {
+	$sql .= " AND processing_status = '".$db->escape($search_status)."'";
 }
 if ($search_filename) {
 	$sql .= natural_search("document_filename", $search_filename);
@@ -385,9 +408,9 @@ if ($search_filename != '') $param .= '&search_filename='.urlencode($search_file
 if ($search_batch != '')    $param .= '&search_batch='.urlencode($search_batch);
 
 // Top action button (purge old logs)
-if ($permissiontodelete) {
+if ($permissiontodelete && $eoKeepDays > 0) {
 	print '<div class="tabsAction">';
-	print '<a class="butActionDelete" href="'.$_SERVER['PHP_SELF'].'?action=purgeold&token='.newToken().'">'.img_picto('', 'delete', 'class="pictofixedwidth"').$langs->trans('EasyOcrWebhookLogPurgeOldBtn').'</a>';
+	print '<a class="butActionDelete" href="'.$_SERVER['PHP_SELF'].'?action=purgeold&token='.newToken().'">'.img_picto('', 'delete', 'class="pictofixedwidth"').$langs->trans('EasyOcrWebhookLogPurgeOldBtnDays', $eoKeepDays).'</a>';
 	print '</div>';
 }
 
@@ -427,8 +450,9 @@ print '<td class="liste_titre"><input type="text" class="flat maxwidth150" name=
 print '<td class="liste_titre center">';
 print '<select name="search_status" class="flat">';
 print '<option value=""'.($search_status === '' ? ' selected' : '').'>—</option>';
-foreach (array('ok', 'repeat', 'error') as $s) {
-	print '<option value="'.$s.'"'.($search_status === $s ? ' selected' : '').'>'.$s.'</option>';
+$eoStatusLabels = array('ok' => 'EasyOcrWebhookStatusOk', 'repeat' => 'EasyOcrWebhookStatusRepeat', 'review' => 'EasyOcrWebhookStatusReview', 'error' => 'EasyOcrWebhookStatusError');
+foreach ($eoStatuses as $s) {
+	print '<option value="'.$s.'"'.($search_status === $s ? ' selected' : '').'>'.dol_escape_htmltag($langs->transnoentities($eoStatusLabels[$s])).'</option>';
 }
 print '</select>';
 print '</td>';

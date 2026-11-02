@@ -90,20 +90,40 @@ foreach ($all as $loc => $keys) {
 }
 
 // Every module key used in the code exists (core keys are not checked here)
+// realpath(): with "tests/.." in the base every path contained "/tests/" and the
+// exclusion below skipped the whole module, so this check never ran.
 $used = array();
-$it = new RecursiveIteratorIterator(new RecursiveDirectoryIterator(__DIR__ . '/..', FilesystemIterator::SKIP_DOTS));
+$base = str_replace('\\', '/', realpath(__DIR__ . '/..'));
+$it = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($base, FilesystemIterator::SKIP_DOTS));
+$scanned = 0;
 foreach ($it as $f) {
 	$p = str_replace('\\', '/', $f->getPathname());
-	if (!preg_match('/\.(php|js)$/', $p) || preg_match('#/(vendor|tests|dev|\.git)/#', $p)) {
+	$rel = substr($p, strlen($base));
+	if (!preg_match('/\.(php|js)$/', $p) || preg_match('#^/(vendor|tests|dev|\.git)/#', $rel)) {
 		continue;
 	}
-	if (preg_match_all('/trans(?:noentities)?\(\s*[\'"](EasyOcr[A-Za-z0-9_]+)[\'"]/', file_get_contents($p), $mm)) {
-		foreach ($mm[1] as $k) {
-			$used[$k] = basename($p);
+	$scanned++;
+	if (preg_match_all('/trans(?:noentities)?(?:noconv)?\(\s*[\'"](EasyOcr[A-Za-z0-9_]+)[\'"](\s*\.)?/', file_get_contents($p), $mm)) {
+		foreach ($mm[1] as $i => $k) {
+			// 'EasyOcrBatchStatus' . ucfirst($st): a prefix, checked apart
+			$used[$k . ($mm[2][$i] !== '' ? '*' : '')] = basename($p);
 		}
 	}
 }
+if ($scanned < 10) {
+	lt_fail('only ' . $scanned . ' source files scanned for used keys: the scan is broken');
+}
 foreach ($used as $k => $where) {
+	if (substr($k, -1) === '*') {
+		$prefix = substr($k, 0, -1);
+		$hits = array_filter(array_keys($ref), function ($r) use ($prefix) {
+			return strpos($r, $prefix) === 0 && $r !== $prefix;
+		});
+		if (!$hits) {
+			lt_fail('es_ES: no key starts with ' . $prefix . ' (built in ' . $where . ')');
+		}
+		continue;
+	}
 	if (!array_key_exists($k, $ref)) {
 		lt_fail('es_ES: ' . $k . ' used in ' . $where . ' but not defined');
 	}

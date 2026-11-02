@@ -23,8 +23,10 @@
  *
  * Configuration keys (stored in llx_const via admin/setup.php):
  *   EASYOCR_AI_ENABLED    - '1' to enable, '0' to disable
- *   EASYOCR_AI_URL        - Base URL of OCR API (e.g. http://127.0.0.1:8000)
+ *   EASYOCR_AI_URL        - Base URL of OCR API (https://app.easyocr.es by default;
+ *                           plain http only for localhost / 127.0.0.1)
  *   EASYOCR_AI_APIKEY     - API key for X-API-Key header
+ *   EASYOCR_AI_INSECURE_TLS - '1' turns certificate checks off (development only, logged)
  *
  * The endpoints are:
  *   POST {base}/api/v1/ocr/file     - multipart file upload
@@ -32,6 +34,9 @@
  */
 class EasyOcrAI
 {
+	/** Default service URL */
+	const DEFAULT_URL = 'https://app.easyocr.es';
+
 	/** @var string Base URL of the OCR service */
 	private $baseUrl;
 
@@ -57,7 +62,7 @@ class EasyOcrAI
 		global $conf;
 
 		$this->enabled = !empty($conf->global->EASYOCR_AI_ENABLED);
-		$this->baseUrl = rtrim(!empty($conf->global->EASYOCR_AI_URL) ? $conf->global->EASYOCR_AI_URL : 'http://127.0.0.1:8000', '/');
+		$this->baseUrl = rtrim(!empty($conf->global->EASYOCR_AI_URL) ? $conf->global->EASYOCR_AI_URL : self::DEFAULT_URL, '/');
 		$this->apiKey  = !empty($conf->global->EASYOCR_AI_APIKEY) ? $conf->global->EASYOCR_AI_APIKEY : '';
 		$this->timeout = !empty($conf->global->EASYOCR_AI_TIMEOUT) ? (int) $conf->global->EASYOCR_AI_TIMEOUT : 120;
 	}
@@ -189,14 +194,14 @@ class EasyOcrAI
 			CURLOPT_RETURNTRANSFER => true,
 			CURLOPT_TIMEOUT        => $this->timeout,
 			CURLOPT_CONNECTTIMEOUT => 15,
-			CURLOPT_SSL_VERIFYPEER => false, // Allow self-signed certs in dev
-			CURLOPT_SSL_VERIFYHOST => 0,
-		));
+		) + self::curlTlsOptions());
 
 		$response = curl_exec($ch);
 		$httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 		$curlError = curl_error($ch);
-		curl_close($ch);
+		if (PHP_VERSION_ID < 80000) {
+			curl_close($ch);
+		}
 
 		if ($curlError) {
 			$this->error = 'cURL error: ' . $curlError;
@@ -215,5 +220,113 @@ class EasyOcrAI
 		}
 
 		return $decoded;
+	}
+
+	/**
+	 * TLS options for every cURL call of the module.
+	 *
+	 * Certificates are always checked. Only the constant EASYOCR_AI_INSECURE_TLS=1 (a
+	 * development box with a self-signed certificate) turns the check off, and it leaves
+	 * a warning in the Dolibarr log each time.
+	 *
+	 * @return array<int, mixed>
+	 */
+	public static function curlTlsOptions()
+	{
+		if (getDolGlobalString('EASYOCR_AI_INSECURE_TLS') === '1') {
+			dol_syslog('EasyOCR: TLS certificate verification DISABLED by EASYOCR_AI_INSECURE_TLS=1 (development only)', LOG_WARNING);
+			return array(
+				CURLOPT_SSL_VERIFYPEER => false,
+				CURLOPT_SSL_VERIFYHOST => 0,
+			);
+		}
+		return array(
+			CURLOPT_SSL_VERIFYPEER => true,
+			CURLOPT_SSL_VERIFYHOST => 2,
+		);
+	}
+
+	/**
+	 * Whether a service URL may be saved: https, or plain http only towards this machine.
+	 *
+	 * @param  string $url URL typed in the setup
+	 * @return bool
+	 */
+	public static function isAllowedServiceUrl($url)
+	{
+		$url = trim((string) $url);
+		if ($url === '' || !preg_match('#^https?://#i', $url)) {
+			return false;
+		}
+		$parts = parse_url($url);
+		if (!is_array($parts) || empty($parts['host']) || empty($parts['scheme'])) {
+			return false;
+		}
+		if (isset($parts['user']) || isset($parts['pass'])) {
+			return false;
+		}
+		if (strtolower($parts['scheme']) === 'https') {
+			return true;
+		}
+		$host = strtolower(trim($parts['host'], '[]'));
+		return in_array($host, array('localhost', '127.0.0.1', '::1'), true);
+	}
+
+	/**
+	 * Turn the outcome of the account check into something a person can read. Pure.
+	 *
+	 * @param  int        $httpStatus HTTP status (0 = no connection)
+	 * @param  string     $errorCode  Error code of the client library ('' on success)
+	 * @param  array|null $data       'data' part of /api/v1/me on success
+	 * @return array{code:string,pages:int|null}  code: ok|invalid_key|no_connection|service_down|error
+	 */
+	public static function classifyAccountCheck($httpStatus, $errorCode, $data)
+	{
+		$httpStatus = (int) $httpStatus;
+		if ($httpStatus >= 200 && $httpStatus < 300 && is_array($data)) {
+			$pages = null;
+			if (isset($data['quota']['pages_available_now'])) {
+				$pages = (int) $data['quota']['pages_available_now'];
+			} elseif (isset($data['quota']['pages_remaining'])) {
+				$pages = (int) $data['quota']['pages_remaining'];
+			}
+			return array('code' => 'ok', 'pages' => $pages);
+		}
+		if ($httpStatus === 401 || $httpStatus === 403 || $errorCode === 'INVALID_API_KEY') {
+			return array('code' => 'invalid_key', 'pages' => null);
+		}
+		if ($httpStatus === 0 || $errorCode === 'CONNECTION_ERROR') {
+			return array('code' => 'no_connection', 'pages' => null);
+		}
+		if ($httpStatus >= 500) {
+			return array('code' => 'service_down', 'pages' => null);
+		}
+		return array('code' => 'error', 'pages' => null);
+	}
+
+	/**
+	 * Ask the service who we are (GET /api/v1/me, the call batch.php already makes) and
+	 * classify the answer.
+	 *
+	 * @param  string $baseUrl Service URL
+	 * @param  string $apiKey  API key
+	 * @param  int    $timeout Seconds
+	 * @return array{code:string,pages:int|null}
+	 */
+	public static function checkAccount($baseUrl, $apiKey, $timeout = 15)
+	{
+		if (trim((string) $apiKey) === '') {
+			return array('code' => 'invalid_key', 'pages' => null);
+		}
+		require_once __DIR__ . '/easyocr_autoload.php';
+		try {
+			$client = new \EasySoft\EasyOCR\EasyOCRClient((string) $apiKey, array('base_url' => (string) $baseUrl, 'timeout' => (int) $timeout));
+			$me = $client->account()->me();
+			return self::classifyAccountCheck(200, '', (isset($me['data']) && is_array($me['data'])) ? $me['data'] : array());
+		} catch (\EasySoft\EasyOCR\Exceptions\EasyOCRException $e) {
+			return self::classifyAccountCheck($e->getHttpStatus(), $e->getErrorCode(), null);
+		} catch (\Throwable $e) {
+			return array('code' => 'error', 'pages' => null);
+		}
 	}
 }
