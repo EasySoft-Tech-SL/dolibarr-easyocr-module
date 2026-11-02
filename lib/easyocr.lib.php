@@ -2340,6 +2340,52 @@ function easyocrResolveSupplierForDocument($taxId, $name, $supplierCountry = '')
 }
 
 /**
+ * A supplier invoice that is already registered for this document.
+ *
+ * 1) Same supplier and same supplier ref (trimmed, case-insensitive), whatever created
+ *    it. 2) No ref read: same supplier, amount and date among the invoices EasyOCR
+ *    created (webhook retries, re-uploads), never among hand-made ones.
+ *
+ * @param  int    $fkSoc       Supplier id
+ * @param  string $refSupplier Supplier's invoice number ('' when not read)
+ * @param  float  $totalTtc    Total including tax
+ * @param  string $datef       Invoice date, Y-m-d
+ * @return array{kind: string, row: object}|null  kind 'ref' or 'amount'
+ */
+function easyocrFindDuplicateSupplierInvoice($fkSoc, $refSupplier, $totalTtc, $datef)
+{
+	global $db;
+
+	$refSupplier = trim((string) $refSupplier);
+	if ($refSupplier !== '') {
+		$sql = "SELECT rowid, ref, ref_supplier FROM " . MAIN_DB_PREFIX . "facture_fourn";
+		$sql .= " WHERE UPPER(TRIM(ref_supplier)) = UPPER('" . $db->escape($refSupplier) . "')";
+		$sql .= " AND fk_soc = " . ((int) $fkSoc);
+		$sql .= " AND entity IN (" . getEntity('supplier_invoice') . ")";
+		$res = $db->query($sql);
+		if ($res && ($obj = $db->fetch_object($res))) {
+			return array('kind' => 'ref', 'row' => $obj);
+		}
+		return null;
+	}
+	if ((float) $totalTtc == 0) {
+		return null;
+	}
+	$sql = "SELECT rowid, ref, ref_supplier FROM " . MAIN_DB_PREFIX . "facture_fourn";
+	$sql .= " WHERE fk_soc = " . ((int) $fkSoc);
+	$sql .= " AND total_ttc = " . ((float) $totalTtc);
+	$sql .= " AND datef = '" . $db->escape($datef) . "'";
+	$sql .= " AND import_key IN ('easyocr', 'easyocr-ai', 'easyocr-wh')";
+	$sql .= " AND entity IN (" . getEntity('supplier_invoice') . ")";
+	$res = $db->query($sql);
+	if ($res && ($obj = $db->fetch_object($res))) {
+		return array('kind' => 'amount', 'row' => $obj);
+	}
+
+	return null;
+}
+
+/**
  * Folder where Dolibarr keeps the files of a supplier invoice or proposal.
  *
  * The entity's own output folder: with Multicompany, entity 2 lives under
@@ -2904,58 +2950,27 @@ function easyocrCreateInvoiceFromOCRCore($params, $userObj = null)
 	$total_tva = !empty($total_tva_str) ? easyocrParseNumber($total_tva_str) : ($total_ttc - $total_ht);
 
 	// ── Duplicate check ──────────────────────────────────────────────────
-	// 1) Primary: by ref_supplier + supplier (normalized: trimmed, case-insensitive)
-	if (!empty($ref_supplier)) {
-		$ref_clean_check = trim($ref_supplier);
-		$sql_check = "SELECT rowid, ref, ref_supplier FROM " . MAIN_DB_PREFIX . "facture_fourn";
-		$sql_check .= " WHERE UPPER(TRIM(ref_supplier)) = UPPER('" . $db->escape($ref_clean_check) . "')";
-		$sql_check .= " AND fk_soc = " . ((int) $fk_soc);
-		$sql_check .= " AND entity IN (" . getEntity('supplier_invoice') . ")";
-		$resql_check = $db->query($sql_check);
-		if ($resql_check && $db->num_rows($resql_check) > 0) {
-			$existingObj = $db->fetch_object($resql_check);
-			$msg = is_object($langs) ? $langs->trans('EasyOcrDuplicateRefSupplier', $ref_supplier, $existingObj->ref) : 'Duplicate ref_supplier: ' . $ref_supplier . ' (existing: ' . $existingObj->ref . ')';
-			dol_syslog('EasyOCR-CREATE: DUPLICATE ref_supplier=' . $ref_supplier . ' for fk_soc=' . $fk_soc . ' => existing id=' . $existingObj->rowid . ' ref=' . $existingObj->ref, LOG_WARNING);
-			$releaseLocks();
-			return [
-				'status' => 'repeat',
-				'message' => $msg,
-				'existing_id' => $existingObj->rowid,
-				'existing_ref' => $existingObj->ref,
-				'existing_ref_supplier' => $existingObj->ref_supplier,
-				// Aliases for webhook compatibility
-				'invoice_id' => $existingObj->rowid,
-				'invoice_ref' => $existingObj->ref,
-				'supplier_id' => $fk_soc,
-			];
+	$dup = easyocrFindDuplicateSupplierInvoice($fk_soc, $ref_supplier, $total_ttc, $datef_str);
+	if ($dup !== null) {
+		$existing = $dup['row'];
+		if ($dup['kind'] === 'ref') {
+			$msg = is_object($langs) ? $langs->trans('EasyOcrDuplicateRefSupplier', $ref_supplier, $existing->ref) : 'Duplicate ref_supplier: ' . $ref_supplier . ' (existing: ' . $existing->ref . ')';
+		} else {
+			$msg = is_object($langs) ? $langs->trans('EasyOcrDuplicateAmountDate', $existing->ref) : 'Probable duplicate (same supplier + amount + date): ' . $existing->ref;
 		}
-	}
-	// 2) Secondary: when ref_supplier is empty, check by amount + date + supplier
-	//    to prevent duplicate invoices from webhook retries or re-uploads
-	if (empty($ref_supplier) && $total_ttc != 0) {
-		$sql_dup2 = "SELECT rowid, ref, ref_supplier FROM " . MAIN_DB_PREFIX . "facture_fourn";
-		$sql_dup2 .= " WHERE fk_soc = " . ((int) $fk_soc);
-		$sql_dup2 .= " AND total_ttc = " . ((float) $total_ttc);
-		$sql_dup2 .= " AND datef = '" . $db->escape($datef_str) . "'";
-		$sql_dup2 .= " AND import_key IN ('easyocr', 'easyocr-ai', 'easyocr-wh')";
-		$sql_dup2 .= " AND entity IN (" . getEntity('supplier_invoice') . ")";
-		$resql_dup2 = $db->query($sql_dup2);
-		if ($resql_dup2 && $db->num_rows($resql_dup2) > 0) {
-			$existingObj2 = $db->fetch_object($resql_dup2);
-			$msg = is_object($langs) ? $langs->trans('EasyOcrDuplicateAmountDate', $existingObj2->ref) : 'Probable duplicate (same supplier + amount + date): ' . $existingObj2->ref;
-			dol_syslog('EasyOCR-CREATE: PROBABLE DUPLICATE by amount+date — fk_soc=' . $fk_soc . ', total_ttc=' . $total_ttc . ', datef=' . $datef_str . ' => existing id=' . $existingObj2->rowid, LOG_WARNING);
-			$releaseLocks();
-			return [
-				'status' => 'repeat',
-				'message' => $msg,
-				'existing_id' => $existingObj2->rowid,
-				'existing_ref' => $existingObj2->ref,
-				'existing_ref_supplier' => $existingObj2->ref_supplier,
-				'invoice_id' => $existingObj2->rowid,
-				'invoice_ref' => $existingObj2->ref,
-				'supplier_id' => $fk_soc,
-			];
-		}
+		dol_syslog('EasyOCR-CREATE: DUPLICATE (' . $dup['kind'] . ') fk_soc=' . $fk_soc . ' ref_supplier=' . $ref_supplier . ' => existing id=' . $existing->rowid . ' ref=' . $existing->ref, LOG_WARNING);
+		$releaseLocks();
+		return [
+			'status' => 'repeat',
+			'message' => $msg,
+			'existing_id' => $existing->rowid,
+			'existing_ref' => $existing->ref,
+			'existing_ref_supplier' => $existing->ref_supplier,
+			// Aliases for webhook compatibility
+			'invoice_id' => $existing->rowid,
+			'invoice_ref' => $existing->ref,
+			'supplier_id' => $fk_soc,
+		];
 	}
 
 	// ── Load supplier object (payment info + localtax calc) ──────────────
