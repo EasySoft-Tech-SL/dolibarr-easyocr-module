@@ -394,8 +394,12 @@ if ($_condEvent && $_condDoc && $_condStat) {
 				'total_ttc'        => isset($totals['total_payable']) ? $totals['total_payable'] : (isset($totals['total']) ? $totals['total'] : '0'),
 				'total_ht'         => isset($totals['net_subtotal']) ? $totals['net_subtotal'] : (isset($totals['subtotal']) ? $totals['subtotal'] : '0'),
 				'total_tva'        => isset($totals['tax_total']) ? $totals['tax_total'] : '',
-				'total_localtax1'  => isset($totals['localtax1']) ? $totals['localtax1'] : '0',
-				'total_localtax2'  => isset($totals['localtax2']) ? $totals['localtax2'] : '0',
+				// The service sends the equivalence surcharge as surcharge_total and the
+				// withholding (IRPF) as withholding_total; localtax1/2 are kept as a
+				// fallback. Without them a total that already discounts the IRPF looked
+				// like a mismatch, and the invoice kept no localtax at all.
+				'total_localtax1'  => isset($totals['surcharge_total']) && $totals['surcharge_total'] !== null ? $totals['surcharge_total'] : (isset($totals['localtax1']) ? $totals['localtax1'] : '0'),
+				'total_localtax2'  => isset($totals['withholding_total']) && $totals['withholding_total'] !== null ? $totals['withholding_total'] : (isset($totals['localtax2']) ? $totals['localtax2'] : '0'),
 				'date_echeance'    => isset($structuredData['due_date']) ? $structuredData['due_date'] : (isset($payment['due_date']) ? $payment['due_date'] : ''),
 				'notes'            => isset($structuredData['notes']) ? $structuredData['notes'] : ('Webhook batch: ' . $batchId),
 				'items'            => isset($structuredData['items']) ? $structuredData['items'] : array(),
@@ -417,6 +421,10 @@ if ($_condEvent && $_condDoc && $_condStat) {
 				'create_payment'   => $whMarkPaid ? '1' : '',
 				'payment_bank_id'  => $whBankId,
 				'payment_type_id'  => $whPayType,
+				// Nobody reviews this path: a misread tax id, several candidate
+				// suppliers or totals that do not add up leave a draft, not a
+				// validated (and maybe paid) invoice.
+				'draft_on_review'  => 1,
 			);
 
 			// ── Extract original PDF from base64 if present ─────────────────
@@ -490,6 +498,11 @@ if ($_condEvent && $_condDoc && $_condStat) {
 			
 			if ($webhookProcessingStatus === 'ok') {
 				@file_put_contents($logFile, date('H:i:s') . ' | SUCCESS: Invoice created: ' . $webhookInvoiceId . ' (' . $webhookInvoiceRef . ")\n", FILE_APPEND | LOCK_EX);
+				// Shown in the webhook log screen: why it stayed a draft
+				if (!empty($webhookResult['review_notes'])) {
+					$webhookProcessingMessage = (!empty($webhookResult['forced_draft']) ? 'Draft for review: ' : 'To review: ') . implode(' | ', $webhookResult['review_notes']);
+					@file_put_contents($logFile, date('H:i:s') . ' | REVIEW: ' . $webhookProcessingMessage . "\n", FILE_APPEND | LOCK_EX);
+				}
 			} elseif ($webhookProcessingStatus === 'repeat') {
 				// Duplicate detected — not an error, just a skip
 				$webhookInvoiceId = isset($webhookResult['existing_id']) ? $webhookResult['existing_id'] : null;

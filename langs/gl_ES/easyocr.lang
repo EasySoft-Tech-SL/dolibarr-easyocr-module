@@ -878,3 +878,13 @@ EasyOcrInboxErrEmpty = O documento está baleiro.
 EasyOcrInboxErrSize = O documento supera o tamaño máximo (%s MB).
 EasyOcrInboxErrNotPdf = O ficheiro non é un PDF.
 EasyOcrInboxErrCopy = Non se puido copiar o documento á bandexa de EasyOcr.
+
+# 2.8.2 - unattended review (webhook)
+EasyOcrReviewHeader = EasyOCR: revisar antes de validar
+EasyOcrReviewSupplierAmbiguousTaxId = Hai varios terceiros co CIF/NIF %s (ids %s). Usouse o %s: comproba que é o correcto.
+EasyOcrReviewSupplierAmbiguousName = Hai varios provedores chamados %s (ids %s). Usouse o %s: comproba que é o correcto.
+EasyOcrReviewTaxIdInvalid = O CIF/NIF lido (%s) non é válido, así que o provedor buscouse polo nome.
+EasyOcrReviewTaxIdInvalidCreated = O CIF/NIF lido (%s) non é válido e ningún provedor ten ese nome: creouse un novo. Revisa o seu CIF/NIF.
+EasyOcrReviewHeaderTotals = A base máis os impostos (%s) non coincide co total do documento (%s).
+EasyOcrReviewSupplierByName = O provedor atopouse polo nome (%s) e non polo CIF/NIF %s, que non ten gardado: comproba que é a mesma empresa e engádelle o CIF/NIF.
+EasyOcrReviewSupplierByNameOnly = Non se leu o CIF/NIF: o provedor atopouse só polo nome (%s). Comproba que é o correcto.

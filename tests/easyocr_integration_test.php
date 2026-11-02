@@ -490,6 +490,252 @@ if ($hasProposalTable) {
 	}
 }
 
+// ── Unattended supplier resolution (webhook path, 2.8.2) ─────────────────
+// The webhook used to compare the tax id letter by letter: "ESB…" never found the
+// supplier stored as "B…", a misread id created a new one, and a document whose
+// totals did not add up was validated anyway. Synthetic, valid CIFs only.
+eo_group('unattended supplier resolution (webhook)');
+
+/** A valid Spanish CIF for the given entity letter and 7 digits. */
+function eo_cif($letter, $digits)
+{
+	$sum = 0;
+	for ($i = 0; $i < 7; $i++) {
+		$d = (int) $digits[$i];
+		if ($i % 2 === 0) {
+			$d *= 2;
+			$d = intdiv($d, 10) + ($d % 10);
+		}
+		$sum += $d;
+	}
+	return $letter . $digits . ((10 - ($sum % 10)) % 10);
+}
+
+$eoSeed = (string) mt_rand(1000, 8999);
+$cifAlfa  = eo_cif('B', $eoSeed . '101');
+$cifBeta  = eo_cif('B', $eoSeed . '202');
+$cifGamma = eo_cif('B', $eoSeed . '303');
+$cifDelta = eo_cif('B', $eoSeed . '404');
+$cifOther = eo_cif('B', $eoSeed . '505');
+$cifCli   = eo_cif('A', $eoSeed . '606');
+eo_info('CIFs: ' . implode(' ', array($cifAlfa, $cifBeta, $cifGamma, $cifDelta, $cifOther, $cifCli)));
+eo_assert('the test CIFs are valid', easyocrIsValidSpanishTaxId($cifAlfa) && easyocrIsValidSpanishTaxId($cifCli), true);
+
+$mkSoc = function ($name, $idprof1, $tvaIntra, $isSupplier = 1) use ($db, $user, $mysoc) {
+	$s = new Societe($db);
+	$s->name = $name;
+	$s->fournisseur = $isSupplier;
+	$s->client = $isSupplier ? 0 : 1;
+	$s->country_id = $mysoc->country_id;
+	$s->idprof1 = $idprof1;
+	$s->tva_intra = $tvaIntra;
+	$s->status = 1;
+	if ($isSupplier) {
+		$s->get_codefournisseur();
+	} else {
+		$s->get_codeclient();
+	}
+	$id = $s->create($user);
+	if ($id <= 0) {
+		eo_info('fixture ' . $name . ' failed: ' . $s->error . ' ' . implode(' | ', (array) $s->errors));
+	}
+	return (int) $id;
+};
+$countSoc = function () use ($db) {
+	return (int) $db->fetch_object($db->query("SELECT COUNT(*) n FROM " . MAIN_DB_PREFIX . "societe"))->n;
+};
+$socRow = function ($id) use ($db) {
+	return $db->fetch_object($db->query("SELECT rowid, nom, siren, tva_intra, fournisseur FROM " . MAIN_DB_PREFIX . "societe WHERE rowid = " . (int) $id));
+};
+$invRow = function ($id) use ($db) {
+	return $db->fetch_object($db->query("SELECT rowid, fk_soc, fk_statut, note_private FROM " . MAIN_DB_PREFIX . "facture_fourn WHERE rowid = " . (int) $id));
+};
+// What the webhook sends: no fk_soc, consistent totals, no lines, review on
+$whParams = function ($taxId, $name, $tag, $extra = array()) {
+	return array_merge(array(
+		'fk_soc'           => 0,
+		'ref_supplier'     => 'EOQA-' . $tag . '-' . substr(md5(microtime(true) . $tag), 0, 6),
+		'datef'            => '2026-10-20',
+		'total_ht'         => '100.00',
+		'total_tva'        => '21.00',
+		'total_ttc'        => '121.00',
+		'supplier_name'    => $name,
+		'supplier_tax_id'  => $taxId,
+		'supplier_country' => '',
+		'invoice_status'   => '',
+		'import_key'       => 'easyocr-itest',
+		'draft_on_review'  => 1,
+	), $extra);
+};
+
+// Without review the module would validate: anything that comes back as a draft
+// was kept there by the review, not by the configuration.
+$prevDraftConf = isset($conf->global->EASYOCR_INVOICE_DRAFT) ? $conf->global->EASYOCR_INVOICE_DRAFT : null;
+$conf->global->EASYOCR_INVOICE_DRAFT = 0;
+
+$idAlfa = $mkSoc('EOQA ALFA, S.L.', $cifAlfa, '');
+$idBeta = $mkSoc('EOQA BETA SA', '', 'ES' . $cifBeta);
+eo_assert('fixtures created', $idAlfa > 0 && $idBeta > 0, true);
+
+// 1) ES prefix on the document, bare id in the ERP (the case that duplicated).
+//    The trade name differs on purpose: only the tax id can find it.
+$n0 = $countSoc();
+$r = easyocrCreateInvoiceFromOCR($whParams('ES' . $cifAlfa, 'EOQA NOMBRE COMERCIAL UNO', 'PFX', array('invoice_status' => 'draft')), $user);
+eo_assert('ES-prefixed id: invoice created', isset($r['status']) ? $r['status'] : '', 'ok');
+eo_assert('ES-prefixed id: lands on the existing supplier', isset($r['supplier_id']) ? (int) $r['supplier_id'] : 0, $idAlfa);
+eo_assert('ES-prefixed id: no third party created', $countSoc(), $n0);
+eo_assert('ES-prefixed id: nothing to review', isset($r['review_codes']) ? $r['review_codes'] : null, array());
+
+// 2) The other way round, with separators: bare id read, prefixed id stored
+$r = easyocrCreateInvoiceFromOCR($whParams(substr($cifBeta, 0, 1) . '-' . substr($cifBeta, 1), 'EOQA NOMBRE COMERCIAL DOS', 'BARE', array('invoice_status' => 'draft')), $user);
+eo_assert('bare id with dash: lands on the supplier stored with ES prefix', isset($r['supplier_id']) ? (int) $r['supplier_id'] : 0, $idBeta);
+eo_assert('bare id with dash: no third party created', $countSoc(), $n0);
+
+// 3) Misread id (5 read as S): found by name, kept as a draft for review
+$misread = substr($cifAlfa, 0, 1) . 'S' . substr($cifAlfa, 2);
+// Mark-as-paid requested, as the webhook does when configured: a draft is never paid
+$bankRow = $db->fetch_object($db->query("SELECT MIN(rowid) id FROM " . MAIN_DB_PREFIX . "bank_account"));
+$bankId = $bankRow ? (int) $bankRow->id : 0;
+$r = easyocrCreateInvoiceFromOCR($whParams($misread, 'EOQA ALFA SL', 'TYPO', array('create_payment' => '1', 'payment_bank_id' => $bankId, 'payment_type_id' => 2)), $user);
+eo_assert('misread id: invoice created', isset($r['status']) ? $r['status'] : '', 'ok');
+eo_assert('misread id: found by name, not duplicated', isset($r['supplier_id']) ? (int) $r['supplier_id'] : 0, $idAlfa);
+eo_assert('misread id: no third party created', $countSoc(), $n0);
+eo_assert('misread id: reported as tax_id_invalid', isset($r['review_codes']) && in_array('tax_id_invalid', $r['review_codes'], true), true);
+eo_assert('misread id: kept as draft by the review', !empty($r['forced_draft']) && !empty($r['is_draft']), true);
+$row = $invRow($r['id']);
+eo_assert('misread id: draft in the database', $row ? (int) $row->fk_statut : -1, 0);
+eo_assert('misread id: the private note names the misread id', $row && strpos((string) $row->note_private, $misread) !== false, true);
+if ($bankId > 0) {
+	$resPay = $db->query("SELECT COUNT(*) n FROM " . MAIN_DB_PREFIX . "paiementfourn_facturefourn WHERE fk_facturefourn = " . (int) $r['id']);
+	eo_assert('misread id: the forced draft was not paid', $resPay ? (int) $db->fetch_object($resPay)->n : -1, 0);
+} else {
+	eo_info('skipped payment check: no bank account in this Dolibarr');
+}
+
+// 4) ES prefix with a digit missing (also seen): invalid as well
+$r = easyocrCreateInvoiceFromOCR($whParams('ES' . substr($cifAlfa, 0, 8), 'EOQA ALFA', 'SHORT'), $user);
+eo_assert('short id: found by name', isset($r['supplier_id']) ? (int) $r['supplier_id'] : 0, $idAlfa);
+eo_assert('short id: no third party created', $countSoc(), $n0);
+
+// 5) Two records with the same tax id: the one whose name was read, as a draft
+$idGammaOld = $mkSoc('EOQA ESTACION DE SERVICIO', $cifGamma, '');
+$idGamma    = $mkSoc('EOQA GAMMA', '', 'ES' . $cifGamma);
+if ($idGammaOld > 0 && $idGamma > 0) {
+	$n1 = $countSoc();
+	// The name read singles out one of them: no ambiguity left to review
+	$r = easyocrCreateInvoiceFromOCR($whParams($cifGamma, 'EOQA Gamma', 'AMB', array('invoice_status' => 'draft')), $user);
+	eo_assert('shared tax id: takes the record whose name was read', isset($r['supplier_id']) ? (int) $r['supplier_id'] : 0, $idGamma);
+	eo_assert('shared tax id, name decides: not reported', isset($r['review_codes']) ? $r['review_codes'] : null, array());
+	// The name read matches neither: the oldest, reported and kept as a draft
+	$r = easyocrCreateInvoiceFromOCR($whParams($cifGamma, 'EOQA NINGUNO DE LOS DOS', 'AMB2'), $user);
+	eo_assert('shared tax id, name does not decide: the oldest', isset($r['supplier_id']) ? (int) $r['supplier_id'] : 0, $idGammaOld);
+	eo_assert('shared tax id, name does not decide: reported as ambiguous', isset($r['review_codes']) && in_array('supplier_ambiguous_tax_id', $r['review_codes'], true), true);
+	eo_assert('shared tax id, name does not decide: kept as draft', !empty($r['forced_draft']), true);
+	eo_assert('shared tax id: no third party created', $countSoc(), $n1);
+} else {
+	eo_info('skipped: this Dolibarr refuses two third parties with the same tax id');
+}
+
+// 6) Same trade name, different valid tax id: another company, created
+$idDelta = $mkSoc('EOQA DELTA SL', $cifDelta, '');
+$n2 = $countSoc();
+$r = easyocrCreateInvoiceFromOCR($whParams('ES' . $cifOther, 'EOQA DELTA', 'OTHER', array('invoice_status' => 'draft')), $user);
+eo_assert('same name, other tax id: not assigned to the namesake', isset($r['supplier_id']) && (int) $r['supplier_id'] !== $idDelta, true);
+eo_assert('same name, other tax id: a supplier was created', !empty($r['supplier_created']) && $countSoc() === $n2 + 1, true);
+$new = $socRow($r['supplier_id']);
+eo_assert('new supplier: CIF stored bare in idprof1', $new ? $new->siren : '', $cifOther);
+eo_assert('new supplier: VAT number stored with ES prefix', $new ? $new->tva_intra : '', 'ES' . $cifOther);
+$r2 = easyocrCreateInvoiceFromOCR($whParams($cifOther, 'EOQA DELTA', 'AGAIN', array('invoice_status' => 'draft')), $user);
+eo_assert('next invoice of the new supplier (bare id) finds it', isset($r2['supplier_id']) ? (int) $r2['supplier_id'] : 0, (int) $r['supplier_id']);
+
+// 7) Misread id and unknown name: created, but kept as a draft for review
+$n3 = $countSoc();
+// A CIF whose control digit became a letter that does not encode it
+$badId9 = substr(eo_cif('B', $eoSeed . '808'), 0, 8) . 'X';
+$r = easyocrCreateInvoiceFromOCR($whParams($badId9, 'EOQA EPSILON NUEVO', 'NEW'), $user);
+eo_assert('invalid id, unknown name: supplier created', !empty($r['supplier_created']) && $countSoc() === $n3 + 1, true);
+eo_assert('invalid id, unknown name: reported', isset($r['review_codes']) && in_array('tax_id_invalid_created', $r['review_codes'], true), true);
+eo_assert('invalid id, unknown name: kept as draft', !empty($r['forced_draft']), true);
+$new = $socRow($r['supplier_id']);
+eo_assert('invalid id: kept as read, never as VAT number', $new ? array($new->siren, (string) $new->tva_intra) : null, array($badId9, ''));
+
+// 8) A customer with the tax id becomes a supplier instead of being duplicated
+$idCli = $mkSoc('EOQA CLIENTE ZETA', $cifCli, '', 0);
+$n4 = $countSoc();
+$r = easyocrCreateInvoiceFromOCR($whParams('ES' . $cifCli, 'EOQA ZETA', 'CLI', array('invoice_status' => 'draft')), $user);
+eo_assert('customer with the tax id: used', isset($r['supplier_id']) ? (int) $r['supplier_id'] : 0, $idCli);
+eo_assert('customer with the tax id: flagged as supplier', (int) $socRow($idCli)->fournisseur, 1);
+eo_assert('customer with the tax id: nothing created', $countSoc(), $n4);
+
+// 9) Totals that do not add up (base 338.03 + VAT 37.18 != 371.83)
+$r = easyocrCreateInvoiceFromOCR($whParams('', '', 'HDR', array(
+	'fk_soc' => $supplierId, 'total_ht' => '338.03', 'total_tva' => '37.18', 'total_ttc' => '371.83',
+)), $user);
+eo_assert('header mismatch: invoice created', isset($r['status']) ? $r['status'] : '', 'ok');
+eo_assert('header mismatch: reported', isset($r['review_codes']) && in_array('header_mismatch', $r['review_codes'], true), true);
+eo_assert('header mismatch: kept as draft', !empty($r['forced_draft']) && (int) $invRow($r['id'])->fk_statut === 0, true);
+
+// 10) Lines that do not add up to the base
+$r = easyocrCreateInvoiceFromOCR($whParams('', '', 'LIN', array(
+	'fk_soc' => $supplierId, 'total_ht' => '338.03', 'total_tva' => '70.98', 'total_ttc' => '409.01',
+	'items'  => array(array('description' => 'Linea', 'quantity' => 1, 'unit_price' => 4633, 'net_amount' => 4633, 'taxes' => eo_tax(21))),
+)), $user);
+eo_assert('line mismatch: reported', isset($r['review_codes']) && in_array('lines_mismatch', $r['review_codes'], true), true);
+eo_assert('line mismatch: kept as draft', !empty($r['forced_draft']), true);
+
+// 11) The screen does not ask for it: same mismatch, nothing forced
+$r = easyocrCreateInvoiceFromOCR($whParams('', '', 'UI', array(
+	'fk_soc' => $supplierId, 'total_ht' => '338.03', 'total_tva' => '37.18', 'total_ttc' => '371.83',
+	'draft_on_review' => 0, 'invoice_status' => 'draft',
+)), $user);
+eo_assert('without draft_on_review: nothing is forced', isset($r['forced_draft']) ? $r['forced_draft'] : null, false);
+eo_assert('without draft_on_review: the note still reports it', isset($r['review_codes']) && in_array('header_mismatch', $r['review_codes'], true), true);
+
+// 12) Consistent document, nothing to review: follows the configuration (validated)
+//     Checked without validating: the flag says no review, so nothing was forced.
+$r = easyocrCreateInvoiceFromOCR($whParams('ES' . $cifAlfa, 'EOQA ALFA', 'CLEAN', array('invoice_status' => 'draft')), $user);
+eo_assert('consistent document: nothing forced', isset($r['forced_draft']) ? $r['forced_draft'] : null, false);
+eo_assert('consistent document: nothing to review', isset($r['review_codes']) ? $r['review_codes'] : null, array());
+
+// 13) Duplicate left by an older version with a misread id: the right id must not
+//     take it for "another company" and create a third record
+$idOmega = $mkSoc('EOQA OMEGA SL', substr($cifDelta, 0, 1) . 'S' . substr($cifDelta, 2), '');
+$cifOmega = eo_cif('B', $eoSeed . '717');
+$n5 = $countSoc();
+$r = easyocrCreateInvoiceFromOCR($whParams('ES' . $cifOmega, 'EOQA OMEGA, S.L.', 'OLDDUP'), $user);
+eo_assert('old misread duplicate: reused, not a third record', isset($r['supplier_id']) ? (int) $r['supplier_id'] : 0, $idOmega);
+eo_assert('old misread duplicate: nothing created', $countSoc(), $n5);
+eo_assert('old misread duplicate: reported as found by name', isset($r['review_codes']) && in_array('supplier_by_name', $r['review_codes'], true), true);
+eo_assert('old misread duplicate: kept as draft', !empty($r['forced_draft']), true);
+
+// 14) Namesake without tax id and a valid id read: assigned, but never silently
+$idSigma = $mkSoc('EOQA SIGMA SA', '', '');
+$r = easyocrCreateInvoiceFromOCR($whParams('ES' . eo_cif('B', $eoSeed . '828'), 'EOQA SIGMA SL', 'NAMESAKE'), $user);
+eo_assert('namesake without id: assigned by name', isset($r['supplier_id']) ? (int) $r['supplier_id'] : 0, $idSigma);
+eo_assert('namesake without id: reported', isset($r['review_codes']) && in_array('supplier_by_name', $r['review_codes'], true), true);
+eo_assert('namesake without id: kept as draft', !empty($r['forced_draft']), true);
+
+// 15) No tax id read at all: found only by name, reported
+$r = easyocrCreateInvoiceFromOCR($whParams('', 'EOQA SIGMA', 'NOID'), $user);
+eo_assert('no tax id: found by name', isset($r['supplier_id']) ? (int) $r['supplier_id'] : 0, $idSigma);
+eo_assert('no tax id: reported as name only', isset($r['review_codes']) && in_array('supplier_by_name_only', $r['review_codes'], true), true);
+eo_assert('no tax id: kept as draft', !empty($r['forced_draft']), true);
+
+// 16) DNI stored with its leading zero, printed without it
+$dniNum = '0' . $eoSeed . '123';
+$dni = $dniNum . substr('TRWAGMYFPDXBNJZSQVHLCKE', ((int) $dniNum) % 23, 1);
+$idDni = $mkSoc('EOQA AUTONOMO PRUEBA', $dni, '');
+$n6 = $countSoc();
+$r = easyocrCreateInvoiceFromOCR($whParams(ltrim($dni, '0'), 'EOQA OTRO NOMBRE', 'DNI', array('invoice_status' => 'draft')), $user);
+eo_assert('DNI without leading zero: found by tax id', isset($r['supplier_id']) ? (int) $r['supplier_id'] : 0, $idDni);
+eo_assert('DNI without leading zero: nothing created', $countSoc(), $n6);
+
+if ($prevDraftConf === null) {
+	unset($conf->global->EASYOCR_INVOICE_DRAFT);
+} else {
+	$conf->global->EASYOCR_INVOICE_DRAFT = $prevDraftConf;
+}
+
 // ── Roll back, always ────────────────────────────────────────────────────
 $db->rollback();
 

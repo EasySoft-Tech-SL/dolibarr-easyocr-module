@@ -894,3 +894,13 @@ EasyOcrInboxErrEmpty = The document is empty.
 EasyOcrInboxErrSize = The document exceeds the maximum size (%s MB).
 EasyOcrInboxErrNotPdf = The file is not a PDF.
 EasyOcrInboxErrCopy = The document could not be copied to the EasyOcr inbox.
+
+# 2.8.2 - unattended review (webhook)
+EasyOcrReviewHeader = EasyOCR: review before validating
+EasyOcrReviewSupplierAmbiguousTaxId = Several third parties share the tax id %s (ids %s). %s was used: check it is the right one.
+EasyOcrReviewSupplierAmbiguousName = Several suppliers are named %s (ids %s). %s was used: check it is the right one.
+EasyOcrReviewTaxIdInvalid = The tax id read (%s) is not valid, so the supplier was looked up by its name.
+EasyOcrReviewTaxIdInvalidCreated = The tax id read (%s) is not valid and no supplier has that name: a new one was created. Check its tax id.
+EasyOcrReviewHeaderTotals = Base plus taxes (%s) does not match the document total (%s).
+EasyOcrReviewSupplierByName = The supplier was found by its name (%s), not by the tax id %s, which it does not have: check it is the same company and add the tax id to it.
+EasyOcrReviewSupplierByNameOnly = No tax id was read: the supplier was found only by its name (%s). Check it is the right one.

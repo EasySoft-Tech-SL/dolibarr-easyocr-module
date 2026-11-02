@@ -773,6 +773,118 @@ eo_assert('no $conf — window is unlimited', easyocrDuplicateWindowDays(), 0);
 $GLOBALS['conf'] = $conf;
 
 
+// ── Tax id forms and control characters (2.8.2) ──────────────────────────
+// Synthetic ids only. B12345674 is a valid CIF (control 4, or D as a letter).
+eo_group('easyocrSplitTaxId');
+eo_assert('ES prefix with separators is split', easyocrSplitTaxId('es B-1234.5674'), array('normalized' => 'ESB12345674', 'country' => 'ES', 'bare' => 'B12345674'));
+eo_assert('bare Spanish id has no country', easyocrSplitTaxId('B12345674'), array('normalized' => 'B12345674', 'country' => '', 'bare' => 'B12345674'));
+eo_assert('foreign VAT prefix is split', easyocrSplitTaxId('DE 123456789')['country'], 'DE');
+eo_assert('two letters that are not a VAT prefix stay', easyocrSplitTaxId('ZZ1234567')['country'], '');
+eo_assert('prefix-looking letters with no digit after stay', easyocrSplitTaxId('ESTONIA')['bare'], 'ESTONIA');
+
+eo_group('easyocrIsValidSpanishTaxId');
+eo_assert('valid CIF (digit control)', easyocrIsValidSpanishTaxId('B12345674'), true);
+eo_assert('valid CIF (letter control)', easyocrIsValidSpanishTaxId('B1234567D'), true);
+eo_assert('CIF with wrong control', easyocrIsValidSpanishTaxId('B12345675'), false);
+eo_assert('CIF with a digit read as S', easyocrIsValidSpanishTaxId('BS2345674'), false);
+eo_assert('CIF with a digit missing', easyocrIsValidSpanishTaxId('B1234567'), false);
+eo_assert('valid DNI', easyocrIsValidSpanishTaxId('12345678Z'), true);
+eo_assert('DNI with wrong letter', easyocrIsValidSpanishTaxId('12345678A'), false);
+eo_assert('valid NIE', easyocrIsValidSpanishTaxId('X1234567L'), true);
+eo_assert('NIE with wrong letter', easyocrIsValidSpanishTaxId('X1234567T'), false);
+eo_assert('empty is not valid', easyocrIsValidSpanishTaxId(''), false);
+
+eo_group('easyocrTaxIdLooksInvalid');
+eo_assert('ES prefix + valid CIF', easyocrTaxIdLooksInvalid('ESB12345674', '', 'ES'), false);
+eo_assert('ES prefix + wrong control', easyocrTaxIdLooksInvalid('ESB12345675', '', 'ES'), true);
+eo_assert('ES prefix + digit missing', easyocrTaxIdLooksInvalid('ESB1234567', '', 'ES'), true);
+eo_assert('bare misread CIF, Spanish company', easyocrTaxIdLooksInvalid('BS2345674', '', 'ES'), true);
+eo_assert('bare misread CIF, supplier in Spain', easyocrTaxIdLooksInvalid('BS2345674', 'España', 'FR'), true);
+eo_assert('foreign prefixed VAT is not judged', easyocrTaxIdLooksInvalid('DE123456789', '', 'ES'), false);
+eo_assert('bare id of a foreign supplier is not judged', easyocrTaxIdLooksInvalid('123456789', 'France', 'ES'), false);
+eo_assert('nothing read is not invalid', easyocrTaxIdLooksInvalid('', '', 'ES'), false);
+eo_assert('non-Spanish company, no country read: not judged', easyocrTaxIdLooksInvalid('BS2345674', '', 'FR'), false);
+
+eo_group('tax id edge cases (adversarial review)');
+eo_assert('a label stuck to the id is dropped', easyocrSplitTaxId('CIF: B12345674')['bare'], 'B12345674');
+eo_assert('"NIF-IVA ES…" label is dropped too', easyocrSplitTaxId('NIF-IVA ESB12345674')['bare'], 'B12345674');
+eo_assert('DNI without its leading zero: same key as with it', easyocrTaxIdKey('4247123N'), easyocrTaxIdKey('04247123N'));
+eo_assert('DNI without its leading zero: searched with it too', in_array('04247123N', easyocrTaxIdVariants('4247123N'), true), true);
+eo_assert('the id read is never rewritten (old Irish VAT)', easyocrSplitTaxId('1234567T')['bare'], '1234567T');
+$ieSoc = new stdClass();
+easyocrApplyTaxIdToSociete($ieSoc, '1234567T', false, 'Ireland');
+eo_assert('Irish supplier: stored as read, no ES VAT', array(isset($ieSoc->idprof1) ? $ieSoc->idprof1 : null, isset($ieSoc->tva_intra) ? $ieSoc->tva_intra : null), array('1234567T', null));
+$cySoc = new stdClass();
+easyocrApplyTaxIdToSociete($cySoc, '12345678L', false, 'Cyprus');
+eo_assert('Cypriot supplier: no ES prefix', isset($cySoc->tva_intra) ? $cySoc->tva_intra : null, null);
+eo_assert('a DNI with zero also finds the one stored without it', in_array('4247123N', easyocrTaxIdVariants('04247123N'), true), true);
+eo_assert('nine digits, no letter: foreign, not judged (PT NIF)', easyocrTaxIdLooksInvalid('501234567', '', 'ES'), false);
+eo_assert('a misread CIF is still caught', easyocrTaxIdLooksInvalid('BS2345674', '', 'ES'), true);
+eo_assert('foreign VAT gives no bare variant', in_array('123456789', easyocrTaxIdVariants('DE123456789'), true), false);
+eo_assert('ES VAT still gives the bare variant', in_array('B12345674', easyocrTaxIdVariants('ESB12345674'), true), true);
+
+eo_group('easyocrShouldForceDraft');
+eo_assert('unattended + something to review + would validate', easyocrShouldForceDraft(true, array('header_mismatch'), 'validated'), true);
+eo_assert('nothing to review', easyocrShouldForceDraft(true, array(), 'validated'), false);
+eo_assert('the screen does not ask for it', easyocrShouldForceDraft(false, array('header_mismatch'), 'validated'), false);
+eo_assert('already a draft: nothing to force', easyocrShouldForceDraft(true, array('header_mismatch'), 'draft'), false);
+
+eo_group('IGIC counts as the main indirect tax');
+$igicItems = array(array('quantity' => 1, 'unit_price' => 100, 'net_amount' => 100, 'taxes' => array(array('tax_type' => 'igic', 'tax_rate' => 7, 'tax_amount' => 7))));
+eo_assert('IGIC lines that add up: no warning', count(easyocrCheckTotalsConsistency($igicItems, array('total_ht' => 100, 'total_tva' => 7))), 0);
+
+eo_group('easyocrOwnCountryCode');
+$prevMysoc = isset($GLOBALS['mysoc']) ? $GLOBALS['mysoc'] : null;
+$GLOBALS['mysoc'] = null;   // the ajax endpoint runs with NOREQUIRESOC
+if (!is_object($conf)) {    // the previous group leaves it null
+	$conf = new stdClass();
+	$conf->global = new stdClass();
+}
+$conf->global->MAIN_INFO_SOCIETE_COUNTRY = '4:ES:España';
+eo_assert('without $mysoc, read from MAIN_INFO_SOCIETE_COUNTRY', easyocrOwnCountryCode(), 'ES');
+$conf->global->MAIN_INFO_SOCIETE_COUNTRY = 'garbage';
+eo_assert('garbage constant gives no country', easyocrOwnCountryCode(), '');
+$GLOBALS['mysoc'] = (object) array('country_code' => 'fr');
+eo_assert('$mysoc wins when loaded', easyocrOwnCountryCode(), 'FR');
+$GLOBALS['mysoc'] = $prevMysoc;
+unset($conf->global->MAIN_INFO_SOCIETE_COUNTRY);
+
+eo_group('easyocrTaxIdVariants');
+$v = easyocrTaxIdVariants('ES B-12345674');
+eo_assert('prefixed read also yields the bare id', in_array('B12345674', $v, true) && in_array('ESB12345674', $v, true), true);
+$v = easyocrTaxIdVariants('B12345674');
+eo_assert('bare Spanish read also yields the prefixed id', in_array('ESB12345674', $v, true), true);
+eo_assert('a foreign bare id gets no ES variant', in_array('ES123456789', easyocrTaxIdVariants('123456789'), true), false);
+eo_assert('Greek EL also yields GR', in_array('GR123456789', easyocrTaxIdVariants('EL123456789'), true), true);
+eo_assert('short noise yields nothing', easyocrTaxIdVariants('ES12'), array());
+eo_assert('empty yields nothing', easyocrTaxIdVariants(''), array());
+eo_assert('the key is the bare number', easyocrTaxIdKey('ES-B12345674'), 'B12345674');
+
+eo_group('easyocrSupplierNameCore');
+eo_assert('", S.L." is dropped', easyocrSupplierNameCore('Acme Distribuciones, S.L.'), 'ACMEDISTRIBUCIONES');
+eo_assert('"SL" is dropped', easyocrSupplierNameCore('ACME DISTRIBUCIONES SL'), 'ACMEDISTRIBUCIONES');
+eo_assert('"S.A.U." is dropped', easyocrSupplierNameCore('Acme Iberia, S.A.U.'), 'ACMEIBERIA');
+eo_assert('"Sociedad Limitada" is dropped', easyocrSupplierNameCore('Acme Sociedad Limitada'), 'ACME');
+eo_assert('"GmbH" and "Co" are dropped', easyocrSupplierNameCore('Acme GmbH & Co'), 'ACME');
+eo_assert('the whole name is never dropped', easyocrSupplierNameCore('S.L.'), 'SL');
+eo_assert('a legal form inside the name stays', easyocrSupplierNameCore('SA Pinturas'), 'SAPINTURAS');
+eo_assert('a word ending in a form stays', easyocrSupplierNameCore('Consul Group'), 'CONSULGROUP');
+eo_assert('empty stays empty', easyocrSupplierNameCore(''), '');
+
+eo_group('easyocrCheckHeaderTotals');
+eo_assert('base + VAT that adds up', easyocrCheckHeaderTotals(array('total_ht' => 100, 'total_tva' => 21, 'total_ttc' => 121)), array());
+$hw = easyocrCheckHeaderTotals(array('total_ht' => '338,03', 'total_tva' => '37,18', 'total_ttc' => '371,83'));
+eo_assert('base + VAT that does not add up', count($hw), 1);
+eo_assert('the warning carries both figures', count($hw) ? array($hw[0]['computed'], $hw[0]['expected']) : null, array(375.21, 371.83));
+eo_assert('withholding subtracted from the total', easyocrCheckHeaderTotals(array('total_ht' => 100, 'total_tva' => 21, 'total_ttc' => 106, 'total_localtax2' => -15)), array());
+eo_assert('total given before the withholding', easyocrCheckHeaderTotals(array('total_ht' => 100, 'total_tva' => 21, 'total_ttc' => 121, 'total_localtax2' => 15)), array());
+eo_assert('equivalence surcharge counts', easyocrCheckHeaderTotals(array('total_ht' => 100, 'total_tva' => 21, 'total_ttc' => 126.2, 'total_localtax1' => 5.2)), array());
+eo_assert('within tolerance', easyocrCheckHeaderTotals(array('total_ht' => 100, 'total_tva' => 21, 'total_ttc' => 121.04)), array());
+eo_assert('VAT not read: not checked', easyocrCheckHeaderTotals(array('total_ht' => 100, 'total_tva' => '', 'total_ttc' => 150)), array());
+eo_assert('total not read: not checked', easyocrCheckHeaderTotals(array('total_ht' => 100, 'total_tva' => 21, 'total_ttc' => 0)), array());
+eo_assert('no array: not checked', easyocrCheckHeaderTotals(null), array());
+
+
 // ── Summary ──────────────────────────────────────────────────────────────
 $total = $GLOBALS['eo_pass'] + $GLOBALS['eo_fail'];
 echo "\n" . str_repeat('─', 52) . "\n";

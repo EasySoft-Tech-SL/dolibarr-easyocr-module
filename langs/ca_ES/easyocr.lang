@@ -876,3 +876,13 @@ EasyOcrInboxErrEmpty = El document és buit.
 EasyOcrInboxErrSize = El document supera la mida màxima (%s MB).
 EasyOcrInboxErrNotPdf = El fitxer no és un PDF.
 EasyOcrInboxErrCopy = No s'ha pogut copiar el document a la safata d'EasyOcr.
+
+# 2.8.2 - unattended review (webhook)
+EasyOcrReviewHeader = EasyOCR: revisar abans de validar
+EasyOcrReviewSupplierAmbiguousTaxId = Hi ha diversos tercers amb el CIF/NIF %s (ids %s). S'ha fet servir el %s: comprova que és el correcte.
+EasyOcrReviewSupplierAmbiguousName = Hi ha diversos proveïdors anomenats %s (ids %s). S'ha fet servir el %s: comprova que és el correcte.
+EasyOcrReviewTaxIdInvalid = El CIF/NIF llegit (%s) no és vàlid, així que el proveïdor s'ha cercat pel nom.
+EasyOcrReviewTaxIdInvalidCreated = El CIF/NIF llegit (%s) no és vàlid i cap proveïdor té aquest nom: se n'ha creat un de nou. Revisa'n el CIF/NIF.
+EasyOcrReviewHeaderTotals = La base més els impostos (%s) no coincideix amb el total del document (%s).
+EasyOcrReviewSupplierByName = El proveïdor s'ha trobat pel nom (%s) i no pel CIF/NIF %s, que no té desat: comprova que és la mateixa empresa i afegeix-li el CIF/NIF.
+EasyOcrReviewSupplierByNameOnly = No s'ha llegit el CIF/NIF: el proveïdor s'ha trobat només pel nom (%s). Comprova que és el correcte.

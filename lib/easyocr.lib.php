@@ -523,6 +523,260 @@ function easyocrNormalizeTaxId($taxId)
 }
 
 /**
+ * Country prefixes a VAT number can carry (VIES list plus the usual non-EU ones).
+ *
+ * @return string[]
+ */
+function easyocrVatCountryPrefixes()
+{
+	return array('AT', 'BE', 'BG', 'CY', 'CZ', 'DE', 'DK', 'EE', 'EL', 'ES', 'FI', 'FR', 'HR', 'HU', 'IE', 'IT',
+		'LT', 'LU', 'LV', 'MT', 'NL', 'PL', 'PT', 'RO', 'SE', 'SI', 'SK', 'XI', 'GB', 'CH', 'NO');
+}
+
+/**
+ * Split a tax id into its country prefix and the bare number.
+ *
+ * "ES B-33788506" and "B33788506" are the same company: suppliers print either form
+ * and Dolibarr stores whatever was typed. The prefix is only taken as such when it is
+ * a known VAT prefix and the rest carries a digit, so a bare id that happens to start
+ * with two letters is left alone.
+ *
+ * @param  string $taxId Raw tax id
+ * @return array{normalized: string, country: string, bare: string}
+ */
+function easyocrSplitTaxId($taxId)
+{
+	$norm = easyocrNormalizeTaxId($taxId);
+	// A label stuck to the number ("CIF: B12345678"). No Spanish id starts with these
+	// letter pairs, so a real number is never cut.
+	if (preg_match('/^(NIFIVA|NIF|CIF|NIE|DNI|VATNO|VAT|IVA|TVA|USTIDNR)([A-Z0-9]{5,})$/', $norm, $lm) && preg_match('/[0-9]/', $lm[2])) {
+		$norm = $lm[2];
+	}
+	$out = array('normalized' => $norm, 'country' => '', 'bare' => $norm);
+
+	if (strlen($norm) > 4 && preg_match('/^([A-Z]{2})([A-Z0-9]+)$/', $norm, $m)
+		&& in_array($m[1], easyocrVatCountryPrefixes(), true)
+		&& preg_match('/[0-9]/', $m[2])) {
+		$out['country'] = $m[1];
+		$out['bare'] = $m[2];
+	}
+
+	return $out;
+}
+
+/**
+ * Shape of a bare Spanish tax id, without checking its control character.
+ *
+ * @param  string $bare Normalized tax id without the ES prefix
+ * @return string       'dni', 'nie', 'klm', 'cif' or '' when it is not Spanish-shaped
+ */
+function easyocrSpanishTaxIdType($bare)
+{
+	$bare = (string) $bare;
+	if (preg_match('/^[0-9]{8}[A-Z]$/', $bare)) {
+		return 'dni';
+	}
+	if (preg_match('/^[XYZ][0-9]{7}[A-Z]$/', $bare)) {
+		return 'nie';
+	}
+	if (preg_match('/^[KLM][0-9]{7}[A-Z]$/', $bare)) {
+		return 'klm';
+	}
+	if (preg_match('/^[ABCDEFGHJNPQRSUVW][0-9]{7}[0-9A-J]$/', $bare)) {
+		return 'cif';
+	}
+
+	return '';
+}
+
+/**
+ * Whether a bare Spanish tax id (DNI, NIE, K/L/M NIF or CIF) has a valid control character.
+ *
+ * @param  string $bare Normalized tax id without the ES prefix
+ * @return bool
+ */
+function easyocrIsValidSpanishTaxId($bare)
+{
+	$bare = (string) $bare;
+	$letters = 'TRWAGMYFPDXBNJZSQVHLCKE';
+
+	switch (easyocrSpanishTaxIdType($bare)) {
+		case 'dni':
+			return $bare[8] === $letters[((int) substr($bare, 0, 8)) % 23];
+		case 'nie':
+			$num = strtr($bare[0], array('X' => '0', 'Y' => '1', 'Z' => '2')) . substr($bare, 1, 7);
+			return $bare[8] === $letters[((int) $num) % 23];
+		case 'klm':
+			return $bare[8] === $letters[((int) substr($bare, 1, 7)) % 23];
+		case 'cif':
+			$sum = 0;
+			for ($i = 1; $i <= 7; $i++) {
+				$d = (int) $bare[$i];
+				if ($i % 2 === 1) {
+					$d *= 2;
+					$d = intdiv($d, 10) + ($d % 10);
+				}
+				$sum += $d;
+			}
+			$control = (10 - ($sum % 10)) % 10;
+			// Some entity types print a digit and others a letter; both encode the same value
+			return $bare[8] === (string) $control || $bare[8] === substr('JABCDEFGHI', $control, 1);
+	}
+
+	return false;
+}
+
+/**
+ * Whether a country value read from a document means Spain.
+ *
+ * @param  string $country Code or name, as read
+ * @return bool
+ */
+function easyocrIsSpainCountry($country)
+{
+	$c = trim((string) $country);
+	if ($c === '') {
+		return false;
+	}
+	// The ñ first: without it "España" would lose a letter when unaccenting is not available
+	$c = str_replace(array('ñ', 'Ñ'), 'N', $c);
+	if (function_exists('dol_string_unaccent')) {
+		$c = dol_string_unaccent($c);
+	}
+	$c = strtoupper(preg_replace('/[^A-Za-z]/', '', $c));
+
+	return in_array($c, array('ES', 'ESP', 'ESPANA', 'SPAIN', 'ESPAGNE', 'SPANIEN', 'SPAGNA', 'ESPANHA', 'ESPANYA'), true);
+}
+
+/**
+ * Country code of the company using Dolibarr.
+ *
+ * $mysoc is not loaded where NOREQUIRESOC is defined (the ajax endpoint), so the
+ * MAIN_INFO_SOCIETE_COUNTRY constant ("id:code:label") is the fallback.
+ *
+ * @return string Two-letter code, '' when unknown
+ */
+function easyocrOwnCountryCode()
+{
+	global $mysoc, $conf;
+
+	if (!empty($mysoc) && is_object($mysoc) && !empty($mysoc->country_code)) {
+		return strtoupper($mysoc->country_code);
+	}
+	if (!empty($conf) && is_object($conf) && !empty($conf->global->MAIN_INFO_SOCIETE_COUNTRY)) {
+		$parts = explode(':', (string) $conf->global->MAIN_INFO_SOCIETE_COUNTRY);
+		if (isset($parts[1]) && preg_match('/^[A-Za-z]{2}$/', $parts[1])) {
+			return strtoupper($parts[1]);
+		}
+	}
+
+	return '';
+}
+
+/**
+
+ * Whether a tax id read by the OCR is certainly wrong, so it must not be trusted.
+ *
+ * Only Spanish ids can be checked: they carry a control character. An id is treated
+ * as Spanish when it has the ES prefix, or when it has no prefix, has the length of a
+ * Spanish id and nothing says the supplier is foreign (its country is Spain or was not
+ * read, and the company using Dolibarr is Spanish). Anything else is not judged.
+ *
+ * @param  string $taxId           Tax id as read
+ * @param  string $supplierCountry Supplier country as read ('' when unknown)
+ * @param  string $ownCountryCode  Country code of the company using Dolibarr
+ * @return bool                    True when the id is known to be invalid
+ */
+function easyocrTaxIdLooksInvalid($taxId, $supplierCountry = '', $ownCountryCode = '')
+{
+	$p = easyocrSplitTaxId($taxId);
+	if ($p['normalized'] === '') {
+		return false;
+	}
+
+	if ($p['country'] === 'ES') {
+		return !easyocrIsValidSpanishTaxId($p['bare']);
+	}
+	if ($p['country'] !== '') {
+		return false;
+	}
+
+	$supplierLooksSpanish = (trim((string) $supplierCountry) === '') ? (strtoupper((string) $ownCountryCode) === 'ES') : easyocrIsSpainCountry($supplierCountry);
+	// Nine digits and no letter is not a Spanish shape (a Spanish CIF starts with a letter
+	// and a DNI ends with one): it is a foreign id read without its prefix, so not judged.
+	if (!$supplierLooksSpanish || strlen($p['bare']) !== 9 || !preg_match('/[A-Z]/', $p['bare'])) {
+		return false;
+	}
+
+	return !easyocrIsValidSpanishTaxId($p['bare']);
+}
+
+/**
+ * Every form under which a tax id may be stored in llx_societe, normalized.
+ *
+ * "ESB33788506" also yields "B33788506", and a bare Spanish id also yields its
+ * ES-prefixed VAT form, so either side may carry the prefix.
+ *
+ * @param  string $taxId Raw tax id
+ * @return string[]      Normalized variants, deduplicated; empty when there is no id
+ */
+function easyocrTaxIdVariants($taxId)
+{
+	$p = easyocrSplitTaxId($taxId);
+	if ($p['normalized'] === '') {
+		return array();
+	}
+
+	$variants = array($p['normalized']);
+	// The bare number only for ES and EL: for other countries it is short enough to be
+	// another country's id ("DE123456789" must not find a "123456789" stored elsewhere)
+	if (in_array($p['country'], array('', 'ES', 'EL'), true)) {
+		$variants[] = $p['bare'];
+	}
+	if ($p['country'] === '' && easyocrSpanishTaxIdType($p['bare']) !== '') {
+		$variants[] = 'ES' . $p['bare'];
+	}
+	if ($p['country'] === 'EL') {
+		$variants[] = 'GR' . $p['bare'];
+	}
+	// A DNI printed or stored without its leading zero ("4247123N" / "04247123N"). Only as
+	// extra search forms: the id read is never rewritten, since seven digits and a letter
+	// is also an old Irish VAT number.
+	if (in_array($p['country'], array('', 'ES'), true)) {
+		if (preg_match('/^[0-9]{7}[A-Z]$/', $p['bare'])) {
+			$variants[] = '0' . $p['bare'];
+			$variants[] = 'ES0' . $p['bare'];
+		} elseif (preg_match('/^0[0-9]{7}[A-Z]$/', $p['bare'])) {
+			$variants[] = substr($p['bare'], 1);
+			$variants[] = 'ES' . substr($p['bare'], 1);
+		}
+	}
+
+	// Below 5 characters a match is noise, not an identity
+	return array_values(array_unique(array_filter($variants, function ($v) {
+		return strlen($v) >= 5;
+	})));
+}
+
+/**
+ * Key used to tell two tax ids apart regardless of the prefix: the bare number.
+ *
+ * @param  string $taxId Raw tax id
+ * @return string
+ */
+function easyocrTaxIdKey($taxId)
+{
+	$p = easyocrSplitTaxId($taxId);
+
+	// Only for comparing two ids: "4247123N" and "04247123N" are the same DNI
+	if (in_array($p['country'], array('', 'ES'), true) && preg_match('/^[0-9]{7}[A-Z]$/', $p['bare'])) {
+		return '0' . $p['bare'];
+	}
+
+	return $p['bare'];
+}
+
+/**
  * Collect every tax id identifying the Dolibarr company itself (the invoice receiver).
  *
  * Returns both the raw normalized value and, for country-prefixed ids such as
@@ -831,6 +1085,54 @@ function easyocrSupplierNameKey($name)
 }
 
 /**
+ * Supplier name without its trailing legal form, compacted: "ASEUROPA, S.L." and
+ * "Aseuropa SL" both give "ASEUROPA".
+ *
+ * Only trailing tokens are dropped, and never the whole name. Single letters are
+ * joined first, since "S.L." becomes "S L" once the punctuation is gone.
+ *
+ * @param  string $name Raw name
+ * @return string       Compact core, '' when nothing is left
+ */
+function easyocrSupplierNameCore($name)
+{
+	$key = easyocrSupplierNameKey($name);
+	if ($key === '') {
+		return '';
+	}
+
+	$forms = array('SL', 'SA', 'SLU', 'SAU', 'SLL', 'SLP', 'SLNE', 'SC', 'SCP', 'SCOOP', 'COOP', 'CB', 'AIE', 'SRL',
+		'SAS', 'SARL', 'SPA', 'SNC', 'GMBH', 'AG', 'KG', 'BV', 'NV', 'LTD', 'LIMITED', 'PLC', 'LLC', 'LLP', 'INC',
+		'CORP', 'CORPORATION', 'CO', 'COMPANY', 'LDA', 'UNIPESSOAL', 'SOCIEDADLIMITADA', 'SOCIEDADANONIMA', 'UNIPERSONAL');
+
+	$tokens = explode(' ', $key);
+	while (count($tokens) > 1) {
+		$last = end($tokens);
+		if (in_array($last, $forms, true)) {
+			array_pop($tokens);
+			continue;
+		}
+		// Run of trailing single letters ("S L U") read as one word
+		$run = array();
+		for ($i = count($tokens) - 1; $i > 0 && strlen($tokens[$i]) === 1; $i--) {
+			array_unshift($run, $tokens[$i]);
+		}
+		if (count($run) >= 2 && in_array(implode('', $run), $forms, true)) {
+			$tokens = array_slice($tokens, 0, count($tokens) - count($run));
+			continue;
+		}
+		// Two-word forms ("SOCIEDAD LIMITADA")
+		if (count($tokens) > 2 && in_array($tokens[count($tokens) - 2] . $last, $forms, true)) {
+			array_splice($tokens, -2);
+			continue;
+		}
+		break;
+	}
+
+	return implode('', $tokens);
+}
+
+/**
  * Find suppliers whose name matches the one read from a document.
  *
  * Does not touch the database structure and works on MySQL and PostgreSQL alike: the
@@ -853,6 +1155,8 @@ function easyocrFindSuppliersByName($name, $limit = 10)
 		return $out;
 	}
 	$needleCompact = str_replace(' ', '', $needle);
+	// "ASEUROPA" on the invoice and "ASEUROPA S.L." in the ERP are the same exact name
+	$needleCore = easyocrSupplierNameCore($name);
 	$needleWords = array_values(array_filter(explode(' ', $needle), function ($w) {
 		return dol_strlen($w) >= 3;
 	}));
@@ -876,7 +1180,8 @@ function easyocrFindSuppliersByName($name, $limit = 10)
 
 		$candidate = array('id' => (int) $obj->rowid, 'name' => $obj->nom);
 
-		if (str_replace(' ', '', $key) === $needleCompact) {
+		if (str_replace(' ', '', $key) === $needleCompact
+			|| (strlen($needleCore) >= 3 && easyocrSupplierNameCore($obj->nom) === $needleCore)) {
 			$out['exact'][] = $candidate;
 			continue;
 		}
@@ -946,7 +1251,9 @@ function easyocrCheckTotalsConsistency($items, $totals, $tolerance = 0.05)
 					continue;
 				}
 				$type = strtolower(trim($tax['tax_type'] ?? ''));
-				if (!in_array($type, array('tva', 'iva', 'vat'), true)) {
+				// IGIC (Canarias), IPSI (Ceuta/Melilla) and the generic names the OCR emits
+				// are the main indirect tax too; without them every IGIC invoice "mismatched"
+				if (!in_array($type, array('tva', 'iva', 'vat', 'igic', 'ipsi', 'gst', 'sales_tax'), true)) {
 					continue;
 				}
 				if (isset($tax['tax_amount']) && $tax['tax_amount'] !== '' && $tax['tax_amount'] !== null && easyocrParseNumber($tax['tax_amount']) != 0) {
@@ -984,6 +1291,51 @@ function easyocrCheckTotalsConsistency($items, $totals, $tolerance = 0.05)
 	}
 
 	return $warnings;
+}
+
+/**
+ * Check that the document totals add up among themselves: base + VAT + surcharge
+ * (minus withholding) must give the total.
+ *
+ * The lines are checked by easyocrCheckTotalsConsistency(); this catches a misread
+ * total even when there are no lines. The withholding is accepted both subtracted and
+ * not, because the OCR may give the total before or after it.
+ *
+ * @param  array $totals    total_ht, total_tva, total_ttc, total_localtax1, total_localtax2
+ * @param  float $tolerance Absolute tolerance in currency units (default 0.05)
+ * @return array            One warning (field total_ttc) or none
+ */
+function easyocrCheckHeaderTotals($totals, $tolerance = 0.05)
+{
+	$num = function ($key) use ($totals) {
+		if (!is_array($totals) || !isset($totals[$key]) || $totals[$key] === '' || $totals[$key] === null) {
+			return null;
+		}
+		return (float) easyocrParseNumber($totals[$key]);
+	};
+
+	$ht = $num('total_ht');
+	$tva = $num('total_tva');
+	$ttc = $num('total_ttc');
+	// A total that was not read cannot be checked
+	if ($ht === null || $tva === null || $ttc === null || abs($ht) < 0.005 || abs($ttc) < 0.005) {
+		return array();
+	}
+	$lt1 = (float) $num('total_localtax1');
+	$lt2 = abs((float) $num('total_localtax2'));
+
+	$withRetention = $ht + $tva + $lt1 - $lt2;
+	$withoutRetention = $ht + $tva + $lt1;
+	if (abs($withRetention - $ttc) <= $tolerance || abs($withoutRetention - $ttc) <= $tolerance) {
+		return array();
+	}
+
+	return array(array(
+		'field'    => 'total_ttc',
+		'expected' => round($ttc, 2),
+		'computed' => round($withRetention, 2),
+		'diff'     => round($withRetention - $ttc, 2),
+	));
 }
 
 
@@ -1225,6 +1577,269 @@ function easyocrLinkProcessedFileToInvoice($hash, $invoiceId)
 // ============================================================
 
 /**
+ * Whether a document that would be validated must stay a draft for review.
+ *
+ * @param  bool   $draftOnReview The caller asked for it (unattended path)
+ * @param  array  $reviewCodes   Reasons collected while building the document
+ * @param  string $targetStatus  Status it would get: 'draft' or 'validated'
+ * @return bool
+ */
+function easyocrShouldForceDraft($draftOnReview, $reviewCodes, $targetStatus)
+{
+	return !empty($draftOnReview) && !empty($reviewCodes) && $targetStatus !== 'draft';
+}
+
+/**
+ * Active third parties whose tax id matches, under any of its stored forms.
+ *
+ * Both sides are normalized: the stored value loses spaces, dashes, dots and slashes
+ * and is uppercased, and the read value is expanded with easyocrTaxIdVariants(), so
+ * "ESB33788506" finds a supplier stored as "B-33788506" and the other way round.
+ * Suppliers come first, then the oldest record.
+ *
+ * @param  string $taxId Tax id as read
+ * @return array<int, array{id: int, name: string, fournisseur: int}>
+ */
+function easyocrFindThirdpartiesByTaxId($taxId)
+{
+	global $db;
+
+	$variants = easyocrTaxIdVariants($taxId);
+	if (empty($variants)) {
+		return array();
+	}
+
+	$in = array();
+	foreach ($variants as $v) {
+		$in[] = "'" . $db->escape($v) . "'";
+	}
+	$in = implode(',', $in);
+
+	$conds = array();
+	foreach (array('siren', 'siret', 'ape', 'idprof4', 'idprof5', 'idprof6', 'tva_intra') as $col) {
+		// The usual separators; anything rarer (a no-break space) is left to the name search
+		$conds[] = "UPPER(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(s." . $col . ",''),' ',''),'-',''),'.',''),'/',''),',',''),'_','')) IN (" . $in . ")";
+	}
+
+	$sql = "SELECT s.rowid, s.nom, s.fournisseur FROM " . MAIN_DB_PREFIX . "societe s";
+	$sql .= " WHERE s.status = 1 AND s.entity IN (" . getEntity('societe') . ")";
+	$sql .= " AND (" . implode(' OR ', $conds) . ")";
+	$sql .= " ORDER BY s.fournisseur DESC, s.rowid ASC";
+
+	$out = array();
+	$resql = $db->query($sql);
+	if ($resql) {
+		while ($obj = $db->fetch_object($resql)) {
+			$out[] = array('id' => (int) $obj->rowid, 'name' => $obj->nom, 'fournisseur' => (int) $obj->fournisseur);
+		}
+		$db->free($resql);
+	}
+
+	return $out;
+}
+
+/**
+ * Turn an existing third party into a supplier, keeping everything else.
+ *
+ * Only the supplier flag and, when missing, the supplier code are written: a full
+ * update() would rewrite the country and other fields from a half-loaded object.
+ *
+ * @param  int $socid Third party id
+ * @return bool
+ */
+function easyocrUpgradeToSupplier($socid)
+{
+	global $db;
+
+	require_once DOL_DOCUMENT_ROOT . '/societe/class/societe.class.php';
+	$soc = new Societe($db);
+	if ($soc->fetch((int) $socid) <= 0) {
+		return false;
+	}
+	if ((int) $soc->fournisseur === 1) {
+		return true;
+	}
+
+	$code = $soc->code_fournisseur;
+	if (empty($code) || $code == '-1') {
+		$soc->get_codefournisseur();
+		$code = $soc->code_fournisseur;
+	}
+
+	$sql = "UPDATE " . MAIN_DB_PREFIX . "societe SET fournisseur = 1";
+	if (!empty($code) && $code != '-1') {
+		$sql .= ", code_fournisseur = '" . $db->escape($code) . "'";
+	}
+	$sql .= " WHERE rowid = " . ((int) $socid);
+
+	return (bool) $db->query($sql);
+}
+
+/**
+ * Store a tax id read from a document on a new third party, in the fields Dolibarr
+ * expects: the bare Spanish id in idprof1 (CIF/NIF) and the prefixed form in
+ * tva_intra. Storing the read form as-is ("ESB33788506" in the CIF field) is what
+ * made the next lookup miss the supplier and create it again.
+ *
+ * @param  Societe $soc     Third party being created
+ * @param  string  $taxId   Tax id as read
+ * @param  bool    $invalid         True when the id failed its control character check
+ * @param  string  $supplierCountry Country read for the supplier: a bare number of a
+ *                                  supplier that is not Spanish never gets the ES prefix
+ * @return void
+ */
+function easyocrApplyTaxIdToSociete($soc, $taxId, $invalid = false, $supplierCountry = '')
+{
+	$p = easyocrSplitTaxId($taxId);
+	if ($p['normalized'] === '') {
+		return;
+	}
+
+	// A misread id is kept as read so whoever reviews it sees what the OCR saw
+	if ($invalid) {
+		$soc->idprof1 = $p['bare'];
+		return;
+	}
+
+	$foreignSupplier = trim((string) $supplierCountry) !== '' && !easyocrIsSpainCountry($supplierCountry);
+	$isSpanish = ($p['country'] === 'ES')
+		|| ($p['country'] === '' && !$foreignSupplier && easyocrSpanishTaxIdType($p['bare']) !== '');
+	if ($isSpanish) {
+		$soc->idprof1 = $p['bare'];
+		$soc->tva_intra = 'ES' . $p['bare'];
+		if (empty($soc->country_code)) {
+			$soc->country_code = 'ES';
+		}
+	} elseif ($p['country'] !== '') {
+		$soc->tva_intra = $p['normalized'];
+		if (empty($soc->country_code)) {
+			$soc->country_code = ($p['country'] === 'EL') ? 'GR' : $p['country'];
+		}
+	} else {
+		$soc->idprof1 = $p['normalized'];
+	}
+}
+
+/**
+ * Find the supplier of a document with nobody looking: the webhook path.
+ *
+ * Order: tax id under any of its forms, then the exact name (legal form ignored).
+ * It never guesses on a partial name. When several records qualify it takes the one
+ * whose name was read (or the oldest) and reports the ambiguity, unless the name
+ * singles out exactly one. A name match is discarded when the record carries a valid
+ * tax id that differs from a valid one read: another company with the same trade
+ * name (one CIF per store, for example). A misread id stored by an older version does
+ * not count as a different company.
+ *
+ * Anything found by name ('via' = 'name') is unconfirmed by the tax id: the caller
+ * reports it for review.
+ *
+ * @param  string $taxId           Tax id as read ('' when not read)
+ * @param  string $name            Supplier name as read
+ * @param  string $supplierCountry Supplier country as read
+ * @return array{fk_soc: int, via: string, tax_id_invalid: bool, candidates: int[], needs_upgrade: bool}
+ *         via: 'tax_id', 'name' or '' (nothing found: the caller may create it)
+ */
+function easyocrResolveSupplierForDocument($taxId, $name, $supplierCountry = '')
+{
+	global $db;
+
+	$ownCountry = easyocrOwnCountryCode();
+	$out = array(
+		'fk_soc'         => 0,
+		'via'            => '',
+		'tax_id_invalid' => easyocrTaxIdLooksInvalid($taxId, $supplierCountry, $ownCountry),
+		'candidates'     => array(),
+		'needs_upgrade'  => false,
+	);
+	$nameCore = easyocrSupplierNameCore($name);
+
+	// Among several records, prefer the one whose name is the one read, then the oldest.
+	// The ambiguity is only real when the name does not single out exactly one.
+	$choose = function ($rows) use ($nameCore, &$out) {
+		$byName = array();
+		foreach ($rows as $r) {
+			if ($nameCore !== '' && easyocrSupplierNameCore($r['name']) === $nameCore) {
+				$byName[] = $r;
+			}
+		}
+		$chosen = !empty($byName) ? $byName[0] : $rows[0];
+		if (count($rows) > 1 && count($byName) !== 1) {
+			$out['candidates'] = array_map(function ($r) {
+				return (int) $r['id'];
+			}, $rows);
+		}
+		return $chosen;
+	};
+
+	// 1) Tax id. A misread one is not searched: it would land on a duplicate created
+	//    from that same misreading instead of on the real supplier.
+	if (!$out['tax_id_invalid'] && trim((string) $taxId) !== '') {
+		$rows = easyocrFindThirdpartiesByTaxId($taxId);
+		if (!empty($rows)) {
+			$suppliers = array_values(array_filter($rows, function ($r) {
+				return $r['fournisseur'] === 1;
+			}));
+			$pool = !empty($suppliers) ? $suppliers : $rows;
+			$chosen = $choose($pool);
+			$out['fk_soc'] = (int) $chosen['id'];
+			$out['via'] = 'tax_id';
+			$out['needs_upgrade'] = empty($suppliers);
+			return $out;
+		}
+	}
+
+	// 2) Exact name, legal form ignored
+	if (trim((string) $name) === '') {
+		return $out;
+	}
+	$found = easyocrFindSuppliersByName($name, 50);
+	$exact = $found['exact'];
+
+	$readKey = ($out['tax_id_invalid'] || trim((string) $taxId) === '') ? '' : easyocrTaxIdKey($taxId);
+	if ($readKey !== '' && !empty($exact)) {
+		$ids = array_map(function ($c) {
+			return (int) $c['id'];
+		}, $exact);
+		// Only the tax id fields: the other professional ids hold activity codes and the like
+		$sql = "SELECT rowid, siren, tva_intra FROM " . MAIN_DB_PREFIX . "societe";
+		$sql .= " WHERE rowid IN (" . implode(',', $ids) . ")";
+		$resql = $db->query($sql);
+		$stored = array();
+		if ($resql) {
+			while ($obj = $db->fetch_object($resql)) {
+				$keys = array();
+				foreach (array('siren', 'tva_intra') as $col) {
+					$val = trim((string) $obj->{$col});
+					// A misread id saved by an older version proves nothing either way
+					if ($val !== '' && !easyocrTaxIdLooksInvalid($val, '', $ownCountry)) {
+						$keys[] = easyocrTaxIdKey($val);
+					}
+				}
+				$stored[(int) $obj->rowid] = $keys;
+			}
+			$db->free($resql);
+		}
+		// Same name, different valid tax id: another company
+		$exact = array_values(array_filter($exact, function ($c) use ($stored, $readKey) {
+			$keys = isset($stored[(int) $c['id']]) ? $stored[(int) $c['id']] : array();
+			return empty($keys) || in_array($readKey, $keys, true);
+		}));
+	}
+
+	if (!empty($exact)) {
+		usort($exact, function ($a, $b) {
+			return (int) $a['id'] - (int) $b['id'];
+		});
+		$chosen = $choose($exact);
+		$out['fk_soc'] = (int) $chosen['id'];
+		$out['via'] = 'name';
+	}
+
+	return $out;
+}
+
+/**
  * Create a supplier invoice from OCR-extracted data.
  * Shared function used by both AJAX (newInvoiceAI) and webhook processing.
  *
@@ -1250,8 +1865,12 @@ function easyocrLinkProcessedFileToInvoice($hash, $invoiceId)
  *   - payment_type_id   int    Payment type ID
  *   - file_tmp_path     string Temp path of uploaded PDF
  *   - file_name         string Original filename of PDF
+ *   - draft_on_review   bool   Keep the document as a draft when something needs review
+ *                              (misread tax id, several candidate suppliers, totals that
+ *                              do not add up). For unattended callers such as the webhook.
  * @param  User|null  $userObj  User object (null = auto-detect first admin)
- * @return array                Result: status, id, ref, document_type, supplier_created, supplier_name, is_draft, line_errors
+ * @return array                Result: status, id, ref, document_type, supplier_created, supplier_name, is_draft,
+ *                              line_errors, totals_warnings, header_warnings, review_codes, review_notes, forced_draft
  */
 function easyocrCreateInvoiceFromOCR($params, $userObj = null)
 {
@@ -1373,6 +1992,17 @@ function easyocrCreateInvoiceFromOCR($params, $userObj = null)
 	$supplier_created = false;
 	$supplier_created_name = '';
 
+	// Anything a person should look at before trusting the document. It goes into the
+	// private note and, when the caller asks for it (the unattended webhook), keeps the
+	// invoice as a draft so it is neither validated nor paid on a guess.
+	$draft_on_review = !empty($params['draft_on_review']);
+	$reviewCodes = array();
+	$reviewNotes = array();
+	$reviewAdd = function ($code, $note) use (&$reviewCodes, &$reviewNotes) {
+		$reviewCodes[] = $code;
+		$reviewNotes[] = $note;
+	};
+
 	dol_syslog('EasyOCR-CREATE: Params — fk_soc=' . $fk_soc . ', ref_supplier=' . $ref_supplier . ', supplier_name=' . $supplier_name . ', supplier_tax_id=' . $supplier_tax_id . ', datef=' . $datef_str . ', total_ht=' . $total_ht_str . ', total_ttc=' . $total_ttc_str . ', items=' . (is_array($items) ? count($items) : 'N/A'), LOG_INFO);
 
 	// ── Receiver-as-supplier guard ───────────────────────────────────────
@@ -1423,88 +2053,78 @@ function easyocrCreateInvoiceFromOCR($params, $userObj = null)
 	// When a batch sends multiple webhooks simultaneously, without this lock
 	// two requests could both (a) create the same supplier and/or (b) pass
 	// the duplicate invoice check before either commits.
-	$lockKey = '';
-	if (!empty($supplier_tax_id)) {
-		$lockKey = strtoupper(preg_replace('/[\s\-\.]/', '', trim($supplier_tax_id)));
-	} elseif (!empty($fk_soc)) {
-		$lockKey = 'soc_' . ((int) $fk_soc);
+	// Keys: the bare tax id, so "ESB123..." and "B123..." read by two parallel webhooks
+	// wait for each other; and, when nobody picked the supplier, also its name, so a
+	// correct id and a misread one of the same new supplier do too. Taken in a fixed
+	// order (name, then tax id) so two requests never hold them crosswise.
+	$lockKeys = array();
+	if (empty($fk_soc) && easyocrSupplierNameCore($supplier_name) !== '') {
+		$lockKeys[] = 'name_' . easyocrSupplierNameCore($supplier_name);
 	}
-	$lockName = 'eo_' . ($lockKey !== '' ? substr(md5($lockKey), 0, 30) : 'global');
+	if (!empty($supplier_tax_id) && easyocrTaxIdKey($supplier_tax_id) !== '') {
+		$lockKeys[] = 'tax_' . easyocrTaxIdKey($supplier_tax_id);
+	} elseif (!empty($fk_soc)) {
+		$lockKeys[] = 'soc_' . ((int) $fk_soc);
+	}
 	$lockTimeout = 30; // seconds
-	$lockAcquired = false;
-	if (!empty($lockKey)) {
-		$sqlLock = "SELECT GET_LOCK('" . $db->escape($lockName) . "', " . ((int) $lockTimeout) . ")";
-		$resLock = $db->query($sqlLock);
-		if ($resLock) {
-			$objLock = $db->fetch_array($resLock);
-			if (isset($objLock[0]) && $objLock[0] == 1) {
-				$lockAcquired = true;
-			}
-		}
-		if (!$lockAcquired) {
+	$heldLocks = array();
+	foreach ($lockKeys as $lockKey) {
+		$lockName = 'eo_' . substr(md5($lockKey), 0, 30);
+		$resLock = $db->query("SELECT GET_LOCK('" . $db->escape($lockName) . "', " . ((int) $lockTimeout) . ")");
+		$objLock = $resLock ? $db->fetch_array($resLock) : null;
+		if (isset($objLock[0]) && $objLock[0] == 1) {
+			$heldLocks[] = $lockName;
+		} else {
 			dol_syslog('EasyOCR-CREATE: WARNING — Could not acquire advisory lock "' . $lockName . '", proceeding without lock', LOG_WARNING);
 		}
 	}
+	$lockAcquired = !empty($heldLocks);
+	$releaseLocks = function () use ($db, &$heldLocks) {
+		foreach (array_reverse($heldLocks) as $held) {
+			$db->query("SELECT RELEASE_LOCK('" . $db->escape($held) . "')");
+		}
+		$heldLocks = array();
+	};
 
 	// ── Resolve supplier if fk_soc not provided ─────────────────────────
-	if (empty($fk_soc) && !empty($supplier_tax_id)) {
-		$cif_clean = preg_replace('/[\s\-\.]/', '', trim($supplier_tax_id));
+	// Nobody picked it (webhook, receipt): tax id under any of its forms, then the
+	// exact name. Only what is still unknown is created, and a misread tax id or a
+	// choice among several records is reported for review.
+	$supplierTaxIdInvalid = false;
+	if (empty($fk_soc) && ($supplier_tax_id !== '' || $supplier_name !== '')) {
+		$resolved = easyocrResolveSupplierForDocument($supplier_tax_id, $supplier_name, $supplier_country);
+		$supplierTaxIdInvalid = $resolved['tax_id_invalid'];
+		$cif_clean = easyocrNormalizeTaxId($supplier_tax_id);
 
-		// 1) Search as supplier (7-field search)
-		$sqlS = "SELECT s.rowid FROM " . MAIN_DB_PREFIX . "societe s";
-		$sqlS .= " WHERE s.fournisseur = 1 AND s.status = 1 AND s.entity IN (" . getEntity('societe') . ") AND (";
-		$sqlS .= " REPLACE(REPLACE(REPLACE(s.siren,' ',''),'-',''),'.','')='" . $db->escape($cif_clean) . "'";
-		$sqlS .= " OR REPLACE(REPLACE(REPLACE(s.siret,' ',''),'-',''),'.','')='" . $db->escape($cif_clean) . "'";
-		$sqlS .= " OR REPLACE(REPLACE(REPLACE(s.ape,' ',''),'-',''),'.','')='" . $db->escape($cif_clean) . "'";
-		$sqlS .= " OR REPLACE(REPLACE(REPLACE(s.idprof4,' ',''),'-',''),'.','')='" . $db->escape($cif_clean) . "'";
-		$sqlS .= " OR REPLACE(REPLACE(REPLACE(s.idprof5,' ',''),'-',''),'.','')='" . $db->escape($cif_clean) . "'";
-		$sqlS .= " OR REPLACE(REPLACE(REPLACE(s.idprof6,' ',''),'-',''),'.','')='" . $db->escape($cif_clean) . "'";
-		$sqlS .= " OR REPLACE(REPLACE(REPLACE(s.tva_intra,' ',''),'-',''),'.','')='" . $db->escape($cif_clean) . "'";
-		$sqlS .= ") LIMIT 1";
-		$resS = $db->query($sqlS);
-		if ($resS && $db->num_rows($resS) > 0) {
-			$fk_soc = $db->fetch_object($resS)->rowid;
-		}
-
-		// 2) Search as non-supplier (client) and upgrade to supplier
-		if (empty($fk_soc)) {
-			$sqlNS = "SELECT s.rowid FROM " . MAIN_DB_PREFIX . "societe s";
-			$sqlNS .= " WHERE s.status = 1 AND s.entity IN (" . getEntity('societe') . ") AND (";
-			$sqlNS .= " REPLACE(REPLACE(REPLACE(s.siren,' ',''),'-',''),'.','')='" . $db->escape($cif_clean) . "'";
-			$sqlNS .= " OR REPLACE(REPLACE(REPLACE(s.siret,' ',''),'-',''),'.','')='" . $db->escape($cif_clean) . "'";
-			$sqlNS .= " OR REPLACE(REPLACE(REPLACE(s.ape,' ',''),'-',''),'.','')='" . $db->escape($cif_clean) . "'";
-			$sqlNS .= " OR REPLACE(REPLACE(REPLACE(s.idprof4,' ',''),'-',''),'.','')='" . $db->escape($cif_clean) . "'";
-			$sqlNS .= " OR REPLACE(REPLACE(REPLACE(s.idprof5,' ',''),'-',''),'.','')='" . $db->escape($cif_clean) . "'";
-			$sqlNS .= " OR REPLACE(REPLACE(REPLACE(s.idprof6,' ',''),'-',''),'.','')='" . $db->escape($cif_clean) . "'";
-			$sqlNS .= " OR REPLACE(REPLACE(REPLACE(s.tva_intra,' ',''),'-',''),'.','')='" . $db->escape($cif_clean) . "'";
-			$sqlNS .= ") LIMIT 1";
-			$resNS = $db->query($sqlNS);
-			if ($resNS && $db->num_rows($resNS) > 0) {
-				$objNS = $db->fetch_object($resNS);
-				$existingSoc = new Societe($db);
-				$existingSoc->fetch($objNS->rowid);
-
-				// Generate supplier code if needed
-				$newCodeFournisseur = $existingSoc->code_fournisseur;
-				if (empty($newCodeFournisseur) || $newCodeFournisseur == '-1') {
-					$existingSoc->get_codefournisseur();
-					$newCodeFournisseur = $existingSoc->code_fournisseur;
+		if ($resolved['fk_soc'] > 0) {
+			$fk_soc = (int) $resolved['fk_soc'];
+			if ($resolved['needs_upgrade']) {
+				easyocrUpgradeToSupplier($fk_soc);
+			}
+			if (count($resolved['candidates']) > 1) {
+				$candidateList = implode(', ', $resolved['candidates']);
+				if ($resolved['via'] === 'tax_id') {
+					$reviewAdd('supplier_ambiguous_tax_id', is_object($langs) ? $langs->transnoentities('EasyOcrReviewSupplierAmbiguousTaxId', $supplier_tax_id, $candidateList, $fk_soc) : 'Several third parties share the tax id ' . $supplier_tax_id . ' (ids ' . $candidateList . '); used ' . $fk_soc . '.');
+				} else {
+					$reviewAdd('supplier_ambiguous_name', is_object($langs) ? $langs->transnoentities('EasyOcrReviewSupplierAmbiguousName', $supplier_name, $candidateList, $fk_soc) : 'Several suppliers are named ' . $supplier_name . ' (ids ' . $candidateList . '); used ' . $fk_soc . '.');
 				}
-
-				// Update only fournisseur flag and code (preserves country etc.)
-				$sqlUpgrade = "UPDATE " . MAIN_DB_PREFIX . "societe SET fournisseur = 1";
-				if (!empty($newCodeFournisseur) && $newCodeFournisseur != '-1') {
-					$sqlUpgrade .= ", code_fournisseur = '" . $db->escape($newCodeFournisseur) . "'";
+			}
+			if ($supplierTaxIdInvalid) {
+				$reviewAdd('tax_id_invalid', is_object($langs) ? $langs->transnoentities('EasyOcrReviewTaxIdInvalid', $supplier_tax_id) : 'The tax id read (' . $supplier_tax_id . ') is not valid: the supplier was found by its name.');
+			} elseif ($resolved['via'] === 'name') {
+				// Found by name and not confirmed by the tax id: a namesake (another legal
+				// form, another branch) is possible, so a person confirms it once
+				if ($supplier_tax_id !== '') {
+					$reviewAdd('supplier_by_name', is_object($langs) ? $langs->transnoentities('EasyOcrReviewSupplierByName', $supplier_name, $supplier_tax_id) : 'The supplier was found by its name (' . $supplier_name . '), not by the tax id ' . $supplier_tax_id . ', which it does not have: check it is the same company and add the tax id to it.');
+				} else {
+					$reviewAdd('supplier_by_name_only', is_object($langs) ? $langs->transnoentities('EasyOcrReviewSupplierByNameOnly', $supplier_name) : 'No tax id was read: the supplier was found only by its name (' . $supplier_name . '). Check it is the right one.');
 				}
-				$sqlUpgrade .= " WHERE rowid = " . ((int) $objNS->rowid);
-				$db->query($sqlUpgrade);
-
-				$fk_soc = $existingSoc->id;
 			}
 		}
+		dol_syslog('EasyOCR-CREATE: supplier lookup — fk_soc=' . $fk_soc . ', via=' . ($resolved['via'] ?: 'none') . ', tax_id_invalid=' . ($supplierTaxIdInvalid ? 'YES' : 'NO') . ', candidates=' . implode(',', $resolved['candidates']), LOG_INFO);
 
-		// 3) Create new supplier
-		if (empty($fk_soc) && !empty($supplier_name)) {
+		// 3) Create new supplier (only with a tax id, as before: a name alone is not an identity)
+		if (empty($fk_soc) && !empty($supplier_name) && $supplier_tax_id !== '') {
 			// Pre-analyze items to detect localtax (RE/IRPF) requirements
 			$has_recargo = false;
 			$has_irpf = false;
@@ -1533,13 +2153,7 @@ function easyocrCreateInvoiceFromOCR($params, $userObj = null)
 			$newSoc->client      = 0;
 			$newSoc->fournisseur = 1;
 			$newSoc->status      = 1;
-			$newSoc->idprof1     = $supplier_tax_id;
-
-			$cifUpper = strtoupper($cif_clean);
-			if (preg_match('/^[A-Z]{2}/', $cifUpper)) {
-				$newSoc->tva_intra    = $supplier_tax_id;
-				$newSoc->country_code = substr($cifUpper, 0, 2);
-			}
+			easyocrApplyTaxIdToSociete($newSoc, $supplier_tax_id, $supplierTaxIdInvalid, $supplier_country);
 
 			if (!empty($supplier_address)) $newSoc->address = $supplier_address;
 			if (!empty($supplier_city))    $newSoc->town    = $supplier_city;
@@ -1576,6 +2190,9 @@ function easyocrCreateInvoiceFromOCR($params, $userObj = null)
 				$fk_soc = $createdId;
 				$supplier_created = true;
 				$supplier_created_name = $newSoc->name;
+				if ($supplierTaxIdInvalid) {
+					$reviewAdd('tax_id_invalid_created', is_object($langs) ? $langs->transnoentities('EasyOcrReviewTaxIdInvalidCreated', $supplier_tax_id) : 'The tax id read (' . $supplier_tax_id . ') is not valid and no supplier has that name: a new one was created. Check its tax id.');
+				}
 			} else {
 				$errorDetails = [];
 				$errorDetails[] = "Main error: " . ($newSoc->error ?: 'Unknown error');
@@ -1587,7 +2204,7 @@ function easyocrCreateInvoiceFromOCR($params, $userObj = null)
 				if (!empty($db->lasterror())) {
 					$errorDetails[] = "DB: " . $db->lasterror();
 				}
-				if ($lockAcquired) $db->query("SELECT RELEASE_LOCK('" . $db->escape($lockName) . "')");
+				$releaseLocks();
 				return ['status' => 'error', 'message' => 'Error creating supplier. ' . implode(' | ', $errorDetails)];
 			}
 		}
@@ -1597,7 +2214,7 @@ function easyocrCreateInvoiceFromOCR($params, $userObj = null)
 	if (empty($fk_soc)) {
 		$msg = is_object($langs) ? $langs->trans('EasyOcrAISupplierRequired') : 'Supplier required';
 		dol_syslog('EasyOCR-CREATE: ERROR — No supplier resolved. tax_id=' . $supplier_tax_id . ', name=' . $supplier_name, LOG_ERR);
-		if ($lockAcquired) $db->query("SELECT RELEASE_LOCK('" . $db->escape($lockName) . "')");
+		$releaseLocks();
 		return ['status' => 'error', 'message' => $msg];
 	}
 	dol_syslog('EasyOCR-CREATE: Supplier resolved — fk_soc=' . $fk_soc . ', created=' . ($supplier_created ? 'YES' : 'NO'), LOG_INFO);
@@ -1620,7 +2237,7 @@ function easyocrCreateInvoiceFromOCR($params, $userObj = null)
 			$existingObj = $db->fetch_object($resql_check);
 			$msg = is_object($langs) ? $langs->trans('EasyOcrDuplicateRefSupplier', $ref_supplier, $existingObj->ref) : 'Duplicate ref_supplier: ' . $ref_supplier . ' (existing: ' . $existingObj->ref . ')';
 			dol_syslog('EasyOCR-CREATE: DUPLICATE ref_supplier=' . $ref_supplier . ' for fk_soc=' . $fk_soc . ' => existing id=' . $existingObj->rowid . ' ref=' . $existingObj->ref, LOG_WARNING);
-			if ($lockAcquired) $db->query("SELECT RELEASE_LOCK('" . $db->escape($lockName) . "')");
+			$releaseLocks();
 			return [
 				'status' => 'repeat',
 				'message' => $msg,
@@ -1648,7 +2265,7 @@ function easyocrCreateInvoiceFromOCR($params, $userObj = null)
 			$existingObj2 = $db->fetch_object($resql_dup2);
 			$msg = is_object($langs) ? $langs->trans('EasyOcrDuplicateAmountDate', $existingObj2->ref) : 'Probable duplicate (same supplier + amount + date): ' . $existingObj2->ref;
 			dol_syslog('EasyOCR-CREATE: PROBABLE DUPLICATE by amount+date — fk_soc=' . $fk_soc . ', total_ttc=' . $total_ttc . ', datef=' . $datef_str . ' => existing id=' . $existingObj2->rowid, LOG_WARNING);
-			if ($lockAcquired) $db->query("SELECT RELEASE_LOCK('" . $db->escape($lockName) . "')");
+			$releaseLocks();
 			return [
 				'status' => 'repeat',
 				'message' => $msg,
@@ -1707,7 +2324,7 @@ function easyocrCreateInvoiceFromOCR($params, $userObj = null)
 				$existingProposal = $db->fetch_object($resql_dup_p);
 				$msg = is_object($langs) ? $langs->trans('EasyOcrDuplicateRefSupplier', $ref_supplier, $existingProposal->ref) : 'Duplicate ref_supplier: ' . $ref_supplier . ' (existing: ' . $existingProposal->ref . ')';
 				dol_syslog('EasyOCR-CREATE: DUPLICATE proposal ref_ext=' . $ref_supplier . ' for fk_soc=' . $fk_soc . ' => existing id=' . $existingProposal->rowid, LOG_WARNING);
-				if ($lockAcquired) $db->query("SELECT RELEASE_LOCK('" . $db->escape($lockName) . "')");
+				$releaseLocks();
 				return [
 					'status' => 'repeat',
 					'message' => $msg,
@@ -1727,6 +2344,22 @@ function easyocrCreateInvoiceFromOCR($params, $userObj = null)
 		$items,
 		array('total_ht' => $total_ht, 'total_tva' => $total_tva)
 	);
+	foreach ($totalsWarnings as $tw) {
+		$reviewAdd('lines_mismatch', is_object($langs) ? $langs->transnoentities('EasyOcrTotalsMismatchNote', $tw['field'], price($tw['computed']), price($tw['expected'])) : 'Mismatch on ' . $tw['field'] . ': lines ' . $tw['computed'] . ', document ' . $tw['expected']);
+	}
+	// The raw VAT string, not $total_tva: that one falls back to total - base when the
+	// VAT was not read, which would make the check pass by construction.
+	$headerWarnings = easyocrCheckHeaderTotals(array(
+		'total_ht'        => $total_ht_str,
+		'total_tva'       => $total_tva_str,
+		'total_ttc'       => $total_ttc_str,
+		'total_localtax1' => $total_localtax1,
+		'total_localtax2' => $total_localtax2,
+	));
+	foreach ($headerWarnings as $hw) {
+		$reviewAdd('header_mismatch', is_object($langs) ? $langs->transnoentities('EasyOcrReviewHeaderTotals', price($hw['computed']), price($hw['expected'])) : 'Base + taxes (' . $hw['computed'] . ') does not match the document total (' . $hw['expected'] . ').');
+		dol_syslog('EasyOCR-CREATE: HEADER TOTALS MISMATCH — base+taxes=' . $hw['computed'] . ', total=' . $hw['expected'], LOG_WARNING);
+	}
 
 	// ── Create invoice / supplier proposal ───────────────────────────────
 	if ($is_proposal) {
@@ -1762,8 +2395,9 @@ function easyocrCreateInvoiceFromOCR($params, $userObj = null)
 		if ($validUntil !== '') {
 			$noteLines[] = $langs->trans('EasyOcrProposalValidUntil', $validUntil);
 		}
-		foreach ($totalsWarnings as $tw) {
-			$noteLines[] = $langs->trans('EasyOcrTotalsMismatchNote', $tw['field'], price($tw['computed']), price($tw['expected']));
+		// The review list already carries the line/total mismatches
+		foreach ($reviewNotes as $rn) {
+			$noteLines[] = $rn;
 		}
 		$facture->note_private = (!empty($notes) ? $notes . "\n" : '') . implode("\n", $noteLines);
 	} else {
@@ -1778,8 +2412,15 @@ function easyocrCreateInvoiceFromOCR($params, $userObj = null)
 		if ($supplier_payment_cond > 0) {
 			$facture->cond_reglement_id = $supplier_payment_cond;
 		}
+		$noteParts = array();
 		if (!empty($notes)) {
-			$facture->note_private = $notes;
+			$noteParts[] = $notes;
+		}
+		if (!empty($reviewNotes)) {
+			$noteParts[] = (is_object($langs) ? $langs->transnoentities('EasyOcrReviewHeader') : 'EasyOCR — to review:') . "\n- " . implode("\n- ", $reviewNotes);
+		}
+		if (!empty($noteParts)) {
+			$facture->note_private = implode("\n\n", $noteParts);
 		}
 		if (!empty($date_echeance_str)) {
 			$date_ech = easyocrParseDate($date_echeance_str);
@@ -1797,7 +2438,7 @@ function easyocrCreateInvoiceFromOCR($params, $userObj = null)
 	if ($newId <= 0) {
 		$msg = is_object($langs) ? $langs->trans($is_proposal ? 'EasyOcrErrorCreatingProposal' : 'EasyOcrErrorCreatingInvoice') : 'Error creating document';
 		dol_syslog('EasyOCR-CREATE: ERROR creating document: ' . $facture->error . ' | errors: ' . implode(', ', $facture->errors ?? []), LOG_ERR);
-		if ($lockAcquired) $db->query("SELECT RELEASE_LOCK('" . $db->escape($lockName) . "')");
+		$releaseLocks();
 		return ['status' => 'error', 'message' => $msg . ': ' . $facture->error];
 	}
 	dol_syslog('EasyOCR-CREATE: Document created OK — id=' . $newId, LOG_INFO);
@@ -2021,6 +2662,13 @@ function easyocrCreateInvoiceFromOCR($params, $userObj = null)
 	if (empty($invoice_status)) {
 		$invoice_status = !empty($conf->global->EASYOCR_INVOICE_DRAFT) ? 'draft' : 'validated';
 	}
+	// Unattended and something to review: never validate (or pay) on a guess
+	$forcedDraft = false;
+	if (easyocrShouldForceDraft($draft_on_review, $reviewCodes, $invoice_status)) {
+		$invoice_status = 'draft';
+		$forcedDraft = true;
+		dol_syslog('EasyOCR-CREATE: kept as DRAFT for review — ' . implode(',', array_unique($reviewCodes)), LOG_WARNING);
+	}
 	dol_syslog('EasyOCR-CREATE: Document status target=' . $invoice_status . ', EASYOCR_INVOICE_DRAFT=' . ($conf->global->EASYOCR_INVOICE_DRAFT ?? 'NOT_SET'), LOG_INFO);
 	if ($invoice_status !== 'draft') {
 		// A supplier proposal is validated with valid(), not with validate()
@@ -2032,7 +2680,7 @@ function easyocrCreateInvoiceFromOCR($params, $userObj = null)
 				$errMsg .= ' | Line errors: ' . implode('; ', $lineErrors);
 			}
 			dol_syslog('EasyOCR-CREATE: ERROR validating: ' . $errMsg, LOG_ERR);
-			if ($lockAcquired) $db->query("SELECT RELEASE_LOCK('" . $db->escape($lockName) . "')");
+			$releaseLocks();
 			return ['status' => 'error', 'message' => $errMsg];
 		}
 		$facture->fetch($newId);
@@ -2113,7 +2761,7 @@ function easyocrCreateInvoiceFromOCR($params, $userObj = null)
 	}
 
 	// ── Release advisory lock ────────────────────────────────────────────
-	if ($lockAcquired) $db->query("SELECT RELEASE_LOCK('" . $db->escape($lockName) . "')");
+	$releaseLocks();
 
 	// ── Totals consistency ───────────────────────────────────────────────
 	// On an invoice the document totals are forced by SQL, so a misread line stays
@@ -2136,6 +2784,10 @@ function easyocrCreateInvoiceFromOCR($params, $userObj = null)
 		'is_draft'         => ($invoice_status === 'draft'),
 		'line_errors'      => $lineErrors,
 		'totals_warnings'  => $totalsWarnings,
+		'header_warnings'  => $headerWarnings,
+		'review_codes'     => array_values(array_unique($reviewCodes)),
+		'review_notes'     => $reviewNotes,
+		'forced_draft'     => $forcedDraft,
 		// Aliases for webhook compatibility
 		'invoice_id'       => $newId,
 		'invoice_ref'      => $ref,

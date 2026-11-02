@@ -616,37 +616,17 @@ if ($action == "createSupplierInvoice") {
 		exit;
 	}
 
-	// Clean the CIF - remove spaces, dashes
-	$cif_clean = preg_replace('/[\s\-\.]/', '', trim($cif));
-
-	// Search ALL suppliers with this CIF (no LIMIT) - support multiple suppliers with same tax ID
-	$sql = "SELECT s.rowid, s.nom FROM " . MAIN_DB_PREFIX . "societe s";
-	$sql .= " WHERE s.fournisseur = 1";
-	$sql .= " AND s.status = 1";
-	$sql .= " AND s.entity IN (" . getEntity('societe') . ")";
-	$sql .= " AND (";
-	$sql .= " REPLACE(REPLACE(REPLACE(s.siren, ' ', ''), '-', ''), '.', '') = '" . $db->escape($cif_clean) . "'";
-	$sql .= " OR REPLACE(REPLACE(REPLACE(s.siret, ' ', ''), '-', ''), '.', '') = '" . $db->escape($cif_clean) . "'";
-	$sql .= " OR REPLACE(REPLACE(REPLACE(s.ape, ' ', ''), '-', ''), '.', '') = '" . $db->escape($cif_clean) . "'";
-	$sql .= " OR REPLACE(REPLACE(REPLACE(s.idprof4, ' ', ''), '-', ''), '.', '') = '" . $db->escape($cif_clean) . "'";
-	$sql .= " OR REPLACE(REPLACE(REPLACE(s.idprof5, ' ', ''), '-', ''), '.', '') = '" . $db->escape($cif_clean) . "'";
-	$sql .= " OR REPLACE(REPLACE(REPLACE(s.idprof6, ' ', ''), '-', ''), '.', '') = '" . $db->escape($cif_clean) . "'";
-	$sql .= " OR REPLACE(REPLACE(REPLACE(s.tva_intra, ' ', ''), '-', ''), '.', '') = '" . $db->escape($cif_clean) . "'";
-	$sql .= ")";
-	$sql .= " ORDER BY s.nom";
-
-	$resql = $db->query($sql);
-	$supplierCount = $resql ? $db->num_rows($resql) : 0;
-
-	if ($supplierCount > 0) {
-		$suppliers = array();
-		while ($obj = $db->fetch_object($resql)) {
-			$suppliers[] = array(
-				"id" => $obj->rowid,
-				"name" => $obj->nom
-			);
+	// Same lookup as the webhook: the tax id matches under any of its stored forms
+	// ("ESB12345678" finds a supplier stored as "B12345678" and the other way round).
+	$taxRows = easyocrFindThirdpartiesByTaxId($cif);
+	$suppliers = array();
+	foreach ($taxRows as $row) {
+		if ($row['fournisseur'] === 1) {
+			$suppliers[] = array("id" => $row['id'], "name" => $row['name']);
 		}
+	}
 
+	if (count($suppliers) > 0) {
 		// Return array of suppliers if multiple found, or single supplier data for backwards compatibility
 		if (count($suppliers) > 1) {
 			print json_encode([
@@ -666,43 +646,15 @@ if ($action == "createSupplierInvoice") {
 			]);
 		}
 	} else {
-		// Search also non-suppliers â€” maybe exists as client, upgrade to supplier
-		$sql2 = "SELECT s.rowid, s.nom FROM " . MAIN_DB_PREFIX . "societe s";
-		$sql2 .= " WHERE s.status = 1";
-		$sql2 .= " AND s.entity IN (" . getEntity('societe') . ")";
-		$sql2 .= " AND (";
-		$sql2 .= " REPLACE(REPLACE(REPLACE(s.siren, ' ', ''), '-', ''), '.', '') = '" . $db->escape($cif_clean) . "'";
-		$sql2 .= " OR REPLACE(REPLACE(REPLACE(s.siret, ' ', ''), '-', ''), '.', '') = '" . $db->escape($cif_clean) . "'";
-		$sql2 .= " OR REPLACE(REPLACE(REPLACE(s.ape, ' ', ''), '-', ''), '.', '') = '" . $db->escape($cif_clean) . "'";
-		$sql2 .= " OR REPLACE(REPLACE(REPLACE(s.idprof4, ' ', ''), '-', ''), '.', '') = '" . $db->escape($cif_clean) . "'";
-		$sql2 .= " OR REPLACE(REPLACE(REPLACE(s.idprof5, ' ', ''), '-', ''), '.', '') = '" . $db->escape($cif_clean) . "'";
-		$sql2 .= " OR REPLACE(REPLACE(REPLACE(s.idprof6, ' ', ''), '-', ''), '.', '') = '" . $db->escape($cif_clean) . "'";
-		$sql2 .= " OR REPLACE(REPLACE(REPLACE(s.tva_intra, ' ', ''), '-', ''), '.', '') = '" . $db->escape($cif_clean) . "'";
-		$sql2 .= ") LIMIT 1";
+		if (!empty($taxRows) && GETPOST('readonly', 'int')) {
+			// A plain lookup (the batch list): a customer with this tax id is not a supplier
+			print json_encode(["status" => "not_found"]);
+		} elseif (!empty($taxRows)) {
+			// Exists as non-supplier: upgrade the oldest one to supplier
+			$first = $taxRows[0];
+			easyocrUpgradeToSupplier($first['id']);
 
-		$resql2 = $db->query($sql2);
-		if ($resql2 && $db->num_rows($resql2) > 0) {
-			// Exists as non-supplier â€” upgrade to supplier
-			$obj2 = $db->fetch_object($resql2);
-			$existingSoc = new Societe($db);
-			$existingSoc->fetch($obj2->rowid);
-
-			// Generate supplier code if needed
-			$newCodeFournisseur = $existingSoc->code_fournisseur;
-			if (empty($newCodeFournisseur) || $newCodeFournisseur == '-1') {
-				$existingSoc->get_codefournisseur();
-				$newCodeFournisseur = $existingSoc->code_fournisseur;
-			}
-
-			// Update only fournisseur flag and code using SQL (preserves country and other fields)
-			$sqlUpgrade = "UPDATE " . MAIN_DB_PREFIX . "societe SET fournisseur = 1";
-			if (!empty($newCodeFournisseur) && $newCodeFournisseur != '-1') {
-				$sqlUpgrade .= ", code_fournisseur = '" . $db->escape($newCodeFournisseur) . "'";
-			}
-			$sqlUpgrade .= " WHERE rowid = " . ((int) $obj2->rowid);
-			$db->query($sqlUpgrade);
-
-			print json_encode(["status" => "ok", "fk_soc" => $existingSoc->id, "name" => $existingSoc->nom, "created" => false, "upgraded" => true]);
+			print json_encode(["status" => "ok", "fk_soc" => $first['id'], "name" => $first['name'], "created" => false, "upgraded" => true]);
 		} else {
 			// Not found at all â€” auto-create if requested
 			$autoCreate = GETPOST('auto_create', 'alpha');
@@ -726,16 +678,11 @@ if ($action == "createSupplierInvoice") {
 				$newSoc->fournisseur = 1;
 				$newSoc->status      = 1; // Active
 
-				// Set CIF/NIF â€” try to identify type
-				$cifUpper = strtoupper($cif_clean);
-				// VAT number (starts with country code)
-				if (preg_match('/^[A-Z]{2}/', $cifUpper)) {
-					$newSoc->tva_intra = $cif;
-					$newSoc->country_code = substr($cifUpper, 0, 2);
-				}
-				// Store in idprof1 (maps to DB column 'siren' - CIF/NIF in Spain, SIREN in France)
-				// Note: Societe::create() reads from idprof1, NOT from the legacy alias 'siren'
-				$newSoc->idprof1 = $cif;
+				// CIF/NIF in idprof1 without the country prefix and the prefixed VAT form in
+				// tva_intra, the same as the webhook, so the next lookup finds it whatever
+				// form the next invoice prints. Societe::create() reads idprof1, not 'siren'.
+				$ownCountryCode = easyocrOwnCountryCode(); // $mysoc is not loaded here (NOREQUIRESOC)
+				easyocrApplyTaxIdToSociete($newSoc, $cif, easyocrTaxIdLooksInvalid($cif, $supplierCountry, $ownCountryCode), $supplierCountry);
 
 				if (!empty($supplierAddress)) $newSoc->address = $supplierAddress;
 				if (!empty($supplierCity))    $newSoc->town    = $supplierCity;

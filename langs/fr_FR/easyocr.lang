@@ -893,3 +893,13 @@ EasyOcrInboxErrEmpty = Le document est vide.
 EasyOcrInboxErrSize = Le document dépasse la taille maximale (%s Mo).
 EasyOcrInboxErrNotPdf = Le fichier n'est pas un PDF.
 EasyOcrInboxErrCopy = Le document n'a pas pu être copié dans la boîte de réception d'EasyOcr.
+
+# 2.8.2 - unattended review (webhook)
+EasyOcrReviewHeader = EasyOCR : à vérifier avant validation
+EasyOcrReviewSupplierAmbiguousTaxId = Plusieurs tiers ont le numéro fiscal %s (ids %s). Le %s a été utilisé : vérifiez que c'est le bon.
+EasyOcrReviewSupplierAmbiguousName = Plusieurs fournisseurs s'appellent %s (ids %s). Le %s a été utilisé : vérifiez que c'est le bon.
+EasyOcrReviewTaxIdInvalid = Le numéro fiscal lu (%s) n'est pas valide : le fournisseur a été recherché par son nom.
+EasyOcrReviewTaxIdInvalidCreated = Le numéro fiscal lu (%s) n'est pas valide et aucun fournisseur ne porte ce nom : un nouveau a été créé. Vérifiez son numéro fiscal.
+EasyOcrReviewHeaderTotals = La base plus les taxes (%s) ne correspond pas au total du document (%s).
+EasyOcrReviewSupplierByName = Le fournisseur a été trouvé par son nom (%s) et non par le numéro fiscal %s, qu'il n'a pas : vérifiez que c'est la même entreprise et ajoutez-lui ce numéro.
+EasyOcrReviewSupplierByNameOnly = Aucun numéro fiscal lu : le fournisseur a été trouvé seulement par son nom (%s). Vérifiez que c'est le bon.

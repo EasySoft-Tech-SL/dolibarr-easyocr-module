@@ -5,6 +5,26 @@ Todos los cambios notables de EasyOcr se documentarán en este archivo.
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/),
 y este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 
+## [2.8.2] - 2026-11-02
+
+### Corregido — los lotes creaban proveedores duplicados
+
+Afecta a las facturas que llegan por lotes, desde la pantalla **Envío por lotes** o desde la API. Esas facturas se crean solas, sin que nadie las revise. Al subirlas una a una en el visor no pasaba, porque ahí se busca también por el nombre y eliges tú el proveedor.
+
+- **El CIF/NIF ya casa aunque lleve el prefijo de país.** Si la factura traía `ESB12345678` y el proveedor estaba guardado como `B12345678`, no se encontraba y se daba de alta otro. Ahora da igual en qué lado esté el `ES`, y también se ignoran espacios, guiones, puntos, barras y una etiqueta pegada al número (`CIF: B12345678`). Un DNI impreso sin el cero inicial también casa.
+- **Si no lo encuentra por el CIF/NIF, lo busca por el nombre** antes de crear nada. El nombre tiene que ser el mismo, sin contar la forma jurídica (`S.L.`, `S.A.U.`, `GmbH`…). No se usan coincidencias parciales. Si hay un proveedor con ese nombre pero con otro CIF/NIF válido, se trata como otra empresa. Cuando el proveedor se encuentra por el nombre y no por el CIF/NIF, la factura queda para revisar: podría ser otra empresa con un nombre parecido.
+- **Un CIF/NIF mal leído ya no da de alta un proveedor.** Los CIF, NIF y NIE españoles llevan un dígito o letra de control. Si el leído no la cumple (un `5` leído como `S`, o un dígito de menos), no se usa para buscar: el proveedor se busca por el nombre y la factura queda para revisar.
+- **Con varios terceros que comparten CIF/NIF ya no se elige a ciegas.** Se usa el que tiene el nombre leído. Si el nombre no deja uno solo, se usa el más antiguo y la factura queda para revisar con la lista de candidatos.
+- **Los totales que no cuadran ya no se validan.** Si la base más los impuestos no da el total, o las líneas no suman la base, la factura entra en **borrador**. Al cuadrar se tienen en cuenta el recargo de equivalencia y la retención de IRPF, que el lote ahora lee bien de lo que manda el servicio. El IGIC cuenta como el IVA.
+- Cuando algo queda para revisar, la factura se crea en **borrador**, aunque tengas configurado validarlas, y no se marca como pagada. En la nota privada aparece el motivo, y también en **Logs de Webhook**.
+- Los proveedores nuevos guardan el CIF/NIF sin prefijo en su campo y el número con `ES` en el de IVA intracomunitario. Así, la siguiente factura los encuentra la traiga como la traiga. En el visor, el alta automática también lo guarda así.
+- En **Envío por lotes**, el aviso de «esta factura ya existe» no filtraba por proveedor: la pantalla esperaba una respuesta que el servidor nunca daba, así que comparaba el número de factura con las de todos los proveedores. Ahora compara solo con las del proveedor del documento, si hay uno solo con ese CIF/NIF; si hay varios, con todas. Esa consulta, además, ya no convierte en proveedor a un cliente que tenga ese CIF/NIF.
+
+### Notas de actualización
+
+- No necesita reactivar el módulo.
+- Los proveedores duplicados de antes siguen ahí: fusiónalos con el botón **Fusión** (Fusionar terceros) de la ficha del tercero, que solo ven los usuarios con permiso para borrar terceros. Mientras haya dos con el mismo CIF/NIF y el nombre de la factura no deje claro cuál es, sus facturas por lote quedarán en borrador para revisar.
+
 ## [2.8.1] - 2026-11-01
 
 ### Corregido — se registraban facturas dirigidas a otra empresa

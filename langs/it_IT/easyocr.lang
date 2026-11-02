@@ -873,3 +873,13 @@ EasyOcrInboxErrEmpty = Il documento è vuoto.
 EasyOcrInboxErrSize = Il documento supera la dimensione massima (%s MB).
 EasyOcrInboxErrNotPdf = Il file non è un PDF.
 EasyOcrInboxErrCopy = Impossibile copiare il documento nella casella di EasyOcr.
+
+# 2.8.2 - unattended review (webhook)
+EasyOcrReviewHeader = EasyOCR: da verificare prima della convalida
+EasyOcrReviewSupplierAmbiguousTaxId = Più soggetti hanno il codice fiscale %s (id %s). È stato usato il %s: verifica che sia quello giusto.
+EasyOcrReviewSupplierAmbiguousName = Più fornitori si chiamano %s (id %s). È stato usato il %s: verifica che sia quello giusto.
+EasyOcrReviewTaxIdInvalid = Il codice fiscale letto (%s) non è valido, quindi il fornitore è stato cercato per nome.
+EasyOcrReviewTaxIdInvalidCreated = Il codice fiscale letto (%s) non è valido e nessun fornitore ha quel nome: ne è stato creato uno nuovo. Controlla il suo codice fiscale.
+EasyOcrReviewHeaderTotals = Imponibile più imposte (%s) non corrisponde al totale del documento (%s).
+EasyOcrReviewSupplierByName = Il fornitore è stato trovato per nome (%s) e non per il codice fiscale %s, che non ha salvato: verifica che sia la stessa azienda e aggiungi il codice.
+EasyOcrReviewSupplierByNameOnly = Nessun codice fiscale letto: il fornitore è stato trovato solo per nome (%s). Verifica che sia quello giusto.

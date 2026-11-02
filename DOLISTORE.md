@@ -4,7 +4,7 @@
 
 | Campo | Valor |
 |-------|-------|
-| **Versión del módulo** | 2.8.1 |
+| **Versión del módulo** | 2.8.2 |
 | **Compatibilidad Min** | V16 (id 95) |
 | **Compatibilidad Max** | V24 (id 120) |
 | **PHP Min** | 7.4 |
@@ -711,12 +711,12 @@ info@easysoft.es | https://www.easysoft.es | https://easyocr.es
 
 - [ ] Archivo .zip generado con estructura correcta (`easyocr/`)
 - [ ] Imagen de portada preparada (800x600 o 1200x630 px)
-- [x] README.md actualizado (v2.8.1)
-- [x] ChangeLog.md actualizado (v2.8.1)
-- [x] Versión en module descriptor coincide (2.8.1)
+- [x] README.md actualizado (v2.8.2)
+- [x] ChangeLog.md actualizado (v2.8.2)
+- [x] Versión en module descriptor coincide (2.8.2)
 - [x] Todos los archivos .lang completos en 8 idiomas
 - [x] Textos sin mención de licencia ni de «código abierto» (regla de discurso)
 - [ ] Sin archivos de desarrollo (.git, .vscode, etc.)
 - [x] Pestañas administrativas con iconos consistentes
 - [x] Contenido legal y GDPR completo (Copying, Telemetry)
-- [x] DOLISTORE.md actualizado a v2.8.1
+- [x] DOLISTORE.md actualizado a v2.8.2

@@ -1836,13 +1836,16 @@ if (!$fromMenu) {
         type: 'POST',
         data: {
           action: 'findSupplierByCIF',
+          readonly: 1, // only a lookup: never turn a customer into a supplier
           token: '<?php echo newToken(); ?>',
           cif: taxId
         },
         success: function(res) {
-          if (res && res.status === 'found') {
+          // The endpoint answers 'ok' (never 'found'): with 'found' the supplier filter was never applied
+          if (res && (res.status === 'ok' || res.status === 'found')) {
             // Use first supplier if multiple found
-            var supplierId = res.fk_soc || (res.suppliers && res.suppliers.length > 0 ? res.suppliers[0].id : null);
+            // Several suppliers share the tax id: do not filter, the invoice may be on any of them
+            var supplierId = res.fk_soc || null;
             if (supplierId) {
               ajaxData.fk_soc = supplierId;
             }
@@ -1969,12 +1972,13 @@ if (!$fromMenu) {
         type: 'POST',
         data: {
           action: 'findSupplierByCIF',
+          readonly: 1, // only a lookup: never turn a customer into a supplier
           token: '<?php echo newToken(); ?>',
           cif: taxId
         },
         dataType: 'json',
         success: function(res) {
-          var fkSoc = (res && res.status === 'found') ? (res.fk_soc || (res.suppliers && res.suppliers.length > 0 ? res.suppliers[0].id : null)) : null;
+          var fkSoc = (res && (res.status === 'ok' || res.status === 'found')) ? (res.fk_soc || null) : null; // several matches: no filter
           doCheck(fkSoc);
         },
         error: function() {

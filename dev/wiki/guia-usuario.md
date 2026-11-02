@@ -120,6 +120,18 @@ La extracción puede acabar en factura o en presupuesto de proveedor. Para los p
 2. El módulo los procesa en cola; puedes seguir el avance en **Historial de lotes**.
 3. Al terminar, revisa el resultado por documento.
 
+<!-- NUEVO v2.8.2 -->
+Las facturas de un lote se crean solas, sin pasar por el visor. Para el proveedor, EasyOcr busca primero el CIF/NIF, lleve o no el prefijo `ES`. Si no lo encuentra, busca un proveedor que se llame igual (sin contar `S.L.`, `S.A.` y similares). Solo si tampoco aparece, lo da de alta.
+
+La factura se queda en **borrador**, aunque tengas configurado validarlas, y no se marca como pagada, cuando:
+
+- el CIF/NIF leído no es válido (por ejemplo, un `5` leído como `S`);
+- el proveedor se ha encontrado por el nombre y no por el CIF/NIF;
+- hay varios terceros con ese CIF/NIF y el nombre no deja claro cuál es, o varios proveedores con ese nombre;
+- la base más los impuestos no da el total, o las líneas no suman la base.
+
+El motivo aparece en la nota privada de la factura y en **Logs de Webhook**. Revísala, corrígela si hace falta y valídala tú.
+
 <!-- NUEVO v2.8.0: apartado completo -->
 ### Documentos recibidos de otros módulos
 

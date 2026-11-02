@@ -26,7 +26,7 @@ Está disponible en **dos modos**: el **Modo Clásico**, completamente gratuito 
 
 - **Procesamiento en lotes**: sube hasta 200 facturas PDF de una sola vez y procésalas con un clic. Ideal para cierres de mes o altos volúmenes de proveedores.
 - **OCR por Inteligencia Artificial avanzada**: extrae automáticamente proveedor, NIF/CIF, dirección, fecha, número de factura, líneas de detalle, impuestos y totales con una precisión muy superior al OCR clásico.
-- **Automatización total vía webhook**: una vez procesado el PDF, Dolibarr recibe los datos automáticamente y crea la factura de proveedor validada. Cero intervención humana, cero errores de transcripción.
+- **Automatización total vía webhook**: una vez procesado el PDF, Dolibarr recibe los datos automáticamente y crea la factura de proveedor validada. Si algo no cuadra (un CIF/NIF mal leído, dos proveedores posibles o unos totales que no suman), la deja en borrador con el motivo en la nota.
 - **Alta automática de proveedores**: si el proveedor no existe en Dolibarr, el módulo lo crea con todos los datos fiscales extraídos del PDF.
 - **Instrucciones IA personalizadas por proveedor**: define reglas específicas para cada proveedor o plantilla (por ejemplo, "el IVA siempre es 21 %", "ignorar líneas de descuento", "la moneda es USD"). La IA las aplica en cada procesamiento.
 - **Auto-corrección inteligente**: el motor IA detecta y corrige automáticamente importes mal reconocidos, formatos de fecha inconsistentes y referencias duplicadas.

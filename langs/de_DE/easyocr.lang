@@ -878,3 +878,13 @@ EasyOcrInboxErrEmpty = Das Dokument ist leer.
 EasyOcrInboxErrSize = Das Dokument überschreitet die maximale Größe (%s MB).
 EasyOcrInboxErrNotPdf = Die Datei ist kein PDF.
 EasyOcrInboxErrCopy = Das Dokument konnte nicht in den EasyOcr-Eingang kopiert werden.
+
+# 2.8.2 - unattended review (webhook)
+EasyOcrReviewHeader = EasyOCR: vor der Freigabe prüfen
+EasyOcrReviewSupplierAmbiguousTaxId = Mehrere Geschäftspartner haben die Steuernummer %s (IDs %s). Verwendet wurde %s: bitte prüfen.
+EasyOcrReviewSupplierAmbiguousName = Mehrere Lieferanten heißen %s (IDs %s). Verwendet wurde %s: bitte prüfen.
+EasyOcrReviewTaxIdInvalid = Die gelesene Steuernummer (%s) ist ungültig, daher wurde der Lieferant über den Namen gesucht.
+EasyOcrReviewTaxIdInvalidCreated = Die gelesene Steuernummer (%s) ist ungültig und kein Lieferant hat diesen Namen: ein neuer wurde angelegt. Bitte seine Steuernummer prüfen.
+EasyOcrReviewHeaderTotals = Netto plus Steuern (%s) stimmt nicht mit dem Gesamtbetrag des Dokuments (%s) überein.
+EasyOcrReviewSupplierByName = Der Lieferant wurde über den Namen (%s) gefunden, nicht über die Steuernummer %s, die bei ihm fehlt: bitte prüfen, ob es dieselbe Firma ist, und die Steuernummer ergänzen.
+EasyOcrReviewSupplierByNameOnly = Keine Steuernummer gelesen: der Lieferant wurde nur über den Namen (%s) gefunden. Bitte prüfen.

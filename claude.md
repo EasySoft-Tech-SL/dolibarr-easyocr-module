@@ -2,7 +2,7 @@
 
 ## Información del módulo
 - **Nombre:** EasyOcr
-- **Versión:** 2.8.1
+- **Versión:** 2.8.2
 - **Número módulo:** 402020
 - **Empresa:** EasySoft Tech S.L. (info@easysoft.es)
 - **Autor:** Alberto Luque Rivas (aluquerivasdev@gmail.com)
@@ -115,6 +115,17 @@ easyocr_recibir_documento($rutaAbsoluta, $user, array $opciones = array())
 - Test: `php tests/easyocr_inbox_test.php` (base real, limpia por el prefijo `qa_easyscan_ocrq_`).
 
 ## Historial de cambios
+
+### v2.8.2 — Proveedores duplicados por lote (webhook)
+
+- `easyocrCreateInvoiceFromOCR()` sin `fk_soc` resuelve el proveedor con `easyocrResolveSupplierForDocument()`: NIF por cualquiera de sus formas (`easyocrTaxIdVariants()`, con o sin prefijo de país; SQL normalizado en `easyocrFindThirdpartiesByTaxId()`), y si no, nombre exacto sin forma jurídica (`easyocrSupplierNameCore()`), descartando el homónimo con otro NIF válido. Nunca casa por nombre parcial.
+- NIF español con control erróneo (`easyocrTaxIdLooksInvalid()`) → no se busca por él; si no hay proveedor por nombre, se crea guardando el NIF tal cual se leyó y sin `tva_intra`. Alta normal: `easyocrApplyTaxIdToSociete()` deja el NIF sin prefijo en `idprof1` y `ES…` en `tva_intra` (también el alta de `findSupplierByCIF` en la pantalla).
+- `draft_on_review` (solo lo manda `webhook_batch.php`): con algo que revisar (`review_codes`: `tax_id_invalid`, `tax_id_invalid_created`, `supplier_ambiguous_tax_id`, `supplier_ambiguous_name`, `supplier_by_name`, `supplier_by_name_only`, `lines_mismatch`, `header_mismatch`; decisión en `easyocrShouldForceDraft()`) la factura se queda en borrador y no se paga. Los motivos van siempre a `note_private`. `easyocrCheckHeaderTotals()` comprueba base+IVA+RE(−IRPF)=total.
+- `batch.php`: las dos llamadas a `findSupplierByCIF` comprobaban `status === 'found'`, que el endpoint nunca devuelve (`'ok'`): el filtro por `fk_soc` de `checkInvoiceExists` no se aplicaba nunca. Ahora aceptan `'ok'`, filtran solo con un único proveedor (con varios, sin filtro) y mandan `readonly=1`: `findSupplierByCIF` en modo lectura no asciende clientes a proveedor. El relleno de ceros del DNI es solo variante de búsqueda y clave de comparación (`easyocrTaxIdKey()`): el NIF leído nunca se reescribe (un VAT irlandés antiguo tiene la misma forma). `easyocrOwnCountryCode()`: país propio con `$mysoc` o, en el ajax (`NOREQUIRESOC`), de `MAIN_INFO_SOCIETE_COUNTRY`.
+- Candados `GET_LOCK` en orden fijo: `name_`+núcleo del nombre (si no hay `fk_soc`) y `tax_`+NIF sin prefijo; liberados con `$releaseLocks()`. Así `ESB…`, `B…` y un `BS…` mal leído del mismo proveedor nuevo no crean dos terceros. En MySQL <5.7 un segundo `GET_LOCK` suelta el primero (degrada a un candado).
+- `webhook_batch.php`: `total_localtax1/2` salen de `surcharge_total`/`withholding_total` (los campos reales del micro); antes leía `localtax1/2`, que no existen.
+- Revisión adversarial con subagente: 3 altos, 5 medios, 6 bajos; todos arreglados salvo L5 (un cliente pasa a proveedor aunque la factura salga `repeat`: inocuo).
+- Pruebas: `tests/easyocr_lib_test.php` (funciones puras) y `tests/easyocr_integration_test.php` grupo «unattended supplier resolution (webhook)», comprobadas rompiendo cada arreglo.
 
 ### v2.8.1 — Factura dirigida a otra empresa
 

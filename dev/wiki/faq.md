@@ -31,3 +31,7 @@ Se copian a la carpeta de documentos de tu propia instalación de Dolibarr, dent
 ## He subido una factura y dice que va dirigida a otra empresa. ¿Por qué?
 
 Desde la 2.8.1, EasyOcr compara el CIF del destinatario que aparece en el documento con el de tu empresa. Si no coinciden, la factura no se registra: un documento a nombre de otra empresa (por ejemplo, el seguro de un cliente que te han reenviado para revisar) no es una compra tuya. Si el CIF de tu empresa no está en **Inicio → Configuración → Empresa/Organización**, o el documento no lo trae, se registra como siempre. Si de verdad necesitas registrar facturas a nombre de otra empresa, activa **Permitir facturas dirigidas a otra empresa** en la configuración del módulo.
+
+## Una factura de un lote se ha quedado en borrador. ¿Por qué?
+
+Desde la 2.8.2, las facturas que llegan por lote se quedan en borrador cuando hay algo que una persona debe mirar: un CIF/NIF que no es válido, un proveedor encontrado por el nombre y no por el CIF/NIF, varios terceros posibles, o unos totales que no suman. Si el proveedor no tenía el CIF/NIF guardado, añádeselo en su ficha y las siguientes facturas irán solas. El motivo está en la nota privada de la factura y en **Logs de Webhook**. Si son terceros duplicados, fusiónalos con el botón **Fusión** de la ficha del tercero y las siguientes facturas irán solas.
