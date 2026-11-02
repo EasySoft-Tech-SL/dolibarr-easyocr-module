@@ -96,7 +96,8 @@ class modEasyocr extends DolibarrModules
 
 		// Define some features supported by module
 		$this->module_parts = array(
-			'triggers' => 0,
+			// GDPR clean-up on supplier invoice / third party deletion, supplier search keys
+			'triggers' => 1,
 			'login' => 0,
 			'substitutions' => 0,
 			'menus' => 0,
@@ -134,7 +135,7 @@ class modEasyocr extends DolibarrModules
 		$this->phpmin = array(7, 4);
 
 		// Minimum version of Dolibarr required by module
-		$this->need_dolibarr_version = array(14, 0, 0);
+		$this->need_dolibarr_version = array(16, 0, 0);
 
 		// Messages at activation
 		$this->warnings_activation = array(
@@ -202,6 +203,39 @@ class modEasyocr extends DolibarrModules
 			'position' => 1000 + $r,
 			'enabled'  => '$conf->easyocr->enabled',
 			'perms'    => '$user->rights->easyocr->read',
+			'target'   => '',
+			'user'     => 2,
+		);
+
+		// Left entries for the two pages that have no card of their own in the top bar.
+		// Same rights the pages check (webhook_logs.php: read; duplicates.php: read +
+		// third parties). Appended at the end: existing entries keep their position.
+		$this->menu[$r++] = array(
+			'fk_menu'  => 'fk_mainmenu=easyocr',
+			'type'     => 'left',
+			'titre'    => 'EasyOcrMenuReceivedLog',
+			'mainmenu' => 'easyocr',
+			'leftmenu' => 'easyocr_webhook_logs',
+			'url'      => '/easyocr/webhook_logs.php',
+			'langs'    => 'easyocr@easyocr',
+			'position' => 1000 + $r,
+			'enabled'  => '$conf->easyocr->enabled',
+			'perms'    => '$user->rights->easyocr->read',
+			'target'   => '',
+			'user'     => 2,
+		);
+
+		$this->menu[$r++] = array(
+			'fk_menu'  => 'fk_mainmenu=easyocr',
+			'type'     => 'left',
+			'titre'    => 'EasyOcrDuplicatesLink',
+			'mainmenu' => 'easyocr',
+			'leftmenu' => 'easyocr_duplicates',
+			'url'      => '/easyocr/duplicates.php',
+			'langs'    => 'easyocr@easyocr',
+			'position' => 1000 + $r,
+			'enabled'  => '$conf->easyocr->enabled',
+			'perms'    => '$user->rights->easyocr->read && $user->rights->societe->lire',
 			'target'   => '',
 			'user'     => 2,
 		);

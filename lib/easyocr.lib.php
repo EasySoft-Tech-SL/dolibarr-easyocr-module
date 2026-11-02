@@ -3726,7 +3726,7 @@ function easyocrCreateVariousPaymentFromOCR($params, $userObj = null)
  * files and never re-enabled, and every document processed in that time was registered
  * nowhere.
  */
-define('EASYOCR_SCHEMA_REVISION', 2);
+define('EASYOCR_SCHEMA_REVISION', 3);
 
 /**
  * Apply the SQL files shipped in sql/ when this installation has not applied them yet.
@@ -3745,6 +3745,12 @@ function easyocrEnsureSchema()
 	}
 	if ((string) getDolGlobalString('EASYOCR_SCHEMA_REVISION') === (string) EASYOCR_SCHEMA_REVISION) {
 		return true;
+	}
+	// Never inside someone else's transaction: the first include after an update may
+	// come from a trigger, and DDL there would commit the core's work half done. The
+	// next page load does it.
+	if (!empty($db->transaction_opened)) {
+		return false;
 	}
 
 	// Mind the file name: in the repository (and in the ZIP, and on Linux) it is
@@ -3808,6 +3814,17 @@ function easyocrEnsureSchema()
 		// No mark: the next page load tries again.
 		dol_syslog('EasyOCR: could not apply the schema of revision '.EASYOCR_SCHEMA_REVISION.' ('.$errors.' errors)', LOG_ERR);
 		return false;
+	}
+
+	// What re-enabling the module would also do: its parts (the trigger, from 2.9.0)
+	// and its menu entries are registered from the descriptor, so an installation updated
+	// by replacing files gets them without anyone having to switch the module off and on.
+	if (dol_include_once('/easyocr/core/modules/modEasyocr.class.php') && class_exists('modEasyocr')) {
+		$mod = new modEasyocr($db);
+		$mod->delete_module_parts();
+		$mod->insert_module_parts();
+		$mod->delete_menus();
+		$mod->insert_menus();
 	}
 
 	dolibarr_set_const($db, 'EASYOCR_SCHEMA_REVISION', (string) EASYOCR_SCHEMA_REVISION, 'chaine', 0, '', $conf->entity);

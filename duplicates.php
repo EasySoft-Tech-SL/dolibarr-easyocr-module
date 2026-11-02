@@ -67,49 +67,161 @@ print '    <p>'.dol_escape_htmltag($langs->trans('EasyOcrDuplicatesDesc')).'</p>
 print '  </div>';
 print '</div>';
 
-// Active third parties of this entity, with the fields that identify them
-$rows = array();
-$sql = "SELECT s.rowid, s.nom, s.siren, s.tva_intra, s.fournisseur, s.client";
-$sql .= " FROM ".MAIN_DB_PREFIX."societe as s";
-$sql .= " WHERE s.status = 1 AND s.entity IN (".getEntity('societe').")";
-$resql = $db->query($sql);
-if (!$resql) {
-	dol_print_error($db);
-	llxFooter();
-	$db->close();
-	exit;
-}
-while ($obj = $db->fetch_object($resql)) {
-	$rows[] = array(
-		'id' => (int) $obj->rowid, 'name' => $obj->nom, 'siren' => $obj->siren,
-		'tva_intra' => $obj->tva_intra, 'fournisseur' => (int) $obj->fournisseur, 'client' => (int) $obj->client,
-	);
-}
-$db->free($resql);
+/**
+ * Tax and name keys of one third party, with the same criteria as
+ * easyocrGroupDuplicateThirdparties(): a row can only end up in a group through one of
+ * these keys, so a row whose keys are all unique cannot be in any group.
+ *
+ * @param  object $obj Row with nom, siren, tva_intra, fournisseur
+ * @return int[]       crc32 of each key (tax keys prefixed T, name key prefixed N)
+ */
+function easyocrDuplicateCandidateKeys($obj)
+{
+	$keys = array();
+	foreach (array('siren', 'tva_intra') as $col) {
+		$v = trim((string) $obj->$col);
+		if ($v !== '' && strlen(easyocrNormalizeTaxId($v)) >= 5) {
+			$keys[] = crc32('T'.easyocrTaxIdKey($v));
+		}
+	}
+	if (!empty($obj->fournisseur)) {
+		$core = easyocrSupplierNameCore((string) $obj->nom);
+		if (strlen($core) >= 3) {
+			$keys[] = crc32('N'.$core);
+		}
+	}
 
-$groups = easyocrGroupDuplicateThirdparties($rows, easyocrOwnCountryCode());
+	return array_unique($keys);
+}
 
-// Supplier invoices per third party in the groups: helps choosing the one to keep
-$ids = array();
-foreach (array('by_tax_id', 'by_name') as $kind) {
-	foreach ($groups[$kind] as $members) {
+/**
+ * Walk the active third parties of this entity in chunks, without holding them all.
+ *
+ * @param  DoliDB   $db       Database handler
+ * @param  callable $callback Called with each row object
+ * @return bool               False on SQL error
+ */
+function easyocrDuplicateWalk($db, $callback)
+{
+	$last = 0;
+	do {
+		$sql = "SELECT s.rowid, s.nom, s.siren, s.tva_intra, s.fournisseur, s.client";
+		$sql .= " FROM ".MAIN_DB_PREFIX."societe as s";
+		$sql .= " WHERE s.status = 1 AND s.entity IN (".getEntity('societe').") AND s.rowid > ".((int) $last);
+		$sql .= " ORDER BY s.rowid ASC";
+		$sql .= $db->plimit(2000, 0);
+		$resql = $db->query($sql);
+		if (!$resql) {
+			return false;
+		}
+		$n = 0;
+		while ($obj = $db->fetch_object($resql)) {
+			$n++;
+			$last = (int) $obj->rowid;
+			call_user_func($callback, $obj);
+		}
+		$db->free($resql);
+	} while ($n === 2000);
+
+	return true;
+}
+
+/**
+ * Third parties that may belong to a duplicate group, read in two passes.
+ *
+ * With tens of thousands of third parties, loading them all into an array (and the
+ * grouping copying them again) exhausts memory_limit. First pass: count how many third
+ * parties share each key (an integer hash per key, a few bytes each). Second pass: keep
+ * only the rows with a key seen more than once. The grouping then runs on that short
+ * list and gives exactly the same groups as on the whole table (a hash collision only
+ * keeps one row too many, which the grouping discards).
+ *
+ * @param  DoliDB $db Database handler
+ * @return array|false Rows: id, name, siren, tva_intra, fournisseur, client
+ */
+function easyocrDuplicateCandidates($db)
+{
+	$count = array();
+	$ok = easyocrDuplicateWalk($db, function ($obj) use (&$count) {
+		foreach (easyocrDuplicateCandidateKeys($obj) as $k) {
+			$count[$k] = isset($count[$k]) ? 2 : 1;
+		}
+	});
+	if (!$ok) {
+		return false;
+	}
+
+	$rows = array();
+	$ok = easyocrDuplicateWalk($db, function ($obj) use (&$count, &$rows) {
+		foreach (easyocrDuplicateCandidateKeys($obj) as $k) {
+			if ($count[$k] > 1) {
+				$rows[] = array(
+					'id' => (int) $obj->rowid, 'name' => $obj->nom, 'siren' => $obj->siren,
+					'tva_intra' => $obj->tva_intra, 'fournisseur' => (int) $obj->fournisseur, 'client' => (int) $obj->client,
+				);
+				return;
+			}
+		}
+	});
+
+	return $ok ? $rows : false;
+}
+
+/**
+ * Groups of the report: those of easyocrGroupDuplicateThirdparties() on the candidates,
+ * without the tax-id groups made only of non-suppliers (EasyOcr only creates suppliers;
+ * customers sharing a tax id among themselves are not its business).
+ *
+ * @param  DoliDB $db Database handler
+ * @return array|false array('by_tax_id' => ..., 'by_name' => ...)
+ */
+function easyocrDuplicateGroups($db)
+{
+	$rows = easyocrDuplicateCandidates($db);
+	if ($rows === false) {
+		return false;
+	}
+	$groups = easyocrGroupDuplicateThirdparties($rows, easyocrOwnCountryCode());
+	unset($rows);
+
+	foreach ($groups['by_tax_id'] as $key => $members) {
+		$hasSupplier = false;
 		foreach ($members as $m) {
-			$ids[(int) $m['id']] = true;
+			if (!empty($m['fournisseur'])) {
+				$hasSupplier = true;
+				break;
+			}
+		}
+		if (!$hasSupplier) {
+			unset($groups['by_tax_id'][$key]);
 		}
 	}
+
+	return $groups;
 }
-$invoiceCount = array();
-if (!empty($ids)) {
-	$sqlc = "SELECT fk_soc, COUNT(*) as nb FROM ".MAIN_DB_PREFIX."facture_fourn";
-	$sqlc .= " WHERE fk_soc IN (".implode(',', array_keys($ids)).") AND entity IN (".getEntity('supplier_invoice').")";
-	$sqlc .= " GROUP BY fk_soc";
-	$resc = $db->query($sqlc);
-	if ($resc) {
-		while ($o = $db->fetch_object($resc)) {
-			$invoiceCount[(int) $o->fk_soc] = (int) $o->nb;
+
+/**
+ * Member of a group suggested as the one to keep: most supplier invoices, then
+ * supplier before non-supplier, then the oldest (lowest id).
+ *
+ * @param  array $members Group members
+ * @param  array $counts  Supplier invoices per third party id
+ * @return int            Id of the suggested member
+ */
+function easyocrDuplicateSuggested($members, $counts)
+{
+	$best = 0;
+	$bestScore = null;
+	foreach ($members as $m) {
+		$id = (int) $m['id'];
+		$score = array(isset($counts[$id]) ? (int) $counts[$id] : 0, empty($m['fournisseur']) ? 0 : 1, -$id);
+		if ($bestScore === null || $score > $bestScore) {
+			$bestScore = $score;
+			$best = $id;
 		}
-		$db->free($resc);
 	}
+
+	return $best;
 }
 
 /**
@@ -119,9 +231,11 @@ if (!empty($ids)) {
  * @param  string $descKey   Translation key of the block description
  * @param  array  $list      Groups: key => members
  * @param  array  $counts    Supplier invoices per third party id
+ * @param  bool   $showGroup Show the group key column (redundant when the key is the tax id itself)
+ * @param  bool   $canMerge  Show the merge buttons
  * @return void
  */
-function easyocrPrintDuplicateBlock($titleKey, $descKey, $list, $counts)
+function easyocrPrintDuplicateBlock($titleKey, $descKey, $list, $counts, $showGroup, $canMerge)
 {
 	global $langs, $db;
 
@@ -133,21 +247,28 @@ function easyocrPrintDuplicateBlock($titleKey, $descKey, $list, $counts)
 	}
 
 	print '<div class="div-table-responsive">';
-	print '<table class="noborder centpercent">';
+	print '<table class="noborder centpercent eo-dup-table">';
 	print '<tr class="liste_titre">';
-	print '<td>'.$langs->trans('EasyOcrDuplicatesGroup').'</td>';
+	if ($showGroup) {
+		print '<td>'.$langs->trans('EasyOcrDuplicatesGroup').'</td>';
+	}
 	print '<td>'.$langs->trans('ThirdParty').'</td>';
 	print '<td>'.$langs->trans('EasyOcrDuplicatesTaxId').'</td>';
 	print '<td>'.$langs->trans('VATIntraShort').'</td>';
 	print '<td>'.$langs->trans('Type').'</td>';
 	print '<td class="right">'.$langs->trans('EasyOcrDuplicatesInvoices').'</td>';
+	if ($canMerge) {
+		print '<td class="center"></td>';
+	}
 	print '</tr>';
 
 	$soc = new Societe($db);
 	foreach ($list as $key => $members) {
 		$first = true;
+		$suggested = easyocrDuplicateSuggested($members, $counts);
 		foreach ($members as $m) {
-			$soc->id = $m['id'];
+			$id = (int) $m['id'];
+			$soc->id = $id;
 			$soc->name = $m['name'];
 			$soc->fournisseur = $m['fournisseur'];
 			$soc->client = isset($m['client']) ? $m['client'] : 0;
@@ -158,13 +279,32 @@ function easyocrPrintDuplicateBlock($titleKey, $descKey, $list, $counts)
 			if (!empty($m['client'])) {
 				$types[] = $langs->trans('Customer');
 			}
-			print '<tr class="oddeven">';
-			print '<td>'.($first ? '<strong>'.dol_escape_htmltag($key).'</strong>' : '').'</td>';
-			print '<td>'.$soc->getNomUrl(1).' <span class="opacitymedium">#'.((int) $m['id']).'</span></td>';
+			$nb = isset($counts[$id]) ? (int) $counts[$id] : 0;
+			// First row of each group carries a top border: groups stay apart without the key column
+			print '<tr class="oddeven eo-dup-row" data-group="'.dol_escape_htmltag((string) $key).'" data-socid="'.$id.'"'.($first ? ' style="border-top: 2px solid #b0bec5;"' : '').'>';
+			if ($showGroup) {
+				print '<td>'.($first ? '<strong>'.dol_escape_htmltag($key).'</strong>' : '').'</td>';
+			}
+			print '<td>'.$soc->getNomUrl(1).' <span class="opacitymedium">#'.$id.'</span>';
+			if ($id === $suggested) {
+				print ' <span class="badge badge-status4 badge-status eo-dup-suggested" title="'.dol_escape_htmltag($langs->trans('EasyOcrDuplicatesSuggestedHelp')).'">'.$langs->trans('EasyOcrDuplicatesSuggested').'</span>';
+			}
+			print '</td>';
 			print '<td>'.dol_escape_htmltag((string) $m['siren']).'</td>';
 			print '<td>'.dol_escape_htmltag((string) $m['tva_intra']).'</td>';
-			print '<td>'.dol_escape_htmltag(implode(', ', $types)).'</td>';
-			print '<td class="right">'.(isset($counts[$m['id']]) ? (int) $counts[$m['id']] : 0).'</td>';
+			print '<td>'.dol_escape_htmltag(implode(', ', $types));
+			if (empty($m['fournisseur'])) {
+				print ' <span class="badge badge-status0 badge-status eo-dup-notsupplier">'.$langs->trans('EasyOcrDuplicatesNotSupplier').'</span>';
+			}
+			print '</td>';
+			print '<td class="right eo-dup-nb">'.$nb.'</td>';
+			if ($canMerge) {
+				$url = DOL_URL_ROOT.'/societe/card.php?socid='.$id.'&action=merge&token='.newToken();
+				print '<td class="center nowraponall">';
+				print '<a class="'.($id === $suggested ? 'butAction' : 'butActionDelete').' smallpaddingimp eo-dup-merge" href="'.$url.'" title="'.dol_escape_htmltag($langs->trans('EasyOcrDuplicatesMergeHelp')).'">';
+				print $langs->trans('EasyOcrDuplicatesMergeHere').'</a>';
+				print '</td>';
+			}
 			print '</tr>';
 			$first = false;
 		}
@@ -173,10 +313,46 @@ function easyocrPrintDuplicateBlock($titleKey, $descKey, $list, $counts)
 	print '</div><br>';
 }
 
-easyocrPrintDuplicateBlock('EasyOcrDuplicatesByTaxId', 'EasyOcrDuplicatesByTaxIdDesc', $groups['by_tax_id'], $invoiceCount);
-easyocrPrintDuplicateBlock('EasyOcrDuplicatesByName', 'EasyOcrDuplicatesByNameDesc', $groups['by_name'], $invoiceCount);
+$groups = easyocrDuplicateGroups($db);
+if ($groups === false) {
+	dol_print_error($db);
+	llxFooter();
+	$db->close();
+	exit;
+}
 
-print '<div class="info">'.$langs->trans('EasyOcrDuplicatesHowToMerge').'</div>';
+// Supplier invoices per third party in the groups: helps choosing the one to keep
+$ids = array();
+foreach (array('by_tax_id', 'by_name') as $kind) {
+	foreach ($groups[$kind] as $members) {
+		foreach ($members as $m) {
+			$ids[(int) $m['id']] = true;
+		}
+	}
+}
+$invoiceCount = array();
+foreach (array_chunk(array_keys($ids), 1000) as $chunk) {
+	$sqlc = "SELECT fk_soc, COUNT(*) as nb FROM ".MAIN_DB_PREFIX."facture_fourn";
+	$sqlc .= " WHERE fk_soc IN (".implode(',', $chunk).") AND entity IN (".getEntity('supplier_invoice').")";
+	$sqlc .= " GROUP BY fk_soc";
+	$resc = $db->query($sqlc);
+	if ($resc) {
+		while ($o = $db->fetch_object($resc)) {
+			$invoiceCount[(int) $o->fk_soc] = (int) $o->nb;
+		}
+		$db->free($resc);
+	}
+}
+
+// Dolibarr's own merge (societe/card.php?action=merge) asks there for the third party
+// to absorb; it shows its button to whoever can create and delete third parties.
+$canMerge = easyocrCheckRight($user, 'societe', 'creer') && easyocrCheckRight($user, 'societe', 'supprimer');
+
+// By tax id the group key is the tax id itself, already in its own columns
+easyocrPrintDuplicateBlock('EasyOcrDuplicatesByTaxId', 'EasyOcrDuplicatesByTaxIdDesc', $groups['by_tax_id'], $invoiceCount, false, $canMerge);
+easyocrPrintDuplicateBlock('EasyOcrDuplicatesByName', 'EasyOcrDuplicatesByNameDesc', $groups['by_name'], $invoiceCount, true, $canMerge);
+
+print '<div class="info">'.$langs->trans($canMerge ? 'EasyOcrDuplicatesHowToMergeHere' : 'EasyOcrDuplicatesHowToMerge').'</div>';
 
 llxFooter();
 $db->close();

@@ -22,6 +22,12 @@
  * \brief      List page for invoices created by EasyOcr
  */
 
+// Removing the mark changes data: its token is checked whatever MAIN_SECURITY_CSRF_WITH_TOKEN
+// says (below level 2, Dolibarr does not check GET actions and a forged link would work).
+if (isset($_REQUEST['action']) && in_array($_REQUEST['action'], array('delete', 'confirm_delete'), true) && !defined('CSRFCHECK_WITH_TOKEN')) {
+	define('CSRFCHECK_WITH_TOKEN', '1');
+}
+
 // Load Dolibarr environment
 $res = 0;
 if (!$res && !empty($_SERVER["CONTEXT_DOCUMENT_ROOT"])) {
@@ -54,7 +60,14 @@ if (!$res) {
 require_once DOL_DOCUMENT_ROOT.'/core/lib/functions.lib.php';
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.form.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.formcompany.class.php';
+require_once DOL_DOCUMENT_ROOT.'/fourn/class/fournisseur.facture.class.php';
 require_once __DIR__.'/lib/easyocr.lib.php';
+
+// Every import_key EasyOcr stamps on the supplier invoices it creates: manual OCR,
+// AI viewer and batch webhook. The list, the filters and the "remove mark" actions
+// all use this same list, so none of them leaves a kind of invoice out.
+$easyocrImportKeys = array('easyocr', 'easyocr-ai', 'easyocr-wh');
+$easyocrImportKeysSql = "'".implode("','", $easyocrImportKeys)."'";
 
 // Load translation files
 $langs->loadLangs(array("easyocr@easyocr", "bills", "other"));
@@ -73,6 +86,15 @@ $search_ref = GETPOST('search_ref', 'alpha');
 $search_supplier_ref = GETPOST('search_supplier_ref', 'alpha');
 $search_supplier = GETPOST('search_supplier', 'int');
 $search_import_key = GETPOST('search_import_key', 'alpha');
+// Status filter: '0' draft (= waiting for review), '1' validated unpaid, '2' paid, '3' abandoned.
+// A string, because '0' is a real value and empty('0') would drop it.
+$search_status = (string) GETPOST('search_status', 'alpha');
+if (!in_array($search_status, array('0', '1', '2', '3'), true)) {
+	$search_status = '';
+}
+if (!in_array($search_import_key, $easyocrImportKeys, true)) {
+	$search_import_key = '';
+}
 
 // Pagination
 $limit = GETPOST('limit', 'int') ? GETPOST('limit', 'int') : $conf->liste_limit;
@@ -122,6 +144,7 @@ if (GETPOST('button_removefilter_x', 'alpha') || GETPOST('button_removefilter.x'
 	$search_supplier_ref = '';
 	$search_supplier = '';
 	$search_import_key = '';
+	$search_status = '';
 	$toselect = array();
 }
 if (GETPOST('button_removefilter_x', 'alpha') || GETPOST('button_removefilter.x', 'alpha') || GETPOST('button_removefilter', 'alpha')
@@ -129,41 +152,89 @@ if (GETPOST('button_removefilter_x', 'alpha') || GETPOST('button_removefilter.x'
 	$massaction = '';
 }
 
+// Filters kept across pages, sorting and the confirmation of the actions
+$param = '';
+if (!empty($contextpage) && $contextpage != $_SERVER["PHP_SELF"]) {
+	$param .= '&contextpage='.urlencode($contextpage);
+}
+if ($limit > 0 && $limit != $conf->liste_limit) {
+	$param .= '&limit='.((int) $limit);
+}
+if ($optioncss != '') {
+	$param .= '&optioncss='.urlencode($optioncss);
+}
+if ($search_ref != '') {
+	$param .= '&search_ref='.urlencode($search_ref);
+}
+if ($search_supplier_ref != '') {
+	$param .= '&search_supplier_ref='.urlencode($search_supplier_ref);
+}
+if ($search_supplier > 0) {
+	$param .= '&search_supplier='.((int) $search_supplier);
+}
+if ($search_import_key != '') {
+	$param .= '&search_import_key='.urlencode($search_import_key);
+}
+if ($search_status !== '') {
+	$param .= '&search_status='.urlencode($search_status);
+}
+
+/**
+ * Remove the EasyOcr mark of one supplier invoice.
+ *
+ * @param  DoliDB $db      Database handler
+ * @param  int    $id      Supplier invoice id
+ * @param  string $keysSql EasyOcr import keys, quoted and comma separated
+ * @return int             Rows changed (0: not an EasyOcr invoice of this entity), -1 on SQL error
+ */
+function easyocrInvoicesRemoveMark($db, $id, $keysSql)
+{
+	$sql = "UPDATE ".MAIN_DB_PREFIX."facture_fourn SET import_key = NULL";
+	$sql .= " WHERE rowid = ".((int) $id)." AND import_key IN (".$keysSql.")";
+	$sql .= " AND entity IN (".getEntity('facture_fourn').")";
+	$resql = $db->query($sql);
+	if (!$resql) {
+		return -1;
+	}
+
+	return (int) $db->affected_rows($resql);
+}
+
 // Mass delete (remove easyocr mark)
 if ($massaction == 'delete' && $permissiontodelete) {
 	if (!empty($toselect)) {
 		$db->begin();
 		$error = 0;
+		$changed = 0;
 		foreach ($toselect as $toselectid) {
-			$toselectid = (int) $toselectid;
-			$sql = "UPDATE ".MAIN_DB_PREFIX."facture_fourn SET import_key = NULL WHERE rowid = ".$toselectid." AND import_key IN ('easyocr','easyocr-ai')";
-			if (!$db->query($sql)) {
+			$res = easyocrInvoicesRemoveMark($db, (int) $toselectid, $easyocrImportKeysSql);
+			if ($res < 0) {
 				$error++;
+			} else {
+				$changed += $res;
 			}
 		}
-		if (!$error) {
+		if (!$error && $changed > 0) {
 			$db->commit();
 			setEventMessages($langs->trans('EasyOcrRecordsDeleted'), null, 'mesgs');
 		} else {
 			$db->rollback();
-			setEventMessages($langs->trans('EasyOcrErrorDeletingRecords'), null, 'errors');
+			setEventMessages($langs->trans($error ? 'EasyOcrErrorDeletingRecords' : 'EasyOcrRemoveMarkNothingChanged'), null, 'errors');
 		}
 		$massaction = '';
 		$action = '';
 	}
 }
 
-// Delete single record (remove easyocr mark)
+// Delete single record (remove easyocr mark). Reached through formconfirm, which sends the token.
 if ($action == 'confirm_delete' && $confirm == 'yes' && $permissiontodelete) {
-	$id = GETPOST('id', 'int');
-	$sql = "UPDATE ".MAIN_DB_PREFIX."facture_fourn SET import_key = NULL WHERE rowid = ".((int) $id)." AND import_key IN ('easyocr','easyocr-ai')";
-	if ($db->query($sql)) {
+	$res = easyocrInvoicesRemoveMark($db, GETPOST('id', 'int'), $easyocrImportKeysSql);
+	if ($res > 0) {
 		setEventMessages($langs->trans('EasyOcrRecordDeleted'), null, 'mesgs');
-		header('Location: '.$_SERVER['PHP_SELF']);
+		header('Location: '.$_SERVER['PHP_SELF'].($param !== '' ? '?'.ltrim($param, '&') : ''));
 		exit;
-	} else {
-		setEventMessages($langs->trans('EasyOcrErrorDeletingRecords'), null, 'errors');
 	}
+	setEventMessages($langs->trans($res < 0 ? 'EasyOcrErrorDeletingRecords' : 'EasyOcrRemoveMarkNothingChanged'), null, 'errors');
 	$action = '';
 }
 
@@ -178,12 +249,15 @@ $morejs = array();
 $morecss = array();
 
 // Build and execute select
-$sql = "SELECT c.rowid, c.ref, c.ref_supplier, c.datef, c.datec, c.total_ht, c.total_ttc, c.fk_soc, c.import_key, c.paye, c.fk_statut,";
+$sql = "SELECT c.rowid, c.ref, c.ref_supplier, c.datef, c.datec, c.total_ht, c.total_ttc, c.fk_soc, c.import_key, c.paye, c.fk_statut, c.type,";
 $sql .= " d.nom as supplier_name";
 $sql .= " FROM ".MAIN_DB_PREFIX."facture_fourn as c";
 $sql .= " JOIN ".MAIN_DB_PREFIX."societe as d ON c.fk_soc = d.rowid";
-$sql .= " WHERE c.import_key IN ('easyocr','easyocr-ai','easyocr-wh')";
+$sql .= " WHERE c.import_key IN (".$easyocrImportKeysSql.")";
 $sql .= " AND c.entity IN (".getEntity('facture_fourn').")";
+if ($search_status !== '') {
+	$sql .= " AND c.fk_statut = ".((int) $search_status);
+}
 
 // Filters
 if ($search_ref) {
@@ -195,8 +269,8 @@ if ($search_supplier_ref) {
 if ($search_supplier > 0) {
 	$sql .= " AND c.fk_soc = ".((int) $search_supplier);
 }
-if ($search_import_key) {
-	$sql .= natural_search("c.import_key", $search_import_key);
+if ($search_import_key !== '') {
+	$sql .= " AND c.import_key = '".$db->escape($search_import_key)."'";
 }
 
 // Count total nb of records
@@ -238,28 +312,14 @@ llxHeader('', $title, $help_url, '', 0, 0, $morejs, $morecss, '', 'bodyforlist')
 
 $arrayofselected = is_array($toselect) ? $toselect : array();
 
-$param = '';
-if (!empty($contextpage) && $contextpage != $_SERVER["PHP_SELF"]) {
-	$param .= '&contextpage='.urlencode($contextpage);
-}
-if ($limit > 0 && $limit != $conf->liste_limit) {
-	$param .= '&limit='.((int) $limit);
-}
-if ($optioncss != '') {
-	$param .= '&optioncss='.urlencode($optioncss);
-}
-if ($search_ref != '') {
-	$param .= '&search_ref='.urlencode($search_ref);
-}
-if ($search_supplier_ref != '') {
-	$param .= '&search_supplier_ref='.urlencode($search_supplier_ref);
-}
-if ($search_supplier > 0) {
-	$param .= '&search_supplier='.((int) $search_supplier);
-}
-if ($search_import_key != '') {
-	$param .= '&search_import_key='.urlencode($search_import_key);
-}
+// Status labels come from Dolibarr itself, so they match the supplier invoice card
+$facturestatic = new FactureFournisseur($db);
+$statusOptions = array(
+	'0' => $langs->trans('EasyOcrInvoicesPendingReview'),
+	'1' => $facturestatic->LibStatut(0, 1, 1),
+	'2' => $facturestatic->LibStatut(1, 2, 1),
+	'3' => $facturestatic->LibStatut(0, 3, 1),
+);
 
 // List of mass actions available
 $arrayofmassactions = array();
@@ -283,7 +343,7 @@ print '</div>';
 // Confirm dialog
 if ($action == 'delete') {
 	print $form->formconfirm(
-		$_SERVER['PHP_SELF'].'?id='.GETPOST('id', 'int'),
+		$_SERVER['PHP_SELF'].'?id='.((int) GETPOST('id', 'int')).$param,
 		$langs->trans('EasyOcrDeleteInvoice'),
 		$langs->trans('EasyOcrConfirmDeleteInvoice'),
 		'confirm_delete',
@@ -356,6 +416,16 @@ print '<td class="liste_titre"></td>';
 // Total TTC
 print '<td class="liste_titre"></td>';
 
+// Status
+print '<td class="liste_titre center">';
+print '<select name="search_status" class="flat maxwidth150">';
+print '<option value="">'.dol_escape_htmltag($langs->trans('EasyOcrAllSuppliers')).'</option>';
+foreach ($statusOptions as $code => $label) {
+	print '<option value="'.$code.'"'.($search_status === (string) $code ? ' selected' : '').'>'.dol_escape_htmltag($label).'</option>';
+}
+print '</select>';
+print '</td>';
+
 // Origin
 print '<td class="liste_titre">';
 print '<select name="search_import_key" class="flat maxwidth100">';
@@ -405,6 +475,9 @@ print_liste_field_titre($langs->trans("AmountHT"), $_SERVER['PHP_SELF'], 'c.tota
 $totalarray['nbfield']++;
 
 print_liste_field_titre($langs->trans("AmountTTC"), $_SERVER['PHP_SELF'], 'c.total_ttc', '', $param, '', $sortfield, $sortorder, 'right ');
+$totalarray['nbfield']++;
+
+print_liste_field_titre($langs->trans("Status"), $_SERVER['PHP_SELF'], 'c.fk_statut', '', $param, '', $sortfield, $sortorder, 'center ');
 $totalarray['nbfield']++;
 
 print_liste_field_titre($langs->trans("EasyOcrOrigin"), $_SERVER['PHP_SELF'], 'c.import_key', '', $param, '', $sortfield, $sortorder, 'center ');
@@ -510,10 +583,25 @@ while ($i < $imaxinloop) {
 	}
 	$totalarray['val']['c.total_ttc'] += $obj->total_ttc;
 
+	// Status, as Dolibarr shows it on the supplier invoice card
+	$facturestatic->id = (int) $obj->rowid;
+	$facturestatic->paye = (int) $obj->paye;
+	$facturestatic->statut = (int) $obj->fk_statut;
+	$facturestatic->status = (int) $obj->fk_statut;
+	$facturestatic->type = (int) $obj->type;
+	print '<td class="center nowraponall eo-inv-status" data-status="'.((int) $obj->fk_statut).'">';
+	print $facturestatic->getLibStatut(5);
+	print '</td>';
+	if (!$i) {
+		$totalarray['nbfield']++;
+	}
+
 	// Origin (import_key)
 	print '<td class="center nowraponall">';
 	if ($obj->import_key == 'easyocr-ai') {
 		print '<span class="badge badge-status4 badge-status">IA OCR</span>';
+	} elseif ($obj->import_key == 'easyocr-wh') {
+		print '<span class="badge badge-status1 badge-status">Webhook</span>';
 	} else {
 		print '<span class="badge badge-status0 badge-status">OCR</span>';
 	}

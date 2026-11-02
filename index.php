@@ -86,6 +86,20 @@ if ($resql2) {
 // Documents handed over by other modules (EasyScan, ...) waiting in the inbox.
 $nbInbox = easyocrInboxCountPending();
 
+// Drafts created by EasyOcr: invoices waiting for someone to review and validate them.
+// Same import keys and same status filter as invoices.php?search_status=0, where it links.
+$nbToReview = 0;
+$resql3 = $db->query("SELECT COUNT(*) as nb FROM ".MAIN_DB_PREFIX."facture_fourn WHERE import_key IN ('easyocr','easyocr-ai','easyocr-wh') AND fk_statut = 0 AND entity IN (".getEntity('facture_fourn').")");
+if ($resql3) {
+	$obj3 = $db->fetch_object($resql3);
+	$nbToReview = (int) $obj3->nb;
+}
+
+// The duplicates report needs third-party rights (duplicates.php checks the same).
+// No counter on purpose: telling duplicates apart needs every tax id normalised in PHP,
+// which is the report's job, not the dashboard's.
+$permDuplicates = $permRead && easyocrCheckRight($user, 'societe', 'lire');
+
 llxHeader('', $title, $help_url, '', 0, 0, array(), array(), '', 'mod-easyocr page-index');
 
 // ─── Inline styles ─────────────────────────────────────────────────────────
@@ -161,6 +175,9 @@ llxHeader('', $title, $help_url, '', 0, 0, array(), array(), '', 'mod-easyocr pa
 }
 .eo-stat-icon--inv { background: #fff3e0; color: #e65100; }
 .eo-stat-icon--tpl { background: #ede7f6; color: #5e35b1; }
+.eo-stat-icon--review { background: #fff8e1; color: #f57f17; }
+.eo-stat--pending { border-color: #ffb300; }
+.eo-stat--pending .eo-stat-info strong { color: #e65100; }
 .eo-stat-info strong {
 	display: block;
 	font-size: 1.4em;
@@ -282,6 +299,7 @@ llxHeader('', $title, $help_url, '', 0, 0, array(), array(), '', 'mod-easyocr pa
 .eo-card--whlog { --eo-c: #00838f; --eo-bg: #e0f7fa; }
 .eo-card--scan  { --eo-c: #5b3cc4; --eo-bg: #ede7f6; }
 .eo-card--inbox { --eo-c: #00695c; --eo-bg: #e0f2f1; }
+.eo-card--dup   { --eo-c: #ad1457; --eo-bg: #fce4ec; }
 .eo-card-badge {
 	position: absolute;
 	top: 18px;
@@ -322,6 +340,13 @@ llxHeader('', $title, $help_url, '', 0, 0, array(), array(), '', 'mod-easyocr pa
 			<div class="eo-stat-info">
 				<strong><?php echo $nbTemplates; ?></strong>
 				<span><?php echo $langs->trans('EasyOcrMenuTemplates'); ?></span>
+			</div>
+		</a>
+		<a href="<?php echo dol_buildpath('/easyocr/invoices.php', 1).'?search_status=0'; ?>" class="eo-stat eo-stat--review<?php echo $nbToReview > 0 ? ' eo-stat--pending' : ''; ?>" id="eo-stat-review">
+			<div class="eo-stat-icon eo-stat-icon--review"><i class="fas fa-clipboard-check"></i></div>
+			<div class="eo-stat-info">
+				<strong><?php echo $nbToReview; ?></strong>
+				<span><?php echo $langs->trans('EasyOcrIndexToReview'); ?></span>
 			</div>
 		</a>
 	</div>
@@ -383,6 +408,15 @@ llxHeader('', $title, $help_url, '', 0, 0, array(), array(), '', 'mod-easyocr pa
 			<div class="eo-card-icon"><i class="fas fa-satellite-dish"></i></div>
 			<h3><?php echo $langs->trans('EasyOcrMenuWebhookLogs'); ?></h3>
 			<p><?php echo $langs->trans('EasyOcrIndexDescWebhookLogs'); ?></p>
+			<span class="eo-card-footer"><?php echo $langs->trans('EasyOcrIndexOpen'); ?> <i class="fas fa-arrow-right"></i></span>
+		</a>
+		<?php endif; ?>
+
+		<?php if ($permDuplicates): ?>
+		<a href="<?php echo dol_buildpath('/easyocr/duplicates.php', 1); ?>" class="eo-card eo-card--dup" id="eo-card-duplicates">
+			<div class="eo-card-icon"><i class="fas fa-clone"></i></div>
+			<h3><?php echo $langs->trans('EasyOcrDuplicatesTitle'); ?></h3>
+			<p><?php echo $langs->trans('EasyOcrIndexDescDuplicates'); ?></p>
 			<span class="eo-card-footer"><?php echo $langs->trans('EasyOcrIndexOpen'); ?> <i class="fas fa-arrow-right"></i></span>
 		</a>
 		<?php endif; ?>
