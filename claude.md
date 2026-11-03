@@ -2,7 +2,7 @@
 
 ## Información del módulo
 - **Nombre:** EasyOcr
-- **Versión:** 2.8.3
+- **Versión:** 2.9.0
 - **Número módulo:** 402020
 - **Empresa:** EasySoft Tech S.L. (info@easysoft.es)
 - **Autor:** Alberto Luque Rivas (aluquerivasdev@gmail.com)
@@ -116,6 +116,16 @@ easyocr_recibir_documento($rutaAbsoluta, $user, array $opciones = array())
 
 ## Historial de cambios
 
+### v2.9.0 — Proveedores sin CIF, webhook con token y estado «por revisar»
+
+- Proveedores: `easyocrSplitTaxId` (etiquetas compuestas `NIF IVA`, `VAT No.`, `USt-IdNr.`; GR→EL), `easyocrTaxIdIsAName` (CIF/NIF que es el nombre: sin dígitos o igual al nombre del tercero; el caso de proveedores sin identificación fiscal), cerrados como último recurso con `supplier_closed`. Tabla `llx_easyocr_tpkey` (fk_soc, kind T/C/N, keyval) con sincronía incremental por `societe.tms` (margen de 10 min, `EASYOCR_TPKEY_SYNC`) y caída al barrido completo si falta la tabla.
+- Locks `easyocrAcquireLock`/`easyocrReleaseLock` (GET_LOCK en MySQL, `pg_try_advisory_lock` en PostgreSQL, `EASYOCR_LOCK_TIMEOUT`): ocupado = `status 'retry'`, que el webhook convierte en 503 + `Retry-After`.
+- `easyocrCreateInvoiceFromOCR` envuelve el núcleo con los hooks `easyocrBeforeCreate`/`easyocrAfterCreate` (contexto `easyocrdocument`) y compensa: si la factura falla, borra el proveedor creado para ella. ⚠️ Sin transacción global: un rollback anidado en Dolibarr no revierte nada.
+- Revisión: `totals_missing`, `validate_failed` (queda en borrador), `supplier_closed`, `supplier_by_name(_only)`. La factura de plantilla del visor pasa por la misma función (`line_desc`, import_key `easyocr`).
+- Webhook: token por entidad (`EASYOCR_WEBHOOK_TOKEN`, `hash_equals`), `?instance_id=` solo con `EASYOCR_WEBHOOK_LEGACY_UNTIL` (30 días; la abre `easyocrEnsureSchema` al actualizar si había clave API, o la primera llamada si llega antes; una instalación nueva no la tiene). Sin pagos en legacy, idempotencia por `document_id`, secretos enmascarados antes de `main.inc.php`, purga por lotes con variante PostgreSQL.
+- `easyocrEnsureSchema` (revisión 3): no corre dentro de una transacción; vuelve a registrar trigger y menús desde el descriptor. Trigger `interface_99_modEasyocr_EasyocrTriggers`: RGPD en `BILL_SUPPLIER_DELETE`/`COMPANY_DELETE`, fusión y claves de proveedor.
+- Pruebas: `tests/easyocr_webhook_test.php` (111), `tests/easyocr_lang_test.php` (paridad, `%` sin escapar, claves usadas en código y menús), integración 205, lib 269; matriz PHP 7.4/8.4/8.5 y Dolibarr 18 y 24.
+
 ### v2.8.3 — Pago sin apunte, duplicados y limpieza
 
 - Pago automático: se comprueba el retorno de `addPaymentToBank()`. Si el banco rechaza la línea (cuenta de caja `courant=2` solo acepta `LIQ` en `Account::addline()`), `setUnpaid()` + `PaiementFourn::delete()` (sin argumentos: la firma cambia en v20) y `payment_error` en el resultado, la nota y el log del webhook. Aviso en `admin/setup.php` con `easyocrPaymentConfigRefused()`; sin forma configurada el módulo paga con id 6 (CB).
@@ -223,14 +233,14 @@ easyocr_recibir_documento($rutaAbsoluta, $user, array $opciones = array())
 - Retrocompatible: con el toggle OFF y sin parámetros de URL, el comportamiento anterior (factura sin pago) se mantiene intacto.
 
 ### v2.5.4 — Rattachement de producto por referencia de proveedor (ref_fourn)
-- **Fix:** `fk_product` ahora se resuelve buscando el `code` OCR en `llx_product_fournisseur_price.ref_fourn` filtrado por `fk_soc` (el `code` ES la referencia del proveedor). Antes solo se buscaba en `product.ref`/`barcode`, por lo que productos existentes cuya ref interna difiere del `code` (p.ej. `S057` con `ref_fourn` `04810007`) nunca se enlazaban y `fk_product` quedaba `null` (issue cliente AU PETRIN — factura PROV853).
+- **Fix:** `fk_product` ahora se resuelve buscando el `code` OCR en `llx_product_fournisseur_price.ref_fourn` filtrado por `fk_soc` (el `code` ES la referencia del proveedor). Antes solo se buscaba en `product.ref`/`barcode`, por lo que productos existentes cuya ref interna difiere del `code` (p.ej. `S057` con `ref_fourn` `04810007`) nunca se enlazaban y `fk_product` quedaba `null` (caso real de un cliente).
 - Nuevo orden de matching en `easyocrCreateInvoiceFromOCR()`: **1)** `product_fournisseur_price.ref_fourn` por proveedor → **2)** `product.ref`/`barcode` (fallback) → **3)** auto-creación.
 - **Auto-creación de productos** ahora es opt-in mediante el nuevo ajuste `EASYOCR_AI_AUTOCREATE_PRODUCT` (**OFF por defecto**) para no ensuciar el catálogo con duplicados. Toggle en `admin/setup.php` + 2 claves traducidas a los 8 idiomas (ca/de/en/es/fr/gl/it/pt).
 - Log de trazabilidad cuando una línea empareja por `ref_fourn`.
 - Retrocompatible: el fallback por `product.ref`/`barcode` se mantiene; con el toggle OFF, las líneas sin coincidencia quedan como línea libre (con su `ref` ya persistida desde 2.5.3). ⚠️ Cambio de comportamiento: la auto-creación, que antes era implícita, ahora requiere activar el ajuste.
 
 ### v2.5.3 — Persistencia del CODE OCR en la referencia de línea (Réf. produit fournisseur)
-- **Fix:** el `code` extraído por la IA ahora se guarda en `llx_facture_fourn_det.ref` (campo "Réf. produit fournisseur"). Antes solo se usaba para resolver/crear `fk_product` y se perdía en la línea (issue cliente AU PETRIN — Dolibarr 23.0.2 / Nouvelle-Calédonie).
+- **Fix:** el `code` extraído por la IA ahora se guarda en `llx_facture_fourn_det.ref` (campo "Réf. produit fournisseur"). Antes solo se usaba para resolver/crear `fk_product` y se perdía en la línea (caso real de un cliente en Dolibarr 23.0.2).
 - `easyocrCreateInvoiceFromOCR()` en `lib/easyocr.lib.php`: la llamada a `FactureFournisseur::addline()` se amplía de 14 a 21 argumentos posicionales para pasar el `code` como `$ref_supplier` (parámetro 21). Posición verificada estable en el core Dolibarr v14→v23; el arg 17 `array_options` (`array()`) está protegido por `is_array()` en el core → sin riesgo en PHP 8.
 - El `code` se captura ANTES del gate `skipProductMatch`, así se conserva también en líneas service/discount/surcharge/other (no solo product).
 - Log del fallo de auto-creación de producto (antes silencioso) + `ref` añadido al `dol_syslog` de cada línea para trazabilidad.

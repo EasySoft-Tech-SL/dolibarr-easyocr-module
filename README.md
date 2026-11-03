@@ -44,7 +44,8 @@ Su página es **[easyocr.es/dolibarr](https://easyocr.es/dolibarr)**, con los pl
 - **Iconos Consistentes**: Todas las pestañas administrativas ahora tienen iconos Font Awesome para mejor navegación visual
 
 ### Seguridad y Privacidad
-- **HTTPS Obligatorio**: Comunicación cifrada con servicios de IA
+- **HTTPS obligatorio**: la dirección del servicio tiene que ser `https://` (salvo localhost) y el certificado se verifica siempre
+- **Webhook con token**: cada empresa tiene su dirección de aviso con un token propio, que se puede regenerar
 - **Servidores EU**: Todos los datos se procesan en servidores ubicados en la Unión Europea
 - **Sin Almacenamiento**: Los documentos procesados no se almacenan en servidores externos
 - **Control de Acceso**: Autenticación mediante API Key para servicios de IA
@@ -52,7 +53,7 @@ Su página es **[easyocr.es/dolibarr](https://easyocr.es/dolibarr)**, con los pl
 ## Requisitos
 
 - **Dolibarr ERP**: Versión 16.0 o superior
-- **PHP**: Versión 7.4 o superior
+- **PHP**: de 7.4 a 8.5
 - **Base de Datos**: MySQL 5.7+ / MariaDB 10.2+ o PostgreSQL 10+
 - **Navegador**: Debe soportar JavaScript (PDF.js requiere ES6)
 
@@ -60,7 +61,7 @@ Su página es **[easyocr.es/dolibarr](https://easyocr.es/dolibarr)**, con los pl
 
 EasyOcr es compatible con:
 - Dolibarr 16.0+
-- PHP 7.4 a 8.3+
+- PHP 7.4 a 8.5
 - MySQL 5.7+, MariaDB 10.2+, PostgreSQL 10+
 
 ## Instalación
@@ -216,14 +217,14 @@ easyocr/
 ### Limitaciones
 
 - **Requiere JavaScript**: PDF.js requiere un navegador moderno con soporte ES6
-- **PDFs Escaneados**: Funciona mejor con PDFs nativos (generados digitalmente). PDFs escaneados o imágenes requieren OCR externo
+- **PDFs escaneados**: con la IA se leen también PDFs escaneados e imágenes. Las plantillas sin IA solo funcionan con PDFs que tienen texto
 - **Extracción de Texto**: La precisión depende de la calidad del PDF y su estructura
 
 ### Seguridad
 
 - Las plantillas se asocian a proveedores específicos
-- La extracción de datos requiere validación manual antes de crear facturas
-- Los PDFs se procesan localmente sin envío a servidores externos
+- En el visor, los datos se revisan antes de crear la factura. Las que llegan por lotes se crean solas, y las dudosas (proveedor sin CIF/NIF, totales que no cuadran) quedan en borrador para revisar
+- Con plantillas, el PDF se lee en el navegador y no sale de Dolibarr. Con la IA, el documento se envía al servicio EasyOCR para leerlo
 
 ## Solución de Problemas
 

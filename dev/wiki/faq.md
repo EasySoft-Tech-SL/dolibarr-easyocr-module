@@ -1,15 +1,3 @@
-<!--
-BORRADOR v2.8.0 — propuesta de página para la wiki pública.
-OJO: la colección GUIAS PUBLICAS NO tiene hoy ninguna página «FAQ» bajo EASYOCR
-(https://wiki.easysoft.es/doc/easyocr-h2MaNFitQp solo tiene CARACTERISTICAS y GUIA USUARIO).
-Este fichero es, por tanto, una página NUEVA, no una actualización: al publicarlo se crea
-DOLIBARR > MODULOS > EASYOCR > FAQ.
-
-Contenido centrado en la novedad de la 2.8.0 (Documentos recibidos). Si quieres una FAQ más
-amplia (instalación, modos, presupuestos de proveedor, gastos del móvil…), dime y añado
-preguntas; estas cuatro son las que un cliente plantea de verdad sobre la bandeja.
--->
-
 # Preguntas frecuentes
 
 ## ¿De dónde salen los documentos que aparecen en «Documentos recibidos»?
@@ -34,8 +22,20 @@ Desde la 2.8.1, EasyOcr compara el CIF del destinatario que aparece en el docume
 
 ## Una factura de un lote se ha quedado en borrador. ¿Por qué?
 
-Desde la 2.8.2, las facturas que llegan por lote se quedan en borrador cuando hay algo que una persona debe mirar: un CIF/NIF que no es válido, un proveedor encontrado por el nombre y no por el CIF/NIF, varios terceros posibles, o unos totales que no suman. El motivo está en la nota privada de la factura y en **Logs de Webhook**. Si el proveedor no tenía el CIF/NIF guardado, añádeselo en su ficha; si son terceros duplicados, fusiónalos con el botón **Fusión** de la ficha del tercero. Así las siguientes facturas irán solas.
+Desde la 2.8.2, las facturas que llegan por lote se quedan en borrador cuando hay algo que una persona debe mirar: un CIF/NIF que no es válido, un proveedor encontrado por el nombre y no por el CIF/NIF, varios terceros posibles, o unos totales que no suman. El motivo está en la nota privada de la factura y en **Registro de facturas recibidas**. Desde la 2.9.0 también se quedan en borrador si no se han leído los totales, si el proveedor está cerrado o si Dolibarr no ha podido validarlas. Si el proveedor no tenía el CIF/NIF guardado, añádeselo en su ficha; si son terceros duplicados, fusiónalos desde **Terceros duplicados** con **Fusionar en este**. Así las siguientes facturas irán solas. Las tienes todas en **Facturas** con el filtro **Pendientes de revisar**.
 
 ## La factura del lote no se ha marcado como pagada. ¿Por qué?
 
-Desde la 2.8.3, si el banco rechaza el pago automático, EasyOcr lo deshace y deja la factura pendiente de pago, con el motivo en su nota privada y en **Logs de Webhook**. Lo más habitual es una cuenta de caja con una forma de pago que no es efectivo: una cuenta de caja solo admite pagos en efectivo. Cambia la cuenta o la forma de pago en la configuración del módulo; si no encajan, la propia configuración te lo avisa.
+Desde la 2.8.3, si el banco rechaza el pago automático, EasyOcr lo deshace y deja la factura pendiente de pago, con el motivo en su nota privada y en **Registro de facturas recibidas**. Lo más habitual es una cuenta de caja con una forma de pago que no es efectivo: una cuenta de caja solo admite pagos en efectivo. Cambia la cuenta o la forma de pago en la configuración del módulo; si no encajan, la propia configuración te lo avisa.
+
+## Mi proveedor no tiene CIF/NIF y en su ficha puse el nombre. ¿Sigue funcionando?
+
+Sí. Es habitual con proveedores de fuera de la Unión Europea, que no muestran identificación fiscal en la factura. Si en el campo CIF/NIF de su ficha has escrito su nombre, EasyOcr lo reconoce como tal: busca el proveedor por el nombre y le asigna la factura sin crear otro. En un lote, la factura queda en borrador para que confirmes que es el proveedor correcto. Si un día la IA lee un CIF/NIF real en su factura, la asigna igualmente a ese proveedor y te avisa para que lo guardes en su ficha.
+
+## He actualizado a la 2.9.0. ¿Tengo que cambiar algo en los lotes?
+
+No, salvo que llames al webhook desde un sistema propio. Desde la 2.9.0 la dirección de aviso lleva un token de tu empresa, que ves en la configuración del módulo. Los lotes nuevos ya la usan. Los que se enviaron antes de actualizar llevan la dirección antigua y se siguen aceptando durante 30 días, pero sin registrar el pago de esas facturas; la configuración te dice hasta qué día.
+
+## ¿Qué hago si creo que alguien tiene la dirección de aviso?
+
+Pulsa **Regenerar token** en la configuración del módulo. La dirección anterior deja de funcionar al momento. Los lotes que estuvieran en marcha con ella ya no crearán sus facturas: tendrás que crearlas a mano.

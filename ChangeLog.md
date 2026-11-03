@@ -5,6 +5,58 @@ Todos los cambios notables de EasyOcr se documentarán en este archivo.
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/),
 y este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 
+## [2.9.0] - 2026-11-03
+
+### Proveedores
+
+- **Los proveedores sin CIF/NIF siguen funcionando.** Muchas facturas de fuera de la UE (y alguna de dentro) no traen identificación fiscal, y en el campo CIF/NIF del tercero se escribe su nombre. EasyOcr lo reconoce: busca ese proveedor por el nombre y no crea otro.
+- Si la IA lee un CIF/NIF real en una factura de un proveedor que solo tienes guardado por el nombre, la factura va a ese proveedor pero queda **en borrador para revisar**, con el motivo en la nota.
+- Se reconoce el CIF/NIF aunque venga con etiquetas como «NIF IVA», «VAT No.» o «USt-IdNr.», el de Grecia (EL/GR) y el CIF/NIF extranjero guardado sin el prefijo del país.
+- Un proveedor **cerrado** ya no recibe facturas en silencio: se usa si no hay otro, y la factura queda para revisar.
+- Si la factura no llega a crearse, se borra el proveedor que se había dado de alta para ella.
+- La búsqueda de proveedores usa una tabla propia con índice, y va igual de rápida con muchos terceros.
+
+### Facturas
+
+- Una factura **por revisar** tiene ahora su estado propio: filtro en **Facturas**, contador en el inicio del módulo e insignia en el registro de facturas recibidas.
+- Si no se leen los totales del documento, la factura no se crea con importe 0: se queda con la suma de sus líneas y queda para revisar.
+- Si Dolibarr no puede validar la factura, se queda en borrador con el motivo en vez de dar error.
+- Retención (IRPF) bien firmada en los abonos.
+- La factura creada desde una plantilla del visor pasa por el mismo camino que la de la IA: los mismos controles de duplicados, el mismo pago y el PDF adjunto.
+- Corregido: el diario contable elegido se guardaba como cuenta bancaria.
+
+### Webhook (lotes)
+
+- **La dirección de aviso lleva un token propio de cada empresa**, que se ve y se puede regenerar en la configuración. La dirección antigua se sigue aceptando **30 días** después de actualizar, sin registrar pagos, para los lotes que ya estaban en marcha.
+- Una factura que ya se procesó no se procesa dos veces aunque el servicio repita el aviso.
+- Si dos documentos del mismo proveedor llegan a la vez, el segundo espera y se reintenta, en vez de crear el proveedor dos veces.
+- El pago automático comprueba que la cuenta exista, esté abierta y sea de la empresa. Si no, la factura se crea sin pago y el motivo queda anotado.
+- El registro guarda los datos completos solo de las facturas con error o por revisar, y se purga por días (`EASYOCR_WEBHOOK_LOG_DAYS`) también en PostgreSQL.
+- Nada se escribe en disco antes de comprobar el token, y el token no aparece en los logs.
+
+### Configuración y seguridad
+
+- Botón **Probar conexión**: comprueba la dirección y la clave del servicio y dice cuántas páginas quedan.
+- La dirección del servicio tiene que ser `https://` (salvo localhost) y la conexión siempre verifica el certificado.
+- Token CSRF en toda acción que escribe, permisos del core en cada operación y cuenta bancaria comprobada contra la empresa.
+- Los errores del servicio salen en lenguaje claro, sin detalle técnico.
+- **Posibles terceros duplicados**: botón **Fusionar en este**, que abre la fusión de Dolibarr con el tercero sugerido (el que tiene más facturas).
+- Al borrar una factura de proveedor o un tercero se borran también sus datos guardados por EasyOcr.
+
+### Para desarrolladores
+
+- Hooks `easyocrBeforeCreate` y `easyocrAfterCreate` (contexto `easyocrdocument`): el primero puede cambiar los datos o cancelar la creación.
+
+### Corregido
+
+- Error 500 en la pantalla de extracción con PHP 8 en inglés y alemán (un `%` sin escapar), y textos que salían con la clave en crudo.
+- Compatible de PHP 7.4 a PHP 8.5.
+
+### Notas de actualización
+
+- **No hace falta reactivar el módulo.** Al cargar la primera página después de copiar los ficheros, EasyOcr crea su tabla nueva, registra su trigger y sus menús.
+- **Lotes:** los lotes nuevos usan ya la dirección con token. Si llamas al webhook desde otro sistema con la dirección antigua (`?instance_id=`), cópiala de nuevo desde la configuración antes de que acaben los 30 días.
+
 ## [2.8.3] - 2026-11-02
 
 ### Corregido — el pago automático podía quedar fuera del banco

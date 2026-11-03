@@ -4,11 +4,11 @@
 
 | Campo | Valor |
 |-------|-------|
-| **Versión del módulo** | 2.8.3 |
+| **Versión del módulo** | 2.9.0 |
 | **Compatibilidad Min** | V16 (id 95) |
 | **Compatibilidad Max** | V24 (id 120) |
 | **PHP Min** | 7.4 |
-| **PHP Max** | 8.2 |
+| **PHP Max** | 8.5 |
 | **Duración acceso actualizaciones** | 365 días |
 | **Precio de venta** | 0 (libre) |
 | **Dolistore product_id** | 2798 |
@@ -151,7 +151,7 @@ Herramienta para extracción de datos de facturas PDF, generación automática d
 <h3>⚙️ Compatibilidad y requisitos</h3>
 <ul>
     <li>📦 Dolibarr <strong>V16+</strong> (compatible hasta V24+)</li>
-    <li>⚙️ PHP <strong>7.4 – 8.3+</strong></li>
+    <li>⚙️ PHP <strong>7.4 – 8.5</strong></li>
     <li>🗄️ MySQL 5.7+ / MariaDB 10.2+ / PostgreSQL 10+</li>
     <li>🌐 Navegador moderno con soporte ES6 y JavaScript</li>
     <li>🔑 <strong>Modo IA:</strong> suscripción activa en <a href="https://easyocr.es" target="_blank">easyocr.es</a> — <a href="https://easyocr.es" target="_blank">ver planes disponibles</a></li>
@@ -279,7 +279,7 @@ Tool for extracting data from PDF invoices, automatically generating supplier in
 <h3>⚙️ Compatibility &amp; requirements</h3>
 <ul>
     <li>📦 Dolibarr <strong>V16+</strong> (compatible up to V24+)</li>
-    <li>⚙️ PHP <strong>7.4 – 8.3+</strong></li>
+    <li>⚙️ PHP <strong>7.4 – 8.5</strong></li>
     <li>🗄️ MySQL 5.7+ / MariaDB 10.2+ / PostgreSQL 10+</li>
     <li>🌐 Modern browser with ES6 and JavaScript support</li>
     <li>🔑 <strong>AI Mode:</strong> active subscription at <a href="https://easyocr.es" target="_blank">easyocr.es</a> — <a href="https://easyocr.es" target="_blank">view available plans</a></li>
@@ -407,7 +407,7 @@ Automatisez le traitement des factures fournisseur et le scan de tickets de dép
 <h3>⚙️ Compatibilité et exigences</h3>
 <ul>
     <li>📦 Dolibarr <strong>V16+</strong> (compatible jusqu'à V24+)</li>
-    <li>⚙️ PHP <strong>7.4 – 8.3+</strong></li>
+    <li>⚙️ PHP <strong>7.4 – 8.5</strong></li>
     <li>🗄️ MySQL 5.7+ / MariaDB 10.2+ / PostgreSQL 10+</li>
     <li>🌐 Navigateur moderne avec support ES6 et JavaScript</li>
     <li>🔑 <strong>Mode IA :</strong> abonnement actif sur <a href="https://easyocr.es" target="_blank">easyocr.es</a> — <a href="https://easyocr.es" target="_blank">voir les plans disponibles</a></li>
@@ -536,7 +536,7 @@ Verarbeitung von Lieferantenrechnungen und Scannen von Spesenbelegen vom Handy (
 <h3>⚙️ Kompatibilität und Anforderungen</h3>
 <ul>
     <li>📦 Dolibarr <strong>V16+</strong> (kompatibel bis V24+)</li>
-    <li>⚙️ PHP <strong>7.4 – 8.3+</strong></li>
+    <li>⚙️ PHP <strong>7.4 – 8.5</strong></li>
     <li>🗄️ MySQL 5.7+ / MariaDB 10.2+ / PostgreSQL 10+</li>
     <li>🌐 Moderner Browser mit ES6 und JavaScript-Unterstützung</li>
     <li>🔑 <strong>KI-Modus:</strong> aktives Abonnement auf <a href="https://easyocr.es" target="_blank">easyocr.es</a> — <a href="https://easyocr.es" target="_blank">verfügbare Pläne ansehen</a></li>
@@ -665,7 +665,7 @@ Automatizza l'elaborazione delle fatture fornitori e la scansione di scontrini d
 <h3>⚙️ Compatibilità e requisiti</h3>
 <ul>
     <li>📦 Dolibarr <strong>V16+</strong> (compatibile fino a V24+)</li>
-    <li>⚙️ PHP <strong>7.4 – 8.3+</strong></li>
+    <li>⚙️ PHP <strong>7.4 – 8.5</strong></li>
     <li>🗄️ MySQL 5.7+ / MariaDB 10.2+ / PostgreSQL 10+</li>
     <li>🌐 Browser moderno con supporto ES6 e JavaScript</li>
     <li>🔑 <strong>Modalità IA:</strong> abbonamento attivo su <a href="https://easyocr.es" target="_blank">easyocr.es</a> — <a href="https://easyocr.es" target="_blank">vedi i piani disponibili</a></li>
@@ -711,12 +711,12 @@ info@easysoft.es | https://www.easysoft.es | https://easyocr.es
 
 - [ ] Archivo .zip generado con estructura correcta (`easyocr/`)
 - [ ] Imagen de portada preparada (800x600 o 1200x630 px)
-- [x] README.md actualizado (v2.8.3)
-- [x] ChangeLog.md actualizado (v2.8.3)
-- [x] Versión en module descriptor coincide (2.8.3)
+- [x] README.md actualizado (v2.9.0)
+- [x] ChangeLog.md actualizado (v2.9.0)
+- [x] Versión en module descriptor coincide (2.9.0)
 - [x] Todos los archivos .lang completos en 8 idiomas
 - [x] Textos sin mención de licencia ni de «código abierto» (regla de discurso)
 - [ ] Sin archivos de desarrollo (.git, .vscode, etc.)
 - [x] Pestañas administrativas con iconos consistentes
 - [x] Contenido legal y GDPR completo (Copying, Telemetry)
-- [x] DOLISTORE.md actualizado a v2.8.3
+- [x] DOLISTORE.md actualizado a v2.9.0
