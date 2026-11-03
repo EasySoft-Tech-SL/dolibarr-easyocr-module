@@ -264,7 +264,7 @@ function easyocrWebhookRegenerateToken($db, $entity)
  * @param  bool   $create Create the token when missing
  * @return string         Full https URL, '' when there is no token
  */
-function easyocrWebhookBuildUrl($db, $create = true)
+function easyocrWebhookBuildUrl($db, $create = true, $userId = 0)
 {
 	global $conf;
 
@@ -281,7 +281,83 @@ function easyocrWebhookBuildUrl($db, $create = true)
 	if ($multicompany) {
 		$url .= '&entity=' . $entity;
 	}
+	// The batch is processed with the rights of whoever launched it, not with an admin's
+	if ((int) $userId > 0) {
+		$url .= '&u=' . ((int) $userId) . '&sig=' . easyocrWebhookUserSig($token, (int) $userId);
+	}
 	return $url;
+}
+
+/**
+ * Receiver URL sent to the service with a new batch.
+ *
+ * Always our own webhook, signed with the user launching the batch. The URL posted by
+ * the browser counts only for an administrator, and only when it is not our own (an
+ * external receiver of theirs); the token never has to reach the browser.
+ *
+ * @param  DoliDB $db     Database handler
+ * @param  User   $user   User launching the batch
+ * @param  string $posted URL sent by the page ('' = none)
+ * @return string
+ */
+function easyocrWebhookBatchUrlFor($db, $user, $posted)
+{
+	$own = easyocrWebhookBuildUrl($db, true, is_object($user) ? (int) $user->id : 0);
+	$posted = trim((string) $posted);
+	if ($posted === '' || !is_object($user) || empty($user->admin)) {
+		return $own;
+	}
+	$ownBase = strtok(dol_buildpath('/easyocr/webhook_batch.php', 2), '?');
+	$postedPath = (string) parse_url($posted, PHP_URL_PATH);
+	if ($postedPath !== '' && $ownBase !== false && substr($ownBase, -strlen($postedPath)) === $postedPath) {
+		return $own; // our own receiver, maybe masked or unsigned: use the signed one
+	}
+	return $posted;
+}
+
+/**
+ * Masked form of a webhook URL, to show it without its secrets. Pure.
+ *
+ * @param  string $url Webhook URL
+ * @return string
+ */
+function easyocrWebhookMaskUrl($url)
+{
+	return preg_replace('/([?&](token|sig|instance_id)=)[^&]*/', '$1•••', (string) $url);
+}
+
+/**
+ * Signature of the user id carried in a batch URL. Pure.
+ *
+ * The token alone would let whoever reads a batch URL change "u" and act as someone else.
+ *
+ * @param  string $token  Webhook token of the entity
+ * @param  int    $userId User who launched the batch
+ * @return string         hex HMAC-SHA256
+ */
+function easyocrWebhookUserSig($token, $userId)
+{
+	return hash_hmac('sha256', 'u=' . ((int) $userId), (string) $token);
+}
+
+/**
+ * User a request acts for, from its "u" and "sig" parameters. Pure.
+ *
+ * @param  array  $get   Query parameters
+ * @param  string $token Webhook token of the entity
+ * @return int           User id; 0 when the URL names none; -1 when the signature is wrong
+ */
+function easyocrWebhookActingUserId($get, $token)
+{
+	if (!isset($get['u']) || (string) $get['u'] === '') {
+		return 0;
+	}
+	$uid = (is_scalar($get['u']) && ctype_digit((string) $get['u'])) ? (int) $get['u'] : 0;
+	$sig = (isset($get['sig']) && is_string($get['sig'])) ? $get['sig'] : '';
+	if ($uid <= 0 || (string) $token === '' || !hash_equals(easyocrWebhookUserSig($token, $uid), $sig)) {
+		return -1;
+	}
+	return $uid;
 }
 
 /**
@@ -362,29 +438,25 @@ function easyocrWebhookLegacyEligible($schemaRevision, $apiKey)
 /**
  * Payment settings for this notification. Pure: no I/O.
  *
- * Module config first, then the query string (?pay=1&bank_id=N&payment_type=N), which
- * only counts when the request came with the token. A legacy request never pays.
+ * Only the module config, set by an administrator. The query string (?pay=1&bank_id=N)
+ * no longer counts: anyone who saw a batch URL could have paid into any account. A legacy
+ * request never pays, and neither does one acting for a user without the payment right.
  *
  * @param  string $authMode 'token' or 'legacy'
- * @param  array  $get      Query parameters
+ * @param  array  $get      Query parameters (only read to report a legacy request)
  * @param  array  $cfg      mark_paid, bank_id, payment_type from the module config
+ * @param  bool   $canPay   The acting user may register supplier payments
  * @return array{mark_paid:int,bank_id:int,payment_type:int,skip_reason:string}
  */
-function easyocrWebhookPaymentSettings($authMode, $get, $cfg)
+function easyocrWebhookPaymentSettings($authMode, $get, $cfg, $canPay = true)
 {
 	$markPaid = !empty($cfg['mark_paid']) ? 1 : 0;
 	$bankId = !empty($cfg['bank_id']) ? (int) $cfg['bank_id'] : 0;
 	$payType = !empty($cfg['payment_type']) ? (int) $cfg['payment_type'] : 0;
 
 	if ($authMode === 'token') {
-		if (isset($get['pay'])) {
-			$markPaid = ((int) $get['pay'] === 1) ? 1 : 0;
-		}
-		if (isset($get['bank_id']) && (int) $get['bank_id'] > 0) {
-			$bankId = (int) $get['bank_id'];
-		}
-		if (isset($get['payment_type']) && (int) $get['payment_type'] > 0) {
-			$payType = (int) $get['payment_type'];
+		if ($markPaid && !$canPay) {
+			return array('mark_paid' => 0, 'bank_id' => 0, 'payment_type' => 0, 'skip_reason' => 'no_right');
 		}
 		return array('mark_paid' => $markPaid, 'bank_id' => $bankId, 'payment_type' => $payType, 'skip_reason' => '');
 	}
@@ -768,6 +840,11 @@ $legacyEligible = ($legacyUntil <= 0 && $eoReceivedInstanceId !== '')
 	? easyocrWebhookLegacyEligible(easyocrWebhookReadConst($db, 'EASYOCR_SCHEMA_REVISION', $reqEntity), easyocrWebhookReadConst($db, 'EASYOCR_AI_APIKEY', $reqEntity))
 	: false;
 $auth = easyocrWebhookAuthenticate($eoReceivedToken, $eoReceivedInstanceId, $expectedToken, $expectedInstanceId, $legacyUntil, dol_now(), $legacyEligible);
+// A batch URL names the user who launched it (u + sig): its rights apply below
+$eoActingUserId = ($auth['ok'] && $auth['mode'] === 'token') ? easyocrWebhookActingUserId($_GET, $expectedToken) : 0;
+if ($eoActingUserId < 0) {
+	$auth = array('ok' => false, 'mode' => '', 'reason' => 'auth_failed', 'set_legacy_until' => 0);
+}
 unset($expectedToken, $expectedInstanceId);
 if (!$auth['ok']) {
 	// Same answer for every failure: no lengths, no expected values
@@ -802,6 +879,32 @@ if (empty($conf->easyocr->enabled)) {
 }
 $eoAuthenticated = true;
 $entityPathFragment = '/easyocr/entity_' . $reqEntity;
+
+// ─── Acting user and its rights ──────────────────────────────────────────
+// A batch launched from Dolibarr carries its user: the invoices are created, validated
+// and paid only as far as that user may. A URL without one (copied from the setup page,
+// which only administrators see) keeps acting as the first administrator.
+$eoActingUser = null;
+$eoRights = array('create' => true, 'validate' => true, 'societe' => true, 'pay' => true);
+if ($eoActingUserId > 0) {
+	require_once DOL_DOCUMENT_ROOT . '/user/class/user.class.php';
+	dol_include_once('/easyocr/lib/easyocr_errors.lib.php');
+	$eoActingUser = new User($db);
+	$eoUserOk = $eoActingUser->fetch($eoActingUserId) > 0
+		&& (int) $eoActingUser->statut === 1
+		&& ((int) $eoActingUser->entity === 0 || (int) $eoActingUser->entity === $reqEntity);
+	if (!$eoUserOk) {
+		dol_syslog('EasyOCR webhook: refused (user ' . $eoActingUserId . ' disabled or of another entity)', LOG_WARNING);
+		easyocrWebhookError(403, array('error' => 'Forbidden', 'reason' => 'auth_failed'));
+	}
+	$eoActingUser->getrights();
+	$eoRights = array(
+		'create'   => easyocrAjaxCan($eoActingUser, 'supplier_invoice_create'),
+		'validate' => easyocrAjaxCan($eoActingUser, 'supplier_invoice_validate'),
+		'societe'  => easyocrAjaxCan($eoActingUser, 'societe_create'),
+		'pay'      => easyocrAjaxCan($eoActingUser, 'supplier_payment'),
+	);
+}
 
 // ─── Optional: verify webhook secret header ──────────────────────────────
 $webhookSecret = getDolGlobalString('EASYOCR_WEBHOOK_SECRET');
@@ -958,23 +1061,24 @@ if ($enteredBlock) {
 			$payment  = isset($structuredData['payment']) && is_array($structuredData['payment']) ? $structuredData['payment'] : array();
 
 			// ── Payment settings ────────────────────────────────────────────
-			// Module config (EASYOCR_WEBHOOK_MARK_PAID / _BANK_ID / _PAYMENT_TYPE), and with
-			// the token only, the per-batch override ?pay=1&bank_id=N&payment_type=N. The
-			// account must exist, be open and belong to this entity; the method must exist.
-			// NOTE: the payment is only created when the invoice is VALIDATED.
+			// Module config only (EASYOCR_WEBHOOK_MARK_PAID / _BANK_ID / _PAYMENT_TYPE), and
+			// only if the acting user may pay. The account must exist, be open and belong to
+			// this entity; the method must exist. The payment needs a VALIDATED invoice.
 			$pay = easyocrWebhookPaymentSettings($authMode, $_GET, array(
 				'mark_paid'    => getDolGlobalInt('EASYOCR_WEBHOOK_MARK_PAID'),
 				'bank_id'      => getDolGlobalInt('EASYOCR_WEBHOOK_BANK_ID'),
 				'payment_type' => getDolGlobalInt('EASYOCR_WEBHOOK_PAYMENT_TYPE'),
-			));
+			), $eoRights['pay']);
 			$webhookPaymentSkip = $pay['skip_reason'];
 			if ($pay['mark_paid']) {
 				$payCheck = easyocrWebhookCheckPayment($db, $pay['bank_id'], $pay['payment_type'], $conf->entity);
 				if ($payCheck !== '') {
 					$webhookPaymentSkip = $payCheck;
 					$pay['mark_paid'] = 0;
-				} elseif (getDolGlobalString('EASYOCR_INVOICE_DRAFT')) {
-					@file_put_contents($logFile, date('H:i:s') . " | WARNING: mark-as-paid requested but module creates DRAFT invoices (EASYOCR_INVOICE_DRAFT=1) — payment skipped until validated\n", FILE_APPEND | LOCK_EX);
+				} elseif (getDolGlobalString('EASYOCR_INVOICE_DRAFT') || !$eoRights['validate']) {
+					// A draft is never paid: say so, and the document is left to review
+					$webhookPaymentSkip = 'draft';
+					$pay['mark_paid'] = 0;
 				}
 			}
 			if ($webhookPaymentSkip !== '') {
@@ -1008,7 +1112,9 @@ if ($enteredBlock) {
 				'supplier_email'   => isset($supplier['email']) ? $supplier['email'] : '',
 				// Only used to detect that the AI mixed up issuer and receiver
 				'customer_tax_id'  => isset($structuredData['customer']['tax_id']) ? $structuredData['customer']['tax_id'] : '',
-				'invoice_status'   => '', // Use module config default
+				// Module config default, or a draft when the acting user may not validate
+				'invoice_status'   => $eoRights['validate'] ? '' : 'draft',
+				'allow_supplier_create' => $eoRights['societe'] ? 1 : 0,
 				'invoice_type'     => 0,
 				'journal_code'     => '',
 				'import_key'       => 'easyocr-wh',
@@ -1074,7 +1180,15 @@ if ($enteredBlock) {
 				'payment_type_id' => $params['payment_type_id'],
 			), JSON_UNESCAPED_UNICODE) . "\n", FILE_APPEND | LOCK_EX);
 
-			$webhookResult = easyocrCreateInvoiceFromOCR($params);
+			if (!$eoRights['create']) {
+				// The user who launched the batch may not create supplier invoices
+				$webhookResult = array('status' => 'error', 'error_code' => 'no_right', 'message' => $langs->transnoentities('EasyOcrWebhookNoCreateRight'));
+				if (!empty($params['file_tmp_path'])) {
+					@unlink($params['file_tmp_path']);
+				}
+			} else {
+				$webhookResult = easyocrCreateInvoiceFromOCR($params, $eoActingUser);
+			}
 			unset($params);
 			@file_put_contents($logFile, date('H:i:s') . ' | DEBUG-FLOW: <<< Result: ' . json_encode($webhookResult, JSON_UNESCAPED_UNICODE) . "\n", FILE_APPEND | LOCK_EX);
 

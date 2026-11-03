@@ -228,12 +228,16 @@ eo_assert('webhook log row is kept for statistics', $log !== null, true);
 eo_assert('webhook log: payload removed', $log ? $log->payload : 'x', null);
 eo_assert('webhook log: invoice references removed', $log ? array($log->invoice_id, $log->invoice_ref) : 'x', array(null, null));
 eo_assert('webhook log: file name and message removed', $log ? array($log->document_filename, $log->processing_message) : 'x', array(null, null));
-eo_assert('webhook log: status kept', $log ? $log->processing_status : null, 'ok');
+eo_assert('webhook log: status deleted, so the document can be processed again', $log ? $log->processing_status : null, 'deleted');
 $pf = eo_one("SELECT COUNT(*) as n FROM " . MAIN_DB_PREFIX . "easyocr_processed_files WHERE file_hash = 'eoui" . $rnd . "'");
 eo_assert('anti-duplicate fingerprint removed', (int) $pf->n, 0);
-$ib = eo_one("SELECT COUNT(*) as n FROM " . MAIN_DB_PREFIX . "easyocr_inbox WHERE rowid = " . $inboxDone);
-eo_assert('inbox row processed into the invoice removed', (int) $ib->n, 0);
-eo_assert('inbox file processed into the invoice deleted', is_file($inboxDir . '/' . $inboxName), false);
+// Nothing irreversible inside the delete (it could still be rolled back): the inbox
+// document goes back to pending, with its file
+$ib = eo_one("SELECT status, fk_invoice_created FROM " . MAIN_DB_PREFIX . "easyocr_inbox WHERE rowid = " . $inboxDone);
+eo_assert('inbox document processed into the invoice goes back to pending', $ib ? array((int) $ib->status, $ib->fk_invoice_created) : 'gone', array(0, null));
+eo_assert('... and its file is kept', is_file($inboxDir . '/' . $inboxName), true);
+$db->query("DELETE FROM " . MAIN_DB_PREFIX . "easyocr_inbox WHERE rowid = " . $inboxDone);
+@unlink($inboxDir . '/' . $inboxName);
 $ib2 = eo_one("SELECT fk_facture_fourn FROM " . MAIN_DB_PREFIX . "easyocr_inbox WHERE rowid = " . $inboxPending);
 eo_assert('pending inbox document stays, unattached', $ib2 ? $ib2->fk_facture_fourn : 'gone', null);
 

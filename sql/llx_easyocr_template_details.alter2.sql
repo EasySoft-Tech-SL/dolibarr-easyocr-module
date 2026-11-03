@@ -5,4 +5,5 @@
 
 ALTER TABLE llx_easyocr_template_details ADD COLUMN entity integer DEFAULT 1 NOT NULL AFTER rowid;
 
-UPDATE llx_easyocr_template_details d INNER JOIN llx_easyocr_template t ON t.rowid = d.fk_template SET d.entity = t.entity;
+-- Portable form (MySQL and PostgreSQL): UPDATE ... JOIN only exists in MySQL
+UPDATE llx_easyocr_template_details SET entity = (SELECT t.entity FROM llx_easyocr_template t WHERE t.rowid = llx_easyocr_template_details.fk_template) WHERE fk_template IN (SELECT t2.rowid FROM llx_easyocr_template t2);

@@ -22,6 +22,11 @@ y este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 - Si no se leen los totales del documento, la factura no se crea con importe 0: se queda con la suma de sus líneas y queda para revisar.
 - Si Dolibarr no puede validar la factura, se queda en borrador con el motivo en vez de dar error.
 - Retención (IRPF) bien firmada en los abonos.
+- Una factura exenta (IVA 0) con IRPF ya no se crea con un IVA negativo. Si no se lee el IVA, se calcula descontando recargo e IRPF y la factura queda para revisar.
+- Si Dolibarr rechaza una línea, la factura queda en borrador para revisar: los totales de cabecera ocultaban que faltaba.
+- El proveedor elegido a mano tiene que ser de la empresa y no estar cerrado.
+- Al borrar una factura, el documento recibido del que salió vuelve a «pendiente» con su fichero, y el mismo documento se puede volver a procesar desde el lote.
+- Los adjuntos solo se guardan con extensiones de documento; un fichero que rechaza el antivirus ya no queda registrado.
 - La factura creada desde una plantilla del visor pasa por el mismo camino que la de la IA: los mismos controles de duplicados, el mismo pago y el PDF adjunto.
 - Corregido: el diario contable elegido se guardaba como cuenta bancaria.
 
@@ -30,7 +35,10 @@ y este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 - **La dirección de aviso lleva un token propio de cada empresa**, que se ve y se puede regenerar en la configuración. La dirección antigua se sigue aceptando **30 días** después de actualizar, sin registrar pagos, para los lotes que ya estaban en marcha.
 - Una factura que ya se procesó no se procesa dos veces aunque el servicio repita el aviso.
 - Si dos documentos del mismo proveedor llegan a la vez, el segundo espera y se reintenta, en vez de crear el proveedor dos veces.
-- El pago automático comprueba que la cuenta exista, esté abierta y sea de la empresa. Si no, la factura se crea sin pago y el motivo queda anotado.
+- **Cada lote se procesa con los permisos de quien lo lanza.** Si ese usuario no puede crear facturas de proveedor, no se crea ninguna; si no puede validarlas, quedan en borrador; si no puede dar de alta terceros, no se crean proveedores nuevos; y si no puede registrar pagos, no se pagan. Antes todo se hacía como el primer administrador.
+- La pantalla de lotes ya no muestra el token a quien no es administrador.
+- El pago automático sale solo de la configuración del módulo. Los parámetros `?pay=`, `bank_id=` y `payment_type=` en la dirección del webhook ya no se tienen en cuenta.
+- El pago automático comprueba que la cuenta exista, esté abierta y sea de la empresa. Si no, la factura se crea sin pago y el motivo queda anotado. Si la factura se crea en borrador, queda «por revisar» y se anota que no se ha pagado.
 - El registro guarda los datos completos solo de las facturas con error o por revisar, y se purga por días (`EASYOCR_WEBHOOK_LOG_DAYS`) también en PostgreSQL.
 - Nada se escribe en disco antes de comprobar el token, y el token no aparece en los logs.
 
@@ -45,7 +53,8 @@ y este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 
 ### Para desarrolladores
 
-- Hooks `easyocrBeforeCreate` y `easyocrAfterCreate` (contexto `easyocrdocument`): el primero puede cambiar los datos o cancelar la creación.
+- Hooks `easyocrBeforeCreate` y `easyocrAfterCreate` (contexto `easyocrdocument`): el primero puede cambiar los datos o cancelar la creación (devolviendo > 0, o con la convención de Dolibarr: `$this->error` y retorno negativo).
+- La reparación del esquema funciona también en PostgreSQL (una migración usaba `UPDATE ... JOIN`, que solo existe en MySQL). Si un fichero SQL falla, el trigger y los menús se registran igualmente y no se reintenta en cada petición, solo una vez por hora.
 
 ### Corregido
 
@@ -55,6 +64,7 @@ y este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 ### Notas de actualización
 
 - **No hace falta reactivar el módulo.** Al cargar la primera página después de copiar los ficheros, EasyOcr crea su tabla nueva, registra su trigger y sus menús.
+- **Pago automático por lotes:** si añadías `?pay=1&bank_id=...` a la dirección del webhook, configúralo ahora en la configuración del módulo; la dirección ya no lo cambia.
 - **Lotes:** los lotes nuevos usan ya la dirección con token. Si llamas al webhook desde otro sistema con la dirección antigua (`?instance_id=`), cópiala de nuevo desde la configuración antes de que acaben los 30 días.
 
 ## [2.8.3] - 2026-11-02

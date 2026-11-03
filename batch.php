@@ -443,11 +443,14 @@ if (!$canBatch) {
     // Webhook URL — always auto-fill with our receiver endpoint
     $disabledWebhook = !$hasWebhooks ? ' disabled' : '';
     $lockedWebhook = !$hasWebhooks ? ' ' . img_picto($langs->trans('EasyOcrBatchUpgradePlan'), 'warning') : '';
-    $webhookDefault = GETPOST('webhook_url', 'alpha');
-    if (empty($webhookDefault)) {
-      // Module token of this entity (created the first time), https, &entity=N with multicompany.
-      // The instance unique id of Dolibarr is the key of dolEncrypt(): it never goes in a URL.
-      $webhookDefault = easyocrWebhookBuildUrl($db, true);
+    // Module token of this entity (created the first time), https, &entity=N with multicompany.
+    // The server signs it with the user when the batch is created; here only an
+    // administrator sees it whole (and may change it), everyone else sees it masked.
+    $webhookIsAdmin = !empty($user->admin);
+    $webhookDefault = easyocrWebhookBuildUrl($db, true);
+    if (!$webhookIsAdmin) {
+      $webhookDefault = easyocrWebhookMaskUrl($webhookDefault);
+      $disabledWebhook .= ' readonly';
     }
     print '<tr>';
     print '<td>' . $langs->trans('EasyOcrBatchWebhookUrl') . $lockedWebhook . '</td>';
@@ -456,9 +459,11 @@ if (!$canBatch) {
     print '<input type="url" id="webhook_url" name="webhook_url" class="flat" form="eo-batch-form" style="flex:1;min-width:0;"';
     print $disabledWebhook;
     print ' value="' . dol_escape_htmltag($webhookDefault) . '">';
-    print '<button type="button" id="eo-webhook-url-copy" class="button button-save" title="' . dol_escape_htmltag($langs->trans('CopyToClipboard')) . '" style="white-space:nowrap;">';
-    print '<i class="fas fa-copy"></i> <span class="eo-copy-label">' . dol_escape_htmltag($langs->trans('Copy')) . '</span>';
-    print '</button>';
+    if ($webhookIsAdmin) {
+      print '<button type="button" id="eo-webhook-url-copy" class="button button-save" title="' . dol_escape_htmltag($langs->trans('CopyToClipboard')) . '" style="white-space:nowrap;">';
+      print '<i class="fas fa-copy"></i> <span class="eo-copy-label">' . dol_escape_htmltag($langs->trans('Copy')) . '</span>';
+      print '</button>';
+    }
     print '</div>';
     if ($hasWebhooks) {
       print '<span class="opacitymedium small">' . img_picto('', 'info', 'class="pictofixedwidth"') . $langs->trans('EasyOcrBatchWebhookAutoHint') . '</span>';

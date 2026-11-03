@@ -26,7 +26,7 @@ Desde la 2.8.2, las facturas que llegan por lote se quedan en borrador cuando ha
 
 ## La factura del lote no se ha marcado como pagada. ¿Por qué?
 
-Desde la 2.8.3, si el banco rechaza el pago automático, EasyOcr lo deshace y deja la factura pendiente de pago, con el motivo en su nota privada y en **Registro de facturas recibidas**. Lo más habitual es una cuenta de caja con una forma de pago que no es efectivo: una cuenta de caja solo admite pagos en efectivo. Cambia la cuenta o la forma de pago en la configuración del módulo; si no encajan, la propia configuración te lo avisa.
+Desde la 2.8.3, si el banco rechaza el pago automático, EasyOcr lo deshace y deja la factura pendiente de pago, con el motivo en su nota privada y en **Registro de facturas recibidas**. Tampoco se paga una factura que se queda en borrador, ni la de un lote lanzado por un usuario sin permiso para registrar pagos. Lo más habitual es una cuenta de caja con una forma de pago que no es efectivo: una cuenta de caja solo admite pagos en efectivo. Cambia la cuenta o la forma de pago en la configuración del módulo; si no encajan, la propia configuración te lo avisa.
 
 ## Mi proveedor no tiene CIF/NIF y en su ficha puse el nombre. ¿Sigue funcionando?
 

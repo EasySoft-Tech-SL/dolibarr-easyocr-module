@@ -131,11 +131,23 @@ eo_group('payment decision');
 $cfgOff = array('mark_paid' => 0, 'bank_id' => 0, 'payment_type' => 0);
 $cfgOn = array('mark_paid' => 1, 'bank_id' => 7, 'payment_type' => 4);
 $p = easyocrWebhookPaymentSettings('token', array('pay' => '1', 'bank_id' => '3', 'payment_type' => '6'), $cfgOff);
-eo_assert('token: the URL can ask for the payment', array($p['mark_paid'], $p['bank_id'], $p['payment_type']), array(1, 3, 6));
+eo_assert('token: ?pay=1&bank_id in the URL is ignored (anyone with a batch URL could pay)', array($p['mark_paid'], $p['bank_id'], $p['payment_type']), array(0, 0, 0));
 $p = easyocrWebhookPaymentSettings('token', array(), $cfgOn);
-eo_assert('token: module config applies without URL', array($p['mark_paid'], $p['bank_id'], $p['payment_type']), array(1, 7, 4));
-$p = easyocrWebhookPaymentSettings('token', array('pay' => '0'), $cfgOn);
-eo_assert('token: ?pay=0 turns the config payment off', $p['mark_paid'], 0);
+eo_assert('token: module config applies', array($p['mark_paid'], $p['bank_id'], $p['payment_type']), array(1, 7, 4));
+$p = easyocrWebhookPaymentSettings('token', array('bank_id' => '3'), $cfgOn);
+eo_assert('token: the URL cannot change the account of the config', $p['bank_id'], 7);
+$p = easyocrWebhookPaymentSettings('token', array(), $cfgOn, false);
+eo_assert('token: a user without the payment right does not pay, and says why', array($p['mark_paid'], $p['skip_reason']), array(0, 'no_right'));
+
+eo_group('batch URL signed with its user');
+eo_assert('no u: acts as nobody in particular', easyocrWebhookActingUserId(array(), $tok), 0);
+$sig5 = easyocrWebhookUserSig($tok, 5);
+eo_assert('u with its signature: that user', easyocrWebhookActingUserId(array('u' => '5', 'sig' => $sig5), $tok), 5);
+eo_assert('u changed, signature of another user: refused', easyocrWebhookActingUserId(array('u' => '1', 'sig' => $sig5), $tok), -1);
+eo_assert('u without signature: refused', easyocrWebhookActingUserId(array('u' => '5'), $tok), -1);
+eo_assert('signature made with another token: refused', easyocrWebhookActingUserId(array('u' => '5', 'sig' => easyocrWebhookUserSig('other', 5)), $tok), -1);
+eo_assert('u not a number: refused', easyocrWebhookActingUserId(array('u' => '5 OR 1', 'sig' => $sig5), $tok), -1);
+eo_assert('masked URL hides token and signature', easyocrWebhookMaskUrl('https://x/webhook_batch.php?token=abc&entity=1&u=5&sig=def'), 'https://x/webhook_batch.php?token=•••&entity=1&u=5&sig=•••');
 $p = easyocrWebhookPaymentSettings('legacy', array('pay' => '1', 'bank_id' => '3'), $cfgOff);
 eo_assert('legacy: the URL never pays, and says why', array($p['mark_paid'], $p['bank_id'], $p['skip_reason']), array(0, 0, 'legacy'));
 $p = easyocrWebhookPaymentSettings('legacy', array(), $cfgOn);
@@ -146,6 +158,7 @@ eo_assert('ok stays ok', easyocrWebhookResolveStatus(array('status' => 'ok')), '
 eo_assert('forced draft is review', easyocrWebhookResolveStatus(array('status' => 'ok', 'forced_draft' => true)), 'review');
 eo_assert('review codes are review', easyocrWebhookResolveStatus(array('status' => 'ok', 'review_codes' => array('totals_missing'))), 'review');
 eo_assert('payment not registered is review', easyocrWebhookResolveStatus(array('status' => 'ok'), 'bank_closed'), 'review');
+eo_assert('payment asked but the invoice is a draft: review', easyocrWebhookResolveStatus(array('status' => 'ok'), 'draft'), 'review');
 eo_assert('retry passes through', easyocrWebhookResolveStatus(array('status' => 'retry', 'error_code' => 'lock_busy')), 'retry');
 eo_assert('unknown status is an error', easyocrWebhookResolveStatus(array('status' => 'weird')), 'error');
 
@@ -296,6 +309,28 @@ try {
 	dolibarr_set_const($db, 'EASYOCR_AI_APIKEY', 'k-test-key', 'chaine', 0, '', 1);
 	easyocrEnsureSchema();
 	eo_assert('a window already set is not moved', easyocrWebhookReadConst($db, 'EASYOCR_WEBHOOK_LEGACY_UNTIL', 1), '12345');
+
+	// A statement this database rejects (the MySQL-only UPDATE ... JOIN on PostgreSQL):
+	// trigger and menus are registered anyway, and the files are not rerun on every request
+	$badSql = __DIR__ . '/../sql/llx_zz_eotest_broken.sql';
+	file_put_contents($badSql, "THIS IS NOT SQL;\n");
+	try {
+		dolibarr_set_const($db, 'EASYOCR_SCHEMA_REVISION', '2', 'chaine', 0, '', 1);
+		dolibarr_del_const($db, 'EASYOCR_SCHEMA_FAILED', 1);
+		dolibarr_del_const($db, 'MAIN_MODULE_EASYOCR_TRIGGERS', 1);
+		eo_assert('broken SQL file: repair reports failure', easyocrEnsureSchema(), false);
+		eo_assert('... but the trigger is registered anyway', easyocrWebhookReadConst($db, 'MAIN_MODULE_EASYOCR_TRIGGERS', 1), '1');
+		eo_assert('... the failure is marked', strpos(getDolGlobalString('EASYOCR_SCHEMA_FAILED'), EASYOCR_SCHEMA_REVISION . '@') === 0, true);
+		dolibarr_del_const($db, 'MAIN_MODULE_EASYOCR_TRIGGERS', 1);
+		easyocrEnsureSchema();
+		eo_assert('... and not retried on the next request (within the hour)', easyocrWebhookReadConst($db, 'MAIN_MODULE_EASYOCR_TRIGGERS', 1), '');
+	} finally {
+		@unlink($badSql);
+		dolibarr_del_const($db, 'EASYOCR_SCHEMA_FAILED', 1);
+		dolibarr_set_const($db, 'EASYOCR_SCHEMA_REVISION', '2', 'chaine', 0, '', 1);
+		easyocrEnsureSchema();
+	}
+	eo_assert('fixed file: repair completes and clears the mark', array(easyocrWebhookReadConst($db, 'EASYOCR_SCHEMA_REVISION', 1), easyocrWebhookReadConst($db, 'EASYOCR_SCHEMA_FAILED', 1), easyocrWebhookReadConst($db, 'MAIN_MODULE_EASYOCR_TRIGGERS', 1)), array((string) EASYOCR_SCHEMA_REVISION, '', '1'));
 } finally {
 	dolibarr_set_const($db, 'EASYOCR_SCHEMA_REVISION', $prevRev !== '' ? $prevRev : (string) EASYOCR_SCHEMA_REVISION, 'chaine', 0, '', 1);
 	if ($prevWin !== '') {
@@ -331,6 +366,14 @@ eo_assert('regenerated token is new and stored', $t1b !== $t1 && easyocrWebhookR
 $url = easyocrWebhookBuildUrl($db, true);
 eo_assert('webhook URL carries the token, not the instance id', strpos($url, '?token=' . $t1b) !== false && strpos($url, 'instance_id') === false && strpos($url, (string) $dolibarr_main_instance_unique_id) === false, true);
 eo_assert('webhook URL is https', strpos($url, 'https://') === 0, true);
+$urlU = easyocrWebhookBuildUrl($db, true, 5);
+eo_assert('batch URL carries its user, signed', strpos($urlU, '&u=5&sig=' . easyocrWebhookUserSig($t1b, 5)) !== false, true);
+$nonAdmin = (object) array('id' => 5, 'admin' => 0);
+$admin = (object) array('id' => 1, 'admin' => 1);
+eo_assert('non-admin: a URL sent by the browser is ignored', easyocrWebhookBatchUrlFor($db, $nonAdmin, 'https://evil.example/hook?x=1'), $urlU);
+eo_assert('non-admin: nothing sent, the signed own URL', easyocrWebhookBatchUrlFor($db, $nonAdmin, ''), $urlU);
+eo_assert('admin: an external receiver of their own is kept', easyocrWebhookBatchUrlFor($db, $admin, 'https://mine.example/hook'), 'https://mine.example/hook');
+eo_assert('admin: our own URL (masked or not) becomes the signed one', easyocrWebhookBatchUrlFor($db, $admin, easyocrWebhookMaskUrl($url)), easyocrWebhookBuildUrl($db, true, 1));
 
 eo_group('idempotency');
 $docA = 'eo-test-doc-' . uniqid();
@@ -444,6 +487,36 @@ if ($probeCode === 0) {
 
 		list($c, $h, $b) = eo_http($endpoint . '?token=' . str_repeat('0', 40), '{"event":"batch.completed"}');
 		eo_assert('wrong token: 403', $c, 403);
+
+		list($c) = eo_http($endpoint . '?token=' . $httpTok . '&u=1&sig=' . easyocrWebhookUserSig($httpTok, 2), '{"event":"batch.completed"}');
+		eo_assert('right token, user with a signature of another user: 403', $c, 403);
+
+		// A batch launched by a user without supplier-invoice rights creates nothing
+		require_once DOL_DOCUMENT_ROOT . '/user/class/user.class.php';
+		$eoAdmin = new User($db);
+		$eoAdmin->fetch(1);
+		$noRight = new User($db);
+		$noRight->login = 'eo_test_noright_' . substr(uniqid(), -6);
+		$noRight->lastname = 'EasyOcr test';
+		$noRight->entity = 1;
+		$noRightId = $noRight->create($eoAdmin);
+		if ($noRightId > 0) {
+			$docNR = 'eo-test-noright-' . uniqid();
+			$nrPayload = array('event' => 'batch.document.completed', 'batch_id' => $docNR, 'data' => array('document_id' => $docNR, 'status' => 'completed',
+				'structured_data' => array('document_number' => 'NR-' . $docNR, 'issue_date' => date('Y-m-d'), 'supplier' => array('name' => 'EO NoRight Test SL', 'tax_id' => 'B00000000'),
+					'items' => array(), 'totals' => array('net_subtotal' => 10, 'tax_total' => 2.1, 'total_payable' => 12.1))));
+			list($c, $h, $b) = eo_http($endpoint . '?token=' . $httpTok . '&u=' . $noRightId . '&sig=' . easyocrWebhookUserSig($httpTok, $noRightId), json_encode($nrPayload));
+			$j = json_decode($b, true);
+			eo_assert('user without the right: the document is refused, no invoice', array($c, isset($j['processing']['invoice_id']) ? $j['processing']['invoice_id'] : null, isset($j['status']) ? $j['status'] : null), array(200, null, 'error'));
+			$nInv = (int) $db->fetch_object($db->query("SELECT COUNT(*) AS n FROM " . MAIN_DB_PREFIX . "facture_fourn WHERE ref_supplier = 'NR-" . $db->escape($docNR) . "'"))->n;
+			eo_assert('... and nothing in the database', $nInv, 0);
+			$nrMsg = isset($j['processing']['message']) ? (string) $j['processing']['message'] : '';
+			eo_assert('user without the right: refused because of that right', strpos($nrMsg, $langs->transnoentities('EasyOcrWebhookNoCreateRight')) !== false, true);
+			$db->query("DELETE FROM " . MAIN_DB_PREFIX . "easyocr_webhook_log WHERE batch_id = '" . $db->escape($docNR) . "'");
+			$noRight->delete($eoAdmin);
+		} else {
+			eo_info('could not create the test user: ' . $noRight->error);
+		}
 		eo_assert('the 403 does not reveal the expected value nor lengths', strpos($b, $httpTok) === false && strpos($b, 'expected') === false && strpos($b, 'received') === false, true);
 
 		list($c) = eo_http($endpoint . '?token=' . $httpTok, null, 'GET');

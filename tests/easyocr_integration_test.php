@@ -912,6 +912,7 @@ if (!is_object($hookmanager)) {
 $eoHook = new class {
 	public $seen = array();
 	public $refuse = false;
+	public $refuseDolibarrWay = false;
 	public $results = array();
 	public $resprints = '';
 	public $resArray = array();
@@ -924,6 +925,11 @@ $eoHook = new class {
 		if ($this->refuse) {
 			$hookmanager->error = 'refused by the test hook';
 			return 1;
+		}
+		if ($this->refuseDolibarrWay) {
+			// The usual convention of a Dolibarr hook: error on the object, negative return
+			$this->error = 'refused the Dolibarr way';
+			return -1;
 		}
 		return 0;
 	}
@@ -946,6 +952,13 @@ eo_assert('hook before: can change the parameters', $noteHook && strpos((string)
 $eoHook->refuse = true;
 $r = easyocrCreateInvoiceFromOCR($whParams('', '', 'HOOK2', array('fk_soc' => $supplierId)), $user);
 eo_assert('hook before: can refuse the document', array(isset($r['status']) ? $r['status'] : '', isset($r['error_code']) ? $r['error_code'] : ''), array('error', 'hook_refused'));
+$eoHook->refuse = false;
+$eoHook->refuseDolibarrWay = true;
+$refHookDol = 'HOOK3';
+$r = easyocrCreateInvoiceFromOCR($whParams('', '', $refHookDol, array('fk_soc' => $supplierId)), $user);
+eo_assert('hook before: refusing the Dolibarr way ($this->error, return -1) also refuses', array(isset($r['status']) ? $r['status'] : '', isset($r['error_code']) ? $r['error_code'] : ''), array('error', 'hook_refused'));
+eo_assert('... with the hook message', isset($r['message']) ? $r['message'] : '', 'refused the Dolibarr way');
+$eoHook->refuseDolibarrWay = false;
 unset($hookmanager->hooks['easyocrdocument']['eotest']);
 if (property_exists($hookmanager, 'hooksSorted')) {
 	unset($hookmanager->hooksSorted['easyocrdocument']['eotest']);
@@ -982,6 +995,78 @@ eo_assert('template: same supplier ref again is a repeat', isset($r2['status']) 
 $tplParams['ref_supplier'] = '';
 $r3 = easyocrCreateInvoiceFromOCR($tplParams, $user);
 eo_assert('template: same amount and date without ref is a repeat too', isset($r3['status']) ? $r3['status'] : '', 'repeat');
+
+// 31) VAT 0 is a value read: exempt invoice with IRPF (1000 - 150 = 850) keeps VAT 0
+$r = easyocrCreateInvoiceFromOCR($whParams('', '', 'IVA0', array('fk_soc' => $supplierId, 'invoice_status' => 'draft',
+	'total_ht' => '1000', 'total_tva' => '0', 'total_localtax2' => '150', 'total_ttc' => '850')), $user);
+$row0 = $db->fetch_object($db->query("SELECT tva FROM " . MAIN_DB_PREFIX . "facture_fourn WHERE rowid = " . (int) (isset($r['id']) ? $r['id'] : 0)));
+eo_assert('VAT 0 with IRPF: header VAT stays 0 (was -150)', $row0 ? round((float) $row0->tva, 2) : null, 0.0);
+$det0 = $db->fetch_object($db->query("SELECT tva_tx FROM " . MAIN_DB_PREFIX . "facture_fourn_det WHERE fk_facture_fourn = " . (int) (isset($r['id']) ? $r['id'] : 0)));
+eo_assert('VAT 0 with IRPF: the single line has VAT 0 (was 15 %)', $det0 ? round((float) $det0->tva_tx, 2) : null, 0.0);
+eo_assert('VAT 0 read: not reported as missing', isset($r['review_codes']) && in_array('tax_not_read', $r['review_codes'], true), false);
+
+// 32) VAT not read at all: derived taking the withholding out (1000 + 210 - 150 = 1060), reported
+$r = easyocrCreateInvoiceFromOCR($whParams('', '', 'IVANR', array('fk_soc' => $supplierId, 'invoice_status' => 'draft',
+	'total_ht' => '1000', 'total_tva' => '', 'total_localtax2' => '150', 'total_ttc' => '1060')), $user);
+$rowNr = $db->fetch_object($db->query("SELECT tva FROM " . MAIN_DB_PREFIX . "facture_fourn WHERE rowid = " . (int) (isset($r['id']) ? $r['id'] : 0)));
+eo_assert('VAT not read: derived without the IRPF (210, not 60)', $rowNr ? round((float) $rowNr->tva, 2) : null, 210.0);
+eo_assert('VAT not read: reported', isset($r['review_codes']) && in_array('tax_not_read', $r['review_codes'], true), true);
+
+// 33) A line Dolibarr refuses sends the invoice to review (the header would hide it)
+require_once DOL_DOCUMENT_ROOT . '/product/class/product.class.php';
+$ppProd = new Product($db);
+$ppProd->ref = 'EOQA-PP-' . $eoSeed;
+$ppProd->label = 'EOQA predefined price only';
+$ppProd->type = 0;
+$ppId = $ppProd->create($user);
+if ($ppId > 0) {
+	$prevPP = isset($conf->global->SUPPLIER_INVOICE_WITH_PREDEFINED_PRICES_ONLY) ? $conf->global->SUPPLIER_INVOICE_WITH_PREDEFINED_PRICES_ONLY : null;
+	$conf->global->SUPPLIER_INVOICE_WITH_PREDEFINED_PRICES_ONLY = 1;
+	$r = easyocrCreateInvoiceFromOCR($whParams('', '', 'LINEKO', array('fk_soc' => $supplierId,
+		'items' => array(
+			array('description' => 'Sin precio de proveedor', 'fk_product' => $ppId, 'quantity' => 1, 'unit_price' => 50, 'net_amount' => 50, 'taxes' => eo_tax(21)),
+			array('description' => 'Linea normal', 'quantity' => 1, 'unit_price' => 50, 'net_amount' => 50, 'taxes' => eo_tax(21)),
+		))), $user);
+	if ($prevPP === null) {
+		unset($conf->global->SUPPLIER_INVOICE_WITH_PREDEFINED_PRICES_ONLY);
+	} else {
+		$conf->global->SUPPLIER_INVOICE_WITH_PREDEFINED_PRICES_ONLY = $prevPP;
+	}
+	$rowLk = $db->fetch_object($db->query("SELECT fk_statut FROM " . MAIN_DB_PREFIX . "facture_fourn WHERE rowid = " . (int) (isset($r['id']) ? $r['id'] : 0)));
+	eo_assert('line refused: reported for review', isset($r['review_codes']) && in_array('line_failed', $r['review_codes'], true), true);
+	eo_assert('line refused: left as a draft, never validated or paid', $rowLk ? (int) $rowLk->fk_statut : null, 0);
+} else {
+	eo_info('could not create the product for the line-failure case: ' . $ppProd->error);
+}
+
+// 34) A supplier picked by the caller must be of this entity and open
+$sClosed = $mkSoc('EOQA CERRADO ELEGIDO SL', eo_cif('B', $eoSeed . '771'), '');
+$db->query("UPDATE " . MAIN_DB_PREFIX . "societe SET status = 0 WHERE rowid = " . (int) $sClosed);
+$r = easyocrCreateInvoiceFromOCR($whParams('', '', 'SOCKO', array('fk_soc' => $sClosed)), $user);
+eo_assert('chosen supplier closed: refused', isset($r['error_code']) ? $r['error_code'] : '', 'supplier_not_usable');
+$sOther = $mkSoc('EOQA OTRA ENTIDAD SL', eo_cif('B', $eoSeed . '772'), '');
+$db->query("UPDATE " . MAIN_DB_PREFIX . "societe SET entity = 98765 WHERE rowid = " . (int) $sOther);
+$r = easyocrCreateInvoiceFromOCR($whParams('', '', 'SOCKO2', array('fk_soc' => $sOther)), $user);
+eo_assert('chosen supplier of another entity: refused', isset($r['error_code']) ? $r['error_code'] : '', 'supplier_not_usable');
+$r = easyocrCreateInvoiceFromOCR($whParams('', '', 'SOCOK', array('fk_soc' => $supplierId, 'invoice_status' => 'draft')), $user);
+eo_assert('chosen supplier of this entity: accepted', isset($r['status']) ? $r['status'] : '', 'ok');
+
+// 35) Without "create third parties" (webhook acting for that user) nothing is created
+$nNoCreate = $countSoc();
+$r = easyocrCreateInvoiceFromOCR($whParams('ES' . eo_cif('B', $eoSeed . '773'), 'EOQA SIN PERMISO SL', 'NOSOC', array('allow_supplier_create' => 0)), $user);
+eo_assert('no right to create third parties: refused', isset($r['error_code']) ? $r['error_code'] : '', 'supplier_create_forbidden');
+eo_assert('... and no third party created', $countSoc(), $nNoCreate);
+
+// 36) Attachment names: only document extensions, nothing executable or hidden
+eo_assert('attachment name: a PDF stays', easyocrSafeAttachmentName('factura 01.pdf'), dol_sanitizeFileName('factura 01.pdf'));
+eo_assert('attachment name: an image stays', easyocrSafeAttachmentName('ticket.JPG'), 'ticket.JPG');
+eo_assert('attachment name: x.php is neutralised', substr(easyocrSafeAttachmentName('x.php'), -6), '.noexe');
+eo_assert('attachment name: .htaccess is neither hidden nor kept', easyocrSafeAttachmentName('.htaccess') !== '.htaccess' && easyocrSafeAttachmentName('.htaccess')[0] !== '.', true);
+eo_assert('attachment name: path stripped', strpos(easyocrSafeAttachmentName('../../x.pdf'), '/') === false, true);
+
+// 37) Transaction detection also through the DebugBar wrapper
+eo_assert('transaction detection: the wrapped connection counts', easyocrDbInTransaction((object) array('transaction_opened' => 0, 'db' => (object) array('transaction_opened' => 1))), true);
+eo_assert('transaction detection: none open', easyocrDbInTransaction((object) array('transaction_opened' => 0)), false);
 
 // 27) Indexed and plain name search agree
 $plain = easyocrFindSuppliersByName('EOQA SIGMA SL', 50);

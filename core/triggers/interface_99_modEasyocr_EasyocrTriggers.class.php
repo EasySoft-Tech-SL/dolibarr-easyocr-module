@@ -23,8 +23,9 @@
  *
  * - BILL_SUPPLIER_DELETE: what EasyOcr kept about the invoice goes with it (GDPR). The
  *   webhook log loses the payload and the references, the anti-duplicate fingerprint is
- *   removed (the same file can be read again) and the inbox copy of the document, once
- *   processed into that invoice, is deleted.
+ *   removed (the same file can be read again) and the inbox document that became that
+ *   invoice goes back to pending, file included: this runs inside the delete, before it
+ *   is committed, so nothing irreversible is done here.
  * - COMPANY_DELETE: templates of that supplier are deleted and the log forgets it.
  * - COMPANY_MODIFY coming from a merge: templates and log move to the third party kept.
  * - COMPANY_CREATE / COMPANY_MODIFY / COMPANY_DELETE: search keys of the third party.
@@ -137,7 +138,8 @@ class InterfaceEasyocrTriggers extends DolibarrTriggers
 
 		// Webhook log: the row stays for the batch statistics, without personal data
 		if ($this->hasTable('easyocr_webhook_log')) {
-			$sql = "UPDATE ".MAIN_DB_PREFIX."easyocr_webhook_log SET payload = NULL, invoice_id = NULL, invoice_ref = NULL,";
+			// processing_status 'deleted': the same document may be processed again
+			$sql = "UPDATE ".MAIN_DB_PREFIX."easyocr_webhook_log SET payload = NULL, invoice_id = NULL, invoice_ref = NULL, processing_status = 'deleted',";
 			$sql .= " document_filename = NULL, processing_message = NULL";
 			$sql .= " WHERE invoice_id = ".$invoiceId;
 			$errors += $this->run($sql);
@@ -157,29 +159,11 @@ class InterfaceEasyocrTriggers extends DolibarrTriggers
 		}
 
 		if ($this->hasTable('easyocr_inbox')) {
-			// Documents already turned into this invoice: the inbox copy and its row go
-			$sql = "SELECT rowid, entity, filename FROM ".MAIN_DB_PREFIX."easyocr_inbox WHERE fk_invoice_created = ".$invoiceId;
-			$resql = $this->db->query($sql);
-			if ($resql) {
-				$rows = array();
-				while ($obj = $this->db->fetch_object($resql)) {
-					$rows[] = $obj;
-				}
-				$this->db->free($resql);
-				if (!empty($rows)) {
-					dol_include_once('/easyocr/lib/easyocr_inbox.lib.php');
-				}
-				foreach ($rows as $row) {
-					$file = function_exists('easyocrInboxFilePath') ? easyocrInboxFilePath($row) : '';
-					if ($file !== '' && is_file($file) && !@unlink($file)) {
-						dol_syslog('EasyOcr trigger: could not delete inbox file '.$file, LOG_WARNING);
-					}
-					$errors += $this->run("DELETE FROM ".MAIN_DB_PREFIX."easyocr_inbox WHERE rowid = ".((int) $row->rowid));
-				}
-			} else {
-				$errors++;
-				dol_syslog('EasyOcr trigger: '.$this->db->lasterror(), LOG_ERR);
-			}
+			// Documents turned into this invoice go back to pending, with their file. The
+			// delete is not committed yet (this trigger runs inside it): a file removed here
+			// would be lost if the delete is rolled back, and whoever deletes a wrong draft to
+			// redo it still has the original. Discarding it from the inbox is a separate step.
+			$errors += $this->run("UPDATE ".MAIN_DB_PREFIX."easyocr_inbox SET status = 0, fk_invoice_created = NULL WHERE fk_invoice_created = ".$invoiceId);
 			// Documents waiting to be attached to this invoice stay, unattached
 			$errors += $this->run("UPDATE ".MAIN_DB_PREFIX."easyocr_inbox SET fk_facture_fourn = NULL WHERE fk_facture_fourn = ".$invoiceId);
 		}

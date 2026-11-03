@@ -2559,8 +2559,10 @@ function easyocrCreateInvoiceFromOCR($params, $userObj = null)
 		$hookmanager->initHooks(array('easyocrdocument'));
 		$hookParams = array('params' => &$params, 'user' => $userObj);
 		$reshook = $hookmanager->executeHooks('easyocrBeforeCreate', $hookParams, $hookObject);
-		if ($reshook > 0) {
-			$hookError = !empty($hookmanager->error) ? $hookmanager->error : 'Refused by a hook';
+		// Refused either way: returning > 0, or the usual Dolibarr error ($this->error or
+		// a negative return), which the core turns into -1 for an "addreplace" hook
+		if ($reshook != 0) {
+			$hookError = !empty($hookmanager->error) ? $hookmanager->error : (!empty($hookmanager->errors) ? implode(', ', (array) $hookmanager->errors) : 'Refused by a hook');
 			dol_syslog('EasyOCR-CREATE: refused by hook easyocrBeforeCreate — ' . $hookError, LOG_WARNING);
 			return array('status' => 'error', 'message' => $hookError, 'error_code' => 'hook_refused');
 		}
@@ -2574,6 +2576,49 @@ function easyocrCreateInvoiceFromOCR($params, $userObj = null)
 	}
 
 	return $result;
+}
+
+/**
+ * Can a document be booked to this third party in the current entity?
+ *
+ * @param  DoliDB $db    Database handler
+ * @param  int    $socid Third party id
+ * @return bool          True if it exists, is shared with this entity and is not closed
+ */
+function easyocrThirdpartyIsUsable($db, $socid)
+{
+	$sql = "SELECT rowid FROM " . MAIN_DB_PREFIX . "societe";
+	$sql .= " WHERE rowid = " . ((int) $socid);
+	$sql .= " AND entity IN (" . getEntity('societe') . ")";
+	$sql .= " AND status = 1";
+	$res = $db->query($sql);
+	if (!$res) {
+		return false;
+	}
+	$ok = ($db->num_rows($res) > 0);
+	$db->free($res);
+	return $ok;
+}
+
+/**
+ * Name under which a document is attached: sanitized, and with an extension a document
+ * can have. The webhook takes the name from the payload, so "x.php" or ".htaccess" must
+ * not land as such in the documents folder.
+ *
+ * @param  string $name Original file name
+ * @return string
+ */
+function easyocrSafeAttachmentName($name)
+{
+	$clean = dol_sanitizeFileName(basename((string) $name));
+	if ($clean === '' || $clean[0] === '.') {
+		$clean = 'document' . $clean;
+	}
+	$ext = strtolower(pathinfo($clean, PATHINFO_EXTENSION));
+	if (!in_array($ext, array('pdf', 'png', 'jpg', 'jpeg', 'tif', 'tiff', 'bmp', 'webp', 'gif', 'heic'), true)) {
+		$clean .= '.noexe';
+	}
+	return $clean;
 }
 
 /**
@@ -2802,6 +2847,14 @@ function easyocrCreateInvoiceFromOCRCore($params, $userObj = null)
 	}
 	$lockAcquired = !empty($heldLocks);
 
+	// A supplier picked by the caller comes from the browser: it must be a third party of
+	// this entity and not closed (Societe::fetch() does not filter by entity)
+	if (!empty($fk_soc) && !easyocrThirdpartyIsUsable($db, $fk_soc)) {
+		$releaseLocks();
+		dol_syslog('EasyOCR-CREATE: refused fk_soc=' . ((int) $fk_soc) . ' (other entity, closed or missing)', LOG_WARNING);
+		return ['status' => 'error', 'error_code' => 'supplier_not_usable', 'message' => is_object($langs) ? $langs->transnoentities('EasyOcrSupplierNotUsable') : 'The chosen supplier does not exist, is closed or belongs to another company.'];
+	}
+
 	// ── Resolve supplier if fk_soc not provided ─────────────────────────
 	// Nobody picked it (webhook, receipt): tax id under any of its forms, then the
 	// exact name. Only what is still unknown is created, and a misread tax id or a
@@ -2846,6 +2899,13 @@ function easyocrCreateInvoiceFromOCRCore($params, $userObj = null)
 		dol_syslog('EasyOCR-CREATE: supplier lookup — fk_soc=' . $fk_soc . ', via=' . ($resolved['via'] ?: 'none') . ', tax_id_invalid=' . ($supplierTaxIdInvalid ? 'YES' : 'NO') . ', candidates=' . implode(',', $resolved['candidates']), LOG_INFO);
 
 		// 3) Create new supplier (only with a tax id, as before: a name alone is not an identity)
+		// The webhook acts for the user who launched the batch: without "create third
+		// parties" it must not create one (allow_supplier_create = false)
+		$allowSupplierCreate = !isset($params['allow_supplier_create']) || !empty($params['allow_supplier_create']);
+		if (empty($fk_soc) && !empty($supplier_name) && $supplier_tax_id !== '' && !$allowSupplierCreate) {
+			$releaseLocks();
+			return ['status' => 'error', 'error_code' => 'supplier_create_forbidden', 'message' => is_object($langs) ? $langs->transnoentities('EasyOcrSupplierCreateNotAllowed', $supplier_name) : 'The supplier ' . $supplier_name . ' does not exist and this user may not create third parties.'];
+		}
 		if (empty($fk_soc) && !empty($supplier_name) && $supplier_tax_id !== '') {
 			// Pre-analyze items to detect localtax (RE/IRPF) requirements
 			$has_recargo = false;
@@ -2947,7 +3007,21 @@ function easyocrCreateInvoiceFromOCRCore($params, $userObj = null)
 	// ── Parse totals ─────────────────────────────────────────────────────
 	$total_ht  = easyocrParseNumber($total_ht_str);
 	$total_ttc = easyocrParseNumber($total_ttc_str);
-	$total_tva = !empty($total_tva_str) ? easyocrParseNumber($total_tva_str) : ($total_ttc - $total_ht);
+	// A VAT of 0 is a value read (exempt invoices), not a missing one. Only when nothing
+	// came is it derived, and then the surcharge and the withholding are taken out: with
+	// IRPF, total - base alone gives a negative VAT that the header check cannot see.
+	$tvaWasRead = ($total_tva_str !== '' && $total_tva_str !== null);
+	if ($tvaWasRead) {
+		$total_tva = easyocrParseNumber($total_tva_str);
+	} else {
+		$fbLt1 = (float) easyocrParseNumber($total_localtax1);
+		$fbLt2 = abs((float) easyocrParseNumber($total_localtax2)) * ($total_ht < 0 ? -1 : 1);
+		$total_tva = $total_ttc - $total_ht - $fbLt1 + $fbLt2;
+		$isProposalDoc = isset($params['document_type']) && in_array(strtolower(trim((string) $params['document_type'])), array('supplier_proposal', 'proposal', 'presupuesto'), true);
+		if (!$isProposalDoc && (abs($total_ttc) >= 0.005 || abs($total_ht) >= 0.005)) {
+			$reviewAdd('tax_not_read', is_object($langs) ? $langs->transnoentities('EasyOcrReviewTaxNotRead', price($total_tva)) : 'The VAT amount was not read: it was worked out from the totals (' . $total_tva . '). Check it against the document.');
+		}
+	}
 
 	// ── Duplicate check ──────────────────────────────────────────────────
 	$dup = easyocrFindDuplicateSupplierInvoice($fk_soc, $ref_supplier, $total_ttc, $datef_str);
@@ -3320,6 +3394,9 @@ function easyocrCreateInvoiceFromOCRCore($params, $userObj = null)
 			if ($addLineResult < 0) {
 				dol_syslog("EasyOCR addline #$lineIndex FAILED: " . $facture->error, LOG_ERR);
 				$lineErrors[] = "Line $lineIndex ($desc): " . $facture->error;
+				// The header totals are forced below, so the invoice would look right while a
+				// line is missing: never validated or paid like that
+				$reviewAdd('line_failed', is_object($langs) ? $langs->transnoentities('EasyOcrReviewLineFailed', $lineIndex, $desc) : 'Line ' . $lineIndex . ' (' . $desc . ') could not be added: the invoice is missing it.');
 			}
 		}
 	} else {
@@ -3329,7 +3406,7 @@ function easyocrCreateInvoiceFromOCRCore($params, $userObj = null)
 		$localtax2_tx = get_localtax($tva_tx, 2, $mysoc, $socTmp);
 		// A template may give the line its own text (the description it extracted)
 		$lineDesc = (isset($params['line_desc']) && trim((string) $params['line_desc']) !== '') ? (string) $params['line_desc'] : (is_object($langs) ? $langs->trans('EasyOcrInvoiceLineDesc') : 'Invoice total');
-		easyocrAddDocumentLine($facture, $is_proposal, array(
+		$singleLineResult = easyocrAddDocumentLine($facture, $is_proposal, array(
 			'desc'  => $lineDesc,
 			'pu'    => $total_ht,
 			'qty'   => 1,
@@ -3337,6 +3414,11 @@ function easyocrCreateInvoiceFromOCRCore($params, $userObj = null)
 			'tx1'   => $localtax1_tx,
 			'tx2'   => $localtax2_tx,
 		));
+		if ($singleLineResult < 0) {
+			dol_syslog('EasyOCR single line FAILED: ' . $facture->error, LOG_ERR);
+			$lineErrors[] = 'Line 1 (' . $lineDesc . '): ' . $facture->error;
+			$reviewAdd('line_failed', is_object($langs) ? $langs->transnoentities('EasyOcrReviewLineFailed', 1, $lineDesc) : 'Line 1 (' . $lineDesc . ') could not be added: the invoice is missing it.');
+		}
 	}
 
 	// ── Override totals with OCR values (before validation) ──────────────
@@ -3422,7 +3504,7 @@ function easyocrCreateInvoiceFromOCRCore($params, $userObj = null)
 			@mkdir($destDir, 0755, true); // Native mkdir avoids dol_mkdir open_basedir issue
 		}
 
-		$fileName = dol_sanitizeFileName(basename($file_name));
+		$fileName = easyocrSafeAttachmentName($file_name);
 		// Only prefix with ref when invoice is validated (clean ref).
 		// Draft refs like (PROVx) contain parentheses that cause URL issues
 		// and Dolibarr renames files starting with the old ref on validation anyway.
@@ -3437,7 +3519,10 @@ function easyocrCreateInvoiceFromOCRCore($params, $userObj = null)
 		// when configured); otherwise dol_move, and copy() as fallback for webhook / CLI
 		if (is_uploaded_file($file_tmp_path)) {
 			// No fallback here: a file the antivirus refused must not get in another way
-			$fileMoved = (dol_move_uploaded_file($file_tmp_path, $destFullPath, 1, 0, 0, 1, 'file') > 0);
+			// Success is exactly 1: an antivirus refusal comes back as an 'Error...' string,
+			// which PHP 8 compares as greater than 0
+			$moveResult = dol_move_uploaded_file($file_tmp_path, $destFullPath, 1, 0, 0, 1, 'file');
+			$fileMoved = ($moveResult === 1 || $moveResult === true);
 			if (!$fileMoved) {
 				dol_syslog('EasyOCR-CREATE: the uploaded file was refused (' . $destFileName . ')', LOG_WARNING);
 			}
@@ -3604,7 +3689,7 @@ function easyocrCreateExpenseFromOCR($params, $userObj = null)
 		$reldir    = 'expensereport/' . $ref_clean;
 		$destDir   = DOL_DATA_ROOT . '/' . $reldir;
 		if (!@is_dir($destDir)) @mkdir($destDir, 0755, true); // native mkdir avoids open_basedir issue
-		$fileName     = dol_sanitizeFileName(basename($file_name !== '' ? $file_name : 'receipt.jpg'));
+		$fileName     = easyocrSafeAttachmentName($file_name !== '' ? $file_name : 'receipt.jpg');
 		$destFullPath = $destDir . '/' . $fileName;
 		$fileMoved = @dol_move($file_tmp_path, $destFullPath, 0, 1, 0, 0);
 		if (!$fileMoved) $fileMoved = @copy($file_tmp_path, $destFullPath);
@@ -3748,7 +3833,7 @@ function easyocrCreateVariousPaymentFromOCR($params, $userObj = null)
 		$reldir  = 'easyocr/expense_various/' . $newId;
 		$destDir = DOL_DATA_ROOT . '/' . $reldir;
 		if (!@is_dir($destDir)) @mkdir($destDir, 0755, true);
-		$fileName     = dol_sanitizeFileName(basename($file_name !== '' ? $file_name : 'receipt.jpg'));
+		$fileName     = easyocrSafeAttachmentName($file_name !== '' ? $file_name : 'receipt.jpg');
 		$destFullPath = $destDir . '/' . $fileName;
 		$moved = @dol_move($file_tmp_path, $destFullPath, 0, 1, 0, 0);
 		if (!$moved) $moved = @copy($file_tmp_path, $destFullPath);
@@ -3813,7 +3898,13 @@ function easyocrEnsureSchema()
 	// Never inside someone else's transaction: the first include after an update may
 	// come from a trigger, and DDL there would commit the core's work half done. The
 	// next page load does it.
-	if (!empty($db->transaction_opened)) {
+	if (easyocrDbInTransaction($db)) {
+		return false;
+	}
+	// A file that keeps failing (a statement this database does not accept) is retried at
+	// most once an hour, not on every request: each try reruns every .sql file
+	$failMark = getDolGlobalString('EASYOCR_SCHEMA_FAILED');
+	if (preg_match('/^'.preg_quote((string) EASYOCR_SCHEMA_REVISION, '/').'@(\d+)$/', $failMark, $fm) && (time() - (int) $fm[1]) < 3600) {
 		return false;
 	}
 
@@ -3874,12 +3965,6 @@ function easyocrEnsureSchema()
 		dol_syslog('EasyOCR: error applying '.basename($file).' - '.$sqlerror, LOG_ERR);
 	}
 
-	if ($errors) {
-		// No mark: the next page load tries again.
-		dol_syslog('EasyOCR: could not apply the schema of revision '.EASYOCR_SCHEMA_REVISION.' ('.$errors.' errors)', LOG_ERR);
-		return false;
-	}
-
 	// What re-enabling the module would also do: its parts (the trigger, from 2.9.0)
 	// and its menu entries are registered from the descriptor, so an installation updated
 	// by replacing files gets them without anyone having to switch the module off and on.
@@ -3900,9 +3985,39 @@ function easyocrEnsureSchema()
 		dolibarr_set_const($db, 'EASYOCR_WEBHOOK_LEGACY_UNTIL', (string) (dol_now() + 30 * 86400), 'chaine', 0, '', $conf->entity);
 	}
 
+	if ($errors) {
+		// No revision mark: it is tried again, at most once an hour (EASYOCR_SCHEMA_FAILED)
+		dol_syslog('EasyOCR: could not apply the schema of revision '.EASYOCR_SCHEMA_REVISION.' ('.$errors.' errors)', LOG_ERR);
+		dolibarr_set_const($db, 'EASYOCR_SCHEMA_FAILED', EASYOCR_SCHEMA_REVISION.'@'.time(), 'chaine', 0, '', $conf->entity);
+		return false;
+	}
+
 	dolibarr_set_const($db, 'EASYOCR_SCHEMA_REVISION', (string) EASYOCR_SCHEMA_REVISION, 'chaine', 0, '', $conf->entity);
+	if (getDolGlobalString('EASYOCR_SCHEMA_FAILED') !== '') {
+		dolibarr_del_const($db, 'EASYOCR_SCHEMA_FAILED', $conf->entity);
+	}
 
 	return true;
+}
+
+/**
+ * Is a transaction open on this connection?
+ *
+ * With the DebugBar module on, $db is a wrapper whose transaction_opened stays at 0:
+ * the real level is on the wrapped connection.
+ *
+ * @param  object $db Database handler
+ * @return bool
+ */
+function easyocrDbInTransaction($db)
+{
+	if (!is_object($db)) {
+		return false;
+	}
+	if (!empty($db->transaction_opened)) {
+		return true;
+	}
+	return isset($db->db) && is_object($db->db) && !empty($db->db->transaction_opened);
 }
 
 // Repair the schema on the first page load after an update done by replacing files.

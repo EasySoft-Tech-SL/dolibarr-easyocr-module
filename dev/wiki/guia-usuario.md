@@ -141,9 +141,11 @@ El motivo aparece en la nota privada de la factura y en **Registro de facturas r
 
 Si el servicio repite el aviso de un documento que ya se procesó, no se crea otra factura. Y si llegan a la vez dos documentos de un proveedor nuevo, el segundo espera a que el primero lo dé de alta, así que no se crea dos veces.
 
+Cada lote se procesa con los permisos de quien lo lanza. Si ese usuario no puede crear facturas de proveedor, no se crea ninguna; si no puede validarlas, quedan en borrador; si no puede dar de alta terceros, no se crean proveedores nuevos; y si no puede registrar pagos, no se pagan. En todos los casos el motivo queda en el registro.
+
 Si una importación anterior dejó proveedores repetidos, abre **Terceros duplicados**. Lista los terceros que comparten CIF/NIF y los proveedores con el mismo nombre, con cuántas facturas tiene cada uno, y marca como **Sugerido** el que tiene más. Pulsa **Fusionar en este** en el que quieras conservar: se abre la fusión de Dolibarr en su ficha, y ahí eliges el otro tercero, que se elimina después de pasar sus facturas y documentos a este.
 
-Si marcas como pagadas las facturas del lote, la cuenta y la forma de pago tienen que encajar: una cuenta de caja solo admite efectivo. La cuenta tiene que existir, estar abierta y ser de tu empresa; si no, la factura se crea sin pago y el motivo queda anotado. La configuración te avisa si no encajan, y si el banco rechaza un pago, la factura queda pendiente de pago con el motivo en su nota.
+Si marcas como pagadas las facturas del lote, la cuenta y la forma de pago tienen que encajar: una cuenta de caja solo admite efectivo. La cuenta tiene que existir, estar abierta y ser de tu empresa; si no, la factura se crea sin pago y el motivo queda anotado. El pago automático se configura solo en la configuración del módulo: desde la 2.9.0, añadir `?pay=1&bank_id=...` a la dirección del webhook ya no cambia nada. Una factura que se queda en borrador no se paga, y queda «por revisar» con el motivo. La configuración te avisa si no encajan, y si el banco rechaza un pago, la factura queda pendiente de pago con el motivo en su nota.
 
 #### Después de actualizar a la 2.9.0
 

@@ -1845,7 +1845,14 @@ if ($action == "createSupplierInvoice") {
 	$autoCorrect = GETPOST('auto_correct', 'int');
 	if ($autoCorrect) $options['auto_correct'] = true;
 
-	$webhookUrl = GETPOST('webhook_url', 'alpha');
+	// The receiver URL is built here, signed with the user who launches the batch: the
+	// webhook then creates, validates and pays only as far as this user may. Only an
+	// administrator may send the batch to another receiver of their own.
+	if (!defined('EASYOCR_WEBHOOK_LIB_ONLY')) {
+		define('EASYOCR_WEBHOOK_LIB_ONLY', 1);
+	}
+	require_once __DIR__ . '/../webhook_batch.php';
+	$webhookUrl = easyocrWebhookBatchUrlFor($db, $user, GETPOST('webhook_url', 'alpha'));
 	if (!empty($webhookUrl)) $options['webhook_url'] = $webhookUrl;
 
 	$language = GETPOST('language', 'alphanohtml');

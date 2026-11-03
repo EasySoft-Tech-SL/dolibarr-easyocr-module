@@ -79,6 +79,7 @@ if (!function_exists('easyocr_format_status_badge')) {
 			'repeat' => array('badge-status0', 'EasyOcrWebhookStatusRepeat'),
 			'review' => array('badge-status1', 'EasyOcrWebhookStatusReview'),
 			'error'  => array('badge-status8', 'EasyOcrWebhookStatusError'),
+			'deleted' => array('badge-status9', 'EasyOcrWebhookStatusDeleted'),
 		);
 		if (empty($status)) {
 			return '<span class="opacitymedium">—</span>';
@@ -107,7 +108,7 @@ $optioncss  = GETPOST('optioncss', 'aZ');
 // Search filters
 $search_event    = GETPOST('search_event', 'alphanohtml');
 $search_status   = GETPOST('search_status', 'aZ09');
-$eoStatuses      = array('ok', 'repeat', 'review', 'error');
+$eoStatuses      = array('ok', 'repeat', 'review', 'error', 'deleted');
 if (!in_array($search_status, $eoStatuses, true)) {
 	$search_status = '';
 }
@@ -450,7 +451,7 @@ print '<td class="liste_titre"><input type="text" class="flat maxwidth150" name=
 print '<td class="liste_titre center">';
 print '<select name="search_status" class="flat">';
 print '<option value=""'.($search_status === '' ? ' selected' : '').'>—</option>';
-$eoStatusLabels = array('ok' => 'EasyOcrWebhookStatusOk', 'repeat' => 'EasyOcrWebhookStatusRepeat', 'review' => 'EasyOcrWebhookStatusReview', 'error' => 'EasyOcrWebhookStatusError');
+$eoStatusLabels = array('ok' => 'EasyOcrWebhookStatusOk', 'repeat' => 'EasyOcrWebhookStatusRepeat', 'review' => 'EasyOcrWebhookStatusReview', 'error' => 'EasyOcrWebhookStatusError', 'deleted' => 'EasyOcrWebhookStatusDeleted');
 foreach ($eoStatuses as $s) {
 	print '<option value="'.$s.'"'.($search_status === $s ? ' selected' : '').'>'.dol_escape_htmltag($langs->transnoentities($eoStatusLabels[$s])).'</option>';
 }
