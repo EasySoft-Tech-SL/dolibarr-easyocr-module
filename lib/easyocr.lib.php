@@ -3031,6 +3031,53 @@ function easyocrPaySupplierInvoice($facture, $userObj, $bankId, $paymentTypeId, 
  */
 function easyocrCreateInvoiceFromOCR($params, $userObj = null)
 {
+	// Triggers and hooks of other modules run in here (COMPANY_CREATE, BILL_SUPPLIER_*,
+	// payments) and some print: what they print would land in front of our JSON answer
+	// and the viewer would show the creation as failed although everything was created.
+	return easyocrRunWithoutStrayOutput(function () use ($params, $userObj) {
+		return easyocrCreateInvoiceFromOCRHooked($params, $userObj);
+	}, 'create invoice');
+}
+
+/**
+ * Runs $fn and keeps out of the answer anything printed meanwhile, which goes to the log.
+ *
+ * Our callers answer in JSON (viewer, webhook). A third-party trigger that prints, even a
+ * forgotten var_dump(), made the answer unreadable: measured with a password manager
+ * module that prints once per default group on COMPANY_CREATE (2.10.2).
+ *
+ * @param  callable $fn      Work to run
+ * @param  string   $context Label for the log line
+ * @return mixed             What $fn returns
+ */
+function easyocrRunWithoutStrayOutput($fn, $context)
+{
+	$level = ob_get_level();
+	ob_start();
+	try {
+		return $fn();
+	} finally {
+		$stray = '';
+		while (ob_get_level() > $level) {
+			// Innermost first: what was printed before it opened goes in front
+			$stray = ob_get_clean() . $stray;
+		}
+		if (trim($stray) !== '') {
+			dol_syslog('EasyOCR: ' . $context . ': output printed by another module discarded so the answer stays readable: '
+				. dol_trunc(preg_replace('/\s+/', ' ', $stray), 300), LOG_WARNING);
+		}
+	}
+}
+
+/**
+ * easyocrCreateInvoiceFromOCR() with its hooks, before the output guard.
+ *
+ * @param  array     $params  See easyocrCreateInvoiceFromOCR()
+ * @param  User|null $userObj See easyocrCreateInvoiceFromOCR()
+ * @return array
+ */
+function easyocrCreateInvoiceFromOCRHooked($params, $userObj = null)
+{
 	global $db, $conf, $hookmanager;
 
 	if (empty($db) && !empty($GLOBALS['db'])) {

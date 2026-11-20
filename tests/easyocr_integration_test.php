@@ -1077,6 +1077,23 @@ eo_assert('exact name: keys table and full scan agree', array_map(function ($x) 
 	return $x['id'];
 }, $plain['exact']));
 
+eo_group('2.10.2 — another module prints while the supplier is created');
+// On a real install a third-party trigger printed "int(n)" on COMPANY_CREATE: the JSON
+// answer of the viewer became unreadable and it showed an error although the supplier
+// and the invoice were created. Nothing printed during the creation reaches the answer.
+$prevTriggerDirs = $conf->modules_parts['triggers'];
+$conf->modules_parts['triggers'][] = '/easyocr/tests/fixtures/triggers/';
+$GLOBALS['easyocr_test_print_on_company_create'] = 1;
+$GLOBALS['easyocr_test_printer_ran'] = 0;
+ob_start();
+$rPrint = easyocrCreateInvoiceFromOCR($whParams(eo_cif('B', $eoSeed . '157'), 'EOQA PRINTER NUEVO', 'PRINT', array('invoice_status' => 'draft')), $user);
+$printed = ob_get_clean();
+unset($GLOBALS['easyocr_test_print_on_company_create']);
+$conf->modules_parts['triggers'] = $prevTriggerDirs;
+eo_assert('printing trigger: it did run on the new supplier (control)', $GLOBALS['easyocr_test_printer_ran'], 1);
+eo_assert('printing trigger: supplier and invoice created', isset($rPrint['status']) && $rPrint['status'] === 'ok' && !empty($rPrint['supplier_created']) && !empty($rPrint['id']), true);
+eo_assert('printing trigger: nothing it printed reaches the answer', $printed, '');
+
 if ($prevDraftConf === null) {
 	unset($conf->global->EASYOCR_INVOICE_DRAFT);
 } else {

@@ -1060,7 +1060,10 @@ if ($action == "createSupplierInvoice") {
 			'file_tmp_path'  => $tmpFile,
 			'file_name'      => 'receipt.jpg',
 		);
-		$result = easyocrCreateExpenseFromOCR($params, $user);
+		// Other modules' triggers may print: keep it out of the JSON answer
+		$result = easyocrRunWithoutStrayOutput(function () use ($params, $user) {
+			return easyocrCreateExpenseFromOCR($params, $user);
+		}, 'create expense report');
 	} elseif ($target == 'various_payment') {
 		$params = array(
 			'datef'         => $datef,
@@ -1070,7 +1073,9 @@ if ($action == "createSupplierInvoice") {
 			'file_tmp_path' => $tmpFile,
 			'file_name'     => 'receipt.jpg',
 		);
-		$result = easyocrCreateVariousPaymentFromOCR($params, $user);
+		$result = easyocrRunWithoutStrayOutput(function () use ($params, $user) {
+			return easyocrCreateVariousPaymentFromOCR($params, $user);
+		}, 'create various payment');
 	} else {
 		// Supplier invoice branch: map the single-line receipt to an invoice
 		$ttc = easyocrParseNumber($total_ttc);

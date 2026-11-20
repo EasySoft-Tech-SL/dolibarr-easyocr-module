@@ -7,6 +7,14 @@ y este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+### Corregido
+
+- **Visor: la primera factura de un proveedor nuevo se creaba, pero salía «Error al generar la factura».** Otro módulo instalado imprimía texto al dar de alta un tercero (medido con un gestor de contraseñas de terceros que deja un `var_dump()` por cada grupo de contraseñas por defecto). Ese texto llegaba delante de la respuesta de EasyOcr, el visor no la podía leer y daba por fallida una creación que había ido bien. Ahora lo que impriman otros módulos mientras se crea el documento se aparta de la respuesta y queda en el log de Dolibarr como aviso. Vale para el visor (IA y plantilla), los lotes (webhook) y el escáner de gastos.
+
+### Para desarrolladores
+
+- `easyocrRunWithoutStrayOutput()` en `lib/easyocr.lib.php`, que envuelve `easyocrCreateInvoiceFromOCR()` (el cuerpo con los hooks pasa a `easyocrCreateInvoiceFromOCRHooked()`) y las dos creaciones del escáner de gastos. Prueba en `tests/easyocr_integration_test.php` con un trigger de prueba que imprime en `COMPANY_CREATE` (`tests/fixtures/triggers/`, fuera del ZIP), comprobada quitando la guarda.
+
 ### Cambiado
 
 - **Configuración, «Dónde queda la factura»: texto más claro.** Decía «las demás se convierten», como si las facturas en las monedas dadas de alta en Multidivisa no se convirtieran. Todas usan el mismo tipo de cambio; lo que cambia es la moneda en que queda la factura. Ahora dice que las facturas en esas monedas se guardan en su moneda con su importe en euros, y las de cualquier otra moneda directamente en euros. Sin ninguna moneda extranjera dada de alta tiene su propio texto (antes salía «las facturas en Ninguno»).
