@@ -95,7 +95,9 @@ jobs:
         with:
           name: module_easyocr-${{ steps.version.outputs.version }}
           path: module_easyocr-${{ steps.version.outputs.version }}.zip
-          retention-days: 90
+          # 1 day: the ZIP that lasts is the Release asset. Artifacts count against the
+          # 500 MB quota of the WHOLE organization, and 90 days filled it for every repo.
+          retention-days: 1
           if-no-files-found: error
       
       - name: Create GitHub Release
