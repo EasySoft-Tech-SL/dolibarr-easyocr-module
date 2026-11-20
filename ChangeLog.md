@@ -5,6 +5,34 @@ Todos los cambios notables de EasyOcr se documentarán en este archivo.
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/),
 y este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 
+## [2.10.0] - 2026-11-20
+
+### Facturas en otra moneda
+
+- **EasyOcr convierte él mismo las facturas que vienen en otra moneda** (dólares, libras…). Ya no hace falta decirle a la IA «multiplica por 0,87»: la IA lee la moneda del documento y el módulo pasa los importes a tu moneda con el tipo de cambio de referencia del Banco Central Europeo **del día de la factura**. Da igual cuándo la proceses: una factura del 19 de noviembre usa el tipo del 19 de noviembre, y si ese día no hubo publicación (fin de semana, festivo), el del último día anterior.
+- **Tipos fijos por moneda**, opcionales, en la configuración (`USD=0,87`). Para esa moneda mandan sobre el del BCE.
+- **Con Multidivisa activa** y la moneda dada de alta en ella, la factura se guarda en su moneda: los importes tal como vienen en el PDF, con el tipo aplicado y su contravalor, y el pago automático se registra en esa moneda. Sin Multidivisa, la factura se registra convertida y los importes originales quedan en la nota privada. EasyOcr no activa Multidivisa por su cuenta: la configuración enlaza a donde se activa.
+- La nota privada y el aviso al crear la factura dicen de qué moneda venía, los totales impresos y el tipo que se ha usado.
+- Si la ficha del proveedor dice una moneda y el documento otra, o no se leyó la moneda y la ficha dice una distinta de la tuya, la factura queda **para revisar** (en los lotes, en borrador). Si la ficha no tiene moneda, se avisa para que la pongas.
+- Si el BCE no responde, la factura no se crea (el webhook pide que se reintente); si es una moneda que el BCE no publica, se pide un tipo fijo.
+- Visor con plantilla: selector **Moneda del documento**, con la del proveedor por defecto, cuando hay otra moneda posible.
+- ⚠️ **Si actualizas desde una versión anterior, la conversión viene desactivada.** Si tus plantillas tienen instrucciones que convierten la moneda, quítalas primero (si no, se convertiría dos veces) y después actívala en Configuración › Facturas en otra moneda. En una instalación nueva viene activada.
+
+### La plantilla se aplica sola al abrir el PDF
+
+- Al abrir un PDF en el visor, EasyOcr busca en su texto el CIF/NIF o el nombre de los proveedores que tienen plantilla. Si encaja con uno solo, aplica su plantilla (zonas e instrucciones para la IA) y selecciona el proveedor; si encaja con varios, avisa y no elige. No usa la IA ni gasta créditos. Tu propia empresa, que sale en todas las facturas que recibes, nunca cuenta. Un PDF escaneado, sin texto, sigue como antes. Se puede desactivar en la configuración.
+- Una plantilla que solo tiene instrucciones para la IA, sin zonas, ya no avisa de que «no tiene selecciones».
+
+### Corregido
+
+- Varios avisos del visor salían con el nombre o la referencia en blanco («Plantilla "" detectada para este proveedor», «Factura creada» sin su referencia), y el botón del lote no decía cuántos archivos iba a procesar.
+
+### Para desarrolladores
+
+- El resultado de `easyocrCreateInvoiceFromOCR()` trae `fx` (moneda, tipo, fuente, día, si queda en divisa) y `fx_notes`. Motivos de revisión nuevos: `fx_no_date` y `fx_supplier_currency`. Si el BCE no responde devuelve `status 'retry'` con `error_code fx_rate_unavailable`; si no publica esa moneda, `fx_currency_unknown`.
+- Ajustes nuevos: `EASYOCR_FX_ENABLED`, `EASYOCR_FX_FIXED_RATES`, `EASYOCR_TEMPLATE_AUTODETECT`. La revisión de esquema pasa a 4 (sin tablas nuevas: es la que apaga la conversión en las instalaciones que vienen de antes).
+- Prueba nueva `tests/easyocr_currency_test.php` (con `--live` consulta el BCE de verdad).
+
 ## [2.9.0] - 2026-11-03
 
 ### Proveedores

@@ -10,6 +10,8 @@ Está disponible en **dos modos**: el **Modo Clásico**, completamente gratuito 
 * **Selección visual con rectángulos**: dibuja zonas sobre el PDF para capturar datos clave (fecha, número de factura, totales, IVA, descripción, CIF/NIF, vencimiento y proveedor).
 * **Proveedor por el nombre**: al marcar el nombre del proveedor en el PDF, el módulo lo busca entre tus terceros y lo deja seleccionado. Si varios encajan con ese nombre, avisa en lugar de elegir por su cuenta.
 * **Plantillas reutilizables por proveedor**: guarda las zonas de selección y aplícalas automáticamente a facturas del mismo proveedor.
+* **La plantilla se aplica sola**: al abrir un PDF, EasyOcr busca en su texto el CIF/NIF o el nombre de los proveedores que tienen plantilla y aplica la suya, con sus zonas y sus instrucciones para la IA. Sin gastar créditos.
+* **Facturas en otra moneda**: una factura en dólares o en libras se pasa a tu moneda con el tipo de cambio de referencia del BCE del día de la factura, o con un tipo fijo que pongas tú. Con Multidivisa activa se guarda en su moneda, con el tipo y su contravalor.
 * **Extracción nativa con PDF.js**: 100 % local, sin enviar datos a ningún servidor externo.
 * **Generación de facturas de proveedor**: crea la factura en Dolibarr con los datos recogidos.
 * **Factura o presupuesto de proveedor**: la misma extracción puede registrarse como factura de proveedor o como presupuesto de proveedor, en borrador o validado. El número y la validez del documento del proveedor quedan guardados en el presupuesto, que además no se paga.
@@ -26,7 +28,7 @@ Está disponible en **dos modos**: el **Modo Clásico**, completamente gratuito 
 * **Alta automática de proveedores**: si el proveedor no existe en Dolibarr, el módulo lo crea con todos los datos fiscales extraídos del PDF. Reconoce el CIF/NIF aunque venga con etiquetas («NIF IVA», «VAT No.») o sin el prefijo del país.
 * **Terceros duplicados**: lista los terceros que comparten CIF/NIF o nombre, sugiere cuál conservar y abre la fusión de Dolibarr con un clic.
 * **Probar conexión**: un botón en la configuración comprueba la clave y la dirección del servicio y te dice cuántas páginas te quedan.
-* **Instrucciones IA personalizadas por proveedor**: define reglas específicas para cada proveedor o plantilla (por ejemplo, "el IVA siempre es 21 %", "ignorar líneas de descuento", "la moneda es USD"). La IA las aplica en cada procesamiento.
+* **Instrucciones IA personalizadas por proveedor**: define reglas específicas para cada proveedor o plantilla (por ejemplo, "el IVA siempre es 21 %", "ignorar líneas de descuento", "no tiene CIF/NIF: usa su nombre"). La IA las aplica en cada procesamiento.
 * **Auto-corrección inteligente**: el motor IA detecta y corrige automáticamente importes mal reconocidos, formatos de fecha inconsistentes y referencias duplicadas.
 * **Presupuestos de proveedor con IA**: el documento revisado puede guardarse como factura o como presupuesto, con el mismo control de duplicados que las facturas.
 * **Escaneo de gastos desde el móvil (PWA)**: vista instalable para que el empleado fotografíe un ticket y se registre como nota de gastos o factura de compra, con asociación a proyecto.

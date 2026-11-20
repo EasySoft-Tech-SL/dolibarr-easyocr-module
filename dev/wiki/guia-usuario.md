@@ -50,6 +50,8 @@ En la pestaña de configuración del módulo:
 * **Permitir facturas dirigidas a otra empresa**: desactivado por defecto. Si el CIF del destinatario que lee la IA no es el de tu empresa, la factura no se registra y verás el motivo (en un lote, ese documento queda en error y el resto sigue). Para que funcione, el CIF de tu empresa tiene que estar en **Inicio → Configuración → Empresa/Organización**; si no lo está, o si el documento no trae el CIF del destinatario, se registra como siempre.
 * **Automatización por webhook**: cuenta bancaria y forma de pago con las que marcar como pagadas las facturas que llegan por esa vía.
 * **Escanear gasto**: si el gasto del móvil se registra como nota de gastos o como factura de compra, y si se permite validarlo.
+* **Detectar la plantilla al abrir el PDF**: activado por defecto. Ver [Reutilizar plantillas](#reutilizar-plantillas).
+* **Facturas en otra moneda**: si se convierten las facturas que vienen en otra moneda, los tipos fijos por moneda y dónde queda la factura, con Multidivisa o sin ella. Ver [Facturas en otra moneda](#facturas-en-otra-moneda).
 
 Hay además dos pestañas informativas: **Telemetría y Protección de Datos** y **Acuerdo de Licencia**.
 
@@ -112,6 +114,11 @@ La extracción puede acabar en factura o en presupuesto de proveedor. Para los p
 
 ### Reutilizar plantillas
 
+Cuando abres un PDF en **Cargar Pdf**, EasyOcr lee su texto y busca el CIF/NIF o el nombre de los proveedores que tienen plantilla. Si encaja con uno solo, aplica su plantilla (las zonas y las instrucciones para la IA), deja seleccionado el proveedor y te lo dice en un aviso: «Plantilla detectada por NIF» o «por nombre». Si encaja con varios, te avisa y no elige. No usa la IA ni gasta créditos, y tu propia empresa, que aparece en todas las facturas que recibes, nunca cuenta. Un PDF escaneado no tiene texto que leer, así que ahí la plantilla se elige a mano, como hasta ahora.
+
+Una plantilla puede tener solo instrucciones para la IA, sin zonas (por ejemplo, para un proveedor sin CIF/NIF). También se detecta y se aplica.
+
+Para elegirla a mano:
 
 1. Ve a **EasyOcr → Plantillas**.
 2. Selecciona una plantilla guardada.
@@ -157,6 +164,29 @@ Muchas facturas de fuera de la Unión Europea (y alguna de dentro) no traen iden
 
 * En un lote, la factura queda en borrador para que compruebes que el proveedor es el correcto, porque se ha encontrado por el nombre.
 * Si algún día la IA lee en el documento un CIF/NIF real de ese proveedor, la factura va igualmente a él y queda para revisar, con el aviso en la nota. Es buen momento para guardar ese CIF/NIF en su ficha.
+
+### Facturas en otra moneda
+
+Si la factura viene en dólares, libras o cualquier otra moneda, EasyOcr la pasa a la tuya él solo. La IA lee la moneda del documento (la ves en la ventana de revisión y la puedes corregir) y el módulo convierte los importes con el tipo de cambio de referencia que publica el Banco Central Europeo para el día de la factura. Da igual cuándo la proceses: una factura del 19 de noviembre usa el tipo del 19 de noviembre, y si ese día no hubo publicación, el del último día anterior.
+
+Si prefieres un tipo fijo para alguna moneda, ponlo en **Configuración → Facturas en otra moneda**, una por línea: `USD=0,87` significa que 1 dólar vale 0,87 de tu moneda. Para esa moneda manda el fijo y las demás siguen con el del BCE.
+
+Dónde acaba la factura depende de si tienes activo el módulo **Multidivisa** de Dolibarr:
+
+* Con Multidivisa y la moneda dada de alta en ella, la factura se guarda en su moneda, con los importes tal como vienen en el PDF, el tipo aplicado y su contravalor. Si marcas el pago, se registra en esa moneda.
+* Sin Multidivisa, o con la moneda sin dar de alta, la factura se registra convertida y los importes originales quedan en la nota privada.
+
+EasyOcr no activa Multidivisa por su cuenta, porque cambia todos los documentos del ERP. La configuración te lleva a donde se activa y a donde se dan de alta las monedas. En los dos casos, la nota privada de la factura y el aviso que ves al crearla dicen de qué moneda venía, sus totales impresos y el tipo usado.
+
+Con Multidivisa activa, EasyOcr compara además la moneda del documento con la de la ficha del proveedor. Si no coinciden, o si no se leyó la moneda y la ficha dice una distinta de la tuya, la factura queda para revisar (en un lote, en borrador), porque puede que la moneda se haya leído mal. Si la ficha del proveedor no tiene moneda, te avisa para que la pongas.
+
+En el visor con plantilla, sin IA, aparece el desplegable **Moneda del documento** cuando hay otra moneda posible, con la del proveedor ya elegida.
+
+Si el BCE no responde en ese momento, la factura no se crea: vuelve a intentarlo en unos minutos (en un lote, el servicio lo reintenta). Si es una moneda que el BCE no publica, pon un tipo fijo para ella.
+
+#### Después de actualizar a la 2.10.0
+
+Si ya usabas EasyOcr, la conversión viene **desactivada**. Muchas plantillas tenían instrucciones para la IA del tipo «convierte a euros multiplicando por 0,87», y con las dos cosas a la vez los importes se convertirían dos veces. Quita esas instrucciones de tus plantillas y después activa **Convertir los documentos en otra moneda** en la configuración.
 
 ### Documentos recibidos de otros módulos
 

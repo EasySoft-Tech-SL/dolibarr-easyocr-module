@@ -2,7 +2,7 @@
 
 ## Información del módulo
 - **Nombre:** EasyOcr
-- **Versión:** 2.9.0
+- **Versión:** 2.10.0
 - **Número módulo:** 402020
 - **Empresa:** EasySoft Tech S.L. (info@easysoft.es)
 - **Autor:** Alberto Luque Rivas (aluquerivasdev@gmail.com)
@@ -115,6 +115,18 @@ easyocr_recibir_documento($rutaAbsoluta, $user, array $opciones = array())
 - Test: `php tests/easyocr_inbox_test.php` (base real, limpia por el prefijo `qa_easyscan_ocrq_`).
 
 ## Historial de cambios
+
+### v2.10.0 — Facturas en otra moneda y plantilla detectada por el texto
+
+- Moneda: `easyocrFxResolve($moneda, $fecha)` en `lib/easyocr.lib.php`. Orden: tipo fijo de `EASYOCR_FX_FIXED_RATES` («USD=0,87» = 1 USD vale 0,87 de la nuestra; la coma es siempre decimal) → tipo de referencia del BCE del día de la factura (`easyocrFxEcbRate`, `data-api.ecb.europa.eu`, sin clave, ventana de 14 días hacia atrás; una fecha futura pide la de hoy). Cruce por el euro si la moneda propia no es EUR. Caché por petición en `$GLOBALS['easyocr_fx_cache']` (las pruebas la siembran). LIVA 79.Once y PGC NRV 11.ª 1.1 leídos en el BOE el 20-nov-2026: tipo de la fecha de la operación.
+- `easyocrCreateInvoiceFromOCRCore` resuelve el tipo ANTES de crear nada (sin tipo no se crea ni el proveedor): red → `status 'retry'` + `fx_rate_unavailable` (el webhook da 503); moneda que el BCE no publica → `fx_currency_unknown`. Comprobaciones de totales con los importes impresos; anti-duplicados por importe con el convertido; precio unitario convertido SIN redondear (el core recupera el precio en divisa como `pu × tx`: probado con `MAIN_MAX_DECIMALS_UNIT=2`).
+- Factura en divisa (`$fxNative`) solo si Multidivisa está activa, la moneda está dada de alta (`MultiCurrency::getIdFromCode`) y es factura: se pasa `multicurrency_tx` explícito (si no, `create()` lee la tabla del core) y se fuerzan también `multicurrency_total_*` con los totales impresos. ⚠️ Con la moneda sin dar de alta, `FactureFournisseur::create()` cae a EUR con tipo 1 sin avisar: por eso se comprueba antes. ⚠️ `SupplierProposal::create()` ignora el tipo que se le da: los presupuestos siempre se convierten.
+- Pago en divisa: `easyocrPaySupplierInvoice` manda `multicurrency_amounts` = `multicurrency_total_ttc` con el código y el tipo de la factura (`PaiementFourn::getWay()` pasa a 'customer' y convierte con el tipo de la factura).
+- Ficha del proveedor (solo con Multidivisa): moneda de la ficha distinta de la del documento, o moneda no leída con ficha en otra → `fx_supplier_currency` (revisión, borrador en el webhook); ficha sin moneda → aviso en `fx_notes`.
+- `EASYOCR_FX_ENABLED`: `easyocrFxEnabled()` con `isset` (en Dolibarr 14 `getDolGlobalString` lee '0' como vacío). Revisión de esquema 4: lo pone a '0' en una instalación que venía de antes y tenía clave de IA (pudo tener instrucciones que ya convertían); en una nueva queda activo. EasyOcr NO activa Multidivisa (afecta a todo el ERP: ya rompió `update_buyprice()` de otro módulo); la configuración enlaza a `admin/modules.php` y a `admin/multicurrency.php`.
+- Plantilla por el texto: `easyocrDetectSupplierInText()` (pura) + `easyocrDetectTemplateForText()` + acción `detectTemplate` (solo lectura). Solo proveedores con plantilla; NIF (variantes de 8+ caracteres con letra y dígito, buscadas en el texto sin separadores) antes que nombre (clave completa o núcleo sin forma jurídica, como palabra entera, 4+ letras); el nombre y los NIF de la propia empresa nunca cuentan; un NIF que es el nombre (`easyocrTaxIdIsAName`) se trata como nombre. ⚠️ La columna es `siren`, no `idprof1`. Con varias plantillas del proveedor, la más reciente. En el JS, `detectTemplateFromText()` corre tras `loadInitialData` (`state.pendingDetect`); `EASYOCR_TEMPLATE_AUTODETECT` la apaga. Los metadatos del PDF no sirven (Chromium/Skia en cualquier factura impresa desde un navegador).
+- `transJson()` pasa '%s' a `transnoentitiesnoconv()`: sin parámetros el `sprintf` dejaba los `%s` vacíos y el JS no tenía qué reemplazar (avisos con nombre o referencia en blanco; también el botón del lote). Todos los textos del JS usan solo `%s`.
+- Pruebas: `tests/easyocr_currency_test.php` (116; `--live` contra el BCE), `easyocr_ui_test.php` comprueba los `%s` de `scripts.js.php`, `easyocr_lang_test.php` también revisa las claves de `transJson()`. QA en navegador (Playwright, Dolibarr 18.0.8) con el doble local del servicio: PDF real de GitHub → plantilla por nombre → instrucciones enviadas → factura convertida.
 
 ### v2.9.0 — Proveedores sin CIF, webhook con token y estado «por revisar»
 

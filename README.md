@@ -16,7 +16,8 @@ Su página es **[easyocr.es/dolibarr](https://easyocr.es/dolibarr)**, con los pl
   - Totales HT (sin impuestos)
   - Precio total
   - **Proveedor**: al marcar el nombre en el PDF, lo busca en el registro y lo deja seleccionado
-- **Plantillas Reutilizables**: Guarda plantillas de selección por proveedor
+- **Plantillas Reutilizables**: Guarda plantillas de selección por proveedor. Al abrir un PDF, el visor busca en su texto el CIF/NIF o el nombre de los proveedores con plantilla y aplica la suya sola (zonas e instrucciones para la IA), sin gastar créditos
+- **Facturas en otra moneda**: la factura en dólares, libras… se pasa a tu moneda con el tipo de referencia del BCE del día de la factura, o con un tipo fijo que tú pongas por moneda. Con Multidivisa activa se guarda en su moneda, con el tipo y su contravalor; sin ella, convertida y con los importes originales en la nota privada
 - **Generación Automática**: Crea facturas de proveedor automáticamente en Dolibarr
 - **Presupuestos de proveedor**: la misma extracción puede registrarse como factura de proveedor o como presupuesto, en borrador o validado; el número del documento del proveedor queda como referencia externa del presupuesto y su nota privada recoge la fecha, la validez y los avisos de descuadre (requiere el módulo Presupuestos de proveedor)
 - **Automatización vía Webhook**: Crea facturas de proveedor automáticamente al recibir la notificación de la API, con opción de dejarlas **marcadas como pagadas** (cuenta bancaria y método de pago configurables)

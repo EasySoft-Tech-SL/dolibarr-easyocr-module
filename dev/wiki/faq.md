@@ -32,6 +32,18 @@ Desde la 2.8.3, si el banco rechaza el pago automático, EasyOcr lo deshace y de
 
 Sí. Es habitual con proveedores de fuera de la Unión Europea, que no muestran identificación fiscal en la factura. Si en el campo CIF/NIF de su ficha has escrito su nombre, EasyOcr lo reconoce como tal: busca el proveedor por el nombre y le asigna la factura sin crear otro. En un lote, la factura queda en borrador para que confirmes que es el proveedor correcto. Si un día la IA lee un CIF/NIF real en su factura, la asigna igualmente a ese proveedor y te avisa para que lo guardes en su ficha.
 
+## ¿Con qué tipo de cambio convierte las facturas en dólares?
+
+Con el tipo de referencia que publica el Banco Central Europeo para el día de la factura, no el del día en que la procesas. Si ese día no hubo publicación (fin de semana o festivo), usa el del último día anterior. Si prefieres un tipo fijo para una moneda, lo pones en la configuración (`USD=0,87`) y para esa moneda manda el fijo. La nota privada de la factura dice siempre qué tipo se ha usado.
+
+## ¿Tengo que activar Multidivisa?
+
+No es obligatorio. Sin Multidivisa, la factura se registra en tu moneda y los importes originales quedan en la nota privada. Con Multidivisa activa y la moneda dada de alta, la factura se guarda en su moneda, con el tipo y su contravalor, y el pago se registra en esa moneda. EasyOcr no la activa por ti porque afecta a todos los documentos del ERP; en su configuración tienes el enlace para hacerlo.
+
+## He actualizado a la 2.10.0 y mis facturas en dólares no se convierten. ¿Por qué?
+
+Porque al actualizar la conversión viene desactivada. Si tus plantillas tenían instrucciones para la IA que convertían la moneda («multiplica por 0,87»), quítalas, y después activa **Convertir los documentos en otra moneda** en la configuración. Con las dos cosas a la vez, los importes se convertirían dos veces.
+
 ## He actualizado a la 2.9.0. ¿Tengo que cambiar algo en los lotes?
 
 No, salvo que llames al webhook desde un sistema propio. Desde la 2.9.0 la dirección de aviso lleva un token de tu empresa, que ves en la configuración del módulo. Los lotes nuevos ya la usan. Los que se enviaron antes de actualizar llevan la dirección antigua y se siguen aceptando durante 30 días, pero sin registrar el pago de esas facturas; la configuración te dice hasta qué día.
