@@ -339,6 +339,14 @@ function easyocrAjaxUserNotices($result, $permDraftNote = '')
 	if (!empty($result['forced_draft'])) {
 		$notices[] = $langs->transnoentities('EasyOcrForcedDraftNotice');
 	}
+	// Currency converted (or left as printed): the amounts differ from the PDF, so say why
+	if (!empty($result['fx_notes']) && is_array($result['fx_notes'])) {
+		foreach ($result['fx_notes'] as $note) {
+			if (is_string($note) && $note !== '') {
+				$notices[] = $note;
+			}
+		}
+	}
 	if (!empty($result['review_notes']) && is_array($result['review_notes'])) {
 		foreach ($result['review_notes'] as $note) {
 			if (is_string($note) && $note !== '') {

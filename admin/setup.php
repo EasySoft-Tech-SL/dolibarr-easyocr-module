@@ -157,6 +157,31 @@ if ($action == 'update') {
 	$res = dolibarr_set_const($db, 'EASYOCR_AI_TIMEOUT', GETPOST('EASYOCR_AI_TIMEOUT', 'int'), 'chaine', 0, '', $conf->entity);
 	if (!($res > 0)) $error++;
 
+	// Foreign currency and template detection. Stored as '1'/'0': unset means on.
+	$res = dolibarr_set_const($db, 'EASYOCR_FX_ENABLED', GETPOST('EASYOCR_FX_ENABLED', 'int') ? '1' : '0', 'chaine', 0, '', $conf->entity);
+	if (!($res > 0)) $error++;
+	$res = dolibarr_set_const($db, 'EASYOCR_TEMPLATE_AUTODETECT', GETPOST('EASYOCR_TEMPLATE_AUTODETECT', 'int') ? '1' : '0', 'chaine', 0, '', $conf->entity);
+	if (!($res > 0)) $error++;
+	// Fixed rates: kept as they are applied (one "USD=0.87" per line), and the lines that
+	// do not parse are named instead of being dropped without a word
+	$fxRaw = GETPOST('EASYOCR_FX_FIXED_RATES', 'restricthtml');
+	$fxRates = easyocrFxParseFixedRates($fxRaw);
+	$fxRejected = array();
+	foreach (preg_split('/[\r\n;]+/', (string) $fxRaw) as $fxLine) {
+		if (trim($fxLine) !== '' && empty(easyocrFxParseFixedRates($fxLine))) {
+			$fxRejected[] = trim($fxLine);
+		}
+	}
+	$fxStored = array();
+	foreach ($fxRates as $fxCode => $fxRate) {
+		$fxStored[] = $fxCode . '=' . rtrim(rtrim(number_format($fxRate, 6, '.', ''), '0'), '.');
+	}
+	$res = dolibarr_set_const($db, 'EASYOCR_FX_FIXED_RATES', implode("\n", $fxStored), 'chaine', 0, '', $conf->entity);
+	if (!($res > 0)) $error++;
+	if (!empty($fxRejected)) {
+		setEventMessages($langs->trans('EasyOcrFxFixedRatesRejected', implode(', ', $fxRejected)), null, 'warnings');
+	}
+
 	if (!$error) {
 		setEventMessages($langs->trans("SetupSaved"), null, 'mesgs');
 	} else {
@@ -325,6 +350,68 @@ print '<td>'.$langs->trans("EasyOcrDuplicateWindow").'</td>';
 print '<td>';
 print '<input type="number" min="0" step="1" class="flat width75" name="EASYOCR_DUPLICATE_WINDOW_DAYS" value="'.(int) (!empty($conf->global->EASYOCR_DUPLICATE_WINDOW_DAYS) ? $conf->global->EASYOCR_DUPLICATE_WINDOW_DAYS : 0).'"> '.$langs->trans("Days");
 print '<br><span class="opacitymedium small">'.$langs->trans("EasyOcrDuplicateWindowDesc").'</span>';
+print '</td>';
+print '</tr>';
+
+// Template detection in the viewer, by the text of the PDF
+print '<tr class="oddeven">';
+print '<td>'.$langs->trans("EasyOcrTemplateAutodetect").'</td>';
+print '<td>';
+print $form->selectyesno('EASYOCR_TEMPLATE_AUTODETECT', easyocrTemplateAutodetectEnabled() ? 1 : 0, 1);
+print '<br><span class="opacitymedium small">'.$langs->trans("EasyOcrTemplateAutodetectDesc").'</span>';
+print '</td>';
+print '</tr>';
+
+print '</table>';
+print '</div>';
+
+print '<br>';
+
+// --- Foreign currency ---
+print '<div class="div-table-responsive-no-min" id="currency">';
+print '<table class="noborder centpercent">';
+print '<tr class="liste_titre">';
+print '<td colspan="2">'.$langs->trans("EasyOcrFxConfig").'</td>';
+print '</tr>';
+
+print '<tr class="oddeven">';
+print '<td class="titlefield">'.$langs->trans("EasyOcrFxEnabled").'</td>';
+print '<td>';
+print $form->selectyesno('EASYOCR_FX_ENABLED', easyocrFxEnabled() ? 1 : 0, 1);
+print '<br><span class="opacitymedium small">'.$langs->trans("EasyOcrFxEnabledDesc", $conf->currency).'</span>';
+print '</td>';
+print '</tr>';
+
+print '<tr class="oddeven">';
+print '<td>'.$langs->trans("EasyOcrFxFixedRates").'</td>';
+print '<td>';
+print '<textarea name="EASYOCR_FX_FIXED_RATES" class="flat minwidth200" rows="3" placeholder="USD=0,87">'.dol_escape_htmltag(getDolGlobalString('EASYOCR_FX_FIXED_RATES')).'</textarea>';
+print '<br><span class="opacitymedium small">'.$langs->trans("EasyOcrFxFixedRatesDesc", $conf->currency).'</span>';
+print '</td>';
+print '</tr>';
+
+// Where the invoice ends up: in its own currency (multicurrency) or converted to ours
+$fxMulticurrencyOn = function_exists('isModEnabled') ? isModEnabled('multicurrency') : !empty($conf->multicurrency->enabled);
+print '<tr class="oddeven">';
+print '<td>'.$langs->trans("EasyOcrFxStorage").'</td>';
+print '<td>';
+if ($fxMulticurrencyOn) {
+	$fxDeclared = array_values(array_diff(easyocrFxDeclaredCurrencies(), array($conf->currency)));
+	print $langs->trans("EasyOcrFxMulticurrencyOn", empty($fxDeclared) ? $langs->trans('None') : implode(', ', $fxDeclared));
+	// A currency with a fixed rate is clearly expected: if it is not declared, its
+	// invoices end up converted, not kept in it, and the user should know why
+	foreach (array_keys(easyocrFxParseFixedRates(getDolGlobalString('EASYOCR_FX_FIXED_RATES'))) as $fxCode) {
+		if ($fxCode !== $conf->currency && !in_array($fxCode, $fxDeclared, true)) {
+			print '<br>'.img_warning().' '.$langs->trans("EasyOcrFxFixedNotDeclared", $fxCode);
+		}
+	}
+	print '<br><a href="'.DOL_URL_ROOT.'/admin/multicurrency.php">'.img_picto('', 'currency', 'class="pictofixedwidth"').$langs->trans("EasyOcrFxDeclareCurrencies").'</a>';
+} else {
+	// Not switched on by EasyOCR: multicurrency changes every document of the ERP and
+	// other modules that do not pass its parameters misbehave with it. The user decides.
+	print $langs->trans("EasyOcrFxMulticurrencyOff", $conf->currency);
+	print '<br><a href="'.DOL_URL_ROOT.'/admin/modules.php?search_keyword=multicurrency">'.img_picto('', 'currency', 'class="pictofixedwidth"').$langs->trans("EasyOcrFxActivateMulticurrency").'</a>';
+}
 print '</td>';
 print '</tr>';
 

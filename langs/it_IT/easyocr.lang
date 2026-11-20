@@ -980,3 +980,39 @@ EasyOcrWebhookStatusDeleted = Fattura eliminata
 EasyOcrWebhookPayReason_no_right = l'utente che ha avviato il lotto non può registrare pagamenti
 EasyOcrWebhookPayReason_draft = la fattura è stata creata come bozza, e una bozza non si paga
 EasyOcrWebhookNoCreateRight = L'utente che ha avviato il lotto non può creare fatture fornitore: non ne è stata creata nessuna.
+
+# 2.10.0 - Foreign currency and template detection
+EasyOcrFxConfig = Fatture in un'altra valuta
+EasyOcrFxEnabled = Convertire i documenti in un'altra valuta
+EasyOcrFxEnabledDesc = Se una fattura arriva in un'altra valuta (ad esempio in dollari), EasyOCR la registra in %s al tasso di cambio della data della fattura. L'IA non fa più il calcolo: se un modello ha istruzioni come «moltiplica per 0,87», toglile prima di attivare l'opzione, altrimenti gli importi verranno convertiti due volte.
+EasyOcrFxFixedRates = Tassi di cambio fissi
+EasyOcrFxFixedRatesDesc = Facoltativo. Una valuta per riga, con il suo valore in %s: USD=0,87 significa 1 USD = 0,87. Le valute non elencate usano il tasso di riferimento BCE della data della fattura.
+EasyOcrFxFixedRatesRejected = Queste righe di tassi fissi non sono state comprese e non sono state salvate: %s. Il formato è USD=0,87.
+EasyOcrFxStorage = Dove viene registrata la fattura
+EasyOcrFxMulticurrencyOn = Multivaluta attiva: la fattura viene registrata nella valuta del documento, con il tasso applicato e il controvalore. Solo per le valute registrate in Multivaluta (ora: %s); le altre vengono convertite.
+EasyOcrFxMulticurrencyOff = Multivaluta disattivata: la fattura viene registrata convertita in %s e gli importi originali restano nella nota privata.
+EasyOcrFxRateUnavailable = Non è stato possibile ottenere dalla BCE il tasso di cambio di %s. Riprova tra qualche minuto, oppure imposta un tasso fisso per %s nella configurazione di EasyOCR.
+EasyOcrFxCurrencyUnknown = La BCE non pubblica un tasso di cambio per %s. Imposta un tasso fisso per questa valuta nella configurazione di EasyOCR.
+EasyOcrFxDisabledNote = Il documento è in %s e la conversione di valuta è disattivata in EasyOCR: gli importi sono stati registrati così come sono.
+EasyOcrFxUnknownNote = La valuta del documento («%s») non è stata riconosciuta: gli importi sono stati registrati così come sono.
+EasyOcrReviewFxNoDate = La data della fattura non è stata letta: è stato usato il tasso di cambio del %s. Controllalo.
+EasyOcrFxSourceEcb = BCE, %s
+EasyOcrFxSourceFixed = tasso fisso della configurazione
+EasyOcrFxNoteAmounts = Documento in %s: imponibile %s, imposte %s, totale %s.
+EasyOcrFxNoteRate = Tasso applicato: 1 %s = %s %s (%s).
+EasyOcrFxNotInMulticurrency = %s non è registrata in Multivaluta: la fattura viene registrata in %s e gli importi nella valuta originale restano solo in questa nota.
+EasyOcrFxMulticurrencyOffNote = Multivaluta è disattivata: la fattura viene registrata in %s e gli importi nella valuta originale restano solo in questa nota.
+EasyOcrReviewFxSupplierCurrency = Il documento è in %s e la scheda del fornitore indica %s: controlla la valuta prima di dare per buona la fattura.
+EasyOcrReviewFxCurrencyNotRead = La valuta del documento non è stata letta e la scheda del fornitore indica %s: gli importi sono stati registrati in %s così come sono. Controllalo.
+EasyOcrFxSupplierNoCurrency = La scheda del fornitore non ha valuta e il documento è in %s: impostala nella scheda (Multivaluta) perché i suoi documenti siano in quella valuta.
+EasyOcrFxActivateMulticurrency = Attivare Multivaluta
+EasyOcrFxFixedNotDeclared = %s ha un tasso fisso ma non è registrata in Multivaluta: le sue fatture verranno registrate convertite.
+EasyOcrFxDeclareCurrencies = Registrare valute in Multivaluta
+EasyOcrFxProposalConverted = Preventivo in %s convertito in %s: gli importi originali restano in questa nota.
+EasyOcrTemplateAutodetect = Rilevare il modello all'apertura del PDF
+EasyOcrTemplateAutodetectDesc = All'apertura di un PDF nel visualizzatore, nel suo testo si cercano la partita IVA o il nome dei fornitori che hanno un modello e, se ne corrisponde uno solo, si applica il suo modello con zone e istruzioni. Non usa l'IA né consuma crediti. Un PDF scansionato, senza testo, non viene rilevato.
+EasyOcrTemplateAutoDetected = Modello rilevato per %s: %s
+EasyOcrTemplateAutoAmbiguous = Il PDF corrisponde a più fornitori con modello (%s): scegli il modello a mano.
+EasyOcrDetectViaTaxId = partita IVA
+EasyOcrDetectViaName = nome
+EasyOcrDocumentCurrency = Valuta del documento

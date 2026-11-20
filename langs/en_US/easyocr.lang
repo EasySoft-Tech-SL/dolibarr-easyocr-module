@@ -1000,3 +1000,39 @@ EasyOcrWebhookStatusDeleted = Invoice deleted
 EasyOcrWebhookPayReason_no_right = the user who launched the batch may not register payments
 EasyOcrWebhookPayReason_draft = the invoice was created as a draft, and a draft is not paid
 EasyOcrWebhookNoCreateRight = The user who launched the batch may not create supplier invoices: none was created.
+
+# 2.10.0 - Foreign currency and template detection
+EasyOcrFxConfig = Invoices in another currency
+EasyOcrFxEnabled = Convert documents in another currency
+EasyOcrFxEnabledDesc = When an invoice comes in another currency (US dollars, for instance), EasyOCR books it in %s at the exchange rate of the invoice date. The AI no longer does the maths: if a template has instructions such as "multiply by 0.87", remove them before turning this on, or the amounts will be converted twice.
+EasyOcrFxFixedRates = Fixed exchange rates
+EasyOcrFxFixedRatesDesc = Optional. One currency per line, with its value in %s: USD=0.87 means 1 USD = 0.87. Currencies not listed here use the ECB reference rate of the invoice date.
+EasyOcrFxFixedRatesRejected = These fixed rate lines could not be read and were not saved: %s. The format is USD=0.87.
+EasyOcrFxStorage = Where the invoice is kept
+EasyOcrFxMulticurrencyOn = Multicurrency is on: the invoice is kept in the document currency, with the rate applied and its equivalent. Only for the currencies declared in Multicurrency (now: %s); the others are converted.
+EasyOcrFxMulticurrencyOff = Multicurrency is off: the invoice is booked converted to %s and the original amounts stay in the private note.
+EasyOcrFxRateUnavailable = The %s exchange rate could not be fetched from the ECB. Try again in a few minutes, or set a fixed rate for %s in the EasyOCR setup.
+EasyOcrFxCurrencyUnknown = The ECB publishes no exchange rate for %s. Set a fixed rate for that currency in the EasyOCR setup.
+EasyOcrFxDisabledNote = The document is in %s and currency conversion is off in EasyOCR: the amounts were booked as printed.
+EasyOcrFxUnknownNote = The document currency ("%s") was not recognised: the amounts were booked as printed.
+EasyOcrReviewFxNoDate = The invoice date was not read: the exchange rate of %s was used. Check it.
+EasyOcrFxSourceEcb = ECB, %s
+EasyOcrFxSourceFixed = fixed rate from the setup
+EasyOcrFxNoteAmounts = Document in %s: base %s, taxes %s, total %s.
+EasyOcrFxNoteRate = Rate applied: 1 %s = %s %s (%s).
+EasyOcrFxNotInMulticurrency = %s is not declared in Multicurrency: the invoice is booked in %s and the amounts in the original currency are only kept in this note.
+EasyOcrFxMulticurrencyOffNote = Multicurrency is off: the invoice is booked in %s and the amounts in the original currency are only kept in this note.
+EasyOcrReviewFxSupplierCurrency = The document is in %s and the supplier record says %s: check the currency before taking the invoice as good.
+EasyOcrReviewFxCurrencyNotRead = The document currency was not read and the supplier record says %s: the amounts were booked in %s as printed. Check it.
+EasyOcrFxSupplierNoCurrency = The supplier record has no currency and the document is in %s: set it in the record (Multicurrency) so its documents come in that currency.
+EasyOcrFxActivateMulticurrency = Enable Multicurrency
+EasyOcrFxFixedNotDeclared = %s has a fixed rate but is not declared in Multicurrency: its invoices will be booked converted.
+EasyOcrFxDeclareCurrencies = Declare currencies in Multicurrency
+EasyOcrFxProposalConverted = Proposal in %s converted to %s: the original amounts are kept in this note.
+EasyOcrTemplateAutodetect = Detect the template when opening the PDF
+EasyOcrTemplateAutodetectDesc = When a PDF is opened in the viewer, its text is searched for the tax id or the name of the suppliers that have a template and, if exactly one matches, its template is applied with its zones and instructions. It does not use the AI or spend credits. A scanned PDF with no text is not detected.
+EasyOcrTemplateAutoDetected = Template detected by %s: %s
+EasyOcrTemplateAutoAmbiguous = The PDF matches several suppliers with a template (%s): pick the template by hand.
+EasyOcrDetectViaTaxId = tax id
+EasyOcrDetectViaName = name
+EasyOcrDocumentCurrency = Document currency

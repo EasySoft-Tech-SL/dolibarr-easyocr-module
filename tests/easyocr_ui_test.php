@@ -457,6 +457,18 @@ eo_assert('index: drafts waiting for review counted', $shown, (int) $expected->n
 eo_assert('index: the counter links to the pending filter', (bool) preg_match('/href="[^"]*invoices\.php\?search_status=0"[^>]*id="eo-stat-review"/', $idx['body']), true);
 eo_assert('index: duplicates card links to the report', (bool) preg_match('/href="[^"]*duplicates\.php"[^>]*id="eo-card-duplicates"/', $idx['body']), true);
 
+// ── texts handed to the viewer JS (js/scripts.js.php) ──
+// trans*() runs sprintf, so with no parameters every %s came out empty and the JS
+// .replace('%s', name) had nothing to replace: the toasts showed the name blank.
+$jsTexts = eo_http($mod . '/js/scripts.js.php');
+eo_assert('viewer texts: served', $jsTexts['code'], 200);
+$jsLine = function ($key) use ($jsTexts) {
+	return preg_match('/^\s*' . preg_quote($key, '/') . ': (.*)$/m', $jsTexts['body'], $m) ? $m[1] : '';
+};
+eo_assert('viewer texts: "template detected" keeps its placeholder', strpos($jsLine('templateDetected'), '%s') !== false, true);
+eo_assert('viewer texts: "detected by %s: %s" keeps both', substr_count($jsLine('templateAutoDetected'), '%s'), 2);
+eo_assert('viewer texts: "invoice %s created" keeps its placeholder', strpos($jsLine('invoiceCreatedWithRef'), '%s') !== false, true);
+
 // ── duplicates.php ──
 $dup = eo_http($mod . '/duplicates.php');
 eo_assert('duplicates: page loads', $dup['code'], 200);

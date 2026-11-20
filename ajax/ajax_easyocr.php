@@ -239,6 +239,7 @@ if ($action == "createSupplierInvoice") {
 			'total_localtax2'  => GETPOST('total_localtax2', 'alphanohtml'),
 			'notes'            => GETPOST('description', 'restricthtml'),
 			'valid_until'      => GETPOST('valid_until', 'alphanohtml'),
+			'currency'         => GETPOST('currency', 'alphanohtml'),
 			'document_type'    => 'supplier_proposal',
 			'import_key'       => 'easyocr',
 		);
@@ -276,6 +277,7 @@ if ($action == "createSupplierInvoice") {
 		'total_localtax1' => GETPOST('total_localtax1', 'alphanohtml'),
 		'total_localtax2' => GETPOST('total_localtax2', 'alphanohtml'),
 		'line_desc'       => GETPOST('description', 'restricthtml'),
+		'currency'        => GETPOST('currency', 'alphanohtml'),
 		'invoice_status'  => $tplStatus,
 		'import_key'      => 'easyocr',
 		'create_payment'  => GETPOST('create_payment', 'alpha'),
@@ -305,13 +307,13 @@ if ($action == "createSupplierInvoice") {
 	// ============================================================
 } else if ($action == "loadFormData") {
 
-	// Proveedores
-	$sql = "SELECT rowid, nom FROM " . MAIN_DB_PREFIX . "societe WHERE fournisseur = 1 AND entity IN (" . getEntity('societe') . ") ORDER BY nom";
+	// Proveedores (con su moneda por defecto: la del selector de moneda del visor)
+	$sql = "SELECT rowid, nom, multicurrency_code FROM " . MAIN_DB_PREFIX . "societe WHERE fournisseur = 1 AND entity IN (" . getEntity('societe') . ") ORDER BY nom";
 	$resql = $db->query($sql);
 	$result_suppliers = array();
 	if ($resql) {
 		while ($obj = $db->fetch_object($resql)) {
-			$result_suppliers[] = array('rowid' => $obj->rowid, 'nom' => $obj->nom);
+			$result_suppliers[] = array('rowid' => $obj->rowid, 'nom' => $obj->nom, 'currency' => (string) $obj->multicurrency_code);
 		}
 	}
 
@@ -383,8 +385,21 @@ if ($action == "createSupplierInvoice") {
 		"templates" => $result_templates,
 		"banks" => $result_banks,
 		"payment_types" => $result_payment_types,
-		"journals" => $result_journals
+		"journals" => $result_journals,
+		// Monedas que el visor ofrece para un documento leído con plantilla
+		"currencies" => easyocrFxEnabled() ? easyocrFxCurrencyChoices() : array($conf->currency),
+		"main_currency" => $conf->currency,
+		"template_autodetect" => easyocrTemplateAutodetectEnabled() ? 1 : 0
 	]);
+
+
+	// ============================================================
+	// DETECTAR LA PLANTILLA POR EL TEXTO DEL PDF (sin IA, sin red)
+	// ============================================================
+} else if ($action == "detectTemplate") {
+
+	// Solo lectura: devuelve qué plantilla encaja, no aplica nada
+	print json_encode(array_merge(array('status' => 'ok'), easyocrDetectTemplateForText(GETPOST('text', 'restricthtml'))));
 
 
 	// ============================================================
@@ -757,6 +772,8 @@ if ($action == "createSupplierInvoice") {
 		'datef'            => GETPOST('datef', 'alphanohtml'),
 		'document_type'    => GETPOST('document_type', 'aZ09'),
 		'valid_until'      => GETPOST('valid_until', 'alphanohtml'),
+		// Currency read by the AI (and maybe corrected in the review): converted by the lib
+		'currency'         => GETPOST('currency', 'alphanohtml'),
 		'total_ttc'        => GETPOST('total_ttc', 'alphanohtml'),
 		'total_ht'         => GETPOST('total_ht', 'alphanohtml'),
 		'total_tva'        => GETPOST('total_tva', 'alphanohtml'),

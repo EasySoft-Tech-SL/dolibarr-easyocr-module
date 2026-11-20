@@ -983,3 +983,39 @@ EasyOcrWebhookStatusDeleted = Factura borrada
 EasyOcrWebhookPayReason_no_right = o usuario que lanzou o lote non ten permiso para rexistrar pagamentos
 EasyOcrWebhookPayReason_draft = a factura creouse en borrador, e un borrador non se paga
 EasyOcrWebhookNoCreateRight = O usuario que lanzou o lote non ten permiso para crear facturas de provedor: non se creou ningunha.
+
+# 2.10.0 - Foreign currency and template detection
+EasyOcrFxConfig = Facturas noutra moeda
+EasyOcrFxEnabled = Converter os documentos noutra moeda
+EasyOcrFxEnabledDesc = Se unha factura chega noutra moeda (en dólares, por exemplo), EasyOCR rexístraa en %s co tipo de cambio da data da factura. A IA xa non fai a conta: se algún modelo ten instrucións como «multiplica por 0,87», quítaas antes de activalo ou os importes converteranse dúas veces.
+EasyOcrFxFixedRates = Tipos de cambio fixos
+EasyOcrFxFixedRatesDesc = Opcional. Unha moeda por liña, co seu valor en %s: USD=0,87 significa 1 USD = 0,87. As moedas que non estean aquí usan o tipo de referencia do BCE da data da factura.
+EasyOcrFxFixedRatesRejected = Estas liñas de tipos fixos non se entenderon e non se gardaron: %s. O formato é USD=0,87.
+EasyOcrFxStorage = Onde queda a factura
+EasyOcrFxMulticurrencyOn = Multidivisa activa: a factura gárdase na moeda do documento, co tipo aplicado e o seu contravalor. Só coas moedas dadas de alta en Multidivisa (agora: %s); as demais convértense.
+EasyOcrFxMulticurrencyOff = Multidivisa desactivada: a factura rexístrase convertida a %s e os importes orixinais quedan na nota privada.
+EasyOcrFxRateUnavailable = Non se puido consultar o tipo de cambio de %s no BCE. Volve intentalo nuns minutos ou pon un tipo fixo para %s na configuración de EasyOCR.
+EasyOcrFxCurrencyUnknown = O BCE non publica tipo de cambio para %s. Pon un tipo fixo para esa moeda na configuración de EasyOCR.
+EasyOcrFxDisabledNote = O documento está en %s e a conversión de moeda está desactivada en EasyOCR: os importes rexistráronse tal como veñen.
+EasyOcrFxUnknownNote = Non se recoñeceu a moeda do documento («%s»): os importes rexistráronse tal como veñen.
+EasyOcrReviewFxNoDate = Non se leu a data da factura: usouse o tipo de cambio do %s. Compróbao.
+EasyOcrFxSourceEcb = BCE, %s
+EasyOcrFxSourceFixed = tipo fixo da configuración
+EasyOcrFxNoteAmounts = Documento en %s: base %s, impostos %s, total %s.
+EasyOcrFxNoteRate = Tipo aplicado: 1 %s = %s %s (%s).
+EasyOcrFxNotInMulticurrency = %s non está dada de alta en Multidivisa: a factura rexístrase en %s e os importes na moeda orixinal só quedan nesta nota.
+EasyOcrFxMulticurrencyOffNote = A multidivisa non está activa: a factura rexístrase en %s e os importes na moeda orixinal só quedan nesta nota.
+EasyOcrReviewFxSupplierCurrency = O documento está en %s e a ficha do provedor di %s: comproba a moeda antes de dar a factura por boa.
+EasyOcrReviewFxCurrencyNotRead = Non se leu a moeda do documento e a ficha do provedor di %s: os importes rexistráronse en %s tal como veñen. Compróbao.
+EasyOcrFxSupplierNoCurrency = A ficha do provedor non ten moeda e o documento está en %s: ponla na súa ficha (Multidivisa) para que os seus documentos saian nesa moeda.
+EasyOcrFxActivateMulticurrency = Activar Multidivisa
+EasyOcrFxFixedNotDeclared = %s ten tipo fixo pero non está dada de alta en Multidivisa: as súas facturas rexistraranse convertidas.
+EasyOcrFxDeclareCurrencies = Dar de alta moedas en Multidivisa
+EasyOcrFxProposalConverted = Orzamento en %s convertido a %s: os importes orixinais quedan nesta nota.
+EasyOcrTemplateAutodetect = Detectar o modelo ao abrir o PDF
+EasyOcrTemplateAutodetectDesc = Ao abrir un PDF no visor, busca no seu texto o NIF ou o nome dos provedores que teñen modelo e, se só encaixa un, aplica o seu modelo coas zonas e as instrucións. Non usa a IA nin gasta créditos. Un PDF escaneado, sen texto, non se detecta.
+EasyOcrTemplateAutoDetected = Modelo detectado por %s: %s
+EasyOcrTemplateAutoAmbiguous = O PDF encaixa con varios provedores con modelo (%s): escolle o modelo a man.
+EasyOcrDetectViaTaxId = NIF
+EasyOcrDetectViaName = nome
+EasyOcrDocumentCurrency = Moeda do documento

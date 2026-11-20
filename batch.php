@@ -719,7 +719,7 @@ if (!$fromMenu) {
       });
 
       fileCount.textContent = selectedFiles.length + ' <?php echo addslashes(strtolower($langs->trans('EasyOcrBatchFiles'))); ?> · ' + formatSize(totalSize);
-      submitText.textContent = '<?php echo addslashes($langs->trans('EasyOcrBatchProcessN')); ?>'.replace('%s', selectedFiles.length);
+      submitText.textContent = '<?php echo addslashes($langs->trans('EasyOcrBatchProcessN', '%s')); ?>'.replace('%s', selectedFiles.length);
 
       fileItems.innerHTML = '';
       selectedFiles.forEach(function(file, idx) {
@@ -814,7 +814,7 @@ if (!$fromMenu) {
         }).catch(function() {
           var box = document.createElement('div');
           box.className = 'error';
-          box.textContent = <?php echo json_encode($langs->transnoentitiesnoconv('EasyOcrInboxLoadError')); ?>.replace('%s', item.name);
+          box.textContent = <?php echo json_encode($langs->transnoentitiesnoconv('EasyOcrInboxLoadError', '%s')); ?>.replace('%s', item.name);
           dropzone.parentNode.insertBefore(box, dropzone);
         });
       });

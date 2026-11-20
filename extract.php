@@ -418,6 +418,12 @@ if ($eoInboxRow && (int) $eoInboxRow->status === EASYOCR_INBOX_PENDING && is_fil
         </select>
       </div>
 
+      <!-- Moneda del documento: solo se ve si hay otra que la nuestra (multidivisa o tipo fijo) -->
+      <div class="eo-field" id="eo-currency-field" style="display:none">
+        <label class="eo-label" for="eo-currency"><?php echo $langs->trans('EasyOcrDocumentCurrency'); ?></label>
+        <select id="eo-currency" class="eo-select"></select>
+      </div>
+
       <div id="eo-selections-list" class="eo-selections-list">
         <div class="eo-empty-selections"><?php echo $langs->trans('EasyOcrNoSelectionsYet'); ?></div>
       </div>

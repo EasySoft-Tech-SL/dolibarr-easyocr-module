@@ -1001,3 +1001,39 @@ EasyOcrWebhookStatusDeleted = Facture supprimée
 EasyOcrWebhookPayReason_no_right = l'utilisateur qui a lancé le lot n'a pas le droit d'enregistrer des paiements
 EasyOcrWebhookPayReason_draft = la facture a été créée en brouillon, et un brouillon n'est pas payé
 EasyOcrWebhookNoCreateRight = L'utilisateur qui a lancé le lot n'a pas le droit de créer des factures fournisseur : aucune n'a été créée.
+
+# 2.10.0 - Foreign currency and template detection
+EasyOcrFxConfig = Factures dans une autre devise
+EasyOcrFxEnabled = Convertir les documents dans une autre devise
+EasyOcrFxEnabledDesc = Si une facture arrive dans une autre devise (en dollars, par exemple), EasyOCR la comptabilise en %s au taux de change de la date de la facture. L'IA ne fait plus le calcul : si un modèle contient des instructions du type « multiplie par 0,87 », supprimez-les avant d'activer cette option, sinon les montants seront convertis deux fois.
+EasyOcrFxFixedRates = Taux de change fixes
+EasyOcrFxFixedRatesDesc = Facultatif. Une devise par ligne, avec sa valeur en %s : USD=0,87 signifie 1 USD = 0,87. Les devises absentes de la liste utilisent le taux de référence de la BCE à la date de la facture.
+EasyOcrFxFixedRatesRejected = Ces lignes de taux fixes n'ont pas été comprises et n'ont pas été enregistrées : %s. Le format est USD=0,87.
+EasyOcrFxStorage = Où la facture est enregistrée
+EasyOcrFxMulticurrencyOn = Multi-devises activé : la facture est enregistrée dans la devise du document, avec le taux appliqué et sa contre-valeur. Uniquement pour les devises déclarées dans Multi-devises (actuellement : %s) ; les autres sont converties.
+EasyOcrFxMulticurrencyOff = Multi-devises désactivé : la facture est enregistrée convertie en %s et les montants d'origine restent dans la note privée.
+EasyOcrFxRateUnavailable = Le taux de change %s n'a pas pu être obtenu auprès de la BCE. Réessayez dans quelques minutes ou définissez un taux fixe pour %s dans la configuration d'EasyOCR.
+EasyOcrFxCurrencyUnknown = La BCE ne publie pas de taux de change pour %s. Définissez un taux fixe pour cette devise dans la configuration d'EasyOCR.
+EasyOcrFxDisabledNote = Le document est en %s et la conversion de devise est désactivée dans EasyOCR : les montants ont été enregistrés tels quels.
+EasyOcrFxUnknownNote = La devise du document (« %s ») n'a pas été reconnue : les montants ont été enregistrés tels quels.
+EasyOcrReviewFxNoDate = La date de la facture n'a pas été lue : le taux de change du %s a été utilisé. Vérifiez-le.
+EasyOcrFxSourceEcb = BCE, %s
+EasyOcrFxSourceFixed = taux fixe de la configuration
+EasyOcrFxNoteAmounts = Document en %s : base %s, taxes %s, total %s.
+EasyOcrFxNoteRate = Taux appliqué : 1 %s = %s %s (%s).
+EasyOcrFxNotInMulticurrency = %s n'est pas déclarée dans Multi-devises : la facture est enregistrée en %s et les montants dans la devise d'origine ne figurent que dans cette note.
+EasyOcrFxMulticurrencyOffNote = Multi-devises est désactivé : la facture est enregistrée en %s et les montants dans la devise d'origine ne figurent que dans cette note.
+EasyOcrReviewFxSupplierCurrency = Le document est en %s et la fiche du fournisseur indique %s : vérifiez la devise avant de valider la facture.
+EasyOcrReviewFxCurrencyNotRead = La devise du document n'a pas été lue et la fiche du fournisseur indique %s : les montants ont été enregistrés en %s tels quels. Vérifiez-le.
+EasyOcrFxSupplierNoCurrency = La fiche du fournisseur n'a pas de devise et le document est en %s : renseignez-la dans sa fiche (Multi-devises) pour que ses documents soient dans cette devise.
+EasyOcrFxActivateMulticurrency = Activer Multi-devises
+EasyOcrFxFixedNotDeclared = %s a un taux fixe mais n'est pas déclarée dans Multi-devises : ses factures seront enregistrées converties.
+EasyOcrFxDeclareCurrencies = Déclarer des devises dans Multi-devises
+EasyOcrFxProposalConverted = Devis en %s converti en %s : les montants d'origine figurent dans cette note.
+EasyOcrTemplateAutodetect = Détecter le modèle à l'ouverture du PDF
+EasyOcrTemplateAutodetectDesc = À l'ouverture d'un PDF dans la visionneuse, son texte est parcouru à la recherche du numéro fiscal ou du nom des fournisseurs qui ont un modèle ; si un seul correspond, son modèle est appliqué avec ses zones et ses instructions. Sans IA ni crédits. Un PDF scanné, sans texte, n'est pas détecté.
+EasyOcrTemplateAutoDetected = Modèle détecté par %s : %s
+EasyOcrTemplateAutoAmbiguous = Le PDF correspond à plusieurs fournisseurs ayant un modèle (%s) : choisissez le modèle à la main.
+EasyOcrDetectViaTaxId = numéro fiscal
+EasyOcrDetectViaName = nom
+EasyOcrDocumentCurrency = Devise du document

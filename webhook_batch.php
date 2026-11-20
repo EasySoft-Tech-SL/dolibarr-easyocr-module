@@ -1088,7 +1088,11 @@ if ($enteredBlock) {
 			$params = array(
 				'fk_soc'           => 0, // Auto-detect from tax_id
 				'ref_supplier'     => isset($structuredData['document_number']) ? $structuredData['document_number'] : '',
-				'datef'            => isset($structuredData['issue_date']) ? $structuredData['issue_date'] : date('Y-m-d'),
+				// Empty when not read: the lib then uses today and, for a foreign currency,
+				// asks for a review (the rate is the one of the invoice date)
+				'datef'            => isset($structuredData['issue_date']) ? $structuredData['issue_date'] : '',
+				// Converted by the lib (fixed rate of the setup or ECB rate of the invoice date)
+				'currency'         => isset($structuredData['currency']) ? $structuredData['currency'] : '',
 				'total_ttc'        => isset($totals['total_payable']) ? $totals['total_payable'] : (isset($totals['total']) ? $totals['total'] : '0'),
 				'total_ht'         => isset($totals['net_subtotal']) ? $totals['net_subtotal'] : (isset($totals['subtotal']) ? $totals['subtotal'] : '0'),
 				'total_tva'        => isset($totals['tax_total']) ? $totals['tax_total'] : '',
@@ -1226,7 +1230,7 @@ $response = easyocrWebhookResponse($webhookProcessingStatus, $webhookProcessingM
 
 // ─── Busy: ask the service to come back, record nothing as final ─────────
 if ($webhookProcessingStatus === 'retry') {
-	@file_put_contents($logFile, date('H:i:s') . ' | RETRY: invoice lock busy for document ' . $documentId . ", answered 503\n", FILE_APPEND | LOCK_EX);
+	@file_put_contents($logFile, date('H:i:s') . ' | RETRY: ' . (isset($webhookResult['error_code']) ? $webhookResult['error_code'] : 'lock_busy') . ' for document ' . $documentId . ", answered 503\n", FILE_APPEND | LOCK_EX);
 	easyocrWebhookError($response['http'], array(
 		'status'   => 'retry',
 		'message'  => $response['message'],

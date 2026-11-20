@@ -88,7 +88,10 @@ $langs->load('easyocr@easyocr');
 // Helper function to encode translations without HTML entities
 function transJson($key) {
 	global $langs;
-	return json_encode($langs->transnoentitiesnoconv($key), JSON_UNESCAPED_UNICODE);
+	// trans*() always runs sprintf: with no parameters every %s became '' and the JS had
+	// nothing left to .replace('%s', ...) (the toasts showed the name or ref blank). Passing
+	// '%s' keeps the placeholders. Every text handed to the JS uses %s only (no %d).
+	return json_encode($langs->transnoentitiesnoconv($key, '%s', '%s', '%s', '%s', '%s'), JSON_UNESCAPED_UNICODE);
 }
 ?>
 
@@ -115,6 +118,11 @@ window.EasyOcrLang = {
   actionUndone: <?php echo transJson('EasyOcrActionUndone'); ?>,
   errorLoadingPdf: <?php echo transJson('EasyOcrErrorLoadingPdf'); ?>,
   templateDetected: <?php echo transJson('EasyOcrTemplateDetected'); ?>,
+  templateAutoDetected: <?php echo transJson('EasyOcrTemplateAutoDetected'); ?>,
+  templateAutoAmbiguous: <?php echo transJson('EasyOcrTemplateAutoAmbiguous'); ?>,
+  detectViaTaxId: <?php echo transJson('EasyOcrDetectViaTaxId'); ?>,
+  detectViaName: <?php echo transJson('EasyOcrDetectViaName'); ?>,
+  documentCurrency: <?php echo transJson('EasyOcrDocumentCurrency'); ?>,
   selectTemplateFirst: <?php echo transJson('EasyOcrSelectTemplateFirst'); ?>,
   templateNoSelections: <?php echo transJson('EasyOcrTemplateNoSelections'); ?>,
   errorLoadingTemplate: <?php echo transJson('EasyOcrErrorLoadingTemplate'); ?>,

@@ -506,9 +506,469 @@ function easyocrAddDocumentLine($doc, $isProposal, array $line)
 		array(),           // array_options (is_array()-guarded en core v14-v23 -> seguro)
 		null,              // fk_unit
 		0,                 // origin_id
+		// pu_devise: left to the core, which derives it from the unrounded pu and the
+		// invoice rate and so gets back the printed price (tested with 2 unit decimals)
 		0,                 // pu_devise
 		$l['ref']          // ref_supplier -> llx_facture_fourn_det.ref
 	);
+}
+
+/**
+ * ISO 4217 code of the currency a document is in, from what the OCR read.
+ *
+ * Only unambiguous symbols are translated: "$" alone is also the peso, the Canadian
+ * and the Australian dollar, so it gives '' (unknown) instead of a guess.
+ *
+ * @param  string $raw Currency as read ("USD", "usd", "€", "EUR (€)")
+ * @return string      Three-letter code, '' when it cannot be told
+ */
+function easyocrNormalizeCurrencyCode($raw)
+{
+	$v = trim((string) $raw);
+	if ($v === '') {
+		return '';
+	}
+	$symbols = array('€' => 'EUR', '£' => 'GBP', 'US$' => 'USD', 'U$S' => 'USD');
+	if (isset($symbols[$v])) {
+		return $symbols[$v];
+	}
+	if (preg_match('/^([A-Za-z]{3})(?![A-Za-z])/', $v, $m)) {
+		return strtoupper($m[1]);
+	}
+
+	return '';
+}
+
+/**
+ * Fixed exchange rates set in the module setup, one currency per line or per ";".
+ *
+ * Each rate says how much of OUR currency one unit of the foreign one is worth:
+ * "USD=0,87" means 1 USD = 0.87 EUR, which is how people write it. A rate has no
+ * thousands, so the comma is always the decimal mark (easyocrParseNumber() would read
+ * "0,870" as 870).
+ *
+ * @param  string $raw Setting value
+ * @return array<string, float> Code => rate, only valid positive entries
+ */
+function easyocrFxParseFixedRates($raw)
+{
+	$out = array();
+	foreach (preg_split('/[\r\n;]+/', (string) $raw) as $entry) {
+		if (!preg_match('/^\s*([A-Za-z]{3})\s*[=:]\s*([0-9]+(?:[.,][0-9]+)?)\s*$/', $entry, $m)) {
+			continue;
+		}
+		$rate = (float) str_replace(',', '.', $m[2]);
+		if ($rate > 0) {
+			$out[strtoupper($m[1])] = $rate;
+		}
+	}
+
+	return $out;
+}
+
+/**
+ * Rate of a given day from the CSV the ECB data API returns.
+ *
+ * The ECB publishes no rate on weekends and TARGET holidays: the rate of a day is the
+ * last one published on or before it.
+ *
+ * @param  string $csv  Body of data-api.ecb.europa.eu/service/data/EXR/...&format=csvdata
+ * @param  string $date Day wanted (Y-m-d)
+ * @return array{rate: float, date: string}|null Units of the currency per euro and the day it was published
+ */
+function easyocrFxParseEcbCsv($csv, $date)
+{
+	$lines = preg_split('/\r\n|\r|\n/', trim((string) $csv));
+	if (count($lines) < 2) {
+		return null;
+	}
+	// Empty escape: the default one is deprecated on PHP 8.4, and '' works from 7.4
+	$head = str_getcsv(array_shift($lines), ',', '"', '');
+	$iDate = array_search('TIME_PERIOD', $head, true);
+	$iVal = array_search('OBS_VALUE', $head, true);
+	if ($iDate === false || $iVal === false) {
+		return null;
+	}
+	$best = null;
+	foreach ($lines as $line) {
+		$row = str_getcsv($line, ',', '"', '');
+		if (!isset($row[$iDate], $row[$iVal])) {
+			continue;
+		}
+		$day = (string) $row[$iDate];
+		$value = (float) $row[$iVal];
+		if ($value <= 0 || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $day) || $day > $date) {
+			continue;
+		}
+		if ($best === null || $day > $best['date']) {
+			$best = array('rate' => $value, 'date' => $day);
+		}
+	}
+
+	return $best;
+}
+
+/**
+ * ECB reference rate of a currency against the euro on a given day.
+ *
+ * Asks the ECB data API (public, no key) for the two weeks up to that day and keeps the
+ * last rate published. Only the currency and the date leave the server. The answer is
+ * kept for the rest of the request in $GLOBALS['easyocr_fx_cache'], so a document asks
+ * once, and the tests can seed it to run without network.
+ *
+ * @param  string $code ISO code
+ * @param  string $date Day (Y-m-d)
+ * @return array{rate?: float, date?: string, error?: string} error 'network' (try again later) or 'unknown' (no rate for it)
+ */
+function easyocrFxEcbRate($code, $date)
+{
+	$code = strtoupper((string) $code);
+	if ($code === 'EUR') {
+		return array('rate' => 1.0, 'date' => $date);
+	}
+	$key = $code . '|' . $date;
+	if (isset($GLOBALS['easyocr_fx_cache'][$key])) {
+		return $GLOBALS['easyocr_fx_cache'][$key];
+	}
+	if (!preg_match('/^[A-Z]{3}$/', $code) || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
+		return array('error' => 'unknown');
+	}
+
+	require_once DOL_DOCUMENT_ROOT . '/core/lib/geturl.lib.php';
+	$from = date('Y-m-d', strtotime($date . ' -14 days'));
+	$url = 'https://data-api.ecb.europa.eu/service/data/EXR/D.' . $code . '.EUR.SP00.A?startPeriod=' . $from . '&endPeriod=' . $date . '&format=csvdata';
+	$res = getURLContent($url, 'GET', '', 1, array('Accept: text/csv'));
+	$http = isset($res['http_code']) ? (int) $res['http_code'] : 0;
+	if ($http === 404) {
+		// The ECB answers 404 when it has no data for that currency in those days
+		$out = array('error' => 'unknown');
+	} elseif ($http !== 200 || empty($res['content'])) {
+		dol_syslog('EasyOCR-FX: ECB rate for ' . $code . ' on ' . $date . ' not available (HTTP ' . $http . (!empty($res['curl_error_msg']) ? ', ' . $res['curl_error_msg'] : '') . ')', LOG_WARNING);
+		// Not cached: the next attempt may get through
+		return array('error' => 'network');
+	} else {
+		$parsed = easyocrFxParseEcbCsv($res['content'], $date);
+		$out = $parsed !== null ? $parsed : array('error' => 'unknown');
+	}
+	$GLOBALS['easyocr_fx_cache'][$key] = $out;
+
+	return $out;
+}
+
+/**
+ * Is the currency conversion on? On unless the setup stored '0'.
+ *
+ * Not getDolGlobalString(..., '1'): on Dolibarr 14 it has no default and reads '0' as
+ * empty (empty(), changed to isset() from 16 on).
+ *
+ * @return bool
+ */
+function easyocrFxEnabled()
+{
+	global $conf;
+
+	return !isset($conf->global->EASYOCR_FX_ENABLED) || (string) $conf->global->EASYOCR_FX_ENABLED !== '0';
+}
+
+/**
+ * Exchange rate to book a document printed in another currency.
+ *
+ * The conversion is done here, not by the AI: a rate written in the instructions goes
+ * stale and the model rounds line by line. Source, in this order: the fixed rate set
+ * for that currency in the setup (EASYOCR_FX_FIXED_RATES), then the ECB reference rate
+ * of the document date (VAT law, art. 79.Once: the rate in force on the date of the
+ * operation, not on the day it is processed).
+ *
+ * @param  string      $docCurrency  Currency as read from the document
+ * @param  string      $date         Document date (Y-m-d)
+ * @param  string|null $mainCurrency Currency of this Dolibarr (default $conf->currency)
+ * @return array convert (bool), code, main, raw, and when converting: tx (units of the
+ *               document currency per unit of ours, Dolibarr's multicurrency_tx), factor
+ *               (1 / tx), source ('fixed'|'ecb'), rate_date; or error ('network'|'unknown').
+ *               'disabled' => true when the setup turns the conversion off.
+ */
+function easyocrFxResolve($docCurrency, $date, $mainCurrency = null)
+{
+	global $conf;
+
+	$main = !empty($mainCurrency) ? strtoupper($mainCurrency) : (!empty($conf->currency) ? $conf->currency : 'EUR');
+	$code = easyocrNormalizeCurrencyCode($docCurrency);
+	$out = array('convert' => false, 'code' => $code, 'main' => $main, 'raw' => trim((string) $docCurrency));
+	if ($code === '' || $code === $main) {
+		return $out;
+	}
+	if (!easyocrFxEnabled()) {
+		$out['disabled'] = true;
+		return $out;
+	}
+	$out['convert'] = true;
+
+	$fixed = easyocrFxParseFixedRates(getDolGlobalString('EASYOCR_FX_FIXED_RATES'));
+	if (isset($fixed[$code])) {
+		$tx = round(1 / $fixed[$code], 8);
+		return $out + array('tx' => $tx, 'factor' => 1 / $tx, 'source' => 'fixed', 'rate_date' => '');
+	}
+
+	// A future date (misread, or a timezone ahead) asks for the last rate published
+	$day = min((string) $date, date('Y-m-d'));
+	$foreign = easyocrFxEcbRate($code, $day);
+	$ours = easyocrFxEcbRate($main, $day);
+	$errors = array(isset($foreign['error']) ? $foreign['error'] : '', isset($ours['error']) ? $ours['error'] : '');
+	if ($errors[0] !== '' || $errors[1] !== '') {
+		// 'network' wins: it may work on the next attempt, 'unknown' never will
+		$out['error'] = in_array('network', $errors, true) ? 'network' : 'unknown';
+		return $out;
+	}
+	// Both quoted against the euro: units of the document currency per unit of ours
+	$tx = round($foreign['rate'] / $ours['rate'], 8);
+
+	return $out + array('tx' => $tx, 'factor' => 1 / $tx, 'source' => 'ecb', 'rate_date' => ($code === 'EUR' ? $ours['date'] : $foreign['date']));
+}
+
+/**
+ * Line for the private note telling what was converted and at which rate.
+ *
+ * @param  array  $fx     Result of easyocrFxResolve() with convert = true
+ * @param  array  $totals Totals as printed: total_ht, total_tva, total_ttc
+ * @param  object $langs  Translations
+ * @return string
+ */
+function easyocrFxNote(array $fx, array $totals, $langs)
+{
+	$fmt = function ($v) {
+		return function_exists('price') ? price((float) $v, 0, '', 1, -1, 2) : number_format((float) $v, 2, ',', '.');
+	};
+	$rate = rtrim(rtrim(number_format($fx['factor'], 6, ',', ''), '0'), ',');
+	if ($fx['source'] === 'ecb') {
+		// dol_mktime, not dol_stringtotime: date.lib.php is not loaded in the webhook or the ajax
+		$p = explode('-', $fx['rate_date']);
+		$day = (function_exists('dol_print_date') && count($p) === 3) ? dol_print_date(dol_mktime(12, 0, 0, (int) $p[1], (int) $p[2], (int) $p[0]), 'day') : $fx['rate_date'];
+		$source = is_object($langs) ? $langs->transnoentities('EasyOcrFxSourceEcb', $day) : 'ECB, ' . $day;
+	} else {
+		$source = is_object($langs) ? $langs->transnoentities('EasyOcrFxSourceFixed') : 'fixed rate of the setup';
+	}
+	if (!is_object($langs)) {
+		return 'Document in ' . $fx['code'] . ': base ' . $fmt($totals['total_ht']) . ', tax ' . $fmt($totals['total_tva']) . ', total ' . $fmt($totals['total_ttc']) . ' ' . $fx['code'] . '. Rate: 1 ' . $fx['code'] . ' = ' . $rate . ' ' . $fx['main'] . ' (' . $source . ').';
+	}
+
+	// Two sentences: transnoentities() takes five parameters at most
+	return $langs->transnoentities('EasyOcrFxNoteAmounts', $fx['code'], $fmt($totals['total_ht']), $fmt($totals['total_tva']), $fmt($totals['total_ttc']))
+		. ' ' . $langs->transnoentities('EasyOcrFxNoteRate', $fx['code'], $rate, $fx['main'], $source);
+}
+
+/**
+ * Currencies the viewer offers for a document read with a template: ours first, then
+ * the ones declared in multicurrency (when it is on) and the ones with a fixed rate.
+ *
+ * @return string[]
+ */
+function easyocrFxCurrencyChoices()
+{
+	global $conf;
+
+	$codes = array((string) $conf->currency => true);
+	foreach (easyocrFxDeclaredCurrencies() as $code) {
+		$codes[$code] = true;
+	}
+	foreach (array_keys(easyocrFxParseFixedRates(getDolGlobalString('EASYOCR_FX_FIXED_RATES'))) as $code) {
+		$codes[$code] = true;
+	}
+
+	return array_keys($codes);
+}
+
+/**
+ * Currencies declared in the multicurrency module of this entity (none when it is off).
+ * An invoice can only be kept in a currency declared there.
+ *
+ * @return string[]
+ */
+function easyocrFxDeclaredCurrencies()
+{
+	global $db, $conf;
+
+	$multicurrencyOn = function_exists('isModEnabled') ? isModEnabled('multicurrency') : !empty($conf->multicurrency->enabled);
+	if (!$multicurrencyOn) {
+		return array();
+	}
+	$out = array();
+	$res = $db->query("SELECT code FROM " . MAIN_DB_PREFIX . "multicurrency WHERE entity = " . ((int) $conf->entity) . " ORDER BY code");
+	if ($res) {
+		while ($o = $db->fetch_object($res)) {
+			$out[] = strtoupper((string) $o->code);
+		}
+		$db->free($res);
+	}
+
+	return $out;
+}
+
+/**
+ * Is the template detection of the viewer on? On unless the setup stored '0'.
+ *
+ * @return bool
+ */
+function easyocrTemplateAutodetectEnabled()
+{
+	global $conf;
+
+	return !isset($conf->global->EASYOCR_TEMPLATE_AUTODETECT) || (string) $conf->global->EASYOCR_TEMPLATE_AUTODETECT !== '0';
+}
+
+/**
+ * Which supplier with a template a PDF belongs to, from the text printed in it.
+ *
+ * Free and instant: it reads the text layer the viewer already has, no AI involved.
+ * A tax id found in the text beats a name; a name is only looked for when no tax id
+ * matched. The caller passes the tax ids already filtered (no own company id, no name
+ * typed in the tax id field) and our own company name, which is printed on every
+ * invoice we receive ("BILL TO") and must never pick a template.
+ *
+ * @param  string $text      Text of the document (first page is enough)
+ * @param  array  $suppliers List of array(fk_soc, names => string[], tax_ids => string[])
+ * @param  string $ownName   Our company name
+ * @return array{via: string, fk_socs: int[]} via 'tax_id', 'name' or '' when nothing matched
+ */
+function easyocrDetectSupplierInText($text, array $suppliers, $ownName = '')
+{
+	$text = (string) $text;
+	$upper = function_exists('mb_strtoupper') ? mb_strtoupper($text, 'UTF-8') : strtoupper($text);
+	$compact = preg_replace('/[^A-Z0-9]/', '', $upper);
+	$spaced = ' ' . easyocrSupplierNameKey($text) . ' ';
+
+	$byTax = array();
+	foreach ($suppliers as $s) {
+		foreach ((array) $s['tax_ids'] as $taxId) {
+			foreach (easyocrTaxIdVariants($taxId) as $variant) {
+				// Letters and digits, 8+ characters: a bare number could be any other number
+				// glued to its neighbours once the spaces are gone
+				if (strlen($variant) >= 8 && preg_match('/[A-Z]/', $variant) && preg_match('/[0-9]/', $variant)
+					&& strpos($compact, $variant) !== false) {
+					$byTax[(int) $s['fk_soc']] = true;
+					break 2;
+				}
+			}
+		}
+	}
+	if (!empty($byTax)) {
+		return array('via' => 'tax_id', 'fk_socs' => array_keys($byTax));
+	}
+
+	$ownPhrases = array();
+	foreach (array(easyocrSupplierNameKey($ownName), easyocrSupplierNameCore($ownName)) as $own) {
+		if ($own !== '') {
+			$ownPhrases[$own] = true;
+		}
+	}
+	$byName = array();
+	foreach ($suppliers as $s) {
+		foreach ((array) $s['names'] as $name) {
+			$key = easyocrSupplierNameKey($name);
+			$core = easyocrSupplierNameCore($name);
+			// The core with its spaces back ("GITHUB INC" -> "GITHUB"): the leading words
+			// of the name that make up the core once joined
+			$coreSpaced = '';
+			$acc = '';
+			foreach (explode(' ', $key) as $i => $token) {
+				$acc .= $token;
+				if ($acc === $core) {
+					$coreSpaced = implode(' ', array_slice(explode(' ', $key), 0, $i + 1));
+					break;
+				}
+			}
+			foreach (array_unique(array($key, $coreSpaced)) as $phrase) {
+				// Under four letters a name is a word that may be anywhere ("HP", "ABC")
+				if (strlen(str_replace(' ', '', $phrase)) < 4 || isset($ownPhrases[$phrase]) || isset($ownPhrases[str_replace(' ', '', $phrase)])) {
+					continue;
+				}
+				if (strpos($spaced, ' ' . $phrase . ' ') !== false) {
+					$byName[(int) $s['fk_soc']] = true;
+					break 2;
+				}
+			}
+		}
+	}
+
+	return array('via' => empty($byName) ? '' : 'name', 'fk_socs' => array_keys($byName));
+}
+
+/**
+ * Template of the entity that fits a PDF, by its text (see easyocrDetectSupplierInText()).
+ *
+ * Only suppliers that have a template are looked at: picking a supplier without one
+ * would do nothing for the user, and a short list keeps the name matching safe. When
+ * a supplier has several templates the most recent one is used.
+ *
+ * @param  string $text Text of the document
+ * @return array match ('single'|'multiple'|'none'), via, template_id, template_name,
+ *               fk_soc, supplier_name, candidates (supplier names when 'multiple')
+ */
+function easyocrDetectTemplateForText($text)
+{
+	global $db, $conf, $mysoc;
+
+	$out = array('match' => 'none', 'via' => '', 'template_id' => 0, 'template_name' => '', 'fk_soc' => 0, 'supplier_name' => '', 'candidates' => array());
+	$text = function_exists('mb_substr') ? mb_substr((string) $text, 0, 20000, 'UTF-8') : substr((string) $text, 0, 20000);
+	if (trim($text) === '') {
+		return $out;
+	}
+
+	// idprof1 is the PHP name: the column is siren
+	$sql = "SELECT t.rowid, t.name, t.fk_soc, s.nom, s.name_alias, s.siren as idprof1, s.tva_intra";
+	$sql .= " FROM " . MAIN_DB_PREFIX . "easyocr_template as t";
+	$sql .= " INNER JOIN " . MAIN_DB_PREFIX . "societe as s ON s.rowid = t.fk_soc";
+	$sql .= " WHERE t.entity = " . ((int) $conf->entity);
+	$sql .= " AND s.entity IN (" . getEntity('societe') . ")";
+	$sql .= " ORDER BY t.rowid DESC";
+	$res = $db->query($sql);
+	if (!$res) {
+		dol_syslog('EasyOCR: template detection query failed — ' . $db->lasterror(), LOG_WARNING);
+		return $out;
+	}
+	$suppliers = array();
+	$templates = array();
+	while ($o = $db->fetch_object($res)) {
+		$socid = (int) $o->fk_soc;
+		$templates[$socid][] = array('id' => (int) $o->rowid, 'name' => (string) $o->name);
+		if (isset($suppliers[$socid])) {
+			continue;
+		}
+		$taxIds = array();
+		foreach (array($o->idprof1, $o->tva_intra) as $t) {
+			if (trim((string) $t) !== '' && !easyocrTaxIdIsAName($t, $o->nom) && !easyocrIsOwnCompanyTaxId($t)) {
+				$taxIds[] = (string) $t;
+			}
+		}
+		$suppliers[$socid] = array(
+			'fk_soc'  => $socid,
+			'name'    => (string) $o->nom,
+			'names'   => array_filter(array((string) $o->nom, (string) $o->name_alias)),
+			'tax_ids' => $taxIds,
+		);
+	}
+	$db->free($res);
+	if (empty($suppliers)) {
+		return $out;
+	}
+
+	$ownName = (is_object($mysoc) && !empty($mysoc->name)) ? $mysoc->name : getDolGlobalString('MAIN_INFO_SOCIETE_NOM');
+	$found = easyocrDetectSupplierInText($text, array_values($suppliers), $ownName);
+	$out['via'] = $found['via'];
+	if (count($found['fk_socs']) === 1) {
+		$socid = $found['fk_socs'][0];
+		$out['match'] = 'single';
+		$out['fk_soc'] = $socid;
+		$out['supplier_name'] = $suppliers[$socid]['name'];
+		$out['template_id'] = $templates[$socid][0]['id'];
+		$out['template_name'] = $templates[$socid][0]['name'];
+	} elseif (count($found['fk_socs']) > 1) {
+		$out['match'] = 'multiple';
+		foreach ($found['fk_socs'] as $socid) {
+			$out['candidates'][] = $suppliers[$socid]['name'];
+		}
+	}
+
+	return $out;
 }
 
 /**
@@ -2468,12 +2928,17 @@ function easyocrPaySupplierInvoice($facture, $userObj, $bankId, $paymentTypeId, 
 	require_once DOL_DOCUMENT_ROOT . '/fourn/class/paiementfourn.class.php';
 
 	$amount = $facture->total_ttc;
+	// An invoice kept in another currency is paid in it: PaiementFourn reads the
+	// multicurrency amount and converts it with the invoice rate. Passing our amount as
+	// the multicurrency one, as for an invoice in our currency, would pay 30 USD for a
+	// 30 EUR debt.
+	$inForeign = !empty($facture->multicurrency_code) && $facture->multicurrency_code !== $conf->currency && (float) $facture->multicurrency_tx > 0;
 	$paiement = new PaiementFourn($db);
 	$paiement->datepaye = $facture->date;
 	$paiement->amounts = array($facture->id => $amount);
-	$paiement->multicurrency_amounts = array($facture->id => $amount);
-	$paiement->multicurrency_code = array($facture->id => $conf->currency);
-	$paiement->multicurrency_tx = array($facture->id => 1);
+	$paiement->multicurrency_amounts = array($facture->id => $inForeign ? (float) $facture->multicurrency_total_ttc : $amount);
+	$paiement->multicurrency_code = array($facture->id => $inForeign ? $facture->multicurrency_code : $conf->currency);
+	$paiement->multicurrency_tx = array($facture->id => $inForeign ? (float) $facture->multicurrency_tx : 1);
 	$paiement->paiementid = (int) $paymentTypeId;
 	$paiement->num_payment = $numPayment;
 	$paiement->note_private = is_object($langs) ? $langs->trans('EasyOcrPaymentAutoNote') : 'Auto-payment by EasyOCR';
@@ -2698,6 +3163,9 @@ function easyocrCreateInvoiceFromOCRCore($params, $userObj = null)
 	$fk_soc            = isset($params['fk_soc']) ? (int) $params['fk_soc'] : 0;
 	$ref_supplier      = isset($params['ref_supplier']) ? trim($params['ref_supplier']) : '';
 	$datef_str         = !empty($params['datef']) ? easyocrParseDate($params['datef']) : date('Y-m-d');
+	$datefWasRead      = !empty($params['datef']);
+	// Currency printed on the document; '' or ours = no conversion
+	$currency_raw      = isset($params['currency']) ? (string) $params['currency'] : '';
 	$total_ttc_str     = isset($params['total_ttc']) ? $params['total_ttc'] : '0';
 	$total_ht_str      = isset($params['total_ht']) ? $params['total_ht'] : '0';
 	$total_tva_str     = isset($params['total_tva']) ? $params['total_tva'] : '';
@@ -2802,6 +3270,36 @@ function easyocrCreateInvoiceFromOCRCore($params, $userObj = null)
 		$msg = is_object($langs) ? $langs->trans('EasyOcrCustomerNotOwnCompany', $customerTaxIdRaw) : 'This invoice is addressed to another company (tax id ' . $customerTaxIdRaw . '), not to yours, so it is not registered as a supplier invoice.';
 		dol_syslog('EasyOCR-CREATE: ABORT — customer_tax_id=' . $customerTaxIdRaw . ' is not our own company', LOG_ERR);
 		return ['status' => 'error', 'message' => $msg, 'error_code' => 'customer_not_own_company'];
+	}
+
+	// ── Document currency ────────────────────────────────────────────────
+	// Resolved before anything is created: with no rate the document cannot be booked,
+	// and a supplier created for it would be left behind with nothing attached.
+	$fx = easyocrFxResolve($currency_raw, $datef_str);
+	if (!empty($fx['error'])) {
+		if ($fx['error'] === 'network') {
+			dol_syslog('EasyOCR-CREATE: no exchange rate for ' . $fx['code'] . ' on ' . $datef_str . ' (ECB unreachable) — asking to retry', LOG_WARNING);
+			$msg = is_object($langs) ? $langs->transnoentities('EasyOcrFxRateUnavailable', $fx['code'], $fx['code']) : 'The exchange rate for ' . $fx['code'] . ' could not be obtained from the ECB. Try again later or set a fixed rate in the setup.';
+			return ['status' => 'retry', 'message' => $msg, 'error_code' => 'fx_rate_unavailable', 'retry_after' => 300];
+		}
+		dol_syslog('EasyOCR-CREATE: no exchange rate for ' . $fx['code'] . ' (the ECB does not publish it)', LOG_WARNING);
+		$msg = is_object($langs) ? $langs->transnoentities('EasyOcrFxCurrencyUnknown', $fx['code']) : 'The ECB publishes no exchange rate for ' . $fx['code'] . ': set a fixed rate for it in the setup.';
+		return ['status' => 'error', 'message' => $msg, 'error_code' => 'fx_currency_unknown'];
+	}
+	// Units of our currency per unit of the document's: 1 when nothing is converted
+	$fxFactor = $fx['convert'] ? (float) $fx['factor'] : 1.0;
+	// Lines for the private note that inform without asking for a review
+	$fxNotes = array();
+	if (!empty($fx['disabled'])) {
+		$fxNotes[] = is_object($langs) ? $langs->transnoentities('EasyOcrFxDisabledNote', $fx['code']) : 'The document is in ' . $fx['code'] . ' and the currency conversion is off: the amounts were booked as printed.';
+	} elseif ($fx['code'] === '' && $fx['raw'] !== '') {
+		$fxNotes[] = is_object($langs) ? $langs->transnoentities('EasyOcrFxUnknownNote', $fx['raw']) : 'The document currency (' . $fx['raw'] . ') was not recognised: the amounts were booked as printed.';
+	}
+	if ($fx['convert'] && !$datefWasRead) {
+		$reviewAdd('fx_no_date', is_object($langs) ? $langs->transnoentities('EasyOcrReviewFxNoDate', $datef_str) : 'The invoice date was not read: the exchange rate is the one of ' . $datef_str . '. Check it.');
+	}
+	if ($fx['convert']) {
+		dol_syslog('EasyOCR-CREATE: currency ' . $fx['code'] . ' -> ' . $fx['main'] . ', tx=' . $fx['tx'] . ' (' . $fx['source'] . ($fx['rate_date'] !== '' ? ' ' . $fx['rate_date'] : '') . ')', LOG_INFO);
 	}
 
 	// ── Advisory lock to prevent race condition on concurrent webhooks ──
@@ -3024,7 +3522,8 @@ function easyocrCreateInvoiceFromOCRCore($params, $userObj = null)
 	}
 
 	// ── Duplicate check ──────────────────────────────────────────────────
-	$dup = easyocrFindDuplicateSupplierInvoice($fk_soc, $ref_supplier, $total_ttc, $datef_str);
+	// The invoices already booked keep the amount in our currency
+	$dup = easyocrFindDuplicateSupplierInvoice($fk_soc, $ref_supplier, $fx['convert'] ? round($total_ttc * $fxFactor, 2) : $total_ttc, $datef_str);
 	if ($dup !== null) {
 		$existing = $dup['row'];
 		if ($dup['kind'] === 'ref') {
@@ -3050,6 +3549,23 @@ function easyocrCreateInvoiceFromOCRCore($params, $userObj = null)
 	// ── Load supplier object (payment info + localtax calc) ──────────────
 	$socTmp = new Societe($db);
 	$socTmp->fetch($fk_soc);
+
+	// ── Document currency against the supplier's own (multicurrency only) ──
+	// The supplier record keeps its usual currency only with multicurrency on (the field
+	// is not even shown otherwise). A document in another currency than the record says
+	// may be a misread currency, and then every amount is converted wrong: a person looks.
+	$fxSupplierCheck = function_exists('isModEnabled') ? isModEnabled('multicurrency') : !empty($conf->multicurrency->enabled);
+	if ($fxSupplierCheck && empty($fx['disabled']) && !empty($socTmp->id)) {
+		$supCurrency = strtoupper(trim((string) $socTmp->multicurrency_code));
+		$docCurrency = $fx['code'];
+		if ($docCurrency !== '' && $supCurrency !== '' && $docCurrency !== $supCurrency) {
+			$reviewAdd('fx_supplier_currency', is_object($langs) ? $langs->transnoentities('EasyOcrReviewFxSupplierCurrency', $docCurrency, $supCurrency) : 'The document is in ' . $docCurrency . ' and the supplier record says ' . $supCurrency . ': check the currency.');
+		} elseif ($docCurrency === '' && $supCurrency !== '' && $supCurrency !== $fx['main']) {
+			$reviewAdd('fx_supplier_currency', is_object($langs) ? $langs->transnoentities('EasyOcrReviewFxCurrencyNotRead', $supCurrency, $fx['main']) : 'The document currency was not read and the supplier record says ' . $supCurrency . ': the amounts were booked in ' . $fx['main'] . ' as printed.');
+		} elseif ($docCurrency !== '' && $docCurrency !== $fx['main'] && $supCurrency === '') {
+			$fxNotes[] = is_object($langs) ? $langs->transnoentities('EasyOcrFxSupplierNoCurrency', $docCurrency) : 'The supplier record has no currency and this document is in ' . $docCurrency . '.';
+		}
+	}
 
 	// Payment defaults: supplier record first, then the most frequent values of
 	// its recent invoices (the supplier record is usually left empty).
@@ -3139,7 +3655,37 @@ function easyocrCreateInvoiceFromOCRCore($params, $userObj = null)
 		$facture = new FactureFournisseur($db);
 	}
 	$facture->socid = $fk_soc;
-	$facture->multicurrency_code = $conf->currency;
+	// Foreign currency: the invoice is kept in it (amounts as printed plus the rate) when
+	// multicurrency is on and the currency is declared there. Otherwise it is booked in
+	// our currency and the printed amounts stay in the private note. Only invoices: the
+	// supplier proposal ignores the rate it is given and takes the one of today from the
+	// multicurrency table, so it is always converted.
+	$fxNative = false;
+	if ($fx['convert']) {
+		$multicurrencyOn = function_exists('isModEnabled') ? isModEnabled('multicurrency') : !empty($conf->multicurrency->enabled);
+		if (!$is_proposal && $multicurrencyOn) {
+			require_once DOL_DOCUMENT_ROOT . '/multicurrency/class/multicurrency.class.php';
+			$fxNative = (MultiCurrency::getIdFromCode($db, $fx['code']) > 0);
+		}
+		$fxNotes[] = easyocrFxNote($fx, array('total_ht' => $total_ht, 'total_tva' => $total_tva, 'total_ttc' => $total_ttc), $langs);
+		if (!$fxNative) {
+			// Why it was converted: a proposal always is; an invoice because multicurrency is
+			// off, or because that currency is not declared in it
+			if ($is_proposal) {
+				$fxWhy = is_object($langs) ? $langs->transnoentities('EasyOcrFxProposalConverted', $fx['code'], $fx['main']) : '';
+			} elseif ($multicurrencyOn) {
+				$fxWhy = is_object($langs) ? $langs->transnoentities('EasyOcrFxNotInMulticurrency', $fx['code'], $fx['main']) : '';
+			} else {
+				$fxWhy = is_object($langs) ? $langs->transnoentities('EasyOcrFxMulticurrencyOffNote', $fx['main']) : '';
+			}
+			$fxNotes[] = $fxWhy !== '' ? $fxWhy : 'Booked in ' . $fx['main'] . ': the amounts in ' . $fx['code'] . ' are only kept in this note.';
+		}
+	}
+	$facture->multicurrency_code = $fxNative ? $fx['code'] : $conf->currency;
+	if ($fxNative) {
+		// Given explicitly, create() keeps it instead of reading the multicurrency table
+		$facture->multicurrency_tx = $fx['tx'];
+	}
 	$facture->date = dol_mktime(
 		12, 0, 0,
 		date('m', strtotime($datef_str)),
@@ -3165,6 +3711,9 @@ function easyocrCreateInvoiceFromOCRCore($params, $userObj = null)
 		if ($validUntil !== '') {
 			$noteLines[] = $langs->trans('EasyOcrProposalValidUntil', $validUntil);
 		}
+		foreach ($fxNotes as $fn) {
+			$noteLines[] = $fn;
+		}
 		// The review list already carries the line/total mismatches
 		foreach ($reviewNotes as $rn) {
 			$noteLines[] = $rn;
@@ -3185,6 +3734,9 @@ function easyocrCreateInvoiceFromOCRCore($params, $userObj = null)
 		$noteParts = array();
 		if (!empty($notes)) {
 			$noteParts[] = $notes;
+		}
+		if (!empty($fxNotes)) {
+			$noteParts[] = implode("\n", $fxNotes);
 		}
 		if (!empty($reviewNotes)) {
 			$noteParts[] = (is_object($langs) ? $langs->transnoentities('EasyOcrReviewHeader') : 'EasyOCR — to review:') . "\n- " . implode("\n- ", $reviewNotes);
@@ -3295,6 +3847,10 @@ function easyocrCreateInvoiceFromOCRCore($params, $userObj = null)
 
 			// Reconstruct the gross unit price when the document did not print one
 			$unit_price = easyocrResolveLineUnitPrice($item, $qty, $discount, $unit_price);
+			// Everything above works on the printed amounts; from here on, our currency.
+			// Not rounded: when the invoice keeps the currency, the core gets the printed
+			// price back from it (pu x rate)
+			$unit_price = $unit_price * $fxFactor;
 
 			// Product matching — skip for discount/surcharge/other types.
 			// The OCR "code" is the SUPPLIER's article reference, so fk_product is resolved in order:
@@ -3407,12 +3963,12 @@ function easyocrCreateInvoiceFromOCRCore($params, $userObj = null)
 		// A template may give the line its own text (the description it extracted)
 		$lineDesc = (isset($params['line_desc']) && trim((string) $params['line_desc']) !== '') ? (string) $params['line_desc'] : (is_object($langs) ? $langs->trans('EasyOcrInvoiceLineDesc') : 'Invoice total');
 		$singleLineResult = easyocrAddDocumentLine($facture, $is_proposal, array(
-			'desc'  => $lineDesc,
-			'pu'    => $total_ht,
-			'qty'   => 1,
-			'txtva' => $tva_tx,
-			'tx1'   => $localtax1_tx,
-			'tx2'   => $localtax2_tx,
+			'desc'      => $lineDesc,
+			'pu'        => $total_ht * $fxFactor,
+			'qty'       => 1,
+			'txtva'     => $tva_tx,
+			'tx1'       => $localtax1_tx,
+			'tx2'       => $localtax2_tx,
 		));
 		if ($singleLineResult < 0) {
 			dol_syslog('EasyOCR single line FAILED: ' . $facture->error, LOG_ERR);
@@ -3436,16 +3992,27 @@ function easyocrCreateInvoiceFromOCRCore($params, $userObj = null)
 		$reviewAdd('totals_missing', is_object($langs) ? $langs->transnoentities('EasyOcrReviewTotalsMissing') : 'The document totals were not read: the invoice keeps the sum of its lines. Check it against the document.');
 		easyocrAppendPrivateNote($facture, 'facture_fourn', end($reviewNotes));
 	} elseif (!$is_proposal) {
+		// Printed amounts converted one by one, as a person converting the document would.
+		// Without a conversion they go through untouched, as before.
+		$toOurs = function ($v) use ($fx, $fxFactor) {
+			return $fx['convert'] ? round((float) $v * $fxFactor, 2) : (float) $v;
+		};
 		$sql_totals = "UPDATE " . MAIN_DB_PREFIX . "facture_fourn SET";
-		$sql_totals .= " total_ht = " . ((float) $ocr_total_ht);
-		$sql_totals .= ", tva = " . ((float) $ocr_total_tva);
-		$sql_totals .= ", total_ttc = " . ((float) $ocr_total_ttc);
+		$sql_totals .= " total_ht = " . $toOurs($ocr_total_ht);
+		$sql_totals .= ", tva = " . $toOurs($ocr_total_tva);
+		$sql_totals .= ", total_ttc = " . $toOurs($ocr_total_ttc);
 		if ($ocr_localtax1 != 0) {
-			$sql_totals .= ", localtax1 = " . ((float) $ocr_localtax1);
+			$sql_totals .= ", localtax1 = " . $toOurs($ocr_localtax1);
 		}
 		if ($ocr_localtax2 != 0) {
 			// Withholding: negative on an invoice, positive on a credit note
-			$sql_totals .= ", localtax2 = " . ((float) (abs($ocr_localtax2) * ((float) $ocr_total_ht < 0 ? 1 : -1)));
+			$sql_totals .= ", localtax2 = " . $toOurs(abs($ocr_localtax2) * ((float) $ocr_total_ht < 0 ? 1 : -1));
+		}
+		if ($fxNative) {
+			// The document's own totals, in its currency: what the payment is made against
+			$sql_totals .= ", multicurrency_total_ht = " . round((float) $ocr_total_ht, 2);
+			$sql_totals .= ", multicurrency_total_tva = " . round((float) $ocr_total_tva, 2);
+			$sql_totals .= ", multicurrency_total_ttc = " . round((float) $ocr_total_ttc, 2);
 		}
 		$sql_totals .= " WHERE rowid = " . ((int) $newId);
 		if (!$db->query($sql_totals)) {
@@ -3586,6 +4153,9 @@ function easyocrCreateInvoiceFromOCRCore($params, $userObj = null)
 		'review_notes'     => $reviewNotes,
 		'forced_draft'     => $forcedDraft,
 		'payment_error'    => $paymentError,
+		// Conversion applied, if any: native = the invoice is kept in that currency
+		'fx'               => $fx['convert'] ? array('currency' => $fx['code'], 'tx' => $fx['tx'], 'source' => $fx['source'], 'rate_date' => $fx['rate_date'], 'native' => $fxNative) : null,
+		'fx_notes'         => $fxNotes,
 		// Aliases for webhook compatibility
 		'invoice_id'       => $newId,
 		'invoice_ref'      => $ref,
@@ -3875,7 +4445,7 @@ function easyocrCreateVariousPaymentFromOCR($params, $userObj = null)
  * files and never re-enabled, and every document processed in that time was registered
  * nowhere.
  */
-define('EASYOCR_SCHEMA_REVISION', 3);
+define('EASYOCR_SCHEMA_REVISION', 4);
 
 /**
  * Apply the SQL files shipped in sql/ when this installation has not applied them yet.
@@ -3983,6 +4553,16 @@ function easyocrEnsureSchema()
 		&& getDolGlobalString('EASYOCR_WEBHOOK_LEGACY_UNTIL') === ''
 		&& trim(getDolGlobalString('EASYOCR_AI_APIKEY')) !== '') {
 		dolibarr_set_const($db, 'EASYOCR_WEBHOOK_LEGACY_UNTIL', (string) (dol_now() + 30 * 86400), 'chaine', 0, '', $conf->entity);
+	}
+
+	// 2.10.0 converts documents in another currency itself. An installation already in use
+	// may have custom instructions telling the AI to convert (the usual workaround until
+	// now): switching it on by itself would convert those documents twice. It stays off
+	// there until someone turns it on in the setup; a fresh install gets it on.
+	if ((int) getDolGlobalString('EASYOCR_SCHEMA_REVISION') < 4
+		&& !isset($conf->global->EASYOCR_FX_ENABLED)
+		&& trim(getDolGlobalString('EASYOCR_AI_APIKEY')) !== '') {
+		dolibarr_set_const($db, 'EASYOCR_FX_ENABLED', '0', 'chaine', 0, '', $conf->entity);
 	}
 
 	if ($errors) {

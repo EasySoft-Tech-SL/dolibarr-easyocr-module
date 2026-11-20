@@ -981,3 +981,39 @@ EasyOcrWebhookStatusDeleted = Factura esborrada
 EasyOcrWebhookPayReason_no_right = l'usuari que va llançar el lot no té permís per registrar pagaments
 EasyOcrWebhookPayReason_draft = la factura s'ha creat en esborrany, i un esborrany no es paga
 EasyOcrWebhookNoCreateRight = L'usuari que va llançar el lot no té permís per crear factures de proveïdor: no se n'ha creat cap.
+
+# 2.10.0 - Foreign currency and template detection
+EasyOcrFxConfig = Factures en una altra moneda
+EasyOcrFxEnabled = Convertir els documents en una altra moneda
+EasyOcrFxEnabledDesc = Si una factura arriba en una altra moneda (en dòlars, per exemple), EasyOCR la registra en %s amb el tipus de canvi de la data de la factura. La IA ja no fa el càlcul: si alguna plantilla té instruccions com «multiplica per 0,87», treu-les abans d'activar-ho o els imports es convertiran dues vegades.
+EasyOcrFxFixedRates = Tipus de canvi fixos
+EasyOcrFxFixedRatesDesc = Opcional. Una moneda per línia, amb el seu valor en %s: USD=0,87 vol dir 1 USD = 0,87. Les monedes que no hi siguin fan servir el tipus de referència del BCE de la data de la factura.
+EasyOcrFxFixedRatesRejected = Aquestes línies de tipus fixos no s'han entès i no s'han desat: %s. El format és USD=0,87.
+EasyOcrFxStorage = On queda la factura
+EasyOcrFxMulticurrencyOn = Multidivisa activa: la factura es desa en la moneda del document, amb el tipus aplicat i el seu contravalor. Només amb les monedes donades d'alta a Multidivisa (ara: %s); les altres es converteixen.
+EasyOcrFxMulticurrencyOff = Multidivisa desactivada: la factura es registra convertida a %s i els imports originals queden a la nota privada.
+EasyOcrFxRateUnavailable = No s'ha pogut consultar el tipus de canvi de %s al BCE. Torna-ho a provar d'aquí a uns minuts o posa un tipus fix per a %s a la configuració d'EasyOCR.
+EasyOcrFxCurrencyUnknown = El BCE no publica tipus de canvi per a %s. Posa un tipus fix per a aquesta moneda a la configuració d'EasyOCR.
+EasyOcrFxDisabledNote = El document és en %s i la conversió de moneda està desactivada a EasyOCR: els imports s'han registrat tal com vénen.
+EasyOcrFxUnknownNote = No s'ha reconegut la moneda del document («%s»): els imports s'han registrat tal com vénen.
+EasyOcrReviewFxNoDate = No s'ha llegit la data de la factura: s'ha fet servir el tipus de canvi del %s. Comprova-ho.
+EasyOcrFxSourceEcb = BCE, %s
+EasyOcrFxSourceFixed = tipus fix de la configuració
+EasyOcrFxNoteAmounts = Document en %s: base %s, impostos %s, total %s.
+EasyOcrFxNoteRate = Tipus aplicat: 1 %s = %s %s (%s).
+EasyOcrFxNotInMulticurrency = %s no està donada d'alta a Multidivisa: la factura es registra en %s i els imports en la moneda original només queden en aquesta nota.
+EasyOcrFxMulticurrencyOffNote = La multidivisa no està activa: la factura es registra en %s i els imports en la moneda original només queden en aquesta nota.
+EasyOcrReviewFxSupplierCurrency = El document és en %s i la fitxa del proveïdor diu %s: comprova la moneda abans de donar la factura per bona.
+EasyOcrReviewFxCurrencyNotRead = No s'ha llegit la moneda del document i la fitxa del proveïdor diu %s: els imports s'han registrat en %s tal com vénen. Comprova-ho.
+EasyOcrFxSupplierNoCurrency = La fitxa del proveïdor no té moneda i el document és en %s: posa-la a la fitxa (Multidivisa) perquè els seus documents surtin en aquesta moneda.
+EasyOcrFxActivateMulticurrency = Activar Multidivisa
+EasyOcrFxFixedNotDeclared = %s té tipus fix però no està donada d'alta a Multidivisa: les seves factures es registraran convertides.
+EasyOcrFxDeclareCurrencies = Donar d'alta monedes a Multidivisa
+EasyOcrFxProposalConverted = Pressupost en %s convertit a %s: els imports originals queden en aquesta nota.
+EasyOcrTemplateAutodetect = Detectar la plantilla en obrir el PDF
+EasyOcrTemplateAutodetectDesc = En obrir un PDF al visor, busca al seu text el NIF o el nom dels proveïdors que tenen plantilla i, si només n'encaixa un, n'aplica la plantilla amb les zones i les instruccions. No fa servir la IA ni gasta crèdits. Un PDF escanejat, sense text, no es detecta.
+EasyOcrTemplateAutoDetected = Plantilla detectada per %s: %s
+EasyOcrTemplateAutoAmbiguous = El PDF encaixa amb diversos proveïdors amb plantilla (%s): tria la plantilla a mà.
+EasyOcrDetectViaTaxId = NIF
+EasyOcrDetectViaName = nom
+EasyOcrDocumentCurrency = Moneda del document

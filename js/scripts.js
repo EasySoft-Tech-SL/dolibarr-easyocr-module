@@ -942,6 +942,8 @@ const EasyOcr = (function () {
                             rendered++;
                             if (rendered === pdf.numPages) {
                                 hideLoader();
+                                // La deteccion espera a que loadInitialData traiga las plantillas
+                                state.pendingDetect = true;
                                 loadInitialData();
                                 renderTags();
                                 renderSelections();
@@ -1021,15 +1023,86 @@ const EasyOcr = (function () {
                 // Poblar selectores del modal AI (mismas opciones)
                 populateAIPaymentSelects();
 
+                // Moneda del documento (flujo con plantilla): solo si hay otra que la nuestra
+                state.mainCurrency = data.main_currency || '';
+                state.templateAutodetect = !!data.template_autodetect;
+                const currencySelect = document.getElementById('eo-currency');
+                const currencyField = document.getElementById('eo-currency-field');
+                if (currencySelect && currencyField) {
+                    const currencies = data.currencies || [];
+                    const previous = currencySelect.value;
+                    currencySelect.innerHTML = '';
+                    currencies.forEach(c => {
+                        currencySelect.innerHTML += `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`;
+                    });
+                    currencyField.style.display = currencies.length > 1 ? '' : 'none';
+                    currencySelect.value = currencies.indexOf(previous) >= 0 ? previous : (state.mainCurrency || currencies[0] || '');
+                }
+
                 initSelect2();
                 updateReadiness();
+
+                // PDF recien abierto: buscar su plantilla ahora que la lista esta cargada
+                if (state.pendingDetect) {
+                    state.pendingDetect = false;
+                    detectTemplateFromText();
+                }
             }
         });
+    }
+
+    // ---- Moneda del documento por defecto: la del proveedor ----
+    function applySupplierCurrency(supplierId) {
+        const currencySelect = document.getElementById('eo-currency');
+        if (!currencySelect) return;
+        const sup = state.suppliersData.find(s => String(s.rowid) === String(supplierId));
+        const wanted = (sup && sup.currency) ? sup.currency : state.mainCurrency;
+        if (wanted && Array.prototype.some.call(currencySelect.options, o => o.value === wanted)) {
+            // Select2: el valor nativo solo no actualiza lo que se ve
+            $(currencySelect).val(wanted).trigger('change.select2');
+        }
+    }
+
+    // ---- Plantilla detectada por el texto del PDF (sin IA, sin creditos) ----
+    // Lee el texto nativo de la primera pagina y pregunta al servidor que proveedor con
+    // plantilla aparece en el (NIF primero, nombre despues). Con uno solo, aplica su
+    // plantilla con sus zonas e instrucciones; con varios, avisa y no elige.
+    function detectTemplateFromText() {
+        if (!state.templateAutodetect || state.templateId || !state.pdfDoc) return;
+        const pdfDoc = state.pdfDoc;
+        pdfDoc.getPage(1).then(function (page) {
+            return page.getTextContent();
+        }).then(function (tc) {
+            // Otro PDF abierto mientras tanto: este resultado ya no vale
+            if (state.pdfDoc !== pdfDoc || state.templateId) return;
+            const text = tc.items.map(i => i.str).join(' ');
+            // Un escaneado no tiene capa de texto: nada que buscar
+            if (text.replace(/\s+/g, '').length < 20) return;
+            $.ajax({
+                url: "ajax/ajax_easyocr.php",
+                type: 'POST',
+                dataType: 'json',
+                data: { action: 'detectTemplate', text: text },
+                success: function (res) {
+                    if (state.pdfDoc !== pdfDoc || state.templateId || !res) return;
+                    const via = res.via === 'tax_id' ? (L.detectViaTaxId || 'tax id') : (L.detectViaName || 'name');
+                    if (res.match === 'single' && res.template_id) {
+                        $('#eo-template-select').val(String(res.template_id)).trigger('change');
+                        const name = res.template_name && res.template_name.trim() ? res.template_name : 'ID: ' + res.template_id;
+                        toast((L.templateAutoDetected || 'Template detected by %s: %s').replace('%s', via).replace('%s', name), 'success');
+                        loadTemplate();
+                    } else if (res.match === 'multiple') {
+                        toast((L.templateAutoAmbiguous || 'Several suppliers match: %s').replace('%s', (res.candidates || []).join(', ')), 'warn');
+                    }
+                }
+            });
+        }).catch(function () { /* sin texto legible: se sigue a mano */ });
     }
 
     // ---- Auto-detección de plantilla por proveedor ----
     function onSupplierChange() {
         const supplierId = $('#eo-supplier').val();
+        if (supplierId) applySupplierCurrency(supplierId);
         if (!supplierId || state.templateId) return;
 
         // Buscar plantilla asociada al proveedor
@@ -1063,6 +1136,7 @@ const EasyOcr = (function () {
             success: function (data) {
                 if (data.fk_soc) {
                     $('#eo-supplier').val(data.fk_soc).trigger('change.select2');
+                    applySupplierCurrency(data.fk_soc);
                 }
 
                 // Load custom instructions from template
@@ -1107,7 +1181,9 @@ const EasyOcr = (function () {
                     });
                 } else {
                     hideLoader();
-                    toast(L.templateNoSelections, 'warn');
+                    // A template with only AI instructions (no zones) is a template too:
+                    // nothing to warn about then
+                    if (!state.customInstructions) toast(L.templateNoSelections, 'warn');
                 }
             },
             error: function () {
@@ -1314,6 +1390,10 @@ const EasyOcr = (function () {
                 <div class="eo-confirm-row"><span class="eo-confirm-label">${(L.labelCIF || 'Tax ID') + ':'}</span><span class="eo-confirm-value">${escapeHtml(cif)}</span></div>`;
         if (dueDate) confirmHtml += `
                 <div class="eo-confirm-row"><span class="eo-confirm-label">${(L.labelDueDate || 'Due date') + ':'}</span><span class="eo-confirm-value">${escapeHtml(dueDate)}</span></div>`;
+        // Otra moneda: que se vea antes de crear que los importes se van a convertir
+        const currencyEl = document.getElementById('eo-currency');
+        if (currencyEl && currencyEl.value && state.mainCurrency && currencyEl.value !== state.mainCurrency) confirmHtml += `
+                <div class="eo-confirm-row"><span class="eo-confirm-label">${(L.documentCurrency || 'Currency') + ':'}</span><span class="eo-confirm-value">${escapeHtml(currencyEl.value)} → ${escapeHtml(state.mainCurrency)}</span></div>`;
 
         confirmHtml += `
             </div>`;
@@ -1350,6 +1430,9 @@ const EasyOcr = (function () {
         formData.append('datef', getSelectionValue(L.labelDate));
         formData.append('total_ttc', getSelectionValue(L.labelTTC));
         formData.append('total_ht', getSelectionValue(L.labelHT));
+        // Moneda en que esta impreso el documento: si no es la nuestra, el servidor convierte
+        const currencyEl = document.getElementById('eo-currency');
+        if (currencyEl && currencyEl.value) formData.append('currency', currencyEl.value);
 
         // New optional fields
         const ivaVal = getSelectionValue(L.labelIVA);
@@ -3221,6 +3304,8 @@ const EasyOcr = (function () {
             fk_soc: fkSoc || '0',
             ref_supplier: editedData.document.document_number,
             datef: editedData.document.issue_date,
+            // Moneda leida (o corregida en la revision): el servidor convierte si no es la nuestra
+            currency: editedData.document.currency || '',
             date_echeance: editedData.document.due_date || '',
             total_ht: subtotal.toFixed(2),
             total_ttc: totalFinal.toFixed(2),

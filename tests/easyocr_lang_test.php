@@ -103,7 +103,8 @@ foreach ($it as $f) {
 		continue;
 	}
 	$scanned++;
-	if (preg_match_all('/trans(?:noentities)?(?:noconv)?\(\s*[\'"](EasyOcr[A-Za-z0-9_]+)[\'"](\s*\.)?/', file_get_contents($p), $mm)) {
+	// transJson(): the texts js/scripts.js.php hands to the viewer
+	if (preg_match_all('/(?:trans(?:noentities)?(?:noconv)?|transJson)\(\s*[\'"](EasyOcr[A-Za-z0-9_]+)[\'"](\s*\.)?/', file_get_contents($p), $mm)) {
 		foreach ($mm[1] as $i => $k) {
 			// 'EasyOcrBatchStatus' . ucfirst($st): a prefix, checked apart
 			$used[$k . ($mm[2][$i] !== '' ? '*' : '')] = basename($p);

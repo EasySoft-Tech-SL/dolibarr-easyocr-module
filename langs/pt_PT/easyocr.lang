@@ -980,3 +980,39 @@ EasyOcrWebhookStatusDeleted = Fatura eliminada
 EasyOcrWebhookPayReason_no_right = o utilizador que lançou o lote não tem permissão para registar pagamentos
 EasyOcrWebhookPayReason_draft = a fatura foi criada como rascunho, e um rascunho não é pago
 EasyOcrWebhookNoCreateRight = O utilizador que lançou o lote não tem permissão para criar faturas de fornecedor: não foi criada nenhuma.
+
+# 2.10.0 - Foreign currency and template detection
+EasyOcrFxConfig = Faturas noutra moeda
+EasyOcrFxEnabled = Converter os documentos noutra moeda
+EasyOcrFxEnabledDesc = Se uma fatura vier noutra moeda (em dólares, por exemplo), o EasyOCR regista-a em %s à taxa de câmbio da data da fatura. A IA deixa de fazer a conta: se algum modelo tiver instruções do tipo «multiplica por 0,87», retire-as antes de ativar esta opção, ou os montantes serão convertidos duas vezes.
+EasyOcrFxFixedRates = Taxas de câmbio fixas
+EasyOcrFxFixedRatesDesc = Opcional. Uma moeda por linha, com o seu valor em %s: USD=0,87 significa 1 USD = 0,87. As moedas que não estiverem aqui usam a taxa de referência do BCE da data da fatura.
+EasyOcrFxFixedRatesRejected = Estas linhas de taxas fixas não foram entendidas e não foram guardadas: %s. O formato é USD=0,87.
+EasyOcrFxStorage = Onde fica a fatura
+EasyOcrFxMulticurrencyOn = Multimoeda ativa: a fatura fica na moeda do documento, com a taxa aplicada e o contravalor. Só para as moedas registadas em Multimoeda (agora: %s); as outras são convertidas.
+EasyOcrFxMulticurrencyOff = Multimoeda desativada: a fatura é registada convertida em %s e os montantes originais ficam na nota privada.
+EasyOcrFxRateUnavailable = Não foi possível obter do BCE a taxa de câmbio de %s. Tente de novo dentro de alguns minutos ou defina uma taxa fixa para %s na configuração do EasyOCR.
+EasyOcrFxCurrencyUnknown = O BCE não publica taxa de câmbio para %s. Defina uma taxa fixa para essa moeda na configuração do EasyOCR.
+EasyOcrFxDisabledNote = O documento está em %s e a conversão de moeda está desativada no EasyOCR: os montantes foram registados tal como vêm.
+EasyOcrFxUnknownNote = A moeda do documento («%s») não foi reconhecida: os montantes foram registados tal como vêm.
+EasyOcrReviewFxNoDate = A data da fatura não foi lida: foi usada a taxa de câmbio de %s. Verifique-a.
+EasyOcrFxSourceEcb = BCE, %s
+EasyOcrFxSourceFixed = taxa fixa da configuração
+EasyOcrFxNoteAmounts = Documento em %s: base %s, impostos %s, total %s.
+EasyOcrFxNoteRate = Taxa aplicada: 1 %s = %s %s (%s).
+EasyOcrFxNotInMulticurrency = %s não está registada em Multimoeda: a fatura é registada em %s e os montantes na moeda original só ficam nesta nota.
+EasyOcrFxMulticurrencyOffNote = Multimoeda está desativada: a fatura é registada em %s e os montantes na moeda original só ficam nesta nota.
+EasyOcrReviewFxSupplierCurrency = O documento está em %s e a ficha do fornecedor indica %s: verifique a moeda antes de dar a fatura por boa.
+EasyOcrReviewFxCurrencyNotRead = A moeda do documento não foi lida e a ficha do fornecedor indica %s: os montantes foram registados em %s tal como vêm. Verifique-o.
+EasyOcrFxSupplierNoCurrency = A ficha do fornecedor não tem moeda e o documento está em %s: defina-a na ficha (Multimoeda) para que os seus documentos saiam nessa moeda.
+EasyOcrFxActivateMulticurrency = Ativar Multimoeda
+EasyOcrFxFixedNotDeclared = %s tem taxa fixa mas não está registada em Multimoeda: as suas faturas serão registadas convertidas.
+EasyOcrFxDeclareCurrencies = Registar moedas em Multimoeda
+EasyOcrFxProposalConverted = Orçamento em %s convertido em %s: os montantes originais ficam nesta nota.
+EasyOcrTemplateAutodetect = Detetar o modelo ao abrir o PDF
+EasyOcrTemplateAutodetectDesc = Ao abrir um PDF no visualizador, procura no seu texto o NIF ou o nome dos fornecedores que têm modelo e, se só um corresponder, aplica o seu modelo com zonas e instruções. Não usa a IA nem gasta créditos. Um PDF digitalizado, sem texto, não é detetado.
+EasyOcrTemplateAutoDetected = Modelo detetado por %s: %s
+EasyOcrTemplateAutoAmbiguous = O PDF corresponde a vários fornecedores com modelo (%s): escolha o modelo à mão.
+EasyOcrDetectViaTaxId = NIF
+EasyOcrDetectViaName = nome
+EasyOcrDocumentCurrency = Moeda do documento

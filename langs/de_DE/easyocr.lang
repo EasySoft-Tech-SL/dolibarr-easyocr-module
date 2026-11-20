@@ -983,3 +983,39 @@ EasyOcrWebhookStatusDeleted = Rechnung gelöscht
 EasyOcrWebhookPayReason_no_right = der Benutzer, der den Stapel gestartet hat, darf keine Zahlungen erfassen
 EasyOcrWebhookPayReason_draft = die Rechnung wurde als Entwurf angelegt, und ein Entwurf wird nicht bezahlt
 EasyOcrWebhookNoCreateRight = Der Benutzer, der den Stapel gestartet hat, darf keine Lieferantenrechnungen anlegen: Es wurde keine angelegt.
+
+# 2.10.0 - Foreign currency and template detection
+EasyOcrFxConfig = Rechnungen in Fremdwährung
+EasyOcrFxEnabled = Dokumente in Fremdwährung umrechnen
+EasyOcrFxEnabledDesc = Kommt eine Rechnung in einer anderen Währung (z. B. in US-Dollar), bucht EasyOCR sie in %s zum Wechselkurs des Rechnungsdatums. Die KI rechnet nicht mehr selbst: Enthält eine Vorlage Anweisungen wie „mit 0,87 multiplizieren“, entfernen Sie diese vor dem Aktivieren, sonst werden die Beträge doppelt umgerechnet.
+EasyOcrFxFixedRates = Feste Wechselkurse
+EasyOcrFxFixedRatesDesc = Optional. Eine Währung pro Zeile mit ihrem Wert in %s: USD=0,87 bedeutet 1 USD = 0,87. Nicht aufgeführte Währungen verwenden den EZB-Referenzkurs des Rechnungsdatums.
+EasyOcrFxFixedRatesRejected = Diese Zeilen mit festen Kursen wurden nicht verstanden und nicht gespeichert: %s. Das Format ist USD=0,87.
+EasyOcrFxStorage = Wo die Rechnung gespeichert wird
+EasyOcrFxMulticurrencyOn = Mehrere Währungen aktiv: Die Rechnung wird in der Währung des Dokuments gespeichert, mit dem angewandten Kurs und dem Gegenwert. Nur für Währungen, die im Modul Mehrere Währungen angelegt sind (derzeit: %s); die übrigen werden umgerechnet.
+EasyOcrFxMulticurrencyOff = Mehrere Währungen deaktiviert: Die Rechnung wird in %s umgerechnet gebucht, die Originalbeträge stehen in der privaten Notiz.
+EasyOcrFxRateUnavailable = Der Wechselkurs für %s konnte nicht von der EZB abgerufen werden. Versuchen Sie es in einigen Minuten erneut oder hinterlegen Sie in der EasyOCR-Konfiguration einen festen Kurs für %s.
+EasyOcrFxCurrencyUnknown = Die EZB veröffentlicht keinen Wechselkurs für %s. Hinterlegen Sie in der EasyOCR-Konfiguration einen festen Kurs für diese Währung.
+EasyOcrFxDisabledNote = Das Dokument ist in %s und die Währungsumrechnung ist in EasyOCR deaktiviert: Die Beträge wurden unverändert gebucht.
+EasyOcrFxUnknownNote = Die Währung des Dokuments („%s“) wurde nicht erkannt: Die Beträge wurden unverändert gebucht.
+EasyOcrReviewFxNoDate = Das Rechnungsdatum wurde nicht gelesen: Es wurde der Wechselkurs vom %s verwendet. Bitte prüfen.
+EasyOcrFxSourceEcb = EZB, %s
+EasyOcrFxSourceFixed = fester Kurs aus der Konfiguration
+EasyOcrFxNoteAmounts = Dokument in %s: Netto %s, Steuern %s, Gesamt %s.
+EasyOcrFxNoteRate = Angewandter Kurs: 1 %s = %s %s (%s).
+EasyOcrFxNotInMulticurrency = %s ist im Modul Mehrere Währungen nicht angelegt: Die Rechnung wird in %s gebucht, die Beträge in der Originalwährung stehen nur in dieser Notiz.
+EasyOcrFxMulticurrencyOffNote = Mehrere Währungen ist deaktiviert: Die Rechnung wird in %s gebucht, die Beträge in der Originalwährung stehen nur in dieser Notiz.
+EasyOcrReviewFxSupplierCurrency = Das Dokument ist in %s und der Lieferantendatensatz sagt %s: Prüfen Sie die Währung, bevor Sie die Rechnung übernehmen.
+EasyOcrReviewFxCurrencyNotRead = Die Währung des Dokuments wurde nicht gelesen und der Lieferantendatensatz sagt %s: Die Beträge wurden unverändert in %s gebucht. Bitte prüfen.
+EasyOcrFxSupplierNoCurrency = Der Lieferantendatensatz hat keine Währung und das Dokument ist in %s: Hinterlegen Sie sie im Datensatz (Mehrere Währungen), damit seine Dokumente in dieser Währung angelegt werden.
+EasyOcrFxActivateMulticurrency = Mehrere Währungen aktivieren
+EasyOcrFxFixedNotDeclared = %s hat einen festen Kurs, ist aber im Modul Mehrere Währungen nicht angelegt: Seine Rechnungen werden umgerechnet gebucht.
+EasyOcrFxDeclareCurrencies = Währungen im Modul Mehrere Währungen anlegen
+EasyOcrFxProposalConverted = Angebot in %s nach %s umgerechnet: Die Originalbeträge stehen in dieser Notiz.
+EasyOcrTemplateAutodetect = Vorlage beim Öffnen des PDF erkennen
+EasyOcrTemplateAutodetectDesc = Beim Öffnen eines PDF im Viewer wird sein Text nach der Steuernummer oder dem Namen der Lieferanten mit Vorlage durchsucht; passt genau einer, wird seine Vorlage mit Bereichen und Anweisungen angewendet. Ohne KI und ohne Credits. Ein gescanntes PDF ohne Text wird nicht erkannt.
+EasyOcrTemplateAutoDetected = Vorlage erkannt über %s: %s
+EasyOcrTemplateAutoAmbiguous = Das PDF passt zu mehreren Lieferanten mit Vorlage (%s): Wählen Sie die Vorlage von Hand.
+EasyOcrDetectViaTaxId = Steuernummer
+EasyOcrDetectViaName = Name
+EasyOcrDocumentCurrency = Währung des Dokuments
