@@ -42,7 +42,7 @@ No es obligatorio. Sin Multidivisa, la factura se registra en tu moneda y los im
 
 ## He actualizado a la 2.10.0 y mis facturas en dólares no se convierten. ¿Por qué?
 
-Porque al actualizar la conversión viene desactivada. Si tus plantillas tenían instrucciones para la IA que convertían la moneda («multiplica por 0,87»), quítalas, y después activa **Convertir los documentos en otra moneda** en la configuración. Con las dos cosas a la vez, los importes se convertirían dos veces.
+Porque al actualizar la conversión viene desactivada. Si alguna plantilla tiene instrucciones para la IA que convierten la moneda («multiplica por 0,87»), quita de ella solo esa frase y después activa **Convertir los documentos en otra moneda** en la configuración. Con las dos cosas a la vez, los importes se convertirían dos veces.
 
 ## He actualizado a la 2.9.0. ¿Tengo que cambiar algo en los lotes?
 

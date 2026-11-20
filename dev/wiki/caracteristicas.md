@@ -10,7 +10,7 @@ Está disponible en **dos modos**: el **Modo Clásico**, completamente gratuito 
 * **Selección visual con rectángulos**: dibuja zonas sobre el PDF para capturar datos clave (fecha, número de factura, totales, IVA, descripción, CIF/NIF, vencimiento y proveedor).
 * **Proveedor por el nombre**: al marcar el nombre del proveedor en el PDF, el módulo lo busca entre tus terceros y lo deja seleccionado. Si varios encajan con ese nombre, avisa en lugar de elegir por su cuenta.
 * **Plantillas reutilizables por proveedor**: guarda las zonas de selección y aplícalas automáticamente a facturas del mismo proveedor.
-* **La plantilla se aplica sola**: al abrir un PDF, EasyOcr busca en su texto el CIF/NIF o el nombre de los proveedores que tienen plantilla y aplica la suya, con sus zonas y sus instrucciones para la IA. Sin gastar créditos.
+* **La plantilla se aplica sola**: al abrir un PDF, EasyOcr busca en su texto el CIF/NIF o el nombre de los proveedores que tienen plantilla y aplica la suya, con sus zonas y sus instrucciones para la IA, sin gastar créditos.
 * **Facturas en otra moneda**: una factura en dólares o en libras se pasa a tu moneda con el tipo de cambio de referencia del BCE del día de la factura, o con un tipo fijo que pongas tú. Con Multidivisa activa se guarda en su moneda, con el tipo y su contravalor.
 * **Extracción nativa con PDF.js**: 100 % local, sin enviar datos a ningún servidor externo.
 * **Generación de facturas de proveedor**: crea la factura en Dolibarr con los datos recogidos.
