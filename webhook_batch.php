@@ -549,6 +549,33 @@ function easyocrWebhookAlreadyProcessed($db, $entity, $documentId)
 }
 
 /**
+ * Total of the document for the invoice header. Pure.
+ *
+ * total_payable comes first: with a withholding (IRPF) it is what the invoice is for
+ * (base + VAT - IRPF), the same as Dolibarr's total_ttc. But on a document that is
+ * already paid (a card receipt that prints "Balance due 0.00") the service reads
+ * total_payable as 0, and the invoice was booked with a total of 0 and left as a draft
+ * for a mismatch that was not there. Then the document total is the one that counts.
+ *
+ * @param  array        $totals structured_data.totals of the service
+ * @return string|float         Total to book
+ */
+function easyocrWebhookDocumentTotal($totals)
+{
+	$totals = is_array($totals) ? $totals : array();
+	$payable = (isset($totals['total_payable']) && $totals['total_payable'] !== '') ? $totals['total_payable'] : null;
+	$payableValue = ($payable === null) ? 0.0 : (is_numeric($payable) ? (float) $payable : (function_exists('easyocrParseNumber') ? (float) easyocrParseNumber($payable) : 0.0));
+	if (abs($payableValue) >= 0.005) {
+		return $payable;
+	}
+	if (isset($totals['total']) && $totals['total'] !== '') {
+		return $totals['total'];
+	}
+
+	return $payable !== null ? $payable : '0';
+}
+
+/**
  * Final status of a processed document. Pure.
  *
  * 'ok' becomes 'review' when the invoice was left as a draft for review, has review
@@ -1093,7 +1120,8 @@ if ($enteredBlock) {
 				'datef'            => isset($structuredData['issue_date']) ? $structuredData['issue_date'] : '',
 				// Converted by the lib (fixed rate of the setup or ECB rate of the invoice date)
 				'currency'         => isset($structuredData['currency']) ? $structuredData['currency'] : '',
-				'total_ttc'        => isset($totals['total_payable']) ? $totals['total_payable'] : (isset($totals['total']) ? $totals['total'] : '0'),
+				// total_payable unless it is 0 (a receipt already paid): then the total
+				'total_ttc'        => easyocrWebhookDocumentTotal($totals),
 				'total_ht'         => isset($totals['net_subtotal']) ? $totals['net_subtotal'] : (isset($totals['subtotal']) ? $totals['subtotal'] : '0'),
 				'total_tva'        => isset($totals['tax_total']) ? $totals['tax_total'] : '',
 				// The service sends the equivalence surcharge as surcharge_total and the

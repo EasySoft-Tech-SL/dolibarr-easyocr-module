@@ -154,6 +154,15 @@ $p = easyocrWebhookPaymentSettings('legacy', array(), $cfgOn);
 eo_assert('legacy: not even the module config pays', array($p['mark_paid'], $p['skip_reason']), array(0, 'legacy'));
 
 eo_group('status, message and stored payload');
+// Total to book: total_payable, except on a document already paid (receipt with balance 0)
+eo_assert('total: payable when there is one (IRPF: base + VAT - withholding)', easyocrWebhookDocumentTotal(array('total' => 121, 'total_payable' => 106)), 106);
+eo_assert('total: already paid (payable 0) books the document total', easyocrWebhookDocumentTotal(array('total' => 33.68, 'total_payable' => 0)), 33.68);
+eo_assert('total: payable "0.00" as text is also paid', easyocrWebhookDocumentTotal(array('total' => '33.68', 'total_payable' => '0.00')), '33.68');
+eo_assert('total: no payable, the total', easyocrWebhookDocumentTotal(array('total' => 50)), 50);
+eo_assert('total: payable null, the total', easyocrWebhookDocumentTotal(array('total' => 50, 'total_payable' => null)), 50);
+eo_assert('total: credit note keeps its negative payable', easyocrWebhookDocumentTotal(array('total' => -20, 'total_payable' => -20)), -20);
+eo_assert('total: nothing read stays 0', easyocrWebhookDocumentTotal(array()), '0');
+
 eo_assert('ok stays ok', easyocrWebhookResolveStatus(array('status' => 'ok')), 'ok');
 eo_assert('forced draft is review', easyocrWebhookResolveStatus(array('status' => 'ok', 'forced_draft' => true)), 'review');
 eo_assert('review codes are review', easyocrWebhookResolveStatus(array('status' => 'ok', 'review_codes' => array('totals_missing'))), 'review');
@@ -518,6 +527,39 @@ if ($probeCode === 0) {
 			eo_info('could not create the test user: ' . $noRight->error);
 		}
 		eo_assert('the 403 does not reveal the expected value nor lengths', strpos($b, $httpTok) === false && strpos($b, 'expected') === false && strpos($b, 'received') === false, true);
+
+		// A receipt already paid ("Balance due 0.00"): the service sends total_payable 0, and
+		// the invoice used to be booked with a total of 0 (2.10.1). Through the real webhook.
+		require_once DOL_DOCUMENT_ROOT . '/societe/class/societe.class.php';
+		require_once DOL_DOCUMENT_ROOT . '/fourn/class/fournisseur.facture.class.php';
+		$paidSoc = new Societe($db);
+		$paidSoc->name = 'EO Paid Receipt Test ' . substr(uniqid(), -6);
+		$paidSoc->fournisseur = 1;
+		$paidSoc->client = 0;
+		$paidSoc->status = 1;
+		$paidSoc->idprof1 = 'B' . substr(preg_replace('/\D/', '', uniqid('', true)) . '00000000', 0, 8);
+		$paidSoc->get_codefournisseur();
+		$paidSocId = $paidSoc->create($eoAdmin);
+		if ($paidSocId > 0) {
+			$docPaid = 'eo-test-paid-' . uniqid();
+			$paidPayload = array('event' => 'batch.document.completed', 'batch_id' => $docPaid, 'data' => array('document_id' => $docPaid, 'status' => 'completed',
+				'structured_data' => array('document_number' => 'PAID-' . $docPaid, 'issue_date' => date('Y-m-d'), 'supplier' => array('name' => $paidSoc->name, 'tax_id' => $paidSoc->idprof1),
+					'items' => array(), 'payment' => array('status' => 'paid'),
+					'totals' => array('net_subtotal' => 33.68, 'tax_total' => 0, 'total' => 33.68, 'total_payable' => 0))));
+			list($c, $h, $b) = eo_http($endpoint . '?token=' . $httpTok . '&u=1&sig=' . easyocrWebhookUserSig($httpTok, 1), json_encode($paidPayload));
+			$paidRow = $db->fetch_object($db->query("SELECT rowid, total_ttc FROM " . MAIN_DB_PREFIX . "facture_fourn WHERE ref_supplier = 'PAID-" . $db->escape($docPaid) . "'"));
+			eo_assert('paid receipt (total_payable 0): the invoice is created', $paidRow ? true : $b, true);
+			eo_assert('paid receipt: booked with the document total, not 0', $paidRow ? (float) $paidRow->total_ttc : null, 33.68, 0.001);
+			if ($paidRow) {
+				$paidInv = new FactureFournisseur($db);
+				$paidInv->fetch($paidRow->rowid);
+				$paidInv->delete($eoAdmin);
+			}
+			$db->query("DELETE FROM " . MAIN_DB_PREFIX . "easyocr_webhook_log WHERE batch_id = '" . $db->escape($docPaid) . "'");
+			$paidSoc->delete($paidSocId, $eoAdmin);
+		} else {
+			eo_info('could not create the paid-receipt supplier: ' . $paidSoc->error);
+		}
 
 		list($c) = eo_http($endpoint . '?token=' . $httpTok, null, 'GET');
 		eo_assert('GET with the token: 405', $c, 405);

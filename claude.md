@@ -2,7 +2,7 @@
 
 ## Información del módulo
 - **Nombre:** EasyOcr
-- **Versión:** 2.10.0
+- **Versión:** 2.10.1
 - **Número módulo:** 402020
 - **Empresa:** EasySoft Tech S.L. (info@easysoft.es)
 - **Autor:** Alberto Luque Rivas (aluquerivasdev@gmail.com)
@@ -115,6 +115,10 @@ easyocr_recibir_documento($rutaAbsoluta, $user, array $opciones = array())
 - Test: `php tests/easyocr_inbox_test.php` (base real, limpia por el prefijo `qa_easyscan_ocrq_`).
 
 ## Historial de cambios
+
+### v2.10.1 — Lotes: recibo ya pagado con total 0
+
+- `webhook_batch.php` tomaba `total_payable` antes que `total` con un `isset`: en un recibo ya cobrado («Balance due 0.00») el servicio manda `total_payable: 0` y la factura se creaba con total 0, en borrador por `header_mismatch`. `easyocrWebhookDocumentTotal()`: `total_payable` solo si no es 0 (con IRPF es base + IVA − IRPF, el `total_ttc` de Dolibarr); si no, `total`. El visor no tenía el fallo (usa `totals.total`). Prueba HTTP contra el webhook real en `tests/easyocr_webhook_test.php`, comprobada reintroduciendo la línea vieja.
 
 ### v2.10.0 — Facturas en otra moneda y plantilla detectada por el texto
 

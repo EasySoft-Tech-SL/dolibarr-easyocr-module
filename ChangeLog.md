@@ -5,6 +5,16 @@ Todos los cambios notables de EasyOcr se documentarán en este archivo.
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/),
 y este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 
+## [2.10.1] - 2026-11-20
+
+### Corregido
+
+- **Lotes: una factura que ya venía pagada se registraba con total 0.** En un recibo de tarjeta (GitHub, OpenAI…) el documento dice «Balance due 0.00», el servicio lo lee como importe pendiente 0 y la factura se creaba con ese total y quedaba en borrador por un descuadre que no existía. Ahora, si el importe pendiente es 0, se toma el total del documento. Con retención (IRPF) se sigue usando el importe a pagar, que es el total de la factura en Dolibarr.
+
+### Para desarrolladores
+
+- `easyocrWebhookDocumentTotal()` en `webhook_batch.php`. Prueba de punta a punta en `tests/easyocr_webhook_test.php`: un recibo con `total_payable` 0 enviado al webhook real crea la factura con su total.
+
 ## [2.10.0] - 2026-11-20
 
 ### Facturas en otra moneda
