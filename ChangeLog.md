@@ -5,6 +5,12 @@ Todos los cambios notables de EasyOcr se documentarán en este archivo.
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/),
 y este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 
+## [Sin publicar]
+
+### Cambiado
+
+- **Configuración, «Dónde queda la factura»: texto más claro.** Decía «las demás se convierten», como si las facturas en las monedas dadas de alta en Multidivisa no se convirtieran. Todas usan el mismo tipo de cambio; lo que cambia es la moneda en que queda la factura. Ahora dice que las facturas en esas monedas se guardan en su moneda con su importe en euros, y las de cualquier otra moneda directamente en euros. Sin ninguna moneda extranjera dada de alta tiene su propio texto (antes salía «las facturas en Ninguno»).
+
 ## [2.10.1] - 2026-11-20
 
 ### Corregido

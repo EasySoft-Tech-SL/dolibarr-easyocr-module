@@ -757,6 +757,31 @@ function easyocrFxNote(array $fx, array $totals, $langs)
 }
 
 /**
+ * Text of the setup row "Where the invoice ends up". Pure.
+ *
+ * Every document in another currency is converted at the same rate; multicurrency only
+ * decides whether the invoice is kept in that currency (declared ones) or in ours. The
+ * old wording ("the others are converted") read as if the declared ones were not.
+ *
+ * @param  bool     $multicurrencyOn Dolibarr's multicurrency module is enabled
+ * @param  string[] $declared        Foreign currencies declared in multicurrency (ours left out)
+ * @param  string   $main            Our currency
+ * @param  object   $langs           Translations
+ * @return string
+ */
+function easyocrFxStorageText($multicurrencyOn, array $declared, $main, $langs)
+{
+	if (!$multicurrencyOn) {
+		return $langs->trans('EasyOcrFxMulticurrencyOff', $main);
+	}
+	if (empty($declared)) {
+		return $langs->trans('EasyOcrFxMulticurrencyOnNone', $main);
+	}
+
+	return $langs->trans('EasyOcrFxMulticurrencyOn', implode(', ', $declared), $main, $main);
+}
+
+/**
  * Currencies the viewer offers for a document read with a template: ours first, then
  * the ones declared in multicurrency (when it is on) and the ones with a fixed rate.
  *

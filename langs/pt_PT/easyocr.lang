@@ -989,7 +989,8 @@ EasyOcrFxFixedRates = Taxas de câmbio fixas
 EasyOcrFxFixedRatesDesc = Opcional. Uma moeda por linha, com o seu valor em %s: USD=0,87 significa 1 USD = 0,87. As moedas que não estiverem aqui usam a taxa de referência do BCE da data da fatura.
 EasyOcrFxFixedRatesRejected = Estas linhas de taxas fixas não foram entendidas e não foram guardadas: %s. O formato é USD=0,87.
 EasyOcrFxStorage = Onde fica a fatura
-EasyOcrFxMulticurrencyOn = Multimoeda ativa: a fatura fica na moeda do documento, com a taxa aplicada e o contravalor. Só para as moedas registadas em Multimoeda (agora: %s); as outras são convertidas.
+EasyOcrFxMulticurrencyOn = Multimoeda ativa: as faturas em %s ficam na sua moeda, com a taxa aplicada e o seu montante em %s. As de qualquer outra moeda são registadas diretamente em %s, com os montantes originais na nota privada.
+EasyOcrFxMulticurrencyOnNone = Multimoeda ativa, mas sem nenhuma moeda estrangeira registada: as faturas noutra moeda são registadas em %s, com os montantes originais na nota privada.
 EasyOcrFxMulticurrencyOff = Multimoeda desativada: a fatura é registada convertida em %s e os montantes originais ficam na nota privada.
 EasyOcrFxRateUnavailable = Não foi possível obter do BCE a taxa de câmbio de %s. Tente de novo dentro de alguns minutos ou defina uma taxa fixa para %s na configuração do EasyOCR.
 EasyOcrFxCurrencyUnknown = O BCE não publica taxa de câmbio para %s. Defina uma taxa fixa para essa moeda na configuração do EasyOCR.

@@ -992,7 +992,8 @@ EasyOcrFxFixedRates = Feste Wechselkurse
 EasyOcrFxFixedRatesDesc = Optional. Eine Währung pro Zeile mit ihrem Wert in %s: USD=0,87 bedeutet 1 USD = 0,87. Nicht aufgeführte Währungen verwenden den EZB-Referenzkurs des Rechnungsdatums.
 EasyOcrFxFixedRatesRejected = Diese Zeilen mit festen Kursen wurden nicht verstanden und nicht gespeichert: %s. Das Format ist USD=0,87.
 EasyOcrFxStorage = Wo die Rechnung gespeichert wird
-EasyOcrFxMulticurrencyOn = Mehrere Währungen aktiv: Die Rechnung wird in der Währung des Dokuments gespeichert, mit dem angewandten Kurs und dem Gegenwert. Nur für Währungen, die im Modul Mehrere Währungen angelegt sind (derzeit: %s); die übrigen werden umgerechnet.
+EasyOcrFxMulticurrencyOn = Mehrere Währungen aktiv: Rechnungen in %s werden in ihrer Währung gespeichert, mit dem angewandten Kurs und ihrem Betrag in %s. Rechnungen in jeder anderen Währung werden direkt in %s gebucht, die Originalbeträge stehen in der privaten Notiz.
+EasyOcrFxMulticurrencyOnNone = Mehrere Währungen aktiv, aber keine Fremdwährung angelegt: Rechnungen in einer anderen Währung werden in %s gebucht, die Originalbeträge stehen in der privaten Notiz.
 EasyOcrFxMulticurrencyOff = Mehrere Währungen deaktiviert: Die Rechnung wird in %s umgerechnet gebucht, die Originalbeträge stehen in der privaten Notiz.
 EasyOcrFxRateUnavailable = Der Wechselkurs für %s konnte nicht von der EZB abgerufen werden. Versuchen Sie es in einigen Minuten erneut oder hinterlegen Sie in der EasyOCR-Konfiguration einen festen Kurs für %s.
 EasyOcrFxCurrencyUnknown = Die EZB veröffentlicht keinen Wechselkurs für %s. Hinterlegen Sie in der EasyOCR-Konfiguration einen festen Kurs für diese Währung.

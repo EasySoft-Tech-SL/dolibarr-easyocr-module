@@ -1009,7 +1009,8 @@ EasyOcrFxFixedRates = Fixed exchange rates
 EasyOcrFxFixedRatesDesc = Optional. One currency per line, with its value in %s: USD=0.87 means 1 USD = 0.87. Currencies not listed here use the ECB reference rate of the invoice date.
 EasyOcrFxFixedRatesRejected = These fixed rate lines could not be read and were not saved: %s. The format is USD=0.87.
 EasyOcrFxStorage = Where the invoice is kept
-EasyOcrFxMulticurrencyOn = Multicurrency is on: the invoice is kept in the document currency, with the rate applied and its equivalent. Only for the currencies declared in Multicurrency (now: %s); the others are converted.
+EasyOcrFxMulticurrencyOn = Multicurrency is on: invoices in %s are kept in their own currency, with the rate applied and their amount in %s. Invoices in any other currency are booked directly in %s, with the original amounts in the private note.
+EasyOcrFxMulticurrencyOnNone = Multicurrency is on, but no foreign currency is declared: invoices in another currency are booked in %s, with the original amounts in the private note.
 EasyOcrFxMulticurrencyOff = Multicurrency is off: the invoice is booked converted to %s and the original amounts stay in the private note.
 EasyOcrFxRateUnavailable = The %s exchange rate could not be fetched from the ECB. Try again in a few minutes, or set a fixed rate for %s in the EasyOCR setup.
 EasyOcrFxCurrencyUnknown = The ECB publishes no exchange rate for %s. Set a fixed rate for that currency in the EasyOCR setup.

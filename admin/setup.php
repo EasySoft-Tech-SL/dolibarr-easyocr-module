@@ -397,7 +397,7 @@ print '<td>'.$langs->trans("EasyOcrFxStorage").'</td>';
 print '<td>';
 if ($fxMulticurrencyOn) {
 	$fxDeclared = array_values(array_diff(easyocrFxDeclaredCurrencies(), array($conf->currency)));
-	print $langs->trans("EasyOcrFxMulticurrencyOn", empty($fxDeclared) ? $langs->trans('None') : implode(', ', $fxDeclared));
+	print easyocrFxStorageText(true, $fxDeclared, $conf->currency, $langs);
 	// A currency with a fixed rate is clearly expected: if it is not declared, its
 	// invoices end up converted, not kept in it, and the user should know why
 	foreach (array_keys(easyocrFxParseFixedRates(getDolGlobalString('EASYOCR_FX_FIXED_RATES'))) as $fxCode) {
@@ -409,7 +409,7 @@ if ($fxMulticurrencyOn) {
 } else {
 	// Not switched on by EasyOCR: multicurrency changes every document of the ERP and
 	// other modules that do not pass its parameters misbehave with it. The user decides.
-	print $langs->trans("EasyOcrFxMulticurrencyOff", $conf->currency);
+	print easyocrFxStorageText(false, array(), $conf->currency, $langs);
 	print '<br><a href="'.DOL_URL_ROOT.'/admin/modules.php?search_keyword=multicurrency">'.img_picto('', 'currency', 'class="pictofixedwidth"').$langs->trans("EasyOcrFxActivateMulticurrency").'</a>';
 }
 print '</td>';

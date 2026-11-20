@@ -178,8 +178,21 @@ eo_assert('note: printed total', strpos($note, '33') !== false && strpos($note, 
 eo_assert('note: rate 1 USD = 0.909753 EUR', (bool) preg_match('/1 USD = 0[.,]909753 EUR/', $note), true);
 eo_assert('note: says where the rate comes from', strpos($note, '19') !== false && (stripos($note, 'BCE') !== false || stripos($note, 'ECB') !== false || stripos($note, 'EZB') !== false), true);
 
+eo_group('setup: where the invoice ends up');
+// Every currency is converted at the same rate; multicurrency only decides where the
+// invoice is kept. The text must name the declared ones and our currency in both places.
+$st = easyocrFxStorageText(true, array('USD'), 'EUR', $langs);
+eo_info($st);
+eo_assert('storage, declared USD: names USD once and EUR twice, no raw %s', array(substr_count($st, 'USD'), substr_count($st, 'EUR'), strpos($st, '%s')), array(1, 2, false));
+$st2 = easyocrFxStorageText(true, array('GBP', 'USD'), 'EUR', $langs);
+eo_assert('storage, two declared: both listed', strpos($st2, 'GBP, USD') !== false, true);
+$stNone = easyocrFxStorageText(true, array(), 'EUR', $langs);
+eo_assert('storage, nothing declared: its own text, not "invoices in None"', array($stNone === $langs->trans('EasyOcrFxMulticurrencyOnNone', 'EUR'), strpos($stNone, $langs->trans('None'))), array(true, false));
+eo_assert('storage, multicurrency off: converted to EUR', easyocrFxStorageText(false, array('USD'), 'EUR', $langs), $langs->trans('EasyOcrFxMulticurrencyOff', 'EUR'));
+eo_assert('storage texts are three different ones', count(array_unique(array($st, $stNone, easyocrFxStorageText(false, array(), 'EUR', $langs)))), 3);
+
 eo_group('supplier detection in the text of a PDF');
-$github = "INVOICE GitHub, Inc. Support Contact 88 Colin P. Kelly Jr. St. San Francisco, CA 94107 BILL TO EasySoft Tech SL "
+$github ="INVOICE GitHub, Inc. Support Contact 88 Colin P. Kelly Jr. St. San Francisco, CA 94107 BILL TO EasySoft Tech SL "
 	. "Calle Ejemplo 1 Oviedo, Asturias 33004 Spain VAT ID: B16885766 Invoice # INV167539011 Currency USD "
 	. "QUANTITY DESCRIPTION RATE AMOUNT 33.68 GitHub Actions Usage Oct 01, 2026 - Oct 31, 2026 \$1.00 \$33.68";
 $sups = array(

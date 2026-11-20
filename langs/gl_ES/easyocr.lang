@@ -992,7 +992,8 @@ EasyOcrFxFixedRates = Tipos de cambio fixos
 EasyOcrFxFixedRatesDesc = Opcional. Unha moeda por liña, co seu valor en %s: USD=0,87 significa 1 USD = 0,87. As moedas que non estean aquí usan o tipo de referencia do BCE da data da factura.
 EasyOcrFxFixedRatesRejected = Estas liñas de tipos fixos non se entenderon e non se gardaron: %s. O formato é USD=0,87.
 EasyOcrFxStorage = Onde queda a factura
-EasyOcrFxMulticurrencyOn = Multidivisa activa: a factura gárdase na moeda do documento, co tipo aplicado e o seu contravalor. Só coas moedas dadas de alta en Multidivisa (agora: %s); as demais convértense.
+EasyOcrFxMulticurrencyOn = Multidivisa activa: as facturas en %s gárdanse na súa moeda, co tipo aplicado e o seu importe en %s. As de calquera outra moeda gárdanse directamente en %s, cos importes orixinais na nota privada.
+EasyOcrFxMulticurrencyOnNone = Multidivisa activa, pero sen ningunha moeda estranxeira dada de alta: as facturas noutra moeda gárdanse en %s, cos importes orixinais na nota privada.
 EasyOcrFxMulticurrencyOff = Multidivisa desactivada: a factura rexístrase convertida a %s e os importes orixinais quedan na nota privada.
 EasyOcrFxRateUnavailable = Non se puido consultar o tipo de cambio de %s no BCE. Volve intentalo nuns minutos ou pon un tipo fixo para %s na configuración de EasyOCR.
 EasyOcrFxCurrencyUnknown = O BCE non publica tipo de cambio para %s. Pon un tipo fixo para esa moeda na configuración de EasyOCR.
