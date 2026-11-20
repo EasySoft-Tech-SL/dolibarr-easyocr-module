@@ -2,7 +2,7 @@
 
 ## Información del módulo
 - **Nombre:** EasyOcr
-- **Versión:** 2.10.1
+- **Versión:** 2.10.2
 - **Número módulo:** 402020
 - **Empresa:** EasySoft Tech S.L. (info@easysoft.es)
 - **Autor:** Alberto Luque Rivas (aluquerivasdev@gmail.com)
@@ -115,6 +115,11 @@ easyocr_recibir_documento($rutaAbsoluta, $user, array $opciones = array())
 - Test: `php tests/easyocr_inbox_test.php` (base real, limpia por el prefijo `qa_easyscan_ocrq_`).
 
 ## Historial de cambios
+
+### v2.10.2 — Salida de otros módulos al crear y texto de «Dónde queda la factura»
+
+- Un trigger de terceros (`print var_dump($res)` en `COMPANY_CREATE`, uno por grupo de contraseñas por defecto) colaba texto delante del JSON de `newInvoiceAI`: el visor daba «Error al generar la factura» con proveedor y factura ya creados, solo con proveedores nuevos. `easyocrRunWithoutStrayOutput($fn, $context)` (ob_start + limpieza hasta el nivel de entrada en un `finally`, la salida a `dol_syslog` WARNING) envuelve `easyocrCreateInvoiceFromOCR()` (cuerpo con hooks en `easyocrCreateInvoiceFromOCRHooked()`) y las creaciones del escáner de gastos. ⚠️ `display_errors` apagado no protege de un `print` de otro módulo. Prueba: `tests/fixtures/triggers/interface_99_modEasyocr_EasyocrTestPrinter.class.php`, cargado solo cuando la prueba añade esa carpeta a `$conf->modules_parts['triggers']` y activa `$GLOBALS['easyocr_test_print_on_company_create']`; lleva cuenta de ejecuciones como control.
+- `easyocrFxStorageText()`: el texto de la configuración decía «las demás se convierten», como si las monedas dadas de alta en Multidivisa no se convirtieran. Todas usan el mismo tipo; Multidivisa solo decide en qué moneda queda la factura. Clave nueva `EasyOcrFxMulticurrencyOnNone` para cuando no hay monedas extranjeras dadas de alta.
 
 ### v2.10.1 — Lotes: recibo ya pagado con total 0
 

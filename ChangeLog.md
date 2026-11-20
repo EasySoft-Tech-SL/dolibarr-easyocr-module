@@ -5,7 +5,7 @@ Todos los cambios notables de EasyOcr se documentarán en este archivo.
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/),
 y este proyecto sigue [Versionado Semántico](https://semver.org/lang/es/).
 
-## [Sin publicar]
+## [2.10.2] - 2026-11-20
 
 ### Corregido
 
